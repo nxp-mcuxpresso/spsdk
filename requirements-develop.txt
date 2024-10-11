@@ -1,27 +1,30 @@
 # tox has to be installed first
-tox<4.16
+tox<4.22
+tox-uv<1.14
 -r requirements.txt
 # testing
-pytest<8.3
-voluptuous<0.15
+pytest<8.4
+voluptuous<0.16
 # metrics
-types-requests<2.32,>=2.26
-types-setuptools<69.6
+types-requests<2.33,>=2.26
+types-setuptools<75.2
 types-pyyaml<6.1
 # codestyle
-black<24.5,>=24.3.0
-nxp_codecheck>=0.1.0
+black<24.9,>=24.3.0
+nxp_codecheck<0.2,>=0.1.16
+# pip dependency should be moved to codecheck
+pip
 # cli executables
-pyinstaller<6.7
-pyinstaller-hooks-contrib<2024.7
+pyinstaller<6.11
+pyinstaller-hooks-contrib<2024.9
 # developement/CI tools
-pre-commit<3.6
+pre-commit<4.1
 openpyxl<3.2
 cachier<3.1
 jira<3.9
 inquirerpy<0.4
 # examples
 flask<3.1
-ipython<8.13
-notebook<7.2
+ipython<8.19
+notebook<7.3
 pytest-notebook<0.11

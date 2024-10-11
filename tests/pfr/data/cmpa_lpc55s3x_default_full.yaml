@@ -1,19 +1,19 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 # NXP lpc55s3x PFR CMPA configuration
-description:  # The CMPA configuration description.
-  device: lpc55s3x  # The NXP device name.
+description: # The CMPA configuration description.
+  device: lpc55s3x # The NXP device name.
   revision: a1 # The NXP device revision.
   type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
   version: 1.9.1 # The SPSDK tool version.
   author: NXP # The author of the configuration.
   release: alpha # The SPSDK release.
 settings: # The CMPA registers configuration.
-  BOOT_CFG:  # Boot Configuration
-    bitfields:  # The register bitfields
-      DEFAULT_BOOT_SOURCE: ISP_PIN  # Width: 3b, Description: Default Boot Source
+  BOOT_CFG: # Boot Configuration
+    bitfields: # The register bitfields
+      DEFAULT_BOOT_SOURCE: ISP_PIN # Width: 3b, Description: Default Boot Source
       # - ISP_PIN, (0): ISP pin source
       # - FLEXSPI_FLASH, (1): FlexSPI flash
       # - SERIAL_ISP_BOOT, (2): Serial ISP boot
@@ -41,13 +41,13 @@ settings: # The CMPA registers configuration.
       # - PKC_RAM, (1): Zeroize PKC RAM
       # - A0_RAM, (2): Zeroize low power RAM (AO_RAM)
       # - BOTH_A0_AND_PKC_RAM, (3): Zeroize both AO_RAM and PKC_RAM
-      ASRT_FATAL: '0x0' # Width: 1b, Description: ASRT_FATAL
-      ASRT_RBF: '0x0' # Width: 1b, Description: ASRT_RBF
-      ASRT_ISPF: '0x0' # Width: 1b, Description: ASRT_ISPF
-      BOOT_FAILURE_PIN: '0x00' # Width: 8b, Description: Boot Failure Pin
+      ASRT_FATAL: "0x0" # Width: 1b, Description: ASRT_FATAL
+      ASRT_RBF: "0x0" # Width: 1b, Description: ASRT_RBF
+      ASRT_ISPF: "0x0" # Width: 1b, Description: ASRT_ISPF
+      BOOT_FAILURE_PIN: "0x00" # Width: 8b, Description: Boot Failure Pin
   SPI_CAN_CFG: # SPI CAN Configuration
-    bitfields:  # The register bitfields
-      SPI_RECOVERY_BOOT_EN: '0x0'  # Width: 2b, Description: SPI Recovery Boot Enable
+    bitfields: # The register bitfields
+      SPI_RECOVERY_BOOT_EN: "0x0" # Width: 2b, Description: SPI Recovery Boot Enable
       SPI_REC_IF: HSPI # Width: 3b, Description: SPI Recovery Interface
       # - HSPI, (0): HSPI P1_3-MISO, P0_26-MOSI, P1_1-SSEL1, P1_2-SCK
       # - FC0, (1): FC0 P0_30-MISO, P0_24-MOSI, P0_31-SSEL0, P0_28-SCK
@@ -75,16 +75,16 @@ settings: # The CMPA registers configuration.
       # - RESERVED_5, (14): Reserved.
       # - RESERVED_6, (15): Reserved.
   USB_ID: # USB Identifiers
-    bitfields:  # The register bitfields
-      USB_VENDOR_ID: '0x0000'  # Width: 16b, Description: USB Vendor ID
-      USB_PRODUCT_ID: '0x0000' # Width: 16b, Description: USB Product ID
+    bitfields: # The register bitfields
+      USB_VENDOR_ID: "0x0000" # Width: 16b, Description: USB Vendor ID
+      USB_PRODUCT_ID: "0x0000" # Width: 16b, Description: USB Product ID
   BOOT_TIMEOUT: # Boot Timeout
-    bitfields:  # The register bitfields
-      POWERDOWN_TIMEOUT_SECS: '0x0000'  # Width: 16b, Description: Powerdown Timeout
-      WDOG_TIMEOUT_SECS: '0x0000' # Width: 16b, Description: WDOG Timeout
+    bitfields: # The register bitfields
+      POWERDOWN_TIMEOUT_SECS: "0x0000" # Width: 16b, Description: Powerdown Timeout
+      WDOG_TIMEOUT_SECS: "0x0000" # Width: 16b, Description: WDOG Timeout
   DCFG_CC_SOCU_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned
-    bitfields:  # The register bitfields
-      NIDEN: USE_DAP  # Width: 1b, Description: Non-secure Non-invasive Debug Enable
+    bitfields: # The register bitfields
+      NIDEN: USE_DAP # Width: 1b, Description: Non-secure Non-invasive Debug Enable
       # - USE_DAP, (0): Use DAP to enable
       # - FIXED_STATE, (1): Fixed state
       DBGEN: USE_DAP # Width: 1b, Description: Non-secure Debug Enable
@@ -108,10 +108,10 @@ settings: # The CMPA registers configuration.
       UUID_CHECK: DISABLED # Width: 1b, Description: Enforce UUID match during Debug authentication.
       # - DISABLED, (0): Disabled
       # - ENABLED, (1): Enabled
-      INVERSE_VALUE: '0x0000' # Width: 16b, Description: Inverse Value
+      INVERSE_VALUE: "0x0000" # Width: 16b, Description: Inverse Value
   DCFG_CC_SOCU_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter
-    bitfields:  # The register bitfields
-      NIDEN: DISABLED  # Width: 1b, Description: Non Secure Non-invasive Debug Fixed State
+    bitfields: # The register bitfields
+      NIDEN: DISABLED # Width: 1b, Description: Non Secure Non-invasive Debug Fixed State
       # - DISABLED, (0): Disabled
       # - ENABLED, (1): Enabled
       DBGEN: DISABLED # Width: 1b, Description: Non-secure Debug Fixed State
@@ -132,13 +132,13 @@ settings: # The CMPA registers configuration.
       ME_CMD_EN: DISABLED # Width: 1b, Description: Flash Mass Erase Command Fixed State
       # - DISABLED, (0): Disabled
       # - ENABLED, (1): Enabled
-      INVERSE_VALUE: '0x0000' # Width: 16b, Description: Inverse Value
+      INVERSE_VALUE: "0x0000" # Width: 16b, Description: Inverse Value
   VENDOR_USAGE: # Vendor Usage
-    bitfields:  # The register bitfields
-      VENDOR_USAGE: '0x0000'  # Width: 16b, Description: Vendor Usage [31:16]
+    bitfields: # The register bitfields
+      VENDOR_USAGE: "0x0000" # Width: 16b, Description: Vendor Usage [31:16]
   SECURE_BOOT_CFG: # Secure Boot Configuration
-    bitfields:  # The register bitfields
-      ENF_CNSA: ECC_P256  # Width: 2b, Description: Enforce CNSA suite algorithm.
+    bitfields: # The register bitfields
+      ENF_CNSA: ECC_P256 # Width: 2b, Description: Enforce CNSA suite algorithm.
       # - ECC_P256, (0): ECC P-256 keys
       # - ECC_P384_0, (1): ECC P-384 keys, SHA384 and AES256
       # - ECC_P384_1, (2): ECC P-384 keys, SHA384 and AES256
@@ -209,8 +209,8 @@ settings: # The CMPA registers configuration.
       # - ECDSA_CHECK_IMAGE_0, (2): Do complete ECDSA checking of signed images. (internal flash, ECDSA signed)
       # - ECDSA_CHECK_IMAGE_1, (3): Do complete ECDSA checking of signed images. (internal flash, ECDSA signed)
   PRINCE_CONFIG: # Prince Configuration
-    bitfields:  # The register bitfields
-      LOCK_REG0: NOT_LOCKED  # Width: 2b, Description: Lock Region 0
+    bitfields: # The register bitfields
+      LOCK_REG0: NOT_LOCKED # Width: 2b, Description: Lock Region 0
       # - NOT_LOCKED, (0): Region is not locked.
       # - LOCKED_0, (1): Region is locked.
       # - LOCKED_1, (2): Region is locked.
@@ -241,40 +241,40 @@ settings: # The CMPA registers configuration.
       # - ENABLE_1, (2): Check is enabled
       # - ENABLE_2, (3): Check is enabled
   PRINCE_SR_0: # Region 0, Sub-region Enable
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   PRINCE_SR_1: # Region 1, Sub-region Enable
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   PRINCE_SR_2: # Region 2, Sub-region Enable
-    value: '0x00000000'  # The value width: 32b
-  XTAL_32KHZ_CAPABANK_TRIM: # Xtal 32kHz Capabank Triming
-    bitfields:  # The register bitfields
-      TRIM_VALID: NOT_VALID  # Width: 1b, Description: Trim Valid
+    value: "0x00000000" # The value width: 32b
+  XTAL_32KHZ_CAPABANK_TRIM: # Xtal 32kHz Capabank Trimming
+    bitfields: # The register bitfields
+      TRIM_VALID: NOT_VALID # Width: 1b, Description: Trim Valid
       # - NOT_VALID, (0): Capa Bank trimmings not valid. Default trimmings value are used.
       # - VALID, (1): Capa Bank trimmings valid.
-      XTAL_LOAD_CAP_IEC_PF_X100: '0x00' # Width: 10b, Description: XTAL LOAD CAP IEC PF X100
-      PCB_XIN_PARA_CAP_PF_X100: '0x00' # Width: 10b, Description: PCB XIN PARA CAP PF X100
-      PCB_XOUT_PARA_CAP_PF_X100: '0x00' # Width: 10b, Description: PCB XOUT PARA CAP PF X100
+      XTAL_LOAD_CAP_IEC_PF_X100: "0x00" # Width: 10b, Description: XTAL LOAD CAP IEC PF X100
+      PCB_XIN_PARA_CAP_PF_X100: "0x00" # Width: 10b, Description: PCB XIN PARA CAP PF X100
+      PCB_XOUT_PARA_CAP_PF_X100: "0x00" # Width: 10b, Description: PCB XOUT PARA CAP PF X100
   XTAL_16MHZ_CAPABANK_TRIM: # Xtal 16MHz Capabank Trimming
-    bitfields:  # The register bitfields
-      TRIM_VALID: NOT_VALID  # Width: 1b, Description: Trim Valid
+    bitfields: # The register bitfields
+      TRIM_VALID: NOT_VALID # Width: 1b, Description: Trim Valid
       # - NOT_VALID, (0): Capa Bank trimmings not valid. Default trimmings value are used.
       # - VALID, (1): Capa Bank trimmings valid.
-      XTAL_LOAD_CAP_IEC_PF_X100: '0x00' # Width: 10b, Description: XTAL LOAD CAP IEC PF X100
-      PCB_XIN_PARA_CAP_PF_X100: '0x00' # Width: 10b, Description: PCB XIN PARA CAP PF X100
-      PCB_XOUT_PARA_CAP_PF_X100: '0x00' # Width: 10b, Description: PCB XOUT PARA CAP PF X100
+      XTAL_LOAD_CAP_IEC_PF_X100: "0x00" # Width: 10b, Description: XTAL LOAD CAP IEC PF X100
+      PCB_XIN_PARA_CAP_PF_X100: "0x00" # Width: 10b, Description: PCB XIN PARA CAP PF X100
+      PCB_XOUT_PARA_CAP_PF_X100: "0x00" # Width: 10b, Description: PCB XOUT PARA CAP PF X100
   FLASH_REMAP_SIZE: # Flash Remap Size
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   FLASH_REMAP_OFFSET: # Flash Remap Offset
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   PRINCE_XOM_0: # Prince eXecute-Only-Memory (XOM) 0
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   PRINCE_XOM_1: # Prince eXecute-Only-Memory (XOM) 1
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   PRINCE_XOM_2: # Prince eXecute-Only-Memory (XOM) 2
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   RoTK_USAGE: # Root of Trust Key Usage
-    bitfields:  # The register bitfields
-      RoTK0_Usage: USABLE  # Width: 3b, Description: RoTK0_Usage
+    bitfields: # The register bitfields
+      RoTK0_Usage: USABLE # Width: 3b, Description: RoTK0_Usage
       # - USABLE, (0): Usable as debug CA, image CA, FW CA, image and FW key.
       # - DEBUG, (1): Usable as debug CA only.
       # - IMG_BOOT_AND_FW, (2): Usable as image (boot and FW) CA only.
@@ -283,14 +283,14 @@ settings: # The CMPA registers configuration.
       # - BOOT_IMAGE_KEY, (5): Usable as boot image key only.
       # - FW_UPDATE_IMG_KEY, (6): Usable as FW update image key only.
       # - KEY_SLOT_NOT_USED, (7): Key slot is not used.
-      RoTK1_Usage: '0x0' # Width: 3b, Description: RoTK1_Usage
-      RoTK2_Usage: '0x0' # Width: 3b, Description: RoTK2_Usage
-      RoTK3_Usage: '0x0' # Width: 3b, Description: RoTK3_Usage
+      RoTK1_Usage: "0x0" # Width: 3b, Description: RoTK1_Usage
+      RoTK2_Usage: "0x0" # Width: 3b, Description: RoTK2_Usage
+      RoTK3_Usage: "0x0" # Width: 3b, Description: RoTK3_Usage
   ROTKH: # ROTKH field is compounded by 12 32-bit fields and contains Root key table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over four OEM public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest.
-    value: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'  # The value width: 384b
+    value: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" # The value width: 384b
   FLEXSPI_BOOT_CFG0: # FlexSPI Boot Configuration 0
-    bitfields:  # The register bitfields
-      FLEXSPI_AUTO_PROBE_EN: DISABLE  # Width: 1b, Description: FLEXSPI_AUTO_PROBE_EN
+    bitfields: # The register bitfields
+      FLEXSPI_AUTO_PROBE_EN: DISABLE # Width: 1b, Description: FLEXSPI_AUTO_PROBE_EN
       # - DISABLE, (0): Disable
       # - ENABLE, (1): Enable
       FLEXSPI_PROBE_TYPE: QUADSPI_NOR # Width: 3b, Description: FLEXSPI_PROBE_TYPE
@@ -311,7 +311,7 @@ settings: # The CMPA registers configuration.
       # - FlexSPI_DDR_MICRON, (5): FlexSPI_DDR_MICRON
       # - RESERVED_1, (6): Reserved.
       # - RESERVED_2, (7): Reserved.
-      FLEXSPI_DUMMY_CYCLES: '0x0' # Width: 4b, Description: FLEXSPI_DUMMY_CYCLES
+      FLEXSPI_DUMMY_CYCLES: "0x0" # Width: 4b, Description: FLEXSPI_DUMMY_CYCLES
       FLEXSPI_FREQUENCY: MHZ_50 # Width: 3b, Description: FLEXSPI_FREQUENCY
       # - MHZ_50, (0): 50 Mhz
       # - MHZ_60, (1): 60 Mhz
@@ -324,8 +324,8 @@ settings: # The CMPA registers configuration.
       FLEXSPI_RESET_ENABLE: NO_RESET # Width: 1b, Description: FLEXSPI_RESET_ENABLE
       # - NO_RESET, (0): No Reset(O/QSPI device reset pin is not connected or available.)
       # - ENABLE_RESET, (1): Enable Reset(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)
-      FLEXSPI_RESET_GPIO_PORT: '0x0' # Width: 3b, Description: FLEXSPI_RESET_ENABLE
-      FLEXSPI_RESET_GPIO_PIN: '0x0' # Width: 5b, Description: FLEXSPI_RESET_GPIO_PIN
+      FLEXSPI_RESET_GPIO_PORT: "0x0" # Width: 3b, Description: FLEXSPI_RESET_ENABLE
+      FLEXSPI_RESET_GPIO_PIN: "0x0" # Width: 5b, Description: FLEXSPI_RESET_GPIO_PIN
       FLEXSPI_HOLD_TIME: WAIT_500_MICROSECS # Width: 2b, Description: FLEXSPI_HOLD TIME
       # - WAIT_500_MICROSECS, (0): Wait for 500 micro seconds
       # - WAIT_1_MILISECS, (1): Wait for 1 mili seconds
@@ -352,9 +352,9 @@ settings: # The CMPA registers configuration.
       # - STANDARD, (0): Standard slew rate
       # - FASTER, (1): Faster slew rate
   FLEXSPI_BOOT_CFG1: # FlexSPI Boot Configuration 1
-    bitfields:  # The register bitfields
-      FLEXSPI_DELAY_CELL_NUM: '0x0'  # Width: 7b, Description: FLEXSPI_DELAY_CELL_NUM
-      FLEXSPI_IMAGE_OFFSET: '0x00' # Width: 10b, Description: FLEXSPI_IMAGE_OFFSET
+    bitfields: # The register bitfields
+      FLEXSPI_DELAY_CELL_NUM: "0x0" # Width: 7b, Description: FLEXSPI_DELAY_CELL_NUM
+      FLEXSPI_IMAGE_OFFSET: "0x00" # Width: 10b, Description: FLEXSPI_IMAGE_OFFSET
       FLEXSPI_REMAP_IMAGE_SIZE: SIZE # Width: 4b, Description: FLEXSPI_REMAP_IMAGE_SIZE
       # - SIZE, (0): SIZE
       # - SIZE_1MB, (1): SIZE_1MB Size of remapped area is 1MByte.
@@ -373,182 +373,182 @@ settings: # The CMPA registers configuration.
       # - SIZE_512KB, (14): SIZE_512KB Size of remapped area is 512KByte.
       # - SIZE_768KB, (15): SIZE_768KB Size of remapped area is 768KByte.
   IPED0_START: # IPED region 0 Start
-    bitfields:  # The register bitfields
-      ENABLE_REG0: DISABLED  # Width: 2b, Description: ENABLE_REG0
+    bitfields: # The register bitfields
+      ENABLE_REG0: DISABLED # Width: 2b, Description: ENABLE_REG0
       # - DISABLED, (0): Region is disabled
       # - ENABLED, (1): Region is enabled
       # - ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
       # - ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
-      IPED_REG0_START_ADDR: '0x000000' # Width: 24b, Description: IPED_REG0_START_ADDR
+      IPED_REG0_START_ADDR: "0x000000" # Width: 24b, Description: IPED_REG0_START_ADDR
   IPED0_END: # IPED region 0 End
-    bitfields:  # The register bitfields
-      IPED_REG0_END_ADDR: '0x000000'  # Width: 24b, Description: IPED_REG0_END_ADDR
+    bitfields: # The register bitfields
+      IPED_REG0_END_ADDR: "0x000000" # Width: 24b, Description: IPED_REG0_END_ADDR
   IPED1_START: # IPED region 1 Start
-    bitfields:  # The register bitfields
-      ENABLE_REG1: DISABLED  # Width: 2b, Description: ENABLE_REG1
+    bitfields: # The register bitfields
+      ENABLE_REG1: DISABLED # Width: 2b, Description: ENABLE_REG1
       # - DISABLED, (0): Region is disabled
       # - ENABLED, (1): Region is enabled
       # - ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
       # - ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
-      IPED_REG1_START_ADDR: '0x000000' # Width: 24b, Description: IPED_REG1_START_ADDR
+      IPED_REG1_START_ADDR: "0x000000" # Width: 24b, Description: IPED_REG1_START_ADDR
   IPED1_END: # IPED region 1 End
-    bitfields:  # The register bitfields
-      IPED_REG1_END_ADDR: '0x000000'  # Width: 24b, Description: IPED_REG1_END_ADDR
+    bitfields: # The register bitfields
+      IPED_REG1_END_ADDR: "0x000000" # Width: 24b, Description: IPED_REG1_END_ADDR
   IPED2_START: # IPED region 2 Start
-    bitfields:  # The register bitfields
-      ENABLE_REG2: DISABLED  # Width: 2b, Description: ENABLE_REG2
+    bitfields: # The register bitfields
+      ENABLE_REG2: DISABLED # Width: 2b, Description: ENABLE_REG2
       # - DISABLED, (0): Region is disabled
       # - ENABLED, (1): Region is enabled
       # - ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
       # - ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
-      IPED_REG2_START_ADDR: '0x000000' # Width: 24b, Description: IPED_REG2_START_ADDR
+      IPED_REG2_START_ADDR: "0x000000" # Width: 24b, Description: IPED_REG2_START_ADDR
   IPED2_END: # IPED region 2 End
-    bitfields:  # The register bitfields
-      IPED_REG2_END_ADDR: '0x000000'  # Width: 24b, Description: IPED_REG2_END_ADDR
+    bitfields: # The register bitfields
+      IPED_REG2_END_ADDR: "0x000000" # Width: 24b, Description: IPED_REG2_END_ADDR
   IPED3_START: # IPED region 3 Start
-    bitfields:  # The register bitfields
-      ENABLE_REG3: DISABLED  # Width: 2b, Description: ENABLE_REG3
+    bitfields: # The register bitfields
+      ENABLE_REG3: DISABLED # Width: 2b, Description: ENABLE_REG3
       # - DISABLED, (0): Region is disabled
       # - ENABLED, (1): Region is enabled
       # - ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
       # - ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
-      IPED_REG3_START_ADDR: '0x000000' # Width: 24b, Description: IPED_REG3_START_ADDR
+      IPED_REG3_START_ADDR: "0x000000" # Width: 24b, Description: IPED_REG3_START_ADDR
   IPED3_END: # IPED region 3 End
-    bitfields:  # The register bitfields
-      IPED_REG3_END_ADDR: '0x000000'  # Width: 24b, Description: IPED_REG3_END_ADDR
+    bitfields: # The register bitfields
+      IPED_REG3_END_ADDR: "0x000000" # Width: 24b, Description: IPED_REG3_END_ADDR
   QUICK_SET_GPIO_0: # Quick Set to Drive GPIO 0 port pins high
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   QUICK_CLR_GPIO_0: # Quick Clear to Drive GPIO 0 port pins low
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   QUICK_SET_GPIO_1: # Quick Set to Drive GPIO 1 port pins high
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   QUICK_CLR_GPIO_1: # Quick Clear to Drive GPIO 1 port pins low
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED0: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED1: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED2: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED3: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED4: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED5: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED6: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED7: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED8: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED9: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED10: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED11: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED12: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED13: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED14: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED15: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED16: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED17: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED18: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED19: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED20: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED21: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED22: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED23: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED24: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED25: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED26: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED27: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED28: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED29: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED30: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED31: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED32: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED33: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED34: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED35: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED36: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED37: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED38: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED39: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED40: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED41: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED42: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED43: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED44: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED45: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED46: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED47: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED48: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED49: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED50: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED51: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED52: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED53: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED54: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED55: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED56: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED57: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED58: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CUSTOMER_DEFINED59: # Customer Defined (Programable through ROM API)
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CMPA_CMAC0: # CMPA CMAC 0
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CMPA_CMAC1: # CMPA CMAC 1
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CMPA_CMAC2: # CMPA CMAC 2
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b
   CMPA_CMAC3: # CMPA CMAC 3
-    value: '0x00000000'  # The value width: 32b
+    value: "0x00000000" # The value width: 32b

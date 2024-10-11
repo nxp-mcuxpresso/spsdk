@@ -11,9 +11,9 @@ from abc import abstractmethod
 from struct import calcsize, pack, unpack_from
 from typing import Mapping, Optional, Type
 
-from crcmod.predefined import mkPredefinedCrcFun
 from typing_extensions import Self
 
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.misc import SecBootBlckSize
@@ -304,8 +304,8 @@ class CmdLoad(CmdBaseClass):
             self.data = SecBootBlckSize.align_block_fill_random(self.data)
         # update header
         self._header.count = len(self.data)
-        crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
-        self._header.data = crc32_function(self.data, 0xFFFFFFFF)
+        crc_ob = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        self._header.data = crc_ob.calculate(self.data)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -321,8 +321,8 @@ class CmdLoad(CmdBaseClass):
             raise SPSDKError("Incorrect header tag")
         header_count = SecBootBlckSize.align(header.count)
         cmd_data = data[CmdHeader.SIZE : CmdHeader.SIZE + header_count]
-        crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
-        if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        if header.data != crc_obj.calculate(cmd_data):
             raise SPSDKError("Invalid CRC in the command header")
         device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
         group_id = (header.flags & cls.ROM_MEM_GROUP_ID_MASK) >> cls.ROM_MEM_GROUP_ID_SHIFT

@@ -1,0 +1,28 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: False # Include this MCU in generated documentation
+  purpose: i.MX 8 Applications Processors
+  spsdk_predecessor_name: mx8mn
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-8-applications-processors/i-mx-8m-nano-family-arm-cortex-a53-cortex-m7:i.MX8MNANO
+  isp:
+    rom:
+      protocol: sdps
+      interfaces: ["usb"]
+      usb:
+        vid: 0x1FC9
+        pid: 0x013E
+      protocol_params:
+        no_cmd: True
+        hid_ep1: True
+        hid_pack_size: 1020
+
+features: {}

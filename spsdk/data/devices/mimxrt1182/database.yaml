@@ -1,0 +1,69 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mimxrt1189
+
+# General MCU information
+info:
+  memory_map:
+    code-tcm:
+      start_int: 0x0FFE0000
+      size_int: 0x20000
+      external: false
+      non_xip_type: int_ram
+    system-tcm:
+      start_int: 0x20000000
+      size_int: 0x20000
+      external: false
+      non_xip_type: int_ram
+    ocram1_ns:
+      start_int: 0x20480000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    ocram1_s:
+      start_int: 0x30480000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    ocram2_ns:
+      start_int: 0x20500000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    ocram2_s:
+      start_int: 0x30500000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    flexspi1_ns:
+      start_int: 0x28000000
+      size_int: 0x08000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+      mirror_of: flexspi1_s
+    flexspi1_s:
+      start_int: 0x38000000
+      size_int: 0x08000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+    flexspi2_ns:
+      start_int: 0x04000000
+      size_int: 0x04000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+      mirror_of: flexspi2_s
+      evk_default: true
+    flexspi2_s:
+      start_int: 0x14000000
+      size_int: 0x04000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+  isp:
+    rom:
+      protocol: mboot
+      interfaces: [uart]
+    flashloader:
+      protocol: mboot
+      interfaces: [uart]

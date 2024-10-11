@@ -7,7 +7,7 @@
 
 """CAN Mboot interface implementation."""
 import logging
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -41,7 +41,7 @@ class MbootCANInterface(MbootSerialProtocol):
         timeout: Optional[int] = None,
         txid: Optional[int] = None,
         rxid: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected UART devices.
 
         Returns list of CAN interfaces with devices that respond to PING command.

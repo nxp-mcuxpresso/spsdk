@@ -1,7 +1,7 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ================================  Debug Credential file template for mcxn9xx family.  ================================
+# ================================  Debug Credential file template for mcxn946 family.  ================================
 
 # -------------------------------------------------------- Note --------------------------------------------------------
 
@@ -59,9 +59,9 @@
 # ======================================================================================================================
 # -----------------------------------===== MCU family [Conditionally required] =====------------------------------------
 # Description: MCU family name.
-# Possible options: <k32w1xx, kw45xx, lpc55s0x, lpc55s1x, lpc55s2x, lpc55s3x, lpc55s6x, mcxn23x, mcxn54x, mcxn94x,
-# mcxn9xx, mx8ulp, mx93, mx95, rt118x, rt5xx, rt6xx, rw61x>
-family: mcxn9xx
+# Possible options: <k32w148, kw45b41z8, lpc55s06, lpc55s16, lpc55s28, lpc55s36, lpc55s69, mcxn236, mcxn546, mcxn946,
+# mcxn946, mcxw7116, mimx8ulp, mimx9352, mimx9596, nhs52s04, mimxrt1189, mimxrt595s, mimxrt685s, rw612>
+family: mcxn946
 # -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
 # Description: If needed this could be used to specify silicon revision of device.
 revision: latest
@@ -103,9 +103,6 @@ rot_id: 0
 # Description: A user-owned key pair. The public part of the key is associated with a DC, the private part is held by
 # the user and used to produce signatures during authentication.
 dck: ../_data/keys/ecc256/dck_ecc256.pub
-# ======================================================================================================================
-#                                         == Debug Credential Signature part ==
-# ======================================================================================================================
 # ----------------------------===== RoT signature private key [Conditionally required] =====----------------------------
 # Description: Private key for the RoT meta chosen by rot_id to sign the image.
 rotk: ../_data/keys/ecc256/srk0_ecc256.pem

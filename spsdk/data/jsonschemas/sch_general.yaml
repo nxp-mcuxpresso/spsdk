@@ -1,0 +1,20 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+family:
+  type: object
+  required:
+    - family
+  properties:
+    family:
+      type: string
+      title: The chip family name
+      description:
+        NXP chip family identifier.
+      template_value: mimxrt1189
+    revision:
+      type: string
+      title: MCU revision
+      description: Revision of silicon. The 'latest' name, means most current revision.
+      template_value: latest

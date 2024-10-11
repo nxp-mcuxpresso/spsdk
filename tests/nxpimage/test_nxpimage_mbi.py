@@ -13,11 +13,11 @@ import shutil
 
 import pytest
 import yaml
-from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import create_mbi_class, get_mbi_class
@@ -66,6 +66,8 @@ mbi_basic_tests = [
     ("mb_xip_crc_version.yaml", "k32w1xx"),
     ("mb_xip_plain.yaml", "mc56f818xx"),
     ("mb_xip_plain.yaml", "mcxn9xx"),
+    ("mb_xip_plain.yaml", "rt7xx"),
+    ("mb_xip_crc.yaml", "rt7xx"),
 ]
 
 mbi_signed_tests = [
@@ -73,6 +75,8 @@ mbi_signed_tests = [
     ("mb_xip_256_none_no_tz.yaml", "lpc55s3x", None),
     ("mb_xip_384_256.yaml", "lpc55s3x", None),
     ("mb_xip_384_384.yaml", "lpc55s3x", None),
+    ("mb_xip_384_384_sd.yaml", "kw45xx", "sha384"),
+    ("mb_xip_384_384_auto_digest.yaml", "kw45xx", "sha384"),
     ("mb_ext_xip_signed.yaml", "lpc55s3x", None),
     ("mb_xip_256_none.yaml", "mcxn9xx", None),
     ("mb_xip_256_none_no_tz.yaml", "mcxn9xx", None),
@@ -80,6 +84,7 @@ mbi_signed_tests = [
     ("mb_xip_384_384.yaml", "mcxn9xx", None),
     ("mb_xip_384_384_recovery_crctest.yaml", "mcxn9xx", None),
     ("mb_xip_384_384_recovery.yaml", "mcxn9xx", None),
+    ("mb_xip_256_none_no_tz.yaml", "rt7xx", None),
 ]
 
 mbi_legacy_signed_tests = [
@@ -204,7 +209,7 @@ def test_nxpimage_mbi_signed(
         mbi_cls = get_mbi_class(load_configuration(new_config))
         parsed_mbi = mbi_cls.parse(family=device, data=new_data)
         assert hasattr(parsed_mbi, "cert_block")
-        cert_block_v3: CertBlockV21 = parsed_mbi.cert_block
+        cert_block_v2: CertBlockV21 = parsed_mbi.cert_block
         cert_offset = Mbi_MixinIvt.get_cert_block_offset(new_data)
 
         if sign_digest:
@@ -232,17 +237,14 @@ def test_nxpimage_mbi_signed(
         if hasattr(parsed_mbi, "manifest") and isinstance(
             parsed_mbi.manifest, MasterBootImageManifestCrc
         ):
+            crc_ob = from_crc_algorithm(CrcAlg.CRC32_MPEG)
             # Check CRC
             assert (
-                mkPredefinedCrcFun("crc-32-mpeg")(ref_data[:-4]).to_bytes(
-                    4, Endianness.LITTLE.value
-                )
+                crc_ob.calculate(ref_data[:-4]).to_bytes(4, Endianness.LITTLE.value)
                 == ref_data[-4:]
             )
             assert (
-                mkPredefinedCrcFun("crc-32-mpeg")(new_data[:-4]).to_bytes(
-                    4, Endianness.LITTLE.value
-                )
+                crc_ob.calculate(new_data[:-4]).to_bytes(4, Endianness.LITTLE.value)
                 == new_data[-4:]
             )
             # Remove CRC
@@ -250,14 +252,14 @@ def test_nxpimage_mbi_signed(
             new_data = new_data[:-4]
 
         # And check the data part
-        if cert_block_v3.isk_certificate:
+        if cert_block_v2.isk_certificate:
             isk_sign_offset = (
                 cert_offset
-                + cert_block_v3.expected_size
-                - cert_block_v3.isk_certificate.expected_size
-                + cert_block_v3.isk_certificate.signature_offset
+                + cert_block_v2.expected_size
+                - cert_block_v2.isk_certificate.expected_size
+                + cert_block_v2.isk_certificate.signature_offset
             )
-            isk_end_of_signature = isk_sign_offset + len(cert_block_v3.isk_certificate.signature)
+            isk_end_of_signature = isk_sign_offset + len(cert_block_v2.isk_certificate.signature)
             assert ref_data[:isk_sign_offset] == new_data[:isk_sign_offset]
             assert ref_data[isk_end_of_signature:] == new_data[isk_end_of_signature:]
 
@@ -265,16 +267,16 @@ def test_nxpimage_mbi_signed(
 
             # with binary cert block with don't have access to root private key
             # reconstruct the root public key from cert block
-            isk_key = PublicKeyEcc.recreate_from_data(cert_block_v3.root_key_record.root_public_key)
+            isk_key = PublicKeyEcc.recreate_from_data(cert_block_v2.root_key_record.root_public_key)
             isk_offset = (
                 cert_offset
-                + cert_block_v3.expected_size
-                - cert_block_v3.isk_certificate.expected_size
+                + cert_block_v2.expected_size
+                - cert_block_v2.isk_certificate.expected_size
             )
             assert isk_key.verify_signature(
-                cert_block_v3.isk_certificate.signature,
+                cert_block_v2.isk_certificate.signature,
                 new_data[
-                    cert_offset + 12 : isk_offset + cert_block_v3.isk_certificate.signature_offset
+                    cert_offset + 12 : isk_offset + cert_block_v2.isk_certificate.signature_offset
                 ],
             )
 
@@ -738,24 +740,24 @@ def test_mbi_lpc55s3x_invalid():
 @pytest.mark.parametrize(
     "family",
     [
-        "lpc55s0x",
-        "lpc550x",
-        "lpc55s1x",
-        "lpc551x",
-        "lpc55s2x",
-        "lpc552x",
-        "lpc55s6x",
-        "nhs52sxx",
-        "rt5xx",
-        "rt6xx",
-        "lpc55s3x",
-        "kw45xx",
-        "k32w1xx",
-        "lpc553x",
-        "mc56f818xx",
-        "mwct2xd2",
-        "mcxn9xx",
-        "rw61x",
+        "lpc55s06",
+        "lpc5506",
+        "lpc55s16",
+        "lpc5516",
+        "lpc55s26",
+        "lpc5528",
+        "lpc55s69",
+        "nhs52s04",
+        "mimxrt595s",
+        "mimxrt685s",
+        "lpc55s36",
+        "kw45b41z8",
+        "k32w148",
+        "lpc5536",
+        "mc56f81868",
+        "mwct20d2",
+        "mcxn947",
+        "rw612",
     ],
 )
 def test_mbi_get_templates(cli_runner: CliRunner, tmpdir, family):
@@ -811,6 +813,11 @@ def test_mbi_get_templates(cli_runner: CliRunner, tmpdir, family):
         (
             "mc56f818xx",
             "mc56f818xx_int_xip_signed.yaml",
+            ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
+        ),
+        (
+            "mc56f818xx",
+            "mc56f818xx_int_xip_signed_header.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
     ],

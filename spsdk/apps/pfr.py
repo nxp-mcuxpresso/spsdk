@@ -9,7 +9,7 @@
 
 import logging
 import sys
-from typing import Callable, Optional, Tuple, Type, Union
+from typing import Callable, Optional, Type, Union
 
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
@@ -20,18 +20,21 @@ from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     spsdk_apps_common_options,
     spsdk_config_option,
+    spsdk_family_option,
     spsdk_mboot_interface,
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, format_raw_data
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
+from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
 from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea, get_ifr_pfr_class
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.crypto.cert_blocks import get_keys_or_rotkh_from_certblock_config
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import (
     get_printable_path,
     load_binary,
@@ -54,7 +57,8 @@ def _store_output(
     if path is None:
         click.echo(data)
     else:
-        click.echo(f"Result has been stored in: {get_printable_path(path)}")
+        if msg is None:
+            click.echo(f"Result has been stored in: {get_printable_path(path)}")
         write_file(data, path=path, mode=mode)
 
 
@@ -72,13 +76,6 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
             "--revision",
             help="Chip revision; if not specified, most recent one will be used",
             default="latest",
-        )(options)
-        options = click.option(
-            "-f",
-            "--family",
-            type=click.Choice(CMPA.get_supported_families(), case_sensitive=False),
-            help="Device to use",
-            required=True,
         )(options)
         if not no_type:
             options = click.option(
@@ -103,6 +100,7 @@ def main(log_level: int) -> int:
 
 
 @main.command(name="get-template", no_args_is_help=True)
+@spsdk_family_option(CMPA.get_supported_families())
 @pfr_device_type_options()
 @spsdk_output_option(force=True)
 @click.option(
@@ -125,6 +123,7 @@ def get_template(family: str, revision: str, area: str, output: str, full: bool)
 
 
 @main.command(name="parse-binary", no_args_is_help=True)
+@spsdk_family_option(CMPA.get_supported_families())
 @pfr_device_type_options()
 @spsdk_output_option(required=False)
 @click.option(
@@ -170,7 +169,9 @@ def parse_binary(
         area=area,
         show_diff=show_diff,
     )
-    _store_output(yaml_data, output, msg=f"Success. (PFR: {binary} has been parsed.")
+    _store_output(
+        yaml_data, output, msg=f"Success. (PFR: {get_printable_path(binary)} has been parsed."
+    )
 
 
 def _parse_binary_data(
@@ -242,7 +243,7 @@ def generate_binary(
     add_seal: bool,
     calc_inverse: bool,
     rot_config: str,
-    secret_file: Tuple[str],
+    secret_file: tuple[str],
     password: str,
     ignore: bool,
 ) -> None:
@@ -266,7 +267,9 @@ def generate_binary(
         family = cfg.get("family", cfg.get("device", "Unknown"))
 
     pfr_obj = BaseConfigArea.load_from_config(cfg)
-    if family in Pfrc.get_supported_families():
+    pfrc_devices = Pfrc.get_supported_families()
+    pfrc_devices += list(DatabaseManager().quick_info.devices.get_predecessors(pfrc_devices).keys())
+    if family in pfrc_devices:
         try:
             pfrc = Pfrc(
                 cmpa=pfr_obj if area.lower() == "cmpa" else None,  # type: ignore
@@ -298,6 +301,7 @@ def generate_binary(
 
 @main.command(name="write", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
+@spsdk_family_option(CMPA.get_supported_families())
 @pfr_device_type_options()
 @click.option(
     "-b",
@@ -341,7 +345,7 @@ def write(
         if family != pfr_obj.family:
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
         data = pfr_obj.export()
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, pfr_obj.DB_SUB_KEYS + ["address"])
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "address"])
     pfr_page_length = pfr_obj.BINARY_SIZE
 
     click.echo(f"{pfr_obj.__class__.__name__} page address on {family} is {pfr_page_address:#x}")
@@ -350,15 +354,17 @@ def write(
         raise SPSDKError(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
-    with McuBoot(interface=interface) as mboot:
-        mboot.write_memory(address=pfr_page_address, data=data)
-    click.echo(
-        f"{pfr_obj.__class__.__name__} data {'written to device.' if mboot.status_code == 0 else 'write failed!'}"
-    )
+    with McuBoot(interface=interface, cmd_exception=True) as mboot:
+        try:
+            mboot.write_memory(address=pfr_page_address, data=data)
+        except McuBootError as exc:
+            raise SPSDKAppError(f"{pfr_obj.__class__.__name__} data write failed: {exc}") from exc
+    click.echo(f"{pfr_obj.__class__.__name__} data written to device.")
 
 
 @main.command(name="read", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
+@spsdk_family_option(CMPA.get_supported_families())
 @pfr_device_type_options()
 @spsdk_output_option(
     required=False,
@@ -402,7 +408,7 @@ def read(
             " In case of debugging those values check the binary data."
         )
     pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, pfr_obj.DB_SUB_KEYS + ["address"])
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "address"])
     pfr_page_length = pfr_obj.BINARY_SIZE
     pfr_page_name = pfr_obj.__class__.__name__
 
@@ -415,7 +421,7 @@ def read(
 
     if output:
         write_file(data, output, "wb")
-        click.echo(f"{pfr_page_name} data stored to {output}")
+        click.echo(f"{pfr_page_name} data stored to {get_printable_path(output)}")
     if yaml_output:
         yaml_data = _parse_binary_data(
             data=data,
@@ -425,13 +431,14 @@ def read(
             show_diff=show_diff,
         )
         write_file(yaml_data, yaml_output)
-        click.echo(f"Parsed config stored to {yaml_output}")
+        click.echo(f"Parsed config stored to {get_printable_path(yaml_output)}")
     if not output and not yaml_output:
         click.echo(format_raw_data(data=data, use_hexdump=True))
 
 
 @main.command(name="erase-cmpa", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
+@spsdk_family_option(CMPA.get_supported_families())
 @pfr_device_type_options(no_type=True)
 def erase_cmpa(
     interface: MbootProtocolBase,
@@ -440,15 +447,26 @@ def erase_cmpa(
 ) -> None:
     """Erase CMPA PFR page in the device if is not sealed and write the default values into CMPA page."""
     pfr_obj = get_ifr_pfr_class("cmpa", family)(family=family, revision=revision)
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, pfr_obj.DB_SUB_KEYS + ["address"])
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "address"])
+    erase_method = pfr_obj.db.get_str(
+        pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "erase_method"]
+    )
     # Update all possible mandatory fields in PFR block
     pfr_obj.set_config({})
 
     click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")
 
-    with McuBoot(interface=interface) as mboot:
-        mboot.write_memory(address=pfr_page_address, data=pfr_obj.export())
-    click.echo(f"CMPA page {'has been erased.' if mboot.status_code == 0 else 'erase failed!'}")
+    with McuBoot(interface=interface, cmd_exception=True) as mboot:
+        try:
+            if erase_method == "write_memory":
+                mboot.write_memory(address=pfr_page_address, data=pfr_obj.export())
+            elif erase_method == "flash_erase":
+                mboot.flash_erase_region(address=pfr_page_address, length=pfr_obj.BINARY_SIZE)
+            else:
+                raise SPSDKError(f"Unsupported erase method: {erase_method}")
+        except McuBootError as exc:
+            raise SPSDKAppError(f"CMPA page erase failed: {exc}") from exc
+    click.echo("CMPA page has been erased.")
 
 
 @catch_spsdk_error

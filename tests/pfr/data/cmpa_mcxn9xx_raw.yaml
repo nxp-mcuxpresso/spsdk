@@ -1,0 +1,44 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# NXP mcxn9xx PFR CMPA configuration
+description: # The CMPA configuration description.
+  device: mcxn9xx # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 2.0.0 # The SPSDK tool version.
+settings: # The CMPA registers configuration.
+  IPED0_START: # IPED region 0 Start
+    bitfields: # The register bitfields
+      GCM_MODE: ENABLE_CTR_MODE # Offset: 0b, Width: 1b, Description: GCM mode enable.
+      # - ENABLE_CTR_MODE, (0): Region is enabled in CTR mode.
+      # - ENABLE_GCM_MODE, (1): Region is enabled in GCM mode.
+      AHBERR_DIS: ENABLED # Offset: 1b, Width: 1b, Description: Disable AHB bus error. If GCM authentication fails generates bus error or not.
+      # - ENABLED, (0): Bus error enabled
+      # - DISABLED, (1): Bus error disabled
+      IPED_CTX0_START_ADDR: "RAW:0x123456" # Offset: 8b, Width: 32b, Description: Upper 24-bits of IPED region 0 start address. Lower 8 address bits are always 0. NOTE: ROM only uses upper 24bits to address IPED region. In config file use full 32b address.
+  IPED0_END: # IPED region 0 End
+    bitfields: # The register bitfields
+      LOCK_EN: NOT_LOCKED_0b00 # Offset: 0b, Width: 2b, Description: Lock the external PRINCE context settings.
+      # - NOT_LOCKED_0b00, (0): Region is not locked
+      # - LOCKED_0b01, (1): Region is locked
+      # - LOCKED_0b10, (2): Region is locked
+      # - LOCKED_0b11, (3): Region is locked
+      IPED_CTX0_END_ADDR: "RAW:0xFFFFFF" # Offset: 8b, Width: 32b, Description: Upper 24-bits of IPED region 0 end address. Lower 8 address bits are always 0. NOTE: ROM only uses upper 24bits to address IPED region. In config file use full 32b address.
+  IPED1_START: # IPED region 0 Start
+    bitfields: # The register bitfields
+      GCM_MODE: ENABLE_CTR_MODE # Offset: 0b, Width: 1b, Description: GCM mode enable.
+      # - ENABLE_CTR_MODE, (0): Region is enabled in CTR mode.
+      # - ENABLE_GCM_MODE, (1): Region is enabled in GCM mode.
+      AHBERR_DIS: ENABLED # Offset: 1b, Width: 1b, Description: Disable AHB bus error. If GCM authentication fails generates bus error or not.
+      # - ENABLED, (0): Bus error enabled
+      # - DISABLED, (1): Bus error disabled
+      IPED_CTX1_START_ADDR: "0x12345678" # Offset: 8b, Width: 32b, Description: Upper 24-bits of IPED region 0 start address. Lower 8 address bits are always 0. NOTE: ROM only uses upper 24bits to address IPED region. In config file use full 32b address.
+  IPED1_END: # IPED region 0 End
+    bitfields: # The register bitfields
+      LOCK_EN: NOT_LOCKED_0b00 # Offset: 0b, Width: 2b, Description: Lock the external PRINCE context settings.
+      # - NOT_LOCKED_0b00, (0): Region is not locked
+      # - LOCKED_0b01, (1): Region is locked
+      # - LOCKED_0b10, (2): Region is locked
+      # - LOCKED_0b11, (3): Region is locked
+      IPED_CTX1_END_ADDR: "0xFFFFFFFF" # Offset: 8b, Width: 32b, Description: Upper 24-bits of IPED region 0 end address. Lower 8 address bits are always 0. NOTE: ROM only uses upper 24bits to address IPED region. In config file use full 32b address.

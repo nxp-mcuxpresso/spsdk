@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timezone
 from struct import pack
 from time import sleep
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import pytest
 from bitstring import BitArray
@@ -110,7 +110,7 @@ def write_sb(data_dir: str, sb_file_name: str, bin_data: bytes, key_store: KeySt
 #######################################################################################################################
 
 
-def write_shadow_regis(data_dir: str, writes: List[Tuple[int, int]]) -> None:
+def write_shadow_regis(data_dir: str, writes: list[tuple[int, int]]) -> None:
     """Write shadow registers:
     - prepares and burns into FLASH a binary application for initialization of shadow registers
     - the application is launched using "execute" command

@@ -161,12 +161,27 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
         assert filecmp.cmp(org, new)
 
 
+def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir, tmpdir):
+    """Test PFR CLI - Generation CMPA binary."""
+    cmd = [
+        "generate-binary",
+        "--output",
+        f"{tmpdir}/cmpa_raw.bin",
+        "--config",
+        f"{data_dir}/cmpa_mcxn9xx_raw.yaml",
+    ]
+    cli_runner.invoke(cli.main, cmd)
+    new_data = open(f"{tmpdir}/cmpa_raw.bin", "rb").read()
+    expected = open(f"{data_dir}/cmpa_mcxn9xx_raw.bin", "rb").read()
+    assert new_data == expected
+
+
 def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Parsing CMPA binary to get config."""
     cmd = [
         "parse-binary",
         "--family",
-        "lpc55s6x",
+        "lpc55s69",
         "--type",
         "cmpa",
         "--binary",
@@ -188,29 +203,28 @@ def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
 @pytest.mark.parametrize(
     "family,type",
     [
-        ("lpc550x", "cmpa"),
-        ("lpc550x", "cfpa"),
-        ("lpc551x", "cmpa"),
-        ("lpc551x", "cfpa"),
-        ("lpc552x", "cmpa"),
-        ("lpc552x", "cfpa"),
-        ("lpc553x", "cmpa"),
-        ("lpc553x", "cfpa"),
-        ("lpc55s0x", "cmpa"),
-        ("lpc55s0x", "cfpa"),
-        ("lpc55s1x", "cmpa"),
-        ("lpc55s1x", "cfpa"),
-        ("lpc55s2x", "cmpa"),
-        ("lpc55s2x", "cfpa"),
-        ("lpc55s3x", "cmpa"),
-        ("lpc55s3x", "cfpa"),
-        ("lpc55s6x", "cmpa"),
-        ("lpc55s6x", "cfpa"),
-        ("mcxn9xx", "cmpa"),
-        ("mcxn9xx", "cfpa"),
-        ("nhs52sxx", "cmpa"),
-        ("nhs52sxx", "cfpa"),
-        ("mcxa1xx", "cmpa"),
+        ("lpc5506", "cmpa"),
+        ("lpc5506", "cfpa"),
+        ("lpc5516", "cmpa"),
+        ("lpc5516", "cfpa"),
+        ("lpc5528", "cmpa"),
+        ("lpc5528", "cfpa"),
+        ("lpc5536", "cmpa"),
+        ("lpc5536", "cfpa"),
+        ("lpc55s06", "cmpa"),
+        ("lpc55s06", "cfpa"),
+        ("lpc55s16", "cmpa"),
+        ("lpc55s16", "cfpa"),
+        ("lpc55s26", "cmpa"),
+        ("lpc55s26", "cfpa"),
+        ("lpc55s36", "cmpa"),
+        ("lpc55s36", "cfpa"),
+        ("lpc55s69", "cmpa"),
+        ("lpc55s69", "cfpa"),
+        ("mcxn947", "cmpa"),
+        ("mcxn947", "cfpa"),
+        ("nhs52s04", "cmpa"),
+        ("nhs52s04", "cfpa"),
         ("mcxa156", "cmpa"),
         ("mcxa155", "cmpa"),
         ("mcxa154", "cmpa"),
@@ -278,18 +292,22 @@ def test_pfrc_integration_1(
     cli_runner.invoke(cli.main, cmd.split(), expected_code=0 if test_pass else 1)
 
 
-def test_generate_cmpa_certblock_lpc55s3x(cli_runner: CliRunner, data_dir, tmpdir):
+@pytest.mark.parametrize(
+    "secret",
+    [
+        ("mbi_config_lpc55s3x.yaml"),
+        ("mbi_config_lpc55s3x_bin_certblock.yaml"),
+        ("cert_block_v21.yaml"),
+        ("cert_block_v21.bin"),
+    ],
+)
+def test_generate_cmpa_certblock_lpc55s3x(cli_runner: CliRunner, data_dir, tmpdir, secret):
     """Test PFR CLI - Generation CMPA binary with elf2sb."""
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
-    cmd1 = f"generate-binary --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x.yaml -o {new}"
-    cmd2 = f"generate-binary --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x_bin_certblock.yaml -o {new}"
-    cmd3 = f"generate-binary --config cmpa_lpc55s3x.json -e cert_block_v21.yaml -o {new}"
-    cmd4 = f"generate-binary --config cmpa_lpc55s3x.json -e cert_block_v21.bin -o {new}"
-    cmds = [cmd1, cmd2, cmd3, cmd4]
+    cmd = f"generate-binary --config cmpa_lpc55s3x.json -e {secret} -o {new}"
 
     with use_working_directory(data_dir):
-        for cmd in cmds:
-            logging.debug(cmd)
-            cli_runner.invoke(cli.main, cmd.split())
-            assert filecmp.cmp(org, new)
+        logging.debug(cmd)
+        cli_runner.invoke(cli.main, cmd.split())
+        assert filecmp.cmp(org, new)

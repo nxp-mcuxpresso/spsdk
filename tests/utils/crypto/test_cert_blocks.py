@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -337,7 +337,7 @@ def test_find_main_cert_index(data_dir, config, index, cert_block_version):
         ),
     ],
 )
-def test_find_root_certficates(config, error, expected_list):
+def test_find_root_certificates(config, error, expected_list):
     if error is not None:
         with pytest.raises(error):
             find_root_certificates(config)

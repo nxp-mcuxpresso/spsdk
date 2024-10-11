@@ -8,7 +8,7 @@
 import logging
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from typing_extensions import Self
 
@@ -22,7 +22,7 @@ from spsdk.utils.abstract import BaseClass
 from spsdk.utils.crypto.cert_blocks import CertBlockV21
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import align_block, load_hex_string, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +250,7 @@ class SecureBinary31Commands(BaseClass):
         self.is_encrypted = is_encrypted
         self.block_count = 0
         self.final_hash = bytes(get_hash_length(hash_type))
-        self.commands: List[MainCmd] = []
+        self.commands: list[MainCmd] = []
         self.key_derivator = None
         if is_encrypted:
             if pck is None or timestamp is None or kdk_access_rights is None:
@@ -277,12 +277,12 @@ class SecureBinary31Commands(BaseClass):
         else:
             self.commands.insert(index, command)
 
-    def set_commands(self, commands: List[MainCmd]) -> None:
+    def set_commands(self, commands: list[MainCmd]) -> None:
         """Set all SB3.1 commands at once."""
         self.commands = commands.copy()
 
     def load_from_config(
-        self, config: List[Dict[str, Any]], search_paths: Optional[List[str]] = None
+        self, config: list[dict[str, Any]], search_paths: Optional[list[str]] = None
     ) -> None:
         """Load configuration from dictionary.
 
@@ -299,7 +299,7 @@ class SecureBinary31Commands(BaseClass):
                 )
             )
 
-    def get_cmd_blocks_to_export(self) -> List[bytes]:
+    def get_cmd_blocks_to_export(self) -> list[bytes]:
         """Export commands as bytes."""
         commands_bytes = b"".join([command.export() for command in self.commands])
         section_header = CmdSectionHeader(length=len(commands_bytes))
@@ -313,7 +313,7 @@ class SecureBinary31Commands(BaseClass):
 
         return data_blocks
 
-    def process_cmd_blocks_to_export(self, data_blocks: List[bytes]) -> bytes:
+    def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
         """Process given data blocks for export."""
         self.block_count = len(data_blocks)
 
@@ -446,17 +446,17 @@ class SecureBinary31(BaseClass):
             logger.info(f"SB3KDK: {self.pck.hex()}")
 
     @classmethod
-    def get_validation_schemas_family(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for SB31 supported families.
         """
-        sch_cfg = get_schema_file(DatabaseManager.SB31)
-        sch_cfg["sb3_family"]["properties"]["family"]["enum"] = cls.get_supported_families()
-        return [sch_cfg["sb3_family"]]
+        sch_cfg = get_schema_file("general")["family"]
+        update_validation_schema_family(sch_cfg["properties"], cls.get_supported_families())
+        return [sch_cfg]
 
     @classmethod
-    def get_commands_validation_schemas(cls, family: str) -> List[Dict[str, Any]]:
+    def get_commands_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
@@ -464,10 +464,10 @@ class SecureBinary31(BaseClass):
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         db = get_db(family, "latest")
-        schemas: List[Dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
+        schemas: list[dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
         # remove unused command for current family
         supported_commands = db.get_list(DatabaseManager.SB31, "supported_commands")
-        list_of_commands: List[Dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
+        list_of_commands: list[dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
         schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
             command
             for command in list_of_commands
@@ -477,7 +477,7 @@ class SecureBinary31(BaseClass):
         return schemas
 
     @classmethod
-    def get_devhsm_commands_validation_schemas(cls, family: str) -> List[Dict[str, Any]]:
+    def get_devhsm_commands_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
@@ -485,22 +485,22 @@ class SecureBinary31(BaseClass):
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         db = get_db(family, "latest")
-        schemas: List[Dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
+        schemas: list[dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
         # remove unused command for current family
         supported_commands = db.get_list(DatabaseManager.DEVHSM, "supported_commands")
-        list_of_commands: List[Dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
+        list_of_commands: list[dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
         schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
             command
             for command in list_of_commands
             if list(command["properties"].keys())[0] in supported_commands
         ]
         # The 'commands' are optional for device HSM
-        required: List[str] = schemas[0]["required"]
+        required: list[str] = schemas[0]["required"]
         required.remove("commands")
         return schemas
 
     @classmethod
-    def get_validation_schemas(cls, family: str) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
@@ -508,30 +508,30 @@ class SecureBinary31(BaseClass):
         """
         mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
+        sch_cfg = get_schema_file("general")["family"]
+        update_validation_schema_family(sch_cfg["properties"], cls.get_supported_families(), family)
 
-        schemas: List[Dict[str, Any]] = []
+        schemas: list[dict[str, Any]] = [sch_cfg]
         schemas.extend(
             [mbi_sch_cfg[x] for x in ["firmware_version", "signature_provider", "cert_block_v21"]]
         )
         schemas.extend(
-            [
-                sb3_sch_cfg[x]
-                for x in ["sb3_family", "sb3", "sb3_description", "sb3_test", "sb3_output"]
-            ]
+            [sb3_sch_cfg[x] for x in ["sb3", "sb3_description", "sb3_test", "sb3_output"]]
         )
         schemas.extend(cls.get_commands_validation_schemas(family))
 
         # find family
         for schema in schemas:
             if "properties" in schema and "family" in schema["properties"]:
-                schema["properties"]["family"]["enum"] = cls.get_supported_families()
-                schema["properties"]["family"]["template_value"] = family
+                update_validation_schema_family(
+                    schema["properties"], cls.get_supported_families(), family
+                )
                 break
         return schemas
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "SecureBinary31":
         """Creates an instance of SecureBinary31 from configuration.
 
@@ -673,7 +673,7 @@ class SecureBinary31(BaseClass):
         return ret
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Return list of supported families.
 
         :return: List of supported families.
@@ -681,13 +681,13 @@ class SecureBinary31(BaseClass):
         return get_families(DatabaseManager.SB31)
 
     @classmethod
-    def generate_config_template(cls, family: str) -> Dict[str, str]:
+    def generate_config_template(cls, family: str) -> dict[str, str]:
         """Generate configuration for selected family.
 
         :param family: Device family.
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
-        ret: Dict[str, str] = {}
+        ret: dict[str, str] = {}
 
         if family in cls.get_supported_families():
             schemas = cls.get_validation_schemas(family)

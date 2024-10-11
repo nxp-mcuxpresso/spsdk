@@ -1,0 +1,34 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: lpc55s26
+
+# General MCU information
+info:
+  memory_map: # Memory map basic info
+    internal-flash_ns:
+      start_int: "0x0"
+      size_int: "0x80000"
+      external: false
+    internal-flash_s:
+      start_int: "0x10000000"
+      size_int: "0x80000"
+      external: false
+      mirror_of: internal-flash_ns
+    sram:
+      start_int: "0x20000000"
+      size_int: "0x30000"
+      external: false
+    sram4:
+      start_int: "0x20040000"
+      size_int: "0x4000"
+      external: false
+    sramx:
+      start_int: "0x4000000"
+      size_int: "0x8000"
+      external: false
+    usb-ram:
+      start_int: "0x40100000"
+      size_int: "0x4000"
+      external: false

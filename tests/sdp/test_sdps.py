@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from unittest.mock import patch
 
 from typing_extensions import Self
@@ -83,7 +83,7 @@ class VirtualSDPInterface:
         params: str,
         timeout: int,
         extra_params: Optional[str] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan method."""
         pass  # not used
 

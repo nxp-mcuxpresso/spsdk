@@ -1,0 +1,42 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ====================================  Bootable Image Configuration for mcxn9xx.  =====================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s3x, mcxn9xx, rt101x, rt102x, rt104x, rt105x, rt106x, rt116x, rt117x, mimxrt1189, rt5xx, rt6xx,
+# rw61x>
+family: mcxn9xx
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, a1, latest>
+revision: a1
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+# Possible options: <flexspi_nor>
+memory_type: flexspi_nor
+# ----------------------------------------===== Initial segment [Optional] =====----------------------------------------
+# Description: The segment name or the index of initial segment in exported image
+init_offset: 4096
+# ======================================================================================================================
+#                                           == Bootable Segments definition ==
+# ======================================================================================================================
+# ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
+# Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML
+# configuration file for FCB. In case that YAML configuration file is used, the Bootable image tool build the FCB
+# itself.
+fcb: ''
+# -----------------------------------------===== Image version [Optional] =====-----------------------------------------
+# Description: Image version
+image_version: 0
+# ======================================================================================================================
+#                                          == Executable Segment definition ==
+# ======================================================================================================================
+# --------------------------------===== Master Boot Image [Conditionally required] =====--------------------------------
+# Description: Master Boot Image path. It could be used as pre-prepared binary form of MBI and also YAML configuration
+# file for MBI. In case that YAML configuration file is used, the Bootable image tool build the MBI itself.
+mbi: mbi.bin

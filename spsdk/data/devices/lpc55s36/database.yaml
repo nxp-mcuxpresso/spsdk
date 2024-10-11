@@ -1,0 +1,299 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0:
+    features:
+      pfr:
+        cfpa:
+          reg_spec: pfr_cfpa_a0.json
+        cmpa:
+          reg_spec: pfr_cmpa_a0.json
+      tz:
+        reg_spec: tz_a0.yaml
+  a1:
+    features:
+      pfr:
+        cfpa:
+          reg_spec: pfr_cfpa_a1.json
+        cmpa:
+          reg_spec: pfr_cmpa_a1.json
+          override_data_file:
+
+      tz:
+        reg_spec: tz_a1.yaml
+      dice:
+        reg_spec: dice_had_a1.json
+latest: a1
+
+# General MCU information
+info:
+  purpose: LPC5500 Series
+  spsdk_predecessor_name: lpc55s3x
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x
+  memory_map: # Memory map basic info
+    internal-flash_ns:
+      start_int: "0x0"
+      size_int: "0x3DC00"
+      external: false
+    flexspi_ns:
+      start_int: "0x8000000"
+      size_int: "0x8000000"
+      external: true
+    flexspi_s:
+      start_int: "0x18000000"
+      size_int: "0x8000000"
+      external: true
+      mirror_of: flexspi_ns
+    internal-flash_s:
+      start_int: "0x10000000"
+      size_int: "0x3DC00"
+      external: false
+      mirror_of: internal-flash_ns
+    sram:
+      start_int: "0x20000000"
+      size_int: "0x1C000"
+      external: false
+    sramx:
+      start_int: "0x4000000"
+      size_int: "0x4000"
+      external: false
+      __comment: Does not work as target `onchip RAM` memory, blhost reports 10200
+        (0x27d8) Memory Range Invalid.
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0025
+
+features:
+  # ======== Fuses description section ========
+  fuses: {}
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_8000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_cert21]
+    rot_type: "cert_block_21"
+
+  # ======== DAT section ========
+  dat:
+    socc: 4 # SOCC identification
+    rot_could_be_invalid: True # The 4 SOCC is used also on some obsolete parts and could be invalid on them
+    dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinAppTrustZone
+      plain_ram:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinAppTrustZone
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifestDigest
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinFwVersion
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
+    images:
+      xip:
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+      load_to_ram:
+        plain: plain_ram
+        crc: crc_ram
+
+  # ======== PFR section ========
+  pfr:
+    cfpa: # CFPA description
+      address: 0x3_DC00
+      size: 512
+      seal_start: field1EC # CFPA_CRC32
+      seal_count: 1
+      computed_fields:
+        field054: # VENDOR_USAGE
+          field054-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field058: # DCFG_CC_SOCU_NS_PIN
+          field058-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field05C: # DCFG_CC_SOCU_NS_DFLT
+          field05C-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+    cmpa: # CMPA description
+      address: 0x3_E200
+      size: 512
+      seal_start: field1F0 # CMPA_CMAC0
+      seal_count: 4
+      grouped_registers:
+        - uid: cmpa_rotkh
+          name: ROTKH
+          width: 384
+          config_as_hexstring: true
+          reversed: true
+          alternative_widths: [256]
+          description:
+            ROTKH field is compounded by 12 32-bit fields and contains Root key
+            table hash. For ECC P-256 keys RKTH is a 32-byte SHA-256 digest of four
+            SHA-256 digests computed over four OEM public keys (OEM has four
+            private-public key pairs in case one of its private keys becomes
+            compromised) or in case that ECC P-384 keys are used, RKTH is 48-byte
+            SHA-384 digest.
+          sub_regs:
+            - field050
+            - field054
+            - field058
+            - field05C
+            - field060
+            - field064
+            - field068
+            - field06C
+            - field070
+            - field074
+            - field078
+            - field07C
+      computed_fields:
+        field010: # DCFG_CC_SOCU_PIN
+          field010-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field014: # DCFG_CC_SOCU_DFLT
+          field014-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+    rules:
+      - ../../common/pfrc_rules.yaml
+      - pfrc_rules.yaml
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      internal:
+        segments:
+          mbi: 0x00
+      flexspi_nor:
+        segments:
+          fcb: 0x0400
+          image_version_ap: 0x0600
+          mbi: 0x1000
+        remap_align: 0x40000 # 256 KB
+        image_pattern: ones
+      recovery_spi_sb31:
+        segments:
+          sb31: 0x00
+      recovery_spi_mbi:
+        segments:
+          mbi: 0x00
+
+  # ======== Secure binary v3.1 section ========
+  sb31:
+    supported_commands:
+      - erase
+      - load
+      - execute
+      - programFuses
+      - programIFR
+      - loadCMAC
+      - copy
+      - loadHashLocking
+      - loadKeyBlob
+      - configureMemory
+      - fillMemory
+      - checkFwVersion
+
+  # ======== Device Hardware Security Module (HSM) section ========
+  devhsm:
+    key_blob_offset: 0x4
+    key_blob_command_position: -1
+    devhsm_class: DevHsmSB31
+    supported_commands:
+      - erase
+      - load
+      - execute
+      - programFuses
+      - programIFR
+      - loadCMAC
+      - copy
+      - loadHashLocking
+      - loadKeyBlob
+      - configureMemory
+      - fillMemory
+      - checkFwVersion
+
+  # ======== Trust provisioning section ========
+  tp:
+    need_cfpa_update: false
+    use_prov_data: true
+    key_flags_version: 1
+    die_id_cert_version: 1
+    erase_memory: false
+    need_tp_fw: true
+    need_revoke_update: true
+    version_offset: 0x4
+    revoke_offset: 0x18
+    max_oem_cert_size: 1000
+
+  # ======== TrustZone section ========
+  tz: {}
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [0]
+      spi_nor:
+        instances: [0, 1, 3, 8]
+
+  # ======== DICE configuration ========
+  dice:
+    buffer_address: 0x3001_5000
+    csr_address: 0x2000_0000
+    csr_length: 208
+    response_length: 324

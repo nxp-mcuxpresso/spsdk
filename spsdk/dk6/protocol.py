@@ -127,7 +127,7 @@ class DK6Protocol:
         memory_id: MemoryId = MemoryId.FLASH,
         access: MemoryAccessValues = MemoryAccessValues.WRITE,
     ) -> MemOpenResponse:
-        """Open given memory in the specified accesss mode.
+        """Open given memory in the specified access mode.
 
         :param memory_id: memory that will be opened, defaults to MemoryId.FLASH
         :param access: access mode, defaults to MemoryAccessValues.READ

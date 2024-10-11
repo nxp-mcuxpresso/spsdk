@@ -11,7 +11,7 @@
 from collections import UserDict
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from typing_extensions import Self
 
@@ -31,7 +31,7 @@ class HabConfig:
 
     @classmethod
     def load_from_config(
-        cls, data: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, data: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> Self:
         """Parse config from dictionary.
 
@@ -77,11 +77,11 @@ class CommandConfig:
 
 
 @dataclass
-class CommandsConfig(List[CommandConfig]):
+class CommandsConfig(list[CommandConfig]):
     """Dataclass holding commands data."""
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> Self:
+    def load_from_config(cls, config: dict[str, Any]) -> Self:
         """Parse command config from HAB configuration.
 
         :param config: HAB configuration as dictionary
@@ -141,12 +141,12 @@ class OptionsConfig:
     }
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Dict]) -> Self:
+    def load_from_config(cls, config: dict[str, dict]) -> Self:
         """Parse options config from HAB configuration.
 
         :param config: HAB configuration as dictionary
         """
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         for name, value in config["options"].items():
             if name.lower() not in cls._FIELD_MAPPING:
                 raise SPSDKKeyError(f"Unexpected option field {name}")

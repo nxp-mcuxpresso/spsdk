@@ -1,0 +1,29 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: False # Include this MCU in generated documentation
+  purpose: i.MX28 Applications Processors
+  spsdk_predecessor_name: mx28
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx28-processors:IMX28_FAMILY
+  memory_map: {}
+  isp:
+    rom:
+      protocol: sdps
+      interfaces: ["usb"]
+      usb:
+        vid: 0x15A2
+        pid: 0x007D
+      protocol_params:
+        no_cmd: False
+        hid_ep1: False
+        hid_pack_size: 1024
+
+features: {}

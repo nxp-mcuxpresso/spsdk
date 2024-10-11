@@ -77,7 +77,7 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
                 "efuse-program-once 182 0x00000008 --no-verify",
             ],
             "otfad_rt1180_out.bin",
-            "rt118x",
+            "mimxrt1189",
         ),
         (
             "otfad_rt1180_txt.yaml",
@@ -87,7 +87,7 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
                 "efuse-program-once 182 0x00000008 --no-verify",
             ],
             "otfad_rt1180_out.bin",
-            "rt118x",
+            "mimxrt1189",
         ),
         (
             "otfad_rt1180_scramble.yaml",
@@ -98,7 +98,7 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
                 "efuse-program-once 183 0x78563412 --no-verify",
             ],
             "otfad_rt1180_scramble_out.bin",
-            "rt118x",
+            "mimxrt1189",
         ),
         (
             "otfad_rt1170_scramble.yaml",
@@ -235,7 +235,7 @@ def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
         ("rt1010"),
         ("rt116x"),
         ("rt117x"),
-        ("rt118x"),
+        ("mimxrt1189"),
     ],
 )
 def test_nxpimage_otfad_template_cli(cli_runner: CliRunner, tmpdir, family):

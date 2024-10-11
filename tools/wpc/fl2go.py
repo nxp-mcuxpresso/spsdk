@@ -10,7 +10,6 @@
 import base64
 import os
 import sys
-from typing import Tuple
 
 from flask import Flask, Response, jsonify, request
 
@@ -28,7 +27,7 @@ APP = Flask(__name__)
 
 
 @APP.route("/api/v1/wpc/product-unit-certificate/<qi_id>/request-puc", methods=["POST"])
-def request_product_unit_certificate(qi_id: str) -> Tuple[Response, int]:
+def request_product_unit_certificate(qi_id: str) -> tuple[Response, int]:
     """Request for product Unit certificate.
 
     :param qi_id: QI ID

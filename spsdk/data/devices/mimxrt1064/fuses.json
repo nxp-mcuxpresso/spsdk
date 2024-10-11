@@ -1,0 +1,2694 @@
+{
+    "cpu": "MIMXRT1064",
+    "groups": [
+        {
+            "group": {
+                "name": "Locks",
+                "description": "Lock bits allowing to lock access to specified fuses"
+            },
+            "registers": [
+                {
+                    "id": "fuse0",
+                    "name": "0x400",
+                    "description": "Fuse 0x400",
+                    "offset_int": "0x0400",
+                    "index_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-0-1",
+                            "name": "TESTER_LOCK",
+                            "description": "Perform lock on Tester programed fuses.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-2-3",
+                            "name": "BOOT_CFG_LOCK",
+                            "description": "Perform lock on BOOT related fuses.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-6",
+                            "name": "SJC_RESP_LOCK",
+                            "description": "SJC response lock",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can't be read, sensed, burned or overridden in the corresponded IIM register)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-7",
+                            "name": "GP4_RLOCK",
+                            "description": "GP4 read lock",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can't be read in the corresponded IIM register)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-8-9",
+                            "name": "MAC_ADDR_LOCK",
+                            "description": "Lock MAC_ADDR fuses.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-10-11",
+                            "name": "GP1_LOCK",
+                            "description": "Lock for General Purpose fuse register #1 (GP1)",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-12-13",
+                            "name": "GP2_LOCK",
+                            "description": "Lock for General Purpose fuse register #2 (GP2)",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-16",
+                            "name": "SW_GP1_LOCK",
+                            "description": "Lock for SW_GP1 fuse.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can't be sensed, burned or overridden in the corresponded IIM register)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-18-19",
+                            "name": "ANALOG_LOCK",
+                            "description": "Lock for analog related fuse.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-21",
+                            "name": "SW_GP2_LOCK",
+                            "description": "WP and OP Lock for SW_GP2 fuse.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can't be sensed, burned or overridden in the corresponded IIM register)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-22",
+                            "name": "MISC_CONF_LOCK",
+                            "description": "No additional info",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can't be read in the corresponded IIM register)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-23",
+                            "name": "SW_GP2_RLOCK",
+                            "description": "RP Lock for SW_GP2 fuse.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can't be read in the corresponded IIM register)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-24-25",
+                            "name": "GP4_LOCK",
+                            "description": "Lock for GP4 fuse.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse0-bits-26-27",
+                            "name": "GP3_LOCK",
+                            "description": "Lock for GP3 fuse.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponded IIM register)"
+                                },
+                                {
+                                    "name": "Write Lock",
+                                    "value": 1,
+                                    "description": "Write Lock (The controlled field can be read or sensed only)"
+                                },
+                                {
+                                    "name": "Operation Lock",
+                                    "value": 2,
+                                    "description": "Operation Lock (The controlled field can't be overridden)"
+                                },
+                                {
+                                    "name": "Full Lock",
+                                    "value": 3,
+                                    "description": "Write Lock + Operation Lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse0-bit-31",
+                            "name": "FIELD_RETURN",
+                            "description": "Configure device for field return testing. Fuse burning is protected by CSF command, with proper parameter passed. Write / OP protected by FIELD_RETURN_LOCK bit in control register.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Device is in functional / secure mode."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Device is open for 'field-return' testing."
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "IDs",
+                "description": "Different identifiers"
+            },
+            "registers": [
+                {
+                    "id": "fuse1",
+                    "name": "LOT_NO_ENC[42:11]",
+                    "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID",
+                    "offset_int": "0x0410",
+                    "index_int": "0x0001",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0001",
+                        "operation_lock_int": "0x0002"
+                    }
+                },
+                {
+                    "id": "fuse2",
+                    "name": "0x420",
+                    "description": "Fuse 0x420",
+                    "offset_int": "0x0420",
+                    "index_int": "0x0002",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0001",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 11,
+                            "id": "fuse2-bits-0-10",
+                            "name": "LOT_NO_ENC[10:0]",
+                            "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID"
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse2-bits-11-15",
+                            "name": "WAFER_NO[4:0]",
+                            "description": "The wafer number of the wafer on which the device was fabricated/SJC CHALLENGE/ Unique ID"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse2-bits-16-23",
+                            "name": "DIE-Y-CORDINATE[7:0]",
+                            "description": "The Y-coordinate of the die location on the wafer/SJC CHALLENGE/ Unique ID"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse2-bits-24-31",
+                            "name": "DIE-X-CORDINATE[7:0]",
+                            "description": "The X-coordinate of the die location on the wafer/SJC CHALLENGE/ Unique ID"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse3",
+                    "name": "0x430",
+                    "description": "Fuse 0x430",
+                    "offset_int": "0x0430",
+                    "index_int": "0x0003",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0001",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse3-bits-16-19",
+                            "name": "SI_REV[3:0]",
+                            "description": "Silicon Revision number."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse4",
+                    "name": "0x440",
+                    "description": "Fuse 0x440",
+                    "offset_int": "0x0440",
+                    "index_int": "0x0004",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0001",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse4-bit-1",
+                            "name": "SEC_CONFIG[0]",
+                            "description": "Security Configuration Mode, and block of debugging of security HW, by JTAG"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse4-bits-16-17",
+                            "name": "SPEED_GRADING[1:0]",
+                            "description": "Burned by tester program, for indicating IC core speed"
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Boot config",
+                "description": "Boot configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse5",
+                    "name": "0x450",
+                    "description": "Fuse 0x450",
+                    "offset_int": "0x0450",
+                    "index_int": "0x0005",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0004",
+                        "operation_lock_int": "0x0008"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse5-bit-0",
+                            "name": "FLASH_AUTO_PROBE_EN",
+                            "description": "FLASH_AUTO_PROBE_EN",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "0 - Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "1 - Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse5-bit-1",
+                            "name": "EncryptedXIP",
+                            "description": "EncryptedXIP",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "0 - Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "1 - Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse5-bits-2-3",
+                            "name": "FLASH PROBE TYPE",
+                            "description": "FLASH PROBE TYPE (SPI mode after PoR)",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "00 - QuadSPI NOR"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "01 - Macronix Octal FLASH"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "10 - Micron Octal FLASH"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "11 - Adesto Octal FLASH"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse5-bits-4-7",
+                            "name": "Boot_Device_Selection",
+                            "description": "Boot device selection.",
+                            "values": [
+                                {
+                                    "name": "FlexSPI NOR",
+                                    "value": 0,
+                                    "description": "0000 - FlexSPI (Serial NOR)"
+                                },
+                                {
+                                    "name": "SEMC (NOR)",
+                                    "value": 1,
+                                    "description": "0001 - SEMC (NOR)"
+                                },
+                                {
+                                    "name": "SEMC (NAND)",
+                                    "value": 2,
+                                    "description": "001x - SEMC (NAND)"
+                                },
+                                {
+                                    "name": "SEMC (NAND)",
+                                    "value": 3,
+                                    "description": "001x - SEMC (NAND)"
+                                },
+                                {
+                                    "name": "SD (SDR12)",
+                                    "value": 4,
+                                    "description": "0100 - SD/SDXC Speed (Normal/SDR12)"
+                                },
+                                {
+                                    "name": "SD (SDR25)",
+                                    "value": 5,
+                                    "description": "0101 - SD/SDXC Speed (High/SDR25)"
+                                },
+                                {
+                                    "name": "SD (SDR50)",
+                                    "value": 6,
+                                    "description": "0110 - SD/SDXC Speed (SDR50)"
+                                },
+                                {
+                                    "name": "SD (SDR104)",
+                                    "value": 7,
+                                    "description": "0111 - SD/SDXC Speed (SDR104)"
+                                },
+                                {
+                                    "name": "eMMC: Normal",
+                                    "value": 8,
+                                    "description": "1000 - MMC/eMMC (SD/MMC Speed Normal, Fast Boot Acknowledge Disabled)"
+                                },
+                                {
+                                    "name": "eMMC: Normal/FB",
+                                    "value": 9,
+                                    "description": "1001 - MMC/eMMC (SD/MMC Speed Normal, Fast Boot Acknowledge Enabled)"
+                                },
+                                {
+                                    "name": "eMMC: High",
+                                    "value": 10,
+                                    "description": "1010 - MMC/eMMC (SD/MMC Speed High, Fast Boot Acknowledge Disabled)"
+                                },
+                                {
+                                    "name": "eMMC: High/FB",
+                                    "value": 11,
+                                    "description": "1011 - MMC/eMMC (SD/MMC Speed High, Fast Boot Acknowledge Enabled)"
+                                },
+                                {
+                                    "name": "FlexSPI NAND",
+                                    "value": 12,
+                                    "description": "1100 - FlexSPI (Serial NAND), Default safe communication frequency High Speed (50 MHz), column address width 12bits"
+                                },
+                                {
+                                    "name": "FlexSPI NAND",
+                                    "value": 13,
+                                    "description": "1101 - FlexSPI (Serial NAND), Default safe communication frequency Low Speed (30 MHz), column address width 13bits"
+                                },
+                                {
+                                    "name": "FlexSPI NAND",
+                                    "value": 14,
+                                    "description": "1110 - FlexSPI (Serial NAND), Default safe communication frequency High Speed (50 MHz), column address width 12bits"
+                                },
+                                {
+                                    "name": "FlexSPI NAND",
+                                    "value": 15,
+                                    "description": "1111 - FlexSPI (Serial NAND), Default safe communication frequency Low Speed (30 MHz), column address width 13bits"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse5-bits-8-15",
+                            "name": "BOOT_CFG2",
+                            "description": "BOOT configuration register #2, Usage varies, depending on selected boot device."
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse5-bits-16-23",
+                            "name": "BOOT_CFG3",
+                            "description": "BOOT configuration register #3"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse5-bits-24-31",
+                            "name": "BOOT_CFG4",
+                            "description": "BOOT configuration register #4"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse6",
+                    "name": "0x460",
+                    "description": "Fuse 0x460",
+                    "offset_int": "0x0460",
+                    "index_int": "0x0006",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0004",
+                        "operation_lock_int": "0x0008"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-1",
+                            "name": "SEC_CONFIG[1]",
+                            "description": "Security Configuration (with SEC_CONFIG[0])"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-2",
+                            "name": "Boot Frequencies",
+                            "description": "Determines, ARM Core and Bus frequencies during boot",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "(ARM) 396 / (Bus)132 MHz"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "(ARM) 528 / (Bus) 132 MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-4",
+                            "name": "BT_FUSE_SEL",
+                            "description": "Determines, whether using fuses for boot configuration, or GPIO /Serial loader",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-5",
+                            "name": "FORCE_COLD_BOOT",
+                            "description": "Force cold boot when A9 core come out of reset. Reflected in SBMR reg of SRC",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Default behavior equivalent to the rest of the i.MX6 family allowing a fast recovery from low power modes.  That is, the ROM is allowed to jump to the address previously programmed in the SRC persistent register."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Fast recovery path in the ROM is not allowed and a cold boot is always performed.  Customers wanting a higher level of security should burn this fuse."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse6-bits-8-11",
+                            "name": "SDRAM_CONFIG[7:0]",
+                            "description": "TBD  (SDRAM config options)"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-12-13",
+                            "name": "BEE_KEY0_SEL",
+                            "description": "AES key selection for BEE_KEY0",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "From register"
+                                },
+                                {
+                                    "name": "GP4[127:0]",
+                                    "value": 1,
+                                    "description": "GP4[127:0]"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "From OTPMK[255:128]"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "From SW-GP2"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-14-15",
+                            "name": "BEE_KEY1_SEL",
+                            "description": "AES key selection for BEE_KEY1",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "From register"
+                                },
+                                {
+                                    "name": "GP4[127:0]",
+                                    "value": 1,
+                                    "description": "GP4[127:0]"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "From OTPMK[[255:128]"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "From SW-GP2"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-16",
+                            "name": "FORCE_INTERNAL_BOOT",
+                            "description": "Once been blown, the external BT_MODE[1:0] pins will be ignored, BootROM will take Boot Mode as \u201cinternal boot\u201d.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Boot Mode from BT_MODE pins"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "BT_MODE pins be ignored,  Boot Mode forced to \"internal boot\""
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-17",
+                            "name": "SDP_DISABLE",
+                            "description": "Disable/Enable serial download support",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Serial download supported"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "No serial download support"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-18",
+                            "name": "SDP_READ_DISABLE",
+                            "description": "Disable/Enable serial download READ_REGISTER command.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "SDP READ_REGISTER command is enabled"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "SDP READ_REGISTER is disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-19",
+                            "name": "DAP_SJC_SWD_SEL",
+                            "description": "Control DAP works in JTAG or SWD mode",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "DAP works in SWD mode"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "DAP works in JTAG mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-20",
+                            "name": "SJC_DISABLE",
+                            "description": "Disable/Enable the Secure JTAG Controller module. This fuse is used to create highest JTAG security level, where JTAG is totally blocked.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Secure JTAG Controller is enabled"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Secure JTAG Controller is disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-21",
+                            "name": "WDOG_ENABLE",
+                            "description": "Watchdog Enable",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Watch-Dog is disabled."
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Watch-Dog is enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-22-23",
+                            "name": "JTAG_SMODE[1:0]",
+                            "description": "JTAG Security Mode. Controls the security mode of the JTAG debug interface",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "JTAG enable mode"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "Secure JTAG mode"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "No debug mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-24",
+                            "name": "DLL_ENABLE",
+                            "description": "Controls the enable/disable of the DLL for SD/eMMC boot",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable DLL for SD/eMMC"
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Enable DLL for SD/eMMC"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-25",
+                            "name": "NAND_ECC_DISABLE",
+                            "description": "Indicate whether to enabled ECC (done by SW/Device HW) for Raw Nand device",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "NAND ECC is enabled"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "NAND ECC is disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-26",
+                            "name": "KTE",
+                            "description": "Kill Trace Enable. Enables tracing capability on ETM, and other modules",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Bus tracing is allowed"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Bus tracing is allowed in case security state as defined by Secure JTAG allows it (for example, JTAG_ENABLE or NO_DEBUG)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-27",
+                            "name": "JTAG_HEO",
+                            "description": "JTAG HAB Enable Override. Disallows HAB JTAG enabling. The HAB may normally enable JTAG debugging by means of the HAB_JDE-bit in the OCOTP  SCS register. The JTAG_HEO-bit can override this behavior",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "HAB may enable JTAG debug access"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "HAB JTAG enable is overridden (HAB may not enable JTAG debug access)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-29",
+                            "name": "PWR_STABLE_CYCLE_SELECTION",
+                            "description": "Select Power Stable Cycle",
+                            "values": [
+                                {
+                                    "name": "5ms",
+                                    "value": 0,
+                                    "description": "5ms"
+                                },
+                                {
+                                    "name": "2.5ms",
+                                    "value": 1,
+                                    "description": "2.5ms"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-30-31",
+                            "name": "SD_PWR_CYCLE_SELECTION",
+                            "description": "Select SD Power Cycle",
+                            "values": [
+                                {
+                                    "name": "20ms",
+                                    "value": 0,
+                                    "description": "20ms"
+                                },
+                                {
+                                    "name": "10ms",
+                                    "value": 1,
+                                    "description": "10ms"
+                                },
+                                {
+                                    "name": "5ms",
+                                    "value": 2,
+                                    "description": "5ms"
+                                },
+                                {
+                                    "name": "2.5ms",
+                                    "value": 3,
+                                    "description": "2.5ms"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse7",
+                    "name": "0x470",
+                    "description": "Fuse 0x470",
+                    "offset_int": "0x0470",
+                    "index_int": "0x0007",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0004",
+                        "operation_lock_int": "0x0008"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-0",
+                            "name": "Override SD Pad Settings",
+                            "description": "Overrides ROM default value for SD PAD control register. When set ROM will override SD pad control register with value programmed into PAD_SETTINGS fuse bits.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-1",
+                            "name": "BT_MPU_DISABLE",
+                            "description": "The fuse bit is used for ROM to not enable MMU",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "MPU is enabled during boot"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "MPU is disabled during boot"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-2",
+                            "name": "L1 I-Cache DISABLE",
+                            "description": "The fuse bit is used for ROM to not enable L1 I-Cache",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "L1 I-Cache is enabled during boot"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "L1 I-Cache is disabled during boot"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-3",
+                            "name": "Disable SDMMC Manufacture mode",
+                            "description": "The fuse bit is used to disable ROM feature \u201cSD/MMC Manufacturing Mode\u201d.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Enable"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-4",
+                            "name": "UART Serial Download Disable",
+                            "description": "Disable UART Serial Download",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Enable"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-5",
+                            "name": "SD2 VOLTAGE SELECTION",
+                            "description": "Fuse bit to change voltage selection for SD2 pads. When set ROM will select 1.8V for SD3 pads otherwise 3.3V",
+                            "values": [
+                                {
+                                    "name": "3.3V",
+                                    "value": 0,
+                                    "description": "3.3V"
+                                },
+                                {
+                                    "name": "1.8V",
+                                    "value": 1,
+                                    "description": "1.8V"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-6",
+                            "name": "SD1_RST_POLARITY_SELECT",
+                            "description": "Select reset polarity for SD1",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Reset active low"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Reset active high"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-7",
+                            "name": "DLL Override",
+                            "description": "Select the DLL mode for SD/eMMC.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "DLL Slave Mode for SD/eMMC"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "DLL Override Mode for SD/eMMC"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-8",
+                            "name": "USDHC IOMUX SRE Enable",
+                            "description": "The fuse bit is used for ROM to enable SRE bit for SD pads",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-9",
+                            "name": "USDHC_IOMUX_SION_BIT_ENABLE",
+                            "description": "The fuse bit is used for ROM to enable SION bit  for MUX control register.",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-10",
+                            "name": "Boot Failure Indicator Pin Select[4]",
+                            "description": "Indicate Boot Failure"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-11",
+                            "name": "ENABLE_EMMC_22K_PULLUP",
+                            "description": "The fuse bit is used for ROM to enable 22K pullup for SD pads.",
+                            "values": [
+                                {
+                                    "name": "47K pullup",
+                                    "value": 0,
+                                    "description": "47K pullup"
+                                },
+                                {
+                                    "name": "22K pullup",
+                                    "value": 1,
+                                    "description": "22K pullup"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-12",
+                            "name": "USDHC_PAD_PULL_DOWN",
+                            "description": "The fuse bit is used for ROM to enable pull down bit for SD pads. ",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "no action"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "pull down"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-13",
+                            "name": "Override HYS bit for SD/MMC pads",
+                            "description": "Once this fuse be blown, the [HYS] bit of  IOMUXC_SW_PAD_CTL_PAD_SDx_CLK(x is the SD port which the ROM boot from), IOMUXC_SW_PAD_CTL_PAD_SDx_CMD, IOMUXC_SW_PAD_CTL_PAD_SDx_DAT0-n(n will be 0, 3, or 7, depends on the bus width selected) will be set.   ",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-14",
+                            "name": "eMMC 4.4 - RESET TO PRE-IDLE STATE",
+                            "description": "Once this fuse be blown, the CMD0 with argument 0xf0f0f0f0 will be sent to put the eMMC card into pre-IDLE state so that eMMC card\u2019s fast boot can work properly.\nThis is useful for the warm boot, such as boot due to the WDOG reset.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-15",
+                            "name": "SD2_RST_POLARITY_SELECT",
+                            "description": "Select reset polarity for SD2",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Reset active low"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Reset active high"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse7-bits-16-19",
+                            "name": "Boot Failure Indicator Pin Select[3:0]",
+                            "description": "Miscellaneous power management configuration bits.",
+                            "values": [
+                                {
+                                    "name": "gpio1.IO00",
+                                    "value": 0,
+                                    "description": "gpio1.IO00"
+                                },
+                                {
+                                    "name": "gpio1.IO01",
+                                    "value": 1,
+                                    "description": "gpio1.IO01"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-20",
+                            "name": "BT_LPB_POLARITY",
+                            "description": "Define GPIO3 polarity, for determining LPB boot mode.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Active High"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Active Low"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse7-bits-21-22",
+                            "name": "LPB_BOOT",
+                            "description": "Defined the LowPower Boot options (tbd)",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "LPB Disable"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "1 GPIO (def freq)"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "Div by2"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "Div by 4"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 7,
+                            "id": "fuse7-bits-24-30",
+                            "name": "MMC_DLL_DLY[6:0]",
+                            "description": "eMMC 4.4 delay line default value (set by boot rom), used in conjunction with \"DLL Override\" = 1 (BOOT_CFG3[3])"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-31",
+                            "name": "Override NAND Pad Settings",
+                            "description": "Override pad settings for NAND boot.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 0x480-0x4E0",
+                "description": "Reserved registers"
+            },
+            "registers": [
+                {
+                    "id": "fuse8",
+                    "name": "Reserved 0x480",
+                    "description": "Fuse 0x480",
+                    "offset_int": "0x0480",
+                    "index_int": "0x0008",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse9",
+                    "name": "Reserved 0x490",
+                    "description": "Fuse 0x490",
+                    "offset_int": "0x0490",
+                    "index_int": "0x0009",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 10
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 5
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse10",
+                    "name": "Reserved 0x4A0",
+                    "description": "Fuse 0x4A0",
+                    "offset_int": "0x04A0",
+                    "index_int": "0x000A",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse11",
+                    "name": "Reserved 0x4B0",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x04B0",
+                    "index_int": "0x000B",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse12",
+                    "name": "Reserved 0x4C0",
+                    "description": "Fuse 0x4C0",
+                    "offset_int": "0x04C0",
+                    "index_int": "0x000C",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 20
+                        },
+                        {
+                            "width": 12
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse13",
+                    "name": "Reserved 0x4D0",
+                    "description": "Fuse 0x4D0",
+                    "offset_int": "0x04D0",
+                    "index_int": "0x000D",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse14",
+                    "name": "Reserved 0x4E0",
+                    "description": "Fuse 0x4E0",
+                    "offset_int": "0x04E0",
+                    "index_int": "0x000E",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USB",
+                "description": "USB VID and PID"
+            },
+            "registers": [
+                {
+                    "id": "fuse15",
+                    "name": "0x4F0",
+                    "description": "Fuse 0x4F0",
+                    "offset_int": "0x04F0",
+                    "index_int": "0x000F",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00040000",
+                        "operation_lock_int": "0x00080000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse15-bits-0-15",
+                            "name": "USB_VID[31:0]",
+                            "description": "USB VID"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse15-bits-16-31",
+                            "name": "USB_PID[31:0]",
+                            "description": "USB PID"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 0x500-0x570",
+                "description": "Reserved registers"
+            },
+            "registers": [
+                {
+                    "id": "fuse16",
+                    "name": "Reserved 0x500",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0500",
+                    "index_int": "0x0010",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse17",
+                    "name": "Reserved 0x510",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0510",
+                    "index_int": "0x0011",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse18",
+                    "name": "Reserved 0x520",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0520",
+                    "index_int": "0x0012",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse19",
+                    "name": "Reserved 0x530",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0530",
+                    "index_int": "0x0013",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse20",
+                    "name": "Reserved 0x540",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0540",
+                    "index_int": "0x0014",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse21",
+                    "name": "Reserved 0x550",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0550",
+                    "index_int": "0x0015",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse22",
+                    "name": "Reserved 0x560",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0560",
+                    "index_int": "0x0016",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse23",
+                    "name": "Reserved 0x570",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0570",
+                    "index_int": "0x0017",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SRK Hash",
+                "description": "Super Root Keys Hash"
+            },
+            "registers": [
+                {
+                    "id": "fuse24",
+                    "name": "SRK_HASH[255:224]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x0580",
+                    "index_int": "0x0018",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse25",
+                    "name": "SRK_HASH[223:192]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x0590",
+                    "index_int": "0x0019",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse26",
+                    "name": "SRK_HASH[191:160]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x05A0",
+                    "index_int": "0x001A",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse27",
+                    "name": "SRK_HASH[159:128]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x05B0",
+                    "index_int": "0x001B",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse28",
+                    "name": "SRK_HASH[127:96]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x05C0",
+                    "index_int": "0x001C",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse29",
+                    "name": "SRK_HASH[95:64]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x05D0",
+                    "index_int": "0x001D",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse30",
+                    "name": "SRK_HASH[63:32]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x05E0",
+                    "index_int": "0x001E",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse31",
+                    "name": "SRK_HASH[31:0]",
+                    "description": "SRK key, no HW visible lines. NO HW Visible signals available",
+                    "offset_int": "0x05F0",
+                    "index_int": "0x001F",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SJC",
+                "description": "Secure JTAG Controller"
+            },
+            "registers": [
+                {
+                    "id": "fuse32",
+                    "name": "SJC_RESP[31:0]",
+                    "description": "Response reference value for the secure JTAG controller",
+                    "offset_int": "0x0600",
+                    "index_int": "0x0020",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0040",
+                        "operation_lock_int": "0x0040"
+                    }
+                },
+                {
+                    "id": "fuse33",
+                    "name": "SJC_RESP[55:32]",
+                    "description": "Fuse SJC_RESP[55:32]",
+                    "offset_int": "0x0610",
+                    "index_int": "0x0021",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0040",
+                        "operation_lock_int": "0x0040"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 24,
+                            "id": "fuse33-bits-0-23",
+                            "name": "SJC_RESP[55:32]",
+                            "description": "Response reference value for the secure JTAG controller"
+                        },
+                        {
+                            "width": 8
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "MAC",
+                "description": "Ethernet MAC Address"
+            },
+            "registers": [
+                {
+                    "id": "fuse34",
+                    "name": "MAC1_ADDR[47:16]",
+                    "description": "Ethernet MAC Address",
+                    "offset_int": "0x0620",
+                    "index_int": "0x0022",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0100",
+                        "operation_lock_int": "0x0200"
+                    }
+                },
+                {
+                    "id": "fuse35",
+                    "name": "MAC2_ADDR[47:16]",
+                    "description": "Fuse MAC2_ADDR[47:16]",
+                    "offset_int": "0x0630",
+                    "index_int": "0x0023",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0100",
+                        "operation_lock_int": "0x0200"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse35-bits-0-15",
+                            "name": "MAC1_ADDR[15:0]",
+                            "description": "Ethernet MAC Address"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse35-bits-16-31",
+                            "name": "MAC2_ADDR[47:16]",
+                            "description": "Ethernet MAC Address"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse36",
+                    "name": "MAC2_ADDR[31:0]",
+                    "description": "Ethernet MAC Address",
+                    "offset_int": "0x0640",
+                    "index_int": "0x0024",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0100",
+                        "operation_lock_int": "0x0200"
+                    }
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 0x650",
+                "description": "Reserved registers"
+            },
+            "registers": [
+                {
+                    "id": "fuse37",
+                    "name": "Reserved 0x650",
+                    "description": "Fuse 0x650",
+                    "offset_int": "0x0650",
+                    "index_int": "0x0025",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "GPx",
+                "description": "General Purpose Fuse Registers."
+            },
+            "registers": [
+                {
+                    "id": "fuse38",
+                    "name": "GP1[31:0]",
+                    "description": "General Purpose fuse register #1",
+                    "offset_int": "0x0660",
+                    "index_int": "0x0026",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0400",
+                        "operation_lock_int": "0x0800"
+                    }
+                },
+                {
+                    "id": "fuse39",
+                    "name": "GP2[31:0]",
+                    "description": "General Purpose fuse register #2",
+                    "offset_int": "0x0670",
+                    "index_int": "0x0027",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "operation_lock_int": "0x2000"
+                    }
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SW_GPx",
+                "description": "SW general purpose keys."
+            },
+            "registers": [
+                {
+                    "id": "fuse40",
+                    "name": "SW_GP1[31:0]",
+                    "description": "SW general purpose key",
+                    "offset_int": "0x0680",
+                    "index_int": "0x0028",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00010000",
+                        "read_lock_int": "0x00800000",
+                        "operation_lock_int": "0x00010000"
+                    }
+                },
+                {
+                    "id": "fuse41",
+                    "name": "SW_GP2[127:96]",
+                    "description": "SW general purpose key",
+                    "offset_int": "0x0690",
+                    "index_int": "0x0029",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000",
+                        "operation_lock_int": "0x00200000"
+                    }
+                },
+                {
+                    "id": "fuse42",
+                    "name": "SW_GP2[95:64]",
+                    "description": "SW general purpose key",
+                    "offset_int": "0x06A0",
+                    "index_int": "0x002A",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000",
+                        "operation_lock_int": "0x00200000"
+                    }
+                },
+                {
+                    "id": "fuse43",
+                    "name": "SW_GP2[63:32]",
+                    "description": "SW general purpose key",
+                    "offset_int": "0x06B0",
+                    "index_int": "0x002B",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000",
+                        "operation_lock_int": "0x00200000"
+                    }
+                },
+                {
+                    "id": "fuse44",
+                    "name": "SW_GP2[31:0]",
+                    "description": "SW general purpose key",
+                    "offset_int": "0x06C0",
+                    "index_int": "0x002C",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000",
+                        "operation_lock_int": "0x00200000"
+                    }
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Miscellaneous",
+                "description": "Miscellaneous configuration."
+            },
+            "registers": [
+                {
+                    "id": "fuse45",
+                    "name": "0x6D0",
+                    "description": "Fuse 0x6D0",
+                    "offset_int": "0x06D0",
+                    "index_int": "0x002D",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "read_lock_int": "0x00400000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 6,
+                            "id": "fuse45-bits-0-5",
+                            "name": "PAD_SETTINGS",
+                            "description": "Used with conjuction of MMC/SD/Nand \"Override Pad Settings\" fuse value, as follow:\n'0' - Use IO default settings for boot device IO pads.\n'1' - Use \"Override\" value, as set by this register."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse45-bit-6",
+                            "name": "USB_VBUS_EVENT_HANDLER_EN",
+                            "description": "Rom handle USB VBUS attach/detach event",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "ROM not handle USB VBUS attach/detach event"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "ROM handle USB VBUS attach/detach event"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse45-bit-7",
+                            "name": "Enable Boot Failure Indicator Pin",
+                            "description": "Enable Boot Failure Indicator Pin",
+                            "values": [
+                                {
+                                    "name": "disabled",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "enabled",
+                                    "value": 1,
+                                    "description": "enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse45-bits-8-11",
+                            "name": "READ_RETRY_SEQ_ID",
+                            "description": "Choose Read Retry Sequence ",
+                            "values": [
+                                {
+                                    "name": "0000",
+                                    "value": 0,
+                                    "description": "don't use read retry(RR) sequence embedded in ROM"
+                                },
+                                {
+                                    "name": "0001",
+                                    "value": 1,
+                                    "description": "Micron 20nm RR sequence"
+                                },
+                                {
+                                    "name": "0010",
+                                    "value": 2,
+                                    "description": "Toshiba A19nm RR sequence"
+                                },
+                                {
+                                    "name": "0011",
+                                    "value": 3,
+                                    "description": "Toshiba 19nm RR sequence"
+                                },
+                                {
+                                    "name": "0100",
+                                    "value": 4,
+                                    "description": "SanDisk 19nm RR sequence"
+                                },
+                                {
+                                    "name": "0101",
+                                    "value": 5,
+                                    "description": "SanDisk 1ynmRR sequence"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse45-bits-13-15",
+                            "name": "WDOG Timeout Select",
+                            "description": "Select WDOG Timeout",
+                            "values": [
+                                {
+                                    "name": "64s",
+                                    "value": 0,
+                                    "description": "64s"
+                                },
+                                {
+                                    "name": "32s",
+                                    "value": 1,
+                                    "description": "32s"
+                                },
+                                {
+                                    "name": "16s",
+                                    "value": 2,
+                                    "description": "16s"
+                                },
+                                {
+                                    "name": "8s",
+                                    "value": 3,
+                                    "description": "8s"
+                                },
+                                {
+                                    "name": "4s",
+                                    "value": 4,
+                                    "description": "4s"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse45-bits-16-19",
+                            "name": "Default_FlexRAM_Part",
+                            "description": "Default FlexRAM RAM bank partitioning"
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse45-bit-24",
+                            "name": "EEPROM_RECOVERY_EN",
+                            "description": "EEPROM Recovery Enable",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse45-bits-25-26",
+                            "name": "LPSPI_PORT_SEL",
+                            "description": "LPSPI Port Select",
+                            "values": [
+                                {
+                                    "name": "LPSPI1",
+                                    "value": 0,
+                                    "description": "LPSPI1"
+                                },
+                                {
+                                    "name": "LPSPI2",
+                                    "value": 1,
+                                    "description": "LPSPI2"
+                                },
+                                {
+                                    "name": "LPSPI3",
+                                    "value": 2,
+                                    "description": "LPSPI3"
+                                },
+                                {
+                                    "name": "LPSPI4",
+                                    "value": 3,
+                                    "description": "LPSPI4"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse45-bit-27",
+                            "name": "LPSPI_ADDR",
+                            "description": "SPI Addressing",
+                            "values": [
+                                {
+                                    "name": "2-bytes",
+                                    "value": 0,
+                                    "description": "2-bytes (16-bit)"
+                                },
+                                {
+                                    "name": "3-bytes",
+                                    "value": 1,
+                                    "description": "3-bytes (24-bit)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse45-bits-28-29",
+                            "name": "LPSPI_SPEED",
+                            "description": "LPSPI Speed select",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "20 MHz (default)"
+                                },
+                                {
+                                    "name": "10 MHz",
+                                    "value": 1,
+                                    "description": "10 MHz"
+                                },
+                                {
+                                    "name": "5 MHz",
+                                    "value": 2,
+                                    "description": "5 MHz"
+                                },
+                                {
+                                    "name": "2 MHz",
+                                    "value": 3,
+                                    "description": "2 MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse45-bits-30-31",
+                            "name": "SD_CALIBRATION_STEP",
+                            "description": "SD Calibration Step",
+                            "values": [
+                                {
+                                    "name": "1",
+                                    "value": 0,
+                                    "description": "1"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse46",
+                    "name": "0x6E0",
+                    "description": "Fuse 0x6E0",
+                    "offset_int": "0x06E0",
+                    "index_int": "0x002E",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "read_lock_int": "0x00400000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse46-bits-0-7",
+                            "name": "BOOT_CONFIG_MISC0",
+                            "description": "boot configuration misc "
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse46-bits-8-15",
+                            "name": "BOOT_CONFIG_MISC1",
+                            "description": "boot configuration misc "
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse46-bits-16-23",
+                            "name": "BOOT_CONFIG_MISC2",
+                            "description": "boot configuration misc "
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse46-bits-24-31",
+                            "name": "BOOT_CONFIG_MISC3",
+                            "description": "boot configuration misc "
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse47",
+                    "name": "Reserved 0x6F0",
+                    "description": "Fuse 0x6F0",
+                    "offset_int": "0x06F0",
+                    "index_int": "0x002F",
+                    "is_reserved": true,
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse48",
+                    "name": "Reserved 0x800",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0800",
+                    "index_int": "0x0030",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse49",
+                    "name": "Reserved 0x810",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0810",
+                    "index_int": "0x0031",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse50",
+                    "name": "Reserved 0x820",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0820",
+                    "index_int": "0x0032",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse51",
+                    "name": "Reserved 0x830",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0830",
+                    "index_int": "0x0033",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse52",
+                    "name": "Reserved 0x840",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0840",
+                    "index_int": "0x0034",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse53",
+                    "name": "Reserved 0x850",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0850",
+                    "index_int": "0x0035",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse54",
+                    "name": "Reserved 0x860",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0860",
+                    "index_int": "0x0036",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "fuse55",
+                    "name": "Reserved 0x870",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "offset_int": "0x0870",
+                    "index_int": "0x0037",
+                    "is_reserved": true,
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Fuse 0x880",
+                "description": "Fuse 0x880"
+            },
+            "registers": [
+                {
+                    "id": "fuse56",
+                    "name": "GP3[127:96]",
+                    "description": "General Purpose fuse register #3",
+                    "offset_int": "0x0880",
+                    "index_int": "0x0038",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x04000000",
+                        "operation_lock_int": "0x08000000"
+                    }
+                },
+                {
+                    "id": "fuse57",
+                    "name": "GP3[95:64]",
+                    "description": "General Purpose fuse register #3",
+                    "offset_int": "0x0890",
+                    "index_int": "0x0039",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x04000000",
+                        "operation_lock_int": "0x08000000"
+                    }
+                },
+                {
+                    "id": "fuse58",
+                    "name": "GP3[63:32]",
+                    "description": "General Purpose fuse register #3",
+                    "offset_int": "0x08A0",
+                    "index_int": "0x003A",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x04000000",
+                        "operation_lock_int": "0x08000000"
+                    }
+                },
+                {
+                    "id": "fuse59",
+                    "name": "GP3[31:0]",
+                    "description": "General Purpose fuse register #3",
+                    "offset_int": "0x08B0",
+                    "index_int": "0x003B",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x04000000",
+                        "operation_lock_int": "0x08000000"
+                    }
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Fuse 0x8C0",
+                "description": "Fuse 0x8C0"
+            },
+            "registers": [
+                {
+                    "id": "fuse60",
+                    "name": "GP4[127:96]",
+                    "description": "General Purpose fuse register #4",
+                    "offset_int": "0x08C0",
+                    "index_int": "0x003C",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x0080",
+                        "operation_lock_int": "0x02000000"
+                    }
+                },
+                {
+                    "id": "fuse61",
+                    "name": "GP4[95:64]",
+                    "description": "General Purpose fuse register #4",
+                    "offset_int": "0x08D0",
+                    "index_int": "0x003D",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x0080",
+                        "operation_lock_int": "0x02000000"
+                    }
+                },
+                {
+                    "id": "fuse62",
+                    "name": "GP4[63:32]",
+                    "description": "General Purpose fuse register #4",
+                    "offset_int": "0x08E0",
+                    "index_int": "0x003E",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x0080",
+                        "operation_lock_int": "0x02000000"
+                    }
+                },
+                {
+                    "id": "fuse63",
+                    "name": "GP4[31:0]",
+                    "description": "General Purpose fuse register #4",
+                    "offset_int": "0x08F0",
+                    "index_int": "0x003F",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x0080",
+                        "operation_lock_int": "0x02000000"
+                    }
+                }
+            ]
+        }
+    ]
+}

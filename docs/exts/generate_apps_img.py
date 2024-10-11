@@ -6,8 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Script for creation of image with all SPSDK apps"""
+import math
 import os
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -31,7 +32,7 @@ class ImgTable:
         table_list: List[str],
         header_text: str,
         x_count: int = 3,
-        y_count: int = 4,
+        y_count: Optional[int] = None,
         rect_width: int = 300,
         rect_height: int = 100,
         offset: int = 10,
@@ -63,7 +64,7 @@ class ImgTable:
         self.table_list = table_list
         self.header_text = header_text
         self.x_count = x_count
-        self.y_count = y_count
+        self.y_count = y_count or math.ceil(len(table_list) / x_count)
         self.rect_width = rect_width
         self.rect_height = rect_height
         self.offset = offset
@@ -75,10 +76,10 @@ class ImgTable:
         self.outline_color = outline_color
         self.font = font
 
-        if len(table_list) > x_count * y_count:
+        if len(table_list) > self.x_count * self.y_count:
             print(
                 f"Warning: {header_text} table list is larger than the size of the table,"
-                f"size {x_count * y_count}, required {len(table_list)}"
+                f"size {self.x_count * self.y_count}, required {len(table_list)}"
             )
 
         self.img, self.draw = self._get_img()
@@ -122,12 +123,11 @@ class ImgTable:
 
     def _create_table(self):
         """Draws rectangle as table"""
-        idx = 0
-        for j in range(self.x_count):
-            for i in range(self.y_count):
+        sorted_list = sorted(self.table_list)
+        for i in range(self.y_count):
+            for j in range(self.x_count):
                 try:
-                    command = self.table_list[idx]
-                    idx += 1
+                    command = sorted_list[i * self.x_count + j]
                 except IndexError:
                     return
 
@@ -206,7 +206,9 @@ def get_spsdk_apps() -> List[str]:
     :return: list of all SPSDK apps
     """
     commands = spsdk_main.commands
-    commands.pop("clear-cache")  # remove clear-cache command
+    commands.pop("utils")  # remove utils group commands
+    if "get-families" in commands:
+        commands.pop("get-families")  # remove general get-families
     return list(commands.keys())
 
 
@@ -255,9 +257,9 @@ def main():
     img_api = ImgTable(
         table_list=apis_list, header_text="APIs Modules", table_font_size=25, font=IMG_FONT_PATH
     )
-    img_apps = ImgTable(apps_list, "Applications", y_count=6, font=IMG_FONT_PATH)
+    img_apps = ImgTable(apps_list, "Applications", font=IMG_FONT_PATH)
     img_tools = ImgTable(
-        tools_list, "Tools", y_count=1, table_font_size=25, rect_height=150, font=IMG_FONT_PATH
+        tools_list, "Tools", table_font_size=25, rect_height=150, font=IMG_FONT_PATH
     )
 
     # create architecture image by concatenating them

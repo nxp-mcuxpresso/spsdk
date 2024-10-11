@@ -2,22 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-family_rev:
+memory_type:
   type: object
-  required: [family, memory_type]
+  required: [memory_type]
   properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      template_value: rt5xx
-
-    revision:
-      type: string
-      title: Chip silicon revision
-      description: If needed this could be used to specify silicon revision of device.
-      template_value: latest
-
     memory_type:
       type: string
       title: Memory type

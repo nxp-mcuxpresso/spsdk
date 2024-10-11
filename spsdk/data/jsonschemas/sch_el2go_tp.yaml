@@ -21,7 +21,6 @@ el2go_tp:
       title: EdgeLock 2GO API URL
       description: Base URL of the EdgeLock 2GO backend API without an / at the end
       template_value: https://api.edgelock2go.com
-      skip_in_template: true
     api_key:
       type: string
       title: EdgeLock 2GO API Key
@@ -55,6 +54,46 @@ el2go_tp:
     download_timeout:
       type: number
       title: Download Timeout
-      description: Timeout for overall download process including waiting for provisionigs creation
+      description: Timeout for overall download process including waiting for Secure Objects creation
       template_value: 300
-  required: [api_key, device_group_id, nc12, family]
+    prov_fw_path:
+      type: string
+      format: file
+      title: Provisioning FW path
+      description: Path to OEM Provisioning Firmware SB file
+      template_value: oem_tp_fw.sb
+  required: [api_key, device_group_id, nc12, family, prov_fw_path]
+
+fw_load_address:
+  properties:
+    fw_load_address:
+      type: number
+      title: Address for loading the Provisioning Firmware
+      description: Address where to store the Provisioning Firmware.
+        Please note, that if you're using external memory, you have to configure the memory first.
+      template_value: 1234
+  required: ["fw_load_address"]
+
+additional_data_address:
+  properties:
+    secure_objects_address:
+      type: number
+      title: Address for External (user-defined) Secure Objects
+      description:
+        Address where to store External (user-defined) Secure Objects obtained from EL2GO.
+        External Secure Objects refers to Secure Objects other than OEM FW Authentication Key Hash, and OEM FW Decryption Key.
+        Please note that the FW will always erase 8K memory block (flash page size) in the destination address,
+        so any data previously stored at that flash location will be gone.
+        If you don't use any External Secure Objects, this setting has no effect
+      template_value: 123456
+  required: ["secure_objects_address"]
+
+secure_objects_address:
+  properties:
+    secure_objects_address:
+      type: number
+      title: Secure Objects address
+      description: Address where to store Secure Objects obtained from EL2GO.
+        Please note, that if you're using external memory, you have to configure the memory first.
+      template_value: 123456
+  required: ["secure_objects_address"]

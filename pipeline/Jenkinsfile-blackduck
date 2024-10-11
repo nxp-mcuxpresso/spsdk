@@ -1,0 +1,77 @@
+pipeline {
+    agent {label 'blackduck-spsdk'}
+    parameters {
+        string(name: 'JIRA_ID', defaultValue: '', description: 'Jira-id to be updated with report')
+        string(name: 'SPSDK_BRANCH', defaultValue: 'master', description: 'Branch of SPSDK')
+    }
+
+    environment {
+        JIRA_TOKEN = credentials('spsdk-jira-token')
+        BLACKDUCK_ACCOUNT = credentials('spsdk-service-account')
+        BLACKDUCK_PROJECT_ID = 'c_spsdk_automation_19733'
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                // checkout SPSDK
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: env.SPSDK_BRANCH]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'spsdk']],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[credentialsId: 'git_credentials', url: 'ssh://git@bitbucket.sw.nxp.com/spsdk/spsdk.git']]
+                ])
+                // checkout release tools
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'master']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'release_tools']],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[credentialsId: 'git_credentials', url: 'ssh://git@bitbucket.sw.nxp.com/spsdk/release-tools.git']]
+                ])
+            }
+        }
+        stage("Setup") {
+            steps {
+                withPythonEnv('python3.12') {
+                    bat '''
+                        python -m pip install --upgrade pip
+                        pip install --upgrade ./release_tools'''
+                }
+            }
+        }
+        stage("Black Duck Scan") {
+            steps {
+                withPythonEnv('python3.12') {
+                    bat '''
+                        release_tools black_duck analyze -u %BLACKDUCK_ACCOUNT_USR% -p %BLACKDUCK_ACCOUNT_PSW% -i %BLACKDUCK_PROJECT_ID% -d ./spsdk
+                        release_tools black_duck generate-report -u %BLACKDUCK_ACCOUNT_USR% -p %BLACKDUCK_ACCOUNT_PSW% -i %BLACKDUCK_PROJECT_ID% -t t_reportwithobligations_7215 -o ./BlackDuckReport.xlsx
+                    '''
+                }
+            }
+        }
+        stage("Upload Jira") {
+            when {
+                expression {
+                    return env.JIRA_ID != '';
+                }
+            }
+            steps {
+                withPythonEnv('python3.12') {
+                    bat "release_tools black_duck push-jira --jira-token %JIRA_TOKEN% --parent-jira-issue %JIRA_ID% --report-file ./BlackDuckReport.xlsx"
+                }
+            }
+        }
+    }
+    post {
+        always {
+                archiveArtifacts artifacts: '*.xlsx', fingerprint: true
+                emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+                 replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+                 to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
+                                         [$class: 'RequesterRecipientProvider']]))
+        }
+    }
+}

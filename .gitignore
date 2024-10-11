@@ -147,3 +147,7 @@ logging.yaml
 
 # setuptools_scm version file
 spsdk/__version__.py
+
+# coverity stuff
+idir
+data-coverity

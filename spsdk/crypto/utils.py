@@ -7,7 +7,7 @@
 
 """OpenSSL implementation for security backend."""
 
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, Optional
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm
@@ -17,7 +17,7 @@ from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.misc import load_binary
 
 
-def get_matching_key_id(public_keys: List[PublicKey], signature_provider: SignatureProvider) -> int:
+def get_matching_key_id(public_keys: list[PublicKey], signature_provider: SignatureProvider) -> int:
     """Get index of public key that match to given private key.
 
     :param public_keys: List of public key used to find the match for the private key.
@@ -33,7 +33,7 @@ def get_matching_key_id(public_keys: List[PublicKey], signature_provider: Signat
 
 
 def get_matching_key_id_from_signature(
-    public_keys: List[PublicKey],
+    public_keys: list[PublicKey],
     signed_data: bytes,
     signature: bytes,
     algorithm: Optional[EnumHashAlgorithm] = None,
@@ -81,7 +81,7 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
 
 
 def extract_public_key(
-    file_path: str, password: Optional[str] = None, search_paths: Optional[List[str]] = None
+    file_path: str, password: Optional[str] = None, search_paths: Optional[list[str]] = None
 ) -> PublicKey:
     """Extract any kind of public key from a file that contains Certificate, Private Key or Public Key.
 
@@ -101,8 +101,8 @@ def extract_public_key(
 def extract_public_keys(
     secret_files: Iterable[str],
     password: Optional[str] = None,
-    search_paths: Optional[List[str]] = None,
-) -> List[PublicKey]:
+    search_paths: Optional[list[str]] = None,
+) -> list[PublicKey]:
     """Extract any kind of public key from files that contain Certificate, Private Key or Public Key.
 
     :param secret_files: List of file paths to public key files.
@@ -114,3 +114,14 @@ def extract_public_keys(
         extract_public_key(file_path=source, password=password, search_paths=search_paths)
         for source in secret_files
     ]
+
+
+def get_hash_type_from_signature_size(signature_size: int) -> EnumHashAlgorithm:
+    """Return hash type from ECC signature size."""
+    if signature_size == 64:
+        return EnumHashAlgorithm.SHA256
+    if signature_size == 96:
+        return EnumHashAlgorithm.SHA384
+    if signature_size == 132:
+        return EnumHashAlgorithm.SHA512
+    raise SPSDKValueError("Unknown signature size")

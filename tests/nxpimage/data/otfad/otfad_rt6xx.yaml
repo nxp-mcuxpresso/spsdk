@@ -1,14 +1,14 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  OTFAD converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                         == Basic Settings ==                                        
+#                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt6xx  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x', 'rt5xx', 'rt6xx']
+family: rt6xx  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189', 'rt5xx', 'rt6xx']
 output_folder: otfad_rt6xx_outputs # [Required], OTFAD output folder; Path to directory where the OTFAD output will be generated
 # ----------------------------------------------------------------------------------------------------
-#                                         == OTFAD Settings ==                                        
+#                                         == OTFAD Settings ==
 # ----------------------------------------------------------------------------------------------------
 kek: test_kek.bin # [Required], KEK; OTFAD Key Encryption Key to encrypt OTFAD table. Might be provided as a path to binary file containing KEK or as a string or number
 otfad_table_address: 0 # [Required], OTFAD key blobs table address; The base address of key blob table, it should be aligned to 1 KB (1024 B)

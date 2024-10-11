@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -58,9 +58,6 @@ def test_errors(sample_tz_data):
     # throw error for invalid customization data
     with pytest.raises(SPSDKError):
         TrustZone(family="lpc55s6x", customizations={"fake": "this is fake"})
-    # throw error when TZ  type is custom and family is not set
-    with pytest.raises(SPSDKError, match="The device with name None is not in the database."):
-        TrustZone(tz_type=TrustZoneType.CUSTOM, family=None)
 
 
 def test_simplified_export():

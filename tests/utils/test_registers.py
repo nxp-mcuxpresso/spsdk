@@ -7,7 +7,7 @@
 """ Tests for registers utility."""
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from ruamel.yaml import YAML
@@ -34,15 +34,15 @@ TEST_REG_NAME = "TestReg"
 TEST_REG_BC_NAME = "TestRegBc"
 TEST_REG_OFFSET = 1024
 TEST_REG_WIDTH = 32
-TEST_REG_UID = "UID_test_reg"
+TEST_REG_UID = "field400"
 TEST_REG_UID2 = "UID_test_reg2"
 TEST_REG_DESCR = "TestReg Description"
 TEST_REG_REV = False
 TEST_REG_ACCESS = "RW"
 TEST_REG_VALUE = 0xA5A5A5A5
 
-TEST_BITFIELD_NAME = "TestBitfiled"
-TEST_BITFIELD_BC_NAME = "TestBitfiledBc"
+TEST_BITFIELD_NAME = "TestBitfield"
+TEST_BITFIELD_BC_NAME = "TestBitfieldBc"
 TEST_BITFIELD_OFFSET = 0x0F
 TEST_BITFIELD_WIDTH = 5
 TEST_BITFIELD_UID = "UID_bitfield"
@@ -791,6 +791,20 @@ def test_grouped_register_invalid_params(data_dir, group_reg):
         regs._load_spec(data_dir + "/grp_regs.json", grouped_regs=group_reg)
 
 
+def test_load_register_value_with_uid(data_dir):
+    """Simply test to handle load of individual registers into grouped from YML."""
+    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs._load_spec(data_dir + "/registers.json")
+    reg = regs.find_reg(TEST_REG_NAME)
+    data = {TEST_REG_NAME: 0x12345678}
+    regs.load_yml_config(data)
+    assert reg.get_value() == 0x12345678
+    reg.set_value(0)
+    data = {TEST_REG_UID: 0x87654321}
+    regs.load_yml_config(data)
+    assert reg.get_value() == 0x87654321
+
+
 def test_load_grouped_register_value(data_dir):
     """Simply test to handle load of individual registers into grouped from YML."""
     regs = Registers(family=TEST_DEVICE_NAME, feature="test")
@@ -808,9 +822,9 @@ def test_load_grouped_register_value(data_dir):
     reg = regs.find_reg("TestRegA")
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x31323334"
-    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x21222324"
+    assert regs.find_reg("field404", include_group_regs=True).get_hex_value() == "0x21222324"
     assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x11121314"
-    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x01020304"
+    assert regs.find_reg("field40C", include_group_regs=True).get_hex_value() == "0x01020304"
 
 
 def test_load_grouped_register_value_compatibility(data_dir):
@@ -989,9 +1003,9 @@ REGS_REV_ORDER_REVERSED_GRP = {
 def test_regs(
     data_dir: str,
     json: str,
-    reg_list: Dict[str, int],
-    reg_list_raw: Dict[str, int],
-    group: Dict[str, Any],
+    reg_list: dict[str, int],
+    reg_list_raw: dict[str, int],
+    group: dict[str, Any],
     reg_group_val: int,
 ):
     regs = Registers(family="Test device", feature="test", base_endianness=Endianness.LITTLE)

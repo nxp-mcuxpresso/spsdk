@@ -2,18 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-sb3_family:
-  type: object
-  title: Basic Settings
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      enum: [] # Just placeholder to keep this record that will be fulfilled in runtime
-      template_value: lpc55s3x
-  required: [family]
-
 sb3_output:
   type: object
   title: Basic Settings
@@ -370,6 +358,12 @@ sb3_commands:
                     description: Binary file to be loaded.
                     format: file
                     template_value: my_keyblob.bin
+                  plainInput:
+                    type: string
+                    title: Key Blob as plain text
+                    description: Indicates whether key is provided as plaintext or not. If it's in plaintext this option also indicates whether it's as binary or hex
+                    enum: ["no", bin, hex]
+                    template_value: "no"
                 required: [offset, wrappingKeyId, file]
 
           - type: object

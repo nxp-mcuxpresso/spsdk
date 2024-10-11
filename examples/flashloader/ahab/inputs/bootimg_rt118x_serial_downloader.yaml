@@ -1,15 +1,15 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ================================  Bootable Image Configuration template for rt118x.  =================================
+# ================================  Bootable Image Configuration template for mimxrt1189.  =================================
 
 # ======================================================================================================================
 #                                                 == General Options ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: MCU family name.
-# Possible options: <lpc55s3x, rt101x, rt102x, rt104x, rt105x, rt106x, rt116x, rt117x, rt118x, rt5xx, rt6xx, rw61x>
-family: rt118x
+# Possible options: <lpc55s36, mimxrt1010, mimxrt1024, mimxrt1040, mimxrt1050, mimxrt1064, mimxrt1166, mimxrt1176, mimxrt1189, mimxrt595s, mimxrt685s, rw612>
+family: mimxrt1189
 # -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
 # Description: If needed this could be used to specify silicon revision of device.
 # Possible options: <a0, b0, latest>

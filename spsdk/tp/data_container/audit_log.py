@@ -8,7 +8,7 @@
 import contextlib
 import os
 import sqlite3
-from typing import Iterator, List, NamedTuple, Optional, Tuple
+from typing import Iterator, NamedTuple, Optional
 
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PublicKeyEcc
@@ -110,7 +110,7 @@ class AuditLogRecord(NamedTuple):
     """Single record in the Audit log."""
 
     nxp_id_cert: bytes
-    oem_id_certs: List[bytes]
+    oem_id_certs: list[bytes]
     prod_counter: bytes
     start_hash: bytes
     signature: bytes
@@ -237,7 +237,7 @@ class AuditLogProperties(NamedTuple):
         return AuditLogProperties(data[1], data[2])
 
 
-class AuditLog(List[AuditLogRecord]):
+class AuditLog(list[AuditLogRecord]):
     """Full Audit log, List of AuditLogRecords."""
 
     @staticmethod
@@ -263,8 +263,8 @@ class AuditLog(List[AuditLogRecord]):
 
     @staticmethod
     def records(
-        file_path: str, id_slice: Optional[Tuple[int, int]] = None
-    ) -> Iterator[Tuple[int, AuditLogRecord]]:
+        file_path: str, id_slice: Optional[tuple[int, int]] = None
+    ) -> Iterator[tuple[int, AuditLogRecord]]:
         """Read records from database file.
 
         :param file_path: Path to database file

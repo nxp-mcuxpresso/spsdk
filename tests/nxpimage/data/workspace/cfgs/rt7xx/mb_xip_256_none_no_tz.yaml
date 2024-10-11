@@ -1,0 +1,59 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===================  Master Boot Image Configuration template for rt7xx, Plain Signed XIP Image.  ====================
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+family: rt7xx
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: signed
+# ------------------------------------===== Master Boot Image name [Required] =====-------------------------------------
+# Description: The file for Master Boot Image result file.
+masterBootOutputFile: .\workspace\output_images\rt7xx\mb_xip_256_none.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: .\workspace\input_images\normal_boot_rt7xx.bin
+# --------------------------------===== Loading address of application [Required] =====---------------------------------
+# Description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+outputImageExecutionAddress: 0x28004000
+# ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
+# Description: Value compared with Secure_FW_Version monotonic counter value stored in PFR/IFR. If value is lower than
+# value in PFR/IFR, then is image rejected (rollback protection)..
+firmwareVersion: 0
+# -----------------------------------------===== Image SubType [Optional] =====-----------------------------------------
+# Description: Image subtype determine the image use in MCU. "main" for main application, "nbu" for Narrow Band Unit
+# image and "recovery" for recovery image type
+# Possible options: <main, nbu, recovery>
+outputImageSubtype: main
+# ----------------------------------------===== Image version. [Optional] =====-----------------------------------------
+# Description: Image version is used for dual boot. The boot ROM decides which image to boot first based on the image
+# version. It boots the one with the newer image version first, and in case of a failure, it boots the older one.
+imageVersion: 0
+# ======================================================================================================================
+#                                              == Certificate Block V2.1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: .\workspace\cfgs\cert_block\cert_256_none.yaml
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+mainRootCertPrivateKeyFile: .\workspace\keys_certs\ec_pk_secp256r1_cert0.pem
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==
+# ======================================================================================================================
+# ------------------------------------===== TrustZone enable option [Optional] =====------------------------------------
+# Description: If not specified, the Trust zone is disabled.
+enableTrustZone: false

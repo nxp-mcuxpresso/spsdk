@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools_scm<8.2", "setuptools>=72.1,<74", "wheel"]
+# build-backend = "setuptools.build_meta"
+
 [tool.black]
 line-length = 100
 target-version = ['py39', 'py310', 'py311', 'py312']
@@ -40,14 +44,19 @@ match = '(?!test_|__version__).*\.py'
 
 [tool.setuptools_scm]
 version_file = "spsdk/__version__.py"
-version_scheme = "no-guess-dev"
-git_describe_command = 'git describe --dirty --tags --long --match "v[0-9].*"'
+version_scheme = "spsdk.versioning:run"
+git_describe_command = 'git describe --tags --long --match "v[0-9].*"'
 
 [tool.py_headers]
 excluded_files = ["docs/conf.py", "spsdk/__version__.py"]
 
 [tool.copyright]
-excluded_files = ["docs/conf.py", ".pre-commit-config.yaml", ".readthedocs.yml", "spsdk/__version__.py"]
+excluded_files = [
+    "docs/conf.py",
+    ".pre-commit-config.yaml",
+    ".readthedocs.yml",
+    "spsdk/__version__.py",
+]
 
 
 [tool.gitcov]
@@ -69,9 +78,9 @@ full-file-test = 0
 "examples/imx93/imx93_ahab_uboot.ipynb" = [10]
 "examples/imx93/imx93_signed_ahab_uboot.ipynb" = [10]
 
-[tool.checker_depencecies]
+[tool.checker_dependencies]
 root_package = "spsdk"
-[tool.checker_depencecies.spdx]
+[tool.checker_dependencies.spdx]
 
 "Apache-2.0" = [
     "Apache 2.0",
@@ -81,9 +90,8 @@ root_package = "spsdk"
     "Apache License 2.0",
     "Apache Software License",
 ]
-"BSD-2-Clause" = ["BSD", "BSD 2-Clause License"]
+"BSD-2-Clause" = ["BSD 2-Clause License"]
 "BSD-3-Clause" = [
-    "BSD",
     "BSD License",
     "BSD 3-Clause",
     "BSD (3 clause)",
@@ -187,7 +195,14 @@ method = "check_cyclic_imports"
 check_paths = ["spsdk"]
 info_only = false
 dependencies = []
-
+[[tool.nxp_codecheck.checkers]]
+name = "BANDIT"
+info_only = true
+[[tool.nxp_codecheck.checkers]]
+name = "CSPELL"
+method = "check_cspell"
+check_paths = ["**/*.{txt,py,md,yaml,rst,json}"]
+info_only = true
 # ************************** Jupyter notebooks checks *********************************
 [[tool.nxp_codecheck.checkers]]
 name = "BLACK_NB"
@@ -206,7 +221,7 @@ info_only = false
 dependencies = ["BLACK_NB"]
 inherit_failure = false
 fixer = "fix_isort_nb"
-jyputer_notebook_checker = true 
+jyputer_notebook_checker = true
 [[tool.nxp_codecheck.checkers]]
 name = "JUPYTER"
 method = "check_jupyter_outputs"
@@ -216,6 +231,34 @@ dependencies = ["BLACK_NB", "ISORT_NB"]
 inherit_failure = false
 jyputer_notebook_checker = true
 
-[tool.clr]
+[tool.release-tools]
+
+[tool.release-tools.docs]
+install_hook = ['uv pip install ".[all]" -r docs/requirements.txt']
+docs_directory = "docs"
+# Disable JIRA upload due to artifacts size
+disable_jira_upload = true
+
+[tool.release-tools.clr]
+install_hook = ['uv pip install ".[all]"']
 check_directories = ["spsdk", "tests", "tools", "examples"]
 excluded_files = ["spsdk/__version__.py"]
+
+[tool.release-tools.scr]
+scr_file = "SW_Content_Register_SPSDK.txt"
+
+[tool.release-tools.testpypi]
+test_cmd = "spsdk --version"
+
+[tool.release-tools.test_artifacts_collector.jenkins_jobs]
+spsdk_full_test_scope_macos = { artifact_regex = ".*results.xml"}
+spsdk_full_test_scope_ubuntu = { artifact_regex = ".*results.xml"}
+spsdk_full_test_scope_win10 = { artifact_regex = ".*results.xml"}
+spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml"}
+
+[tool.release-tools.blackduck.env]
+PROTEX_PROJECT_ID = "c_spsdk_automation_19733"
+PROTEX_TEMPLATE = "t_reportwithobligations_7215"
+
+[tool.check-wheel-contents]
+ignore = "W002" # Wheel contains duplicate files

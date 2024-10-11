@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,13 +21,13 @@ trustZonePresetFile: '' # [Optional], TrustZone Customization file; If not speci
 # ----------------------------------------------------------------------------------------------------
 #                                    == Certificate V2 Settings ==
 # ----------------------------------------------------------------------------------------------------
-signProvider: type=file;file_path=k0_cert0_2048.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". It can be replaced by mainCertPrivateKeyFile key.
+signProvider: type=file;file_path=../../_data/keys/rsa2048/srk0_rsa2048.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". It can be replaced by mainCertPrivateKeyFile key.
 # ----------------------------------------------------------------------------------------------------
 #                                       == Root Keys Settings ==
 # ----------------------------------------------------------------------------------------------------
-rootCertificate0File: p0_cert0_2048.pub # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
-rootCertificate1File: p1_cert0_2048.pub # [Optional], Root Certificate File 1; Root certificate file index 1.
-rootCertificate2File: p2_cert0_2048.pub # [Optional], Root Certificate File 2; Root certificate file index 2.
-rootCertificate3File: p3_cert0_2048.pub # [Optional], Root Certificate File 3; Root certificate file index 3.
+rootCertificate0File: ../../_data/keys/rsa2048/srk0_rsa2048.pub # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: ../../_data/keys/rsa2048/srk1_rsa2048.pub # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: ../../_data/keys/rsa2048/srk2_rsa2048.pub # [Optional], Root Certificate File 2; Root certificate file index 2.
+rootCertificate3File: ../../_data/keys/rsa2048/srk3_rsa2048.pub # [Optional], Root Certificate File 3; Root certificate file index 3.
 
 mainRootCertId: 0

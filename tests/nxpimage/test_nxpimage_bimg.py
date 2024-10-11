@@ -20,35 +20,94 @@ from spsdk.image.bootable_image.segments import BootableImageSegment
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
+FULL_LIST_TO_TEST = [
+    ("mimxrt595s", "flexspi_nor", "xip_crc", ["fcb", "keyblob", "keystore", "mbi"]),
+    ("mimxrt595s", "flexspi_nor", "xip_plain", ["fcb", "mbi"]),
+    ("mimxrt685s", "flexspi_nor", "xip", ["fcb", "keyblob", "keystore", "mbi"]),
+    ("mimxrt685s", "flexspi_nor", "load_to_ram", ["mbi"]),
+    ("lpc55s36", "flexspi_nor", None, ["fcb", "mbi"]),
+    ("lpc55s36", "internal", None, ["mbi"]),
+    ("mimxrt1010", "flexspi_nor", None, ["fcb", "keyblob", "hab_container"]),
+    ("mimxrt1015", "flexspi_nor", None, ["fcb", "hab_container"]),
+    (
+        "mimxrt1024",
+        "flexspi_nor",
+        None,
+        ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
+    ),
+    (
+        "mimxrt1040",
+        "flexspi_nor",
+        None,
+        ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
+    ),
+    (
+        "mimxrt1050",
+        "flexspi_nor",
+        "fcb_bee_hab",
+        ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
+    ),
+    (
+        "mimxrt1050",
+        "flexspi_nor",
+        "fcb_hab",
+        ["fcb", "hab_container"],
+    ),
+    (
+        "mimxrt1064",
+        "flexspi_nor",
+        None,
+        ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
+    ),
+    ("mimxrt1166", "flexspi_nor", None, ["keyblob", "fcb", "keystore", "hab_container"]),
+    ("mimxrt1176", "flexspi_nor", "0x00_pattern", ["keyblob", "fcb", "keystore", "hab_container"]),
+    (
+        "mimxrt1176",
+        "flexspi_nor",
+        "0xff_pattern",
+        ["fcb", "hab_container"],
+    ),
+    ("mimxrt1176", "semc_nand", None, ["hab_container"]),
+    ("mimxrt1176", "flexspi_nand", None, ["hab_container"]),
+    ("mimxrt1189", "flexspi_nor", "no_xmcd", ["fcb", "ahab_container"]),
+    ("mimxrt1189", "flexspi_nor", "with_xmcd", ["fcb", "ahab_container", "xmcd"]),
+    ("mimxrt1189", "flexspi_nor", "ahab_only", ["ahab_container"]),
+    ("mimxrt1166", "semc_nand", None, ["hab_container"]),
+    ("mimxrt1166", "flexspi_nand", None, ["hab_container"]),
+    ("mcxn947", "flexspi_nor", "full", ["fcb", "mbi"]),
+    ("mcxn947", "flexspi_nor", "starting_fcb_1", ["fcb", "mbi"]),
+    ("rw612", "flexspi_nor", None, ["fcb", "mbi"]),
+]
+
 
 @pytest.mark.parametrize(
     "mem_type,family,configuration,config_file",
     [
-        ("flexspi_nor", "rt5xx", "xip_crc", "config.yaml"),
-        ("flexspi_nor", "rt5xx", "xip_plain", "config.yaml"),
-        ("flexspi_nor", "rt6xx", "xip", "config.yaml"),
-        ("flexspi_nor", "rt6xx", "load_to_ram", "config.yaml"),
-        ("flexspi_nor", "lpc55s3x", None, "config.yaml"),
-        ("flexspi_nor", "lpc55s3x", None, "config_yaml.yaml"),
-        ("internal", "lpc55s3x", None, "config.yaml"),
-        ("internal", "lpc55s3x", None, "config_yaml.yaml"),
-        ("flexspi_nor", "rt1010", None, "config.yaml"),
-        ("flexspi_nor", "rt1015", None, "config.yaml"),
-        ("flexspi_nor", "rt102x", None, "config.yaml"),
-        ("flexspi_nor", "rt104x", None, "config.yaml"),
-        ("flexspi_nor", "rt105x", "fcb_bee_hab", "config.yaml"),
-        ("flexspi_nor", "rt106x", None, "config.yaml"),
-        ("flexspi_nor", "rt116x", None, "config.yaml"),
-        ("flexspi_nor", "rt117x", "0x00_pattern", "config.yaml"),
-        ("flexspi_nor", "rt118x", "no_xmcd", "config.yaml"),
-        ("flexspi_nor", "rt118x", "no_xmcd", "config_yaml.yaml"),
-        ("flexspi_nor", "rt118x", "with_xmcd", "config.yaml"),
-        ("flexspi_nor", "rt118x", "with_xmcd", "config_yaml.yaml"),
-        ("semc_nand", "rt116x", None, "config.yaml"),
-        ("semc_nand", "rt117x", None, "config.yaml"),
-        ("flexspi_nand", "rt116x", None, "config.yaml"),
-        ("flexspi_nand", "rt117x", None, "config.yaml"),
-        ("flexspi_nand", "rt117x", None, "config_yaml.yaml"),
+        ("flexspi_nor", "mimxrt595s", "xip_crc", "config.yaml"),
+        ("flexspi_nor", "mimxrt595s", "xip_plain", "config.yaml"),
+        ("flexspi_nor", "mimxrt685s", "xip", "config.yaml"),
+        ("flexspi_nor", "mimxrt685s", "load_to_ram", "config.yaml"),
+        ("flexspi_nor", "lpc55s36", None, "config.yaml"),
+        ("flexspi_nor", "lpc55s36", None, "config_yaml.yaml"),
+        ("internal", "lpc55s36", None, "config.yaml"),
+        ("internal", "lpc55s36", None, "config_yaml.yaml"),
+        ("flexspi_nor", "mimxrt1010", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1015", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1024", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1040", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1050", "fcb_bee_hab", "config.yaml"),
+        ("flexspi_nor", "mimxrt1064", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1166", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1176", "0x00_pattern", "config.yaml"),
+        ("flexspi_nor", "mimxrt1189", "no_xmcd", "config.yaml"),
+        ("flexspi_nor", "mimxrt1189", "no_xmcd", "config_yaml.yaml"),
+        ("flexspi_nor", "mimxrt1189", "with_xmcd", "config.yaml"),
+        ("flexspi_nor", "mimxrt1189", "with_xmcd", "config_yaml.yaml"),
+        ("semc_nand", "mimxrt1166", None, "config.yaml"),
+        ("semc_nand", "mimxrt1176", None, "config.yaml"),
+        ("flexspi_nand", "mimxrt1166", None, "config.yaml"),
+        ("flexspi_nand", "mimxrt1176", None, "config.yaml"),
+        ("flexspi_nand", "mimxrt1176", None, "config_yaml.yaml"),
     ],
 )
 def test_nxpimage_bimg_merge(
@@ -70,66 +129,7 @@ def test_nxpimage_bimg_merge(
         )
 
 
-@pytest.mark.parametrize(
-    "family,mem_type,configuration,blocks",
-    [
-        ("rt5xx", "flexspi_nor", "xip_crc", ["fcb", "keyblob", "keystore", "mbi"]),
-        ("rt5xx", "flexspi_nor", "xip_plain", ["fcb", "mbi"]),
-        ("rt6xx", "flexspi_nor", "xip", ["fcb", "keyblob", "keystore", "mbi"]),
-        ("rt6xx", "flexspi_nor", "load_to_ram", ["mbi"]),
-        ("lpc55s3x", "flexspi_nor", None, ["fcb", "mbi"]),
-        ("lpc55s3x", "internal", None, ["mbi"]),
-        ("rt1010", "flexspi_nor", None, ["fcb", "keyblob", "hab_container"]),
-        ("rt1015", "flexspi_nor", None, ["fcb", "hab_container"]),
-        (
-            "rt102x",
-            "flexspi_nor",
-            None,
-            ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
-        ),
-        (
-            "rt104x",
-            "flexspi_nor",
-            None,
-            ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
-        ),
-        (
-            "rt105x",
-            "flexspi_nor",
-            "fcb_bee_hab",
-            ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
-        ),
-        (
-            "rt105x",
-            "flexspi_nor",
-            "fcb_hab",
-            ["fcb", "hab_container"],
-        ),
-        (
-            "rt106x",
-            "flexspi_nor",
-            None,
-            ["fcb", "bee_header_0", "bee_header_1", "hab_container"],
-        ),
-        ("rt116x", "flexspi_nor", None, ["keyblob", "fcb", "keystore", "hab_container"]),
-        ("rt117x", "flexspi_nor", "0x00_pattern", ["keyblob", "fcb", "keystore", "hab_container"]),
-        (
-            "rt117x",
-            "flexspi_nor",
-            "0xff_pattern",
-            ["fcb", "hab_container"],
-        ),
-        ("rt117x", "semc_nand", None, ["hab_container"]),
-        ("rt117x", "flexspi_nand", None, ["hab_container"]),
-        ("rt118x", "flexspi_nor", "no_xmcd", ["fcb", "ahab_container"]),
-        ("rt118x", "flexspi_nor", "with_xmcd", ["fcb", "ahab_container", "xmcd"]),
-        ("rt118x", "flexspi_nor", "ahab_only", ["ahab_container"]),
-        ("rt116x", "semc_nand", None, ["hab_container"]),
-        ("rt116x", "flexspi_nand", None, ["hab_container"]),
-        ("mcxn9xx", "flexspi_nor", "full", ["fcb", "mbi"]),
-        ("rw61x", "flexspi_nor", None, ["fcb", "mbi"]),
-    ],
-)
+@pytest.mark.parametrize("family,mem_type,configuration,blocks", FULL_LIST_TO_TEST)
 def test_nxpimage_bimg_parse_cli(
     cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, configuration, blocks
 ):
@@ -173,19 +173,19 @@ def test_nxpimage_bimg_parse_cli(
 @pytest.mark.parametrize(
     "family,configs",
     [
-        ("rt5xx", [("flexspi_nor", "xip_crc")]),
-        ("rt6xx", [("flexspi_nor", "xip")]),
-        ("lpc55s3x", ["flexspi_nor", "internal"]),
-        ("rt1010", ["flexspi_nor"]),
-        ("rt1015", ["flexspi_nor"]),
-        ("rt102x", ["flexspi_nor"]),
-        ("rt104x", ["flexspi_nor"]),
-        ("rt105x", [("flexspi_nor", "fcb_bee_hab")]),
-        ("rt106x", ["flexspi_nor"]),
-        ("rt116x", ["flexspi_nor", "semc_nand", "flexspi_nand"]),
-        ("rt117x", [("flexspi_nor", "0x00_pattern"), "semc_nand", "flexspi_nand"]),
-        ("rt118x", [("flexspi_nor", "no_xmcd")]),
-        ("mcxn9xx", [("flexspi_nor", "full")]),
+        ("mimxrt595s", [("flexspi_nor", "xip_crc")]),
+        ("mimxrt685s", [("flexspi_nor", "xip")]),
+        ("lpc55s36", ["flexspi_nor", "internal"]),
+        ("mimxrt1010", ["flexspi_nor"]),
+        ("mimxrt1015", ["flexspi_nor"]),
+        ("mimxrt1024", ["flexspi_nor"]),
+        ("mimxrt1040", ["flexspi_nor"]),
+        ("mimxrt1050", [("flexspi_nor", "fcb_bee_hab")]),
+        ("mimxrt1064", ["flexspi_nor"]),
+        ("mimxrt1166", ["flexspi_nor", "semc_nand", "flexspi_nand"]),
+        ("mimxrt1176", [("flexspi_nor", "0x00_pattern"), "semc_nand", "flexspi_nand"]),
+        ("mimxrt1189", [("flexspi_nor", "no_xmcd")]),
+        ("mcxn947", [("flexspi_nor", "full")]),
     ],
 )
 def test_nxpimage_bimg_template_cli(cli_runner: CliRunner, tmpdir, data_dir, family, configs):
@@ -207,15 +207,15 @@ def test_nxpimage_bimg_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
 @pytest.mark.parametrize(
     "family,input_path,expected_mem_type",
     [
-        ("rt5xx", "rt5xx/flexspi_nor/xip_crc/merged_image.bin", "flexspi_nor"),
-        ("lpc55s3x", "lpc55s3x/internal/merged_image.bin", "internal"),
-        ("lpc55s3x", "rt5xx/flexspi_nor/xip_crc/merged_image.bin", None),
-        ("rt102x", "rt5xx/flexspi_nor/xip_crc/merged_image.bin", None),
-        ("rt118x", "rt5xx/flexspi_nor/xip_crc/merged_image.bin", None),
-        ("rt116x", "rt116x/flexspi_nor/merged_image.bin", "flexspi_nor"),
-        ("rt116x", "rt116x/flexspi_nand/merged_image.bin", "flexspi_nand"),
-        ("rt116x", "rt116x/semc_nand/merged_image.bin", "flexspi_nand"),
-        ("mcxn9xx", "mcxn9xx/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
+        ("mimxrt595s", "mimxrt595s/flexspi_nor/xip_crc/merged_image.bin", "flexspi_nor"),
+        ("lpc55s36", "lpc55s36/internal/merged_image.bin", "internal"),
+        ("lpc55s36", "mimxrt595s/flexspi_nor/xip_crc/merged_image.bin", None),
+        ("mimxrt1024", "mimxrt595s/flexspi_nor/xip_crc/merged_image.bin", None),
+        ("mimxrt1189", "mimxrt595s/flexspi_nor/xip_crc/merged_image.bin", None),
+        ("mimxrt1166", "mimxrt1166/flexspi_nor/merged_image.bin", "flexspi_nor"),
+        ("mimxrt1166", "mimxrt1166/flexspi_nand/merged_image.bin", "flexspi_nand"),
+        ("mimxrt1166", "mimxrt1166/semc_nand/merged_image.bin", "flexspi_nand"),
+        ("mcxn947", "mcxn947/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
     ],
 )
 def test_nxpimage_bimg_parse_autodetect_mem_type(data_dir, family, input_path, expected_mem_type):
@@ -233,12 +233,12 @@ def test_nxpimage_bimg_parse_autodetect_mem_type(data_dir, family, input_path, e
 @pytest.mark.parametrize(
     "family,input_path,expected_mem_type",
     [
-        ("rt5xx", "rt5xx/flexspi_nor/xip_crc/merged_image.bin", "flexspi_nor"),
-        ("lpc55s3x", "lpc55s3x/internal/merged_image.bin", "internal"),
-        ("rt116x", "rt116x/flexspi_nor/merged_image.bin", "flexspi_nor"),
-        ("rt116x", "rt116x/flexspi_nand/merged_image.bin", "flexspi_nand"),
-        ("rt116x", "rt116x/semc_nand/merged_image.bin", "flexspi_nand"),
-        ("mcxn9xx", "mcxn9xx/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
+        ("mimxrt595s", "mimxrt595s/flexspi_nor/xip_crc/merged_image.bin", "flexspi_nor"),
+        ("lpc55s36", "lpc55s36/internal/merged_image.bin", "internal"),
+        ("mimxrt1166", "mimxrt1166/flexspi_nor/merged_image.bin", "flexspi_nor"),
+        ("mimxrt1166", "mimxrt1166/flexspi_nand/merged_image.bin", "flexspi_nand"),
+        ("mimxrt1166", "mimxrt1166/semc_nand/merged_image.bin", "flexspi_nand"),
+        ("mcxn947", "mcxn947/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
     ],
 )
 def test_nxpimage_bimg_parse_autodetect_mem_type_cli(
@@ -267,9 +267,9 @@ def test_nxpimage_bimg_parse_autodetect_mem_type_cli(
 @pytest.mark.parametrize(
     "family,mem_type,configuration,blocks",
     [
-        ("mcxn9xx", "flexspi_nor", "full", ["fcb", "mbi"]),
-        ("mcxn9xx", "flexspi_nor", "starting_fcb", ["fcb", "mbi"]),
-        ("mcxn9xx", "flexspi_nor", "starting_mbi", ["mbi"]),
+        ("mcxn947", "flexspi_nor", "full", ["fcb", "mbi"]),
+        ("mcxn947", "flexspi_nor", "starting_fcb", ["fcb", "mbi"]),
+        ("mcxn947", "flexspi_nor", "starting_mbi", ["mbi"]),
     ],
 )
 def test_nxpimage_bimg_parse_incomplete_cli(
@@ -309,8 +309,8 @@ def test_nxpimage_bimg_parse_incomplete_cli(
 
 def test_find_the_exact_layout_match_first(caplog, data_dir):
     caplog.set_level(logging.WARNING)
-    bimg_bin = os.path.join(data_dir, "bootable_image", "lpc55s3x", "internal", "merged_image.bin")
-    bimg = BootableImage.parse(load_binary(bimg_bin), "lpc55s3x")
+    bimg_bin = os.path.join(data_dir, "bootable_image", "lpc55s36", "internal", "merged_image.bin")
+    bimg = BootableImage.parse(load_binary(bimg_bin), "lpc55s36")
     assert bimg.mem_type == "internal"
     # One warning regarding multiple mem types is shown
     # spi_recovery_mbi and internal should fit
@@ -319,7 +319,7 @@ def test_find_the_exact_layout_match_first(caplog, data_dir):
 
 def test_get_segment(data_dir):
     bimg_bin = os.path.join(
-        data_dir, "bootable_image", "rt5xx", "flexspi_nor", "xip_plain", "merged_image.bin"
+        data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain", "merged_image.bin"
     )
     bimg = BootableImage.parse(load_binary(bimg_bin), "rt5xx")
     segments = {
@@ -332,7 +332,7 @@ def test_get_segment(data_dir):
 
 
 def test_image_info(data_dir):
-    family = "rt5xx"
+    family = "mimxrt595s"
     bimg_bin = os.path.join(
         data_dir, "bootable_image", family, "flexspi_nor", "xip_plain", "merged_image.bin"
     )
@@ -351,9 +351,9 @@ def test_image_info(data_dir):
 @pytest.mark.parametrize(
     "family,mem_type,configuration,init_offset,segments_count",
     [
-        ("mcxn9xx", "flexspi_nor", "full", 0x0, 3),
-        ("mcxn9xx", "flexspi_nor", "starting_fcb", 0x400, 3),
-        ("mcxn9xx", "flexspi_nor", "starting_mbi", 0x1000, 1),
+        ("mcxn947", "flexspi_nor", "full", 0x0, 3),
+        ("mcxn947", "flexspi_nor", "starting_fcb", 0x400, 3),
+        ("mcxn947", "flexspi_nor", "starting_mbi", 0x1000, 1),
     ],
 )
 def test_nxpimage_bimg_parse_image_adjustement(
@@ -408,7 +408,7 @@ def test_nxpimage_bimg_init_offset_setter(family, mem_type, init_offset, actual_
 
 
 def test_nxpimage_bimg_segments_index_is_updated(data_dir):
-    config_dir = os.path.join(data_dir, "bootable_image", "mcxn9xx", "flexspi_nor", "starting_fcb")
+    config_dir = os.path.join(data_dir, "bootable_image", "mcxn947", "flexspi_nor", "starting_fcb")
     bimg = BootableImage.load_from_config(
         load_configuration(os.path.join(config_dir, "config.yaml")),
         search_paths=[config_dir],
@@ -454,9 +454,9 @@ def test_nxpimage_bimg_segments_index_is_updated(data_dir):
 @pytest.mark.parametrize(
     "family,mem_type,configuration",
     [
-        ("mcxn9xx", "flexspi_nor", "full"),
-        ("mcxn9xx", "flexspi_nor", "starting_fcb"),
-        ("mcxn9xx", "flexspi_nor", "starting_mbi"),
+        ("mcxn947", "flexspi_nor", "full"),
+        ("mcxn947", "flexspi_nor", "starting_fcb"),
+        ("mcxn947", "flexspi_nor", "starting_mbi"),
     ],
 )
 def test_nxpimage_bimg_parse_export(data_dir, family, mem_type, configuration):
@@ -481,10 +481,31 @@ def test_bimg_get_supported_memory_types_all():
     [
         (
             "mcxn9xx",
-            [MemoryType.FLEXSPI_NOR, MemoryType.RECOVERY_SPI_SB31, MemoryType.RECOVERY_SPI_MBI],
+            [
+                MemoryType.FLEXSPI_NOR,
+                MemoryType.RECOVERY_SPI_SB31,
+                MemoryType.RECOVERY_SPI_MBI,
+                MemoryType.INTERNAL,
+            ],
         ),
     ],
 )
 def test_bimg_get_supported_memory_types_family(family, mem_types):
     ret_mem_types = BootableImage.get_supported_memory_types(family)
     assert ret_mem_types == mem_types
+
+
+@pytest.mark.parametrize("family,mem_type,configuration,blocks", FULL_LIST_TO_TEST)
+def test_nxpimage_bimg_verify(
+    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, configuration, blocks
+):
+    with use_working_directory(data_dir):
+        config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
+        if configuration:
+            config_dir = os.path.join(config_dir, configuration)
+        input_binary = os.path.join(config_dir, "merged_image.bin")
+        cmd = f"bootable-image verify -f {family} -m {mem_type} -b {input_binary} -p"
+        cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0)
+        if mem_type == "flexspi_nor":
+            cmd = f"bootable-image verify -f {family} -m serial_downloader -b {input_binary} -p"
+            cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=1)

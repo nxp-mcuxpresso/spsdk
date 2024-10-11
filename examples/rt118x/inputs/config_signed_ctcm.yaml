@@ -1,16 +1,16 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# =========================  Advanced High-Assurance Boot Configuration template for rt118x.  ==========================
+# =========================  Advanced High-Assurance Boot Configuration template for mimxrt1189.  ==========================
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
 # default.
-# Possible options: <mx8ulp, mx93, mx95, rt118x>
-family: rt118x
+# Possible options: <mimx8ulp, mimx9352, mimx9596, mimxrt1189>
+family: mimxrt1189
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: latest
@@ -53,9 +53,9 @@ containers:
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
       signing_key: ../_data/keys/ecc256/srk0_ecc256.pem
-      
+
       # ================================================================================================================
-      #                     == Configuration of AHAB Container images (array of multiple images) ==                     
+      #                     == Configuration of AHAB Container images (array of multiple images) ==
       # ================================================================================================================
       # ---------------------------------------===== Image array [Required] =====---------------------------------------
       # Description: Array of image entries.
@@ -95,7 +95,7 @@ containers:
           hash_type: sha512
 
       # ================================================================================================================
-      #                                      == Configuration of AHAB SRK table ==                                      
+      #                                      == Configuration of AHAB SRK table ==
       # ================================================================================================================
       # ---------------------------------===== SRK Table [Conditionally required] =====---------------------------------
       # Description: SRK (Super Root key) table definition.

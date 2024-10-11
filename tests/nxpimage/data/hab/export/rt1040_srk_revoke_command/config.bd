@@ -1,0 +1,89 @@
+options {
+    flags = 0x08;
+    startAddress = 0x20001c00;
+    ivtOffset = 0x0;
+    initialLoadSize = 0x400;
+    entryPointAddress = 0x20002401;
+    signatureTimestamp = "19/08/2024 15:25:27";
+}
+
+sources {
+    elfFile = extern(0);
+}
+
+constants {
+    SEC_CSF_HEADER              = 20;
+    SEC_CSF_INSTALL_SRK         = 21;
+    SEC_CSF_INSTALL_CSFK        = 22;
+    SEC_CSF_INSTALL_NOCAK       = 23;
+    SEC_CSF_AUTHENTICATE_CSF    = 24;
+    SEC_CSF_INSTALL_KEY         = 25;
+    SEC_CSF_AUTHENTICATE_DATA   = 26;
+    SEC_CSF_INSTALL_SECRET_KEY  = 27;
+    SEC_CSF_DECRYPT_DATA        = 28;
+    SEC_NOP                     = 29;
+    SEC_SET_MID                 = 30;
+    SEC_SET_ENGINE              = 31;
+    SEC_INIT                    = 32;
+    SEC_UNLOCK                  = 33;
+}
+
+section (SEC_CSF_HEADER;
+    Header_Version="4.2",
+    Header_HashAlgorithm="sha256",
+    Header_Engine="DCP",
+    Header_EngineConfiguration=0,
+    Header_CertificateFormat="x509",
+    Header_SignatureFormat="CMS"
+    )
+{
+}
+
+section (SEC_CSF_INSTALL_SRK;
+    InstallSRK_Table="gen_hab_certs\SRK_hash.bin",
+    InstallSRK_SourceIndex=0
+    )
+{
+}
+
+section (SEC_CSF_INSTALL_CSFK;
+    InstallCSFK_File="..\crts\CSF2_1_sha256_2048_65537_v3_usr_crt.pem",
+    InstallCSFK_CertificateFormat="x509"
+    )
+{
+}
+
+section (SEC_CSF_AUTHENTICATE_CSF;
+    AuthenticateCsf_PrivateKeyFile="../keys/CSF2_1_sha256_2048_65537_v3_usr_key.pem"
+	)
+{
+}
+
+section (SEC_CSF_INSTALL_KEY;
+    InstallKey_File="..\crts\IMG2_1_sha256_2048_65537_v3_usr_crt.pem",
+    InstallKey_VerificationIndex=0,
+    InstallKey_TargetIndex=2)
+{
+}
+
+section (SEC_CSF_AUTHENTICATE_DATA;
+    AuthenticateData_VerificationIndex=2,
+    AuthenticateData_Engine="DCP",
+    AuthenticateData_EngineConfiguration=0,
+    AuthenticateData_PrivateKeyFile="../keys/IMG2_1_sha256_2048_65537_v3_usr_key.pem")
+{
+}
+
+section (SEC_SET_ENGINE;
+    SetEngine_HashAlgorithm = "sha256",
+    SetEngine_Engine = "DCP",
+    SetEngine_EngineConfiguration = "0")
+{
+}
+
+section (SEC_UNLOCK;
+    Unlock_Engine = "OCOTP",
+    Unlock_features = "SRK REVOKE"
+    )
+{
+}

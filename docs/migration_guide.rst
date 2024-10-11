@@ -2,6 +2,34 @@
 Migration guide
 ===============
 
+Changes in SPSDK 2.3
+====================
+
+CLI changes
+------------
+
+* The option -f/--family was added to nxpdebugmbox main menu.
+
+* Created group of commands for working with raw Debug MailBox commands: erase, erase-one-sector, exit, famode, get-crp, ispmode, start, start-debug-session, token-auth, write-to-flash commands.
+
+* Created group of commands for working with Debug Authentication Procedure: auth, dc.
+
+* Created command get-families, which shows the full families information for nxpdebugmbox and and its obsolete predecessor families names.
+
+* Created group of commands for working with target memory over debug probe: read-memory, test-connection, write-memory.
+
+* Created group of commands for working with various tools over debug probe: get-uuid, reset.
+
+* Refactored device database to make it compatible across the whole MCUXpresso ecosystem (SDK, IDE, SEC tool, Config Tools, etc.). New family (device) names was introduced for example mx93 -> mimx9352.
+
+* Renamed el2go application to el2go-host
+
+API changes
+------------
+
+* Introduced new format of AHAB container version 2 that is default on i.MX95 B0 when the chip revision "latest" is selected.
+  To use the AHAB version 1, you can either specify it in the configuration file as "container_version" field, which is hidden in template or you can specify the chip revision as A0 or A1.
+
 Changes in SPSDK 2.2
 ====================
 

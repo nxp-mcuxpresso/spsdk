@@ -8,18 +8,21 @@
 
 """Helper module for more human-friendly interpretation of the target device properties."""
 
-
 import ctypes
+import logging
 from copy import deepcopy
-from typing import Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Callable, Optional, Type, Union
 
 from spsdk.exceptions import SPSDKKeyError
 from spsdk.mboot.commands import CommandTag
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.memories import ExtMemPropTags, MemoryRegion
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -40,6 +43,21 @@ def size_fmt(value: Union[int, float], kibibyte: bool = True) -> str:
         value /= base
 
     return f"{value} {x}" if x == "B" else f"{value:3.1f} {x}"
+
+
+def int_fmt(value: int, format_str: str) -> str:
+    """Get stringified integer representation."""
+    if format_str == "size":
+        str_value = size_fmt(value)
+    elif format_str == "hex":
+        str_value = f"0x{value:08X}"
+    elif format_str == "dec":
+        str_value = str(value)
+    elif format_str == "int32":
+        str_value = str(ctypes.c_int32(value).value)
+    else:
+        str_value = format_str.format(value)
+    return str_value
 
 
 ########################################################################################################################
@@ -264,7 +282,7 @@ class IntValue(PropertyValueBase):
         "_fmt",
     )
 
-    def __init__(self, tag: int, raw_values: List[int], str_format: str = "dec") -> None:
+    def __init__(self, tag: int, raw_values: list[int], str_format: str = "dec") -> None:
         """Initialize the integer-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -281,17 +299,33 @@ class IntValue(PropertyValueBase):
 
     def to_str(self) -> str:
         """Get stringified property representation."""
-        if self._fmt == "size":
-            str_value = size_fmt(self.value)
-        elif self._fmt == "hex":
-            str_value = f"0x{self.value:08X}"
-        elif self._fmt == "dec":
-            str_value = str(self.value)
-        elif self._fmt == "int32":
-            str_value = str(ctypes.c_int32(self.value).value)
-        else:
-            str_value = self._fmt.format(self.value)
-        return str_value
+        return int_fmt(self.value, self._fmt)
+
+
+class IntListValue(PropertyValueBase):
+    """List of integers property."""
+
+    __slots__ = ("value", "_fmt", "delimiter")
+
+    def __init__(
+        self, tag: int, raw_values: list[int], str_format: str = "hex", delimiter: str = ", "
+    ) -> None:
+        """Initialize the integer-list-based property object.
+
+        :param tag: Property tag, see: `PropertyTag`
+        :param raw_values: List of integers representing the property
+        :param str_format: Format to display the value ('dec', 'hex', 'size')
+        :param delimiter: Delimiter for values in a list
+        """
+        super().__init__(tag)
+        self._fmt = str_format
+        self.value = raw_values
+        self.delimiter = delimiter
+
+    def to_str(self) -> str:
+        """Get stringified property representation."""
+        values = [int_fmt(v, self._fmt) for v in self.value]
+        return f"[{self.delimiter.join(values)}]"
 
 
 class BoolValue(PropertyValueBase):
@@ -308,10 +342,10 @@ class BoolValue(PropertyValueBase):
     def __init__(
         self,
         tag: int,
-        raw_values: List[int],
-        true_values: Tuple[int] = (1,),
+        raw_values: list[int],
+        true_values: tuple[int] = (1,),
         true_string: str = "YES",
-        false_values: Tuple[int] = (0,),
+        false_values: tuple[int] = (0,),
         false_string: str = "NO",
     ) -> None:
         """Initialize the Boolean-based property object.
@@ -350,7 +384,7 @@ class EnumValue(PropertyValueBase):
     def __init__(
         self,
         tag: int,
-        raw_values: List[int],
+        raw_values: list[int],
         enum: Type[SpsdkEnum],
         na_msg: str = "Unknown Item",
     ) -> None:
@@ -383,7 +417,7 @@ class VersionValue(PropertyValueBase):
 
     __slots__ = ("value",)
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the Version-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -406,7 +440,7 @@ class DeviceUidValue(PropertyValueBase):
 
     __slots__ = ("value",)
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the Version-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -431,14 +465,14 @@ class ReservedRegionsValue(PropertyValueBase):
 
     __slots__ = ("regions",)
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the ReserverRegion-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(tag)
-        self.regions: List[MemoryRegion] = []
+        self.regions: list[MemoryRegion] = []
         for i in range(0, len(raw_values), 2):
             if raw_values[i + 1] == 0:
                 continue
@@ -457,7 +491,7 @@ class AvailablePeripheralsValue(PropertyValueBase):
 
     __slots__ = ("value",)
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the AvailablePeripherals-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -487,15 +521,15 @@ class AvailableCommandsValue(PropertyValueBase):
     __slots__ = ("value",)
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> list[int]:
         """List of tags representing Available commands."""
         return [
-            cmd_tag.tag  # type: ignore
+            cmd_tag.tag
             for cmd_tag in CommandTag
             if cmd_tag.tag > 0 and (1 << cmd_tag.tag - 1) & self.value
         ]
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the AvailableCommands-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -534,9 +568,9 @@ class IrqNotifierPinValue(PropertyValueBase):
     @property
     def enabled(self) -> bool:
         """Indicates whether IRQ reporting is enabled."""
-        return bool(self.value & (1 << 32))
+        return bool(self.value & (1 << 31))
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the IrqNotifierPin-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -568,7 +602,7 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
         "block_size",
     )
 
-    def __init__(self, tag: int, raw_values: List[int], mem_id: int = 0) -> None:
+    def __init__(self, tag: int, raw_values: list[int], mem_id: int = 0) -> None:
         """Initialize the ExternalMemoryAttributes-based property object.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -635,7 +669,7 @@ class FuseLockRegister:
         self.value = value
         self.index = index
         self.msg = ""
-        self.bitfields: List[FuseLock] = []
+        self.bitfields: list[FuseLock] = []
 
         shift = 0
         for _ in range(start, 32):
@@ -656,14 +690,14 @@ class FuseLockedStatus(PropertyValueBase):
 
     __slots__ = ("fuses",)
 
-    def __init__(self, tag: int, raw_values: List[int]) -> None:
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
         """Initialize the FuseLockedStatus property object.
 
         :param tag: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(tag)
-        self.fuses: List[FuseLockRegister] = []
+        self.fuses: list[FuseLockRegister] = []
         idx = 0
         for count, val in enumerate(raw_values):
             start = 0
@@ -681,7 +715,7 @@ class FuseLockedStatus(PropertyValueBase):
             msg += f"OTP Controller Program Locked Status {count} Register: {register}"
         return msg
 
-    def get_fuses(self) -> List[FuseLock]:
+    def get_fuses(self) -> list[FuseLock]:
         """Get list of fuses bitfield objects.
 
         :return: list of FuseLockBitfield objects
@@ -696,7 +730,7 @@ class FuseLockedStatus(PropertyValueBase):
 # McuBoot property response parser
 ########################################################################################################################
 
-PROPERTIES: Dict[int, Dict] = {
+PROPERTIES: dict[int, dict] = {
     PropertyTag.CURRENT_VERSION.tag: {"class": VersionValue, "kwargs": {}},
     PropertyTag.AVAILABLE_PERIPHERALS.tag: {
         "class": AvailablePeripheralsValue,
@@ -790,6 +824,10 @@ PROPERTIES: Dict[int, Dict] = {
         "class": FuseLockedStatus,
         "kwargs": {},
     },
+    PropertyTag.UNKNOWN.tag: {
+        "class": IntListValue,
+        "kwargs": {"str_format": "hex"},
+    },
 }
 
 PROPERTIES_KW45XX = {
@@ -826,22 +864,19 @@ PROPERTIES_MCXA1XX = {
     },
 }
 
-
 PROPERTIES_OVERRIDE = {
-    "kw45xx": PROPERTIES_KW45XX,
-    "k32w1xx": PROPERTIES_KW45XX,
-    "mcxa1xx": PROPERTIES_MCXA1XX,
+    "kw45_series": PROPERTIES_KW45XX,
+    "mcxa1_series": PROPERTIES_MCXA1XX,
 }
 PROPERTY_TAG_OVERRIDE = {
-    "kw45xx": PropertyTagKw45xx,
-    "k32w1xx": PropertyTagKw45xx,
-    "mcxa1xx": PropertyTagMcxa1xx,
+    "kw45_series": PropertyTagKw45xx,
+    "mcxa1_series": PropertyTagMcxa1xx,
 }
 
 
 def parse_property_value(
     property_tag: Union[int, PropertyTag],
-    raw_values: List[int],
+    raw_values: list[int],
     ext_mem_id: Optional[int] = None,
     family: Optional[str] = None,
 ) -> Optional[PropertyValueBase]:
@@ -858,18 +893,34 @@ def parse_property_value(
     assert isinstance(property_tag, int)
     assert isinstance(raw_values, list)
     properties_dict = deepcopy(PROPERTIES)
+    overridden_series = None
     if family:
-        properties_dict.update(PROPERTIES_OVERRIDE[family])
+        db = get_db(family)
+        overridden_series = db.get_str(DatabaseManager().BLHOST, "overridden_properties", "")
+    if overridden_series:
+        properties_dict.update(PROPERTIES_OVERRIDE[overridden_series])
     if property_tag not in list(properties_dict.keys()):
-        return None
+        property_tag = PropertyTag.UNKNOWN.tag
     property_value = next(value for key, value in properties_dict.items() if key == property_tag)
     cls: Callable = property_value["class"]
     kwargs: dict = property_value["kwargs"]
     if "mem_id" in kwargs:
         kwargs["mem_id"] = ext_mem_id
     obj = cls(property_tag, raw_values, **kwargs)
-    if family:
-        property_tag_override = PROPERTY_TAG_OVERRIDE[family].from_tag(property_tag)
+    if overridden_series:
+        property_tag_override = PROPERTY_TAG_OVERRIDE[overridden_series].from_tag(property_tag)
         obj.name = property_tag_override.label
         obj.desc = property_tag_override.description
     return obj
+
+
+def get_property_tag_label(mboot_property: Union[PropertyTag, int]) -> tuple[int, str]:
+    """Get property tag and label."""
+    if isinstance(mboot_property, int):
+        try:
+            prop = PropertyTag.from_tag(mboot_property)
+            return prop.tag, prop.label
+        except SPSDKKeyError:
+            logger.warning(f"Unknown property id: {mboot_property} ({hex(mboot_property)})")
+            return mboot_property, "Unknown"
+    return mboot_property.tag, mboot_property.label

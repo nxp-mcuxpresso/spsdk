@@ -10,7 +10,7 @@ import logging
 import os
 import time
 from io import FileIO
-from typing import List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -37,7 +37,7 @@ class SdioDevice(DeviceBase):
         :raises McuBootConnectionError: when the path is empty
         """
         self._opened = False
-        # Temporarily use hard code until there is a way to retrive VID/PID
+        # Temporarily use hard code until there is a way to retrieve VID/PID
         self.vid = 0x0471
         self.pid = 0x0209
         self._timeout = timeout or self.DEFAULT_TIMEOUT
@@ -61,7 +61,7 @@ class SdioDevice(DeviceBase):
     def is_opened(self) -> bool:
         """Indicates whether device is open.
 
-        :return: True if device is open, False othervise.
+        :return: True if device is open, False otherwise.
         """
         return self.device is not None and self._opened
 
@@ -250,7 +250,7 @@ class SdioDevice(DeviceBase):
         cls,
         device_path: str,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected SDIO devices.
 
         :param device_path: device path string

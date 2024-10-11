@@ -1,0 +1,8 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+dice_ca_prk: dice_ca_prk.pem
+dice_ca_puk: dice_ca_puk.pem
+rtf: b47d68af0f653765474935a00e6bcfff9e53485f49f4fc4a065d0dbbd741a972
+had: c7d7dc96c5e3db27243419054daddf92b3bb82158c265dcf0907ae92dadb11b6a70c2e38b3bbb0eb5b37da37dbe28aa9
+version: 1

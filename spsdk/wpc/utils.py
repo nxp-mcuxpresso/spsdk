@@ -9,12 +9,11 @@
 
 import inspect
 import logging
-import os
 import struct
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Type
+from typing import Optional, Type
 
 from typing_extensions import Self
 
@@ -241,10 +240,9 @@ class BaseWPCClass(ABC):
         :param family: Target family name
         :raises SPSDKWPCError: Family is not supported as WPC target
         """
-        if family not in self.get_supported_families():
-            raise SPSDKWPCError(f"Family '{family}' is not supported")
         self.family = family
-        self.wpc_id_type = WPCIdType(get_db(device=family).get_str(DatabaseManager.WPC, "id_type"))
+        self.db = get_db(device=family)
+        self.wpc_id_type = WPCIdType(self.db.get_str(DatabaseManager.WPC, "id_type"))
 
     @classmethod
     def get_validation_schema(cls) -> dict:
@@ -253,18 +251,29 @@ class BaseWPCClass(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get family names supported by WPCTarget."""
         return get_families(DatabaseManager.WPC)
 
     @classmethod
-    def get_providers(cls) -> Dict[str, Type[Self]]:
+    def get_providers(cls) -> dict[str, Type[Self]]:
         """Get available WPC Service/Target Providers."""
-        import_providers_and_plugins()
+        # explicit import so PyInstaller will pickup the files
+        # import is not top-level to prevent problems with cyclic import
+        from spsdk.wpc import service_el2go, target_mboot, target_model
+
+        manager = PluginsManager()
+
+        manager.register(service_el2go)
+        manager.register(target_mboot)
+        manager.register(target_model)
+
+        if "spsdk.wpc.service" not in manager.plugins:
+            manager.load_from_entrypoints("spsdk.wpc.service")
         return {sc.identifier: sc for sc in cls.__subclasses__()}
 
     @classmethod
-    def validate_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> None:
+    def validate_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> None:
         """Validate configuration data using JSON schema specific to this class.
 
         :param config_data: Configuration data
@@ -274,7 +283,7 @@ class BaseWPCClass(ABC):
         check_config(config=config_data, schemas=[schema], search_paths=search_paths)
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> Self:
+    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.
@@ -330,6 +339,9 @@ class WPCTarget(BaseWPCClass):
         """Get the WPC ID from the target."""
         logger.info("Getting WPC ID")
         wpc_id_data = self.get_low_level_wpc_id()
+
+        if wpc_id_data.count(0) == len(wpc_id_data):
+            raise SPSDKWPCError("WPC ID is all zeros.")
 
         if self.wpc_id_type == WPCIdType.COMPUTED_CSR:
             logger.info("Computing CSR")
@@ -388,7 +400,7 @@ def length_to_asn1(length: int) -> bytes:
 
 def check_main_config(
     config_data: dict,
-    search_paths: Optional[List[str]] = None,
+    search_paths: Optional[list[str]] = None,
     scope: ConfigCheckScope = ConfigCheckScope.FULL,
 ) -> None:
     """Check top layer of config data.
@@ -448,22 +460,3 @@ def generate_template_config(
     ).get_template()
 
     return yaml_data
-
-
-def import_providers_and_plugins() -> None:
-    """Dynamically import built-in WPC Service/Target providers and plugins."""
-    this_dir = os.path.normpath(os.path.join(__file__, ".."))
-    manager = PluginsManager()
-
-    def import_builtin_provider(module_name: str) -> None:
-        file = os.path.join(this_dir, f"{module_name}.py")
-        name = f"spsdk.wpc.{module_name}"
-        if name not in manager.plugins:
-            manager.load_from_source_file(source_file=file, module_name=name)
-
-    import_builtin_provider("service_el2go")
-    import_builtin_provider("target_model")
-    import_builtin_provider("target_mboot")
-
-    if "spsdk.wpc.service" not in manager.plugins:
-        manager.load_from_entrypoints("spsdk.wpc.service")

@@ -86,7 +86,7 @@ def jump_address(ctx: click.Context, address: int) -> None:
 @click.argument("count", type=INT(), required=False)
 @click.pass_context
 def write_file(ctx: click.Context, address: int, bin_file: click.File, count: int) -> None:
-    """Writes file to the device’s memory address.
+    """Writes file to the device's memory address.
 
     \b
     ADDRESS - starting address of the image

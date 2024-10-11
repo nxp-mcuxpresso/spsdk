@@ -30,8 +30,7 @@ def get_struct(text: str, name: str) -> str:
     :raises SPSDKError: When there is invalid structure name to find
     :return: Subset of lines with structure content.
     """
-    # pylint: disable=anomalous-backslash-in-string  # \s is a part of the regular expression
-    struct_end_re = re.findall(f"}}\s*{name}\s*;", text)
+    struct_end_re = re.findall(rf"}}\s*{name}\s*;", text)
     if not struct_end_re:
         raise SPSDKError(f"Invalid structure name to find: {name}")
     end_i = text.find(struct_end_re[0])

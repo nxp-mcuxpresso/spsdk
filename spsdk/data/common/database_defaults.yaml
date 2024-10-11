@@ -31,7 +31,7 @@ features:
     grouped_registers: []
 
   # ======== Blhost section ========
-  # blhost:
+  blhost: {}
   #   properties:
   #     0: list-properties
   #     1: current-version
@@ -68,6 +68,7 @@ features:
 
   # ======== Certificate block section ========
   cert_block:
+    sub_features: [based_on_cert1]
     rot_type: "cert_block_1"
     isk_data_alignment: 4
     isk_data_limit: 96
@@ -78,6 +79,15 @@ features:
     based_on_ele: False # Flag if the implementation of DAT is based on EdgeLock Enclave
     # famode_cert: [] # List of Fault analysis Mode certificates (names of MBI classes)
     # famode_cfg_defaults: {} # Dictionary of default values of standard MBI members for FAmode image
+
+    dmbox_ap_ix: -1 # Typical Index of debug mailbox access port is 2
+    mem_ap_ix: -1 # Typical Index of debug mailbox access port is 0
+    # non_standard_statuses: # dictionary of non standard return statuses from various commands
+    #   2:  # Command get_crp_level
+    #     0xFFFF_FFFF: ROP_LEVEL0
+    #     0xEEBA_04C3: ROP_LEVEL1
+    #     0x4939_8D8B: ROP_LEVEL2
+    #     0xB0AB_B703: ROP_LEVEL3
 
   # ======== MBI section ========
   mbi:
@@ -93,7 +103,10 @@ features:
     oem_images_max_cnt: 8
     valid_offset_minimal_alignment: 4
     container_image_size_alignment: 512 # To satisfy SD card blocks
+    container_types: [1] # Supported container types
     core_ids: {}
+    image_types: {}
+    image_types_mapping: {}
     # image_types: Keep it here as a template for new NPI
     #     CSF: [0x01, csf, CSF Image]
     #     SCD: [0x02, scd, SCD Image]
@@ -110,18 +123,24 @@ features:
     #     V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
     #     V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
 
+    double_authentication_load_address: 0
+    double_authentication_core_id: 0
+    double_authentication_image_type: 0
+
     extra_containers: []
     fuses:
       _name: "AHAB SRK"
       srkh: "__srk_hash" # SRK hash fuse
 
   # ======== PFR section ========
-  pfr: {}
+  pfr:
+    sub_features: [cmpa, cfpa]
+    cmpa:
+      erase_method: write_memory
 
   # ======== IFR section ========
   ifr:
-    address: 0x200_0000
-    reg_spec: ifr.json
+    sub_features: [romcfg, cmactable]
 
   # ======== Bootable image section ========
   bootable_image:
@@ -136,6 +155,7 @@ features:
     header:
       reg_spec: ../../common/xmcd/header.json
     mem_types: {}
+    fuses: {}
 
   # ======== BEE section ========
   bee: {}
@@ -218,7 +238,7 @@ features:
 
   # ======== EdgeLock Enclave section ========
   ele:
-    ele_device: uboot
+    ele_device: uboot_fastboot
 
   # ======== Memory configuration ========
   memcfg:
@@ -292,5 +312,83 @@ features:
   signing:
     pss_padding: false
 
-  # ======== EL2Go TP section ========
-  el2go_tp: {}
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_name: null
+    prov_method: null
+    use_additional_data: false
+    fw_load_address: -1
+    fw_read_address: -1
+    user_data_address: -1
+    ignored_otp: [] # format: index of a fuse (not uid, just the number)
+    ignored_otp_ranges: [] # format: [range1_start, range1_end, range2_start, range2_end,...]
+    clean_method: "none"
+    # format: "method1=value1[,value2];method2=value3;..." or "none" (default)
+    # methods are in secure_object.py:ValidationMethod
+    validation_method: "none"
+
+  # ======== LPCPROG section ========
+  lpcprog:
+    part_ids: {}
+    buffer_address: 0x1000_0800
+    buffer_size: 0x400
+    page_size: 0x40
+    sector_size: 0x400
+
+  # ======== DICE configuration ========
+  dice:
+    had_length: 48
+    had_members:
+      [
+        ELS_AS_CFG0,
+        ELS_AS_CFG1,
+        ELS_AS_CFG2,
+        ELS_AS_ST0,
+        ELS_AS_ST1,
+        ELS_AS_ST2,
+        ELS_AS_FLAG0,
+      ]
+    critical_had_members: [ELS_AS_CFG0, ELS_AS_CFG1, ELS_AS_CFG2]
+    rtf_length: 32
+    ca_puk_length: 64
+    rkth_length: 64
+    need_reset: false
+
+  # ======== Fastboot ========
+  fastboot:
+    address: 0x8280_0000
+    size: 0x2000_0000
+
+  # ======== nxpuuu ==========
+  nxpuuu:
+    boot_devices:
+      emmc:
+        script: ../../common/uuu/emmc_burn_loader.lst
+        arguments: [_flash.bin, _image]
+      emmc_all:
+        script: ../../common/uuu/emmc_burn_all.lst
+        arguments: [_flash.bin, _image]
+      fat_write:
+        script: ../../common/uuu/fat_write.lst
+        arguments: [_image, _device, _partition, _filename]
+      nand:
+        script: ../../common/uuu/nand_burn_loader.lst
+        arguments: [_flash.bin, _image]
+      nvme_all:
+        script: ../../common/uuu/nvme_burn_all.lst
+        arguments: [_flash.bin, _image]
+      qspi:
+        script: ../../common/uuu/qspi_burn_loader.lst
+        arguments: [_flash.bin, _image]
+      sd:
+        script: ../../common/uuu/sd_burn_loader.lst
+        arguments: [_flash.bin, _image]
+      sd_all:
+        script: ../../common/uuu/sd_burn_all.lst
+        arguments: [_flash.bin, _image]
+      spi_nand:
+        script: ../../common/uuu/fspinand_burn_loader.lst
+        arguments: [_flash.bin, _image]
+      spl:
+        script: ../../common/uuu/spl_boot.lst
+        arguments: [_flash.bin]

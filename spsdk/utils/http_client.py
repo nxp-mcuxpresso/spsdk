@@ -12,7 +12,7 @@ import json
 import logging
 import sys
 from http import HTTPStatus
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Optional, Type
 
 import requests
 from typing_extensions import Self, TypeAlias
@@ -50,7 +50,7 @@ else:
     from http import HTTPMethod
 
 
-class HTTPClientError(SPSDKError):
+class SPSDKHTTPClientError(SPSDKError):
     """HTTP Error raised when processing requests and responses."""
 
     def __init__(self, status_code: int, response: dict, desc: Optional[str] = None) -> None:
@@ -92,10 +92,10 @@ class HTTPClientBase(abc.ABC):
         self.base_url = host
         if use_ssl and not host.startswith("https"):
             if not host.startswith("https"):
-                self.base_url = f"https://{host}"
+                self.base_url = f"https://{host}:{port}"
         else:
             if not host.startswith("http"):
-                self.base_url = f"http://{host}"
+                self.base_url = f"http://{host}:{port}"
         self.base_url += f"/{url_prefix}" if url_prefix else ""
         self.kwargs = kwargs
         self.timeout = timeout
@@ -114,8 +114,8 @@ class HTTPClientBase(abc.ABC):
         self,
         method: Method,
         url: str,
-        param_data: Optional[Dict] = None,
-        json_data: Optional[Dict] = None,
+        param_data: Optional[dict] = None,
+        json_data: Optional[dict] = None,
     ) -> requests.Response:
         """Handle REST API request.
 
@@ -154,7 +154,7 @@ class HTTPClientBase(abc.ABC):
         return response
 
     # pylint: disable=no-self-use  # derived classes may use self object
-    def _check_response(self, response: Dict, names_types: List[Tuple[str, Type]]) -> None:
+    def _check_response(self, response: dict, names_types: list[tuple[str, Type]]) -> None:
         """Check if the response contains required data.
 
         :param response: Response to check
@@ -176,7 +176,7 @@ class HTTPClientBase(abc.ABC):
         raise NotImplementedError()
 
     @classmethod
-    def validate_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> None:
+    def validate_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> None:
         """Validate configuration data using JSON schema specific to this class.
 
         :param config_data: Configuration data
@@ -186,7 +186,7 @@ class HTTPClientBase(abc.ABC):
         check_config(config=config_data, schemas=[schema], search_paths=search_paths)
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> Self:
+    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.
@@ -200,7 +200,7 @@ class HTTPClientBase(abc.ABC):
 
     @classmethod
     def generate_config_template(
-        cls, schemas: Optional[List[dict]] = None, title: Optional[str] = None
+        cls, schemas: Optional[list[dict]] = None, title: Optional[str] = None
     ) -> str:
         """Generate configuration YAML template."""
         schemas = schemas or [cls.get_validation_schema()]

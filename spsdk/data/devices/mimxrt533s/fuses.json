@@ -1,0 +1,4009 @@
+{
+    "cpu": "MIMXRT595S",
+    "shadow_reg_base_addr_int": "0x40130000",
+    "groups": [
+        {
+            "group": {
+                "name": "SHADOW_LOCK",
+                "description": "Fuses used to define read/write access permissions to shadows registers of Customer configured OTP words."
+            },
+            "registers": [
+                {
+                    "id": "fuse8",
+                    "name": "CUST_WR_RD_LOCK0",
+                    "description": "Fuses used to define read/write access permissions to shadows registers of Customer configured OTP words. This is a redundant OTP word hence only 16 bits defined.",
+                    "index_int": "0x0008",
+                    "shadow_reg_offset_int": "0x0020",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-0",
+                            "name": "DCFG_CC_SOCU_WR",
+                            "description": "When set locks APB write access to DCFG_CC_SOCU and DCFG_CC_SOCU_AP shadow registers. (Fuse 256)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-1",
+                            "name": "DCFG_CC_SOCU_NS_WR",
+                            "description": "When set locks APB write access to DCFG_CC_SOCU_NS shadow registers. (Fuse 257)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-2",
+                            "name": "OTFAD_CFG_WR_LOCK",
+                            "description": "When set locks APB write access to OTFAD_CFG shadow register. (Fuse 258)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-4",
+                            "name": "KEY_SCRAMBLE_SEED_WR_LOCK",
+                            "description": "When set locks APB write access to KEY_SCRAMBLE_SEED shadow register. (Fuse 260)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-5",
+                            "name": "KEY_SCRAMBLE_SEED_RD_LOCK",
+                            "description": "When set locks APB read access to KEY_SCRAMBLE_SEED shadow register. (Fuse 261)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-6",
+                            "name": "OTFAD_KEK_SEED_WR_LOCK",
+                            "description": "When set locks APB write access to OTFAD_KEK_SEED shadow registers. (Fuse 262)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-8",
+                            "name": "OTP_MASTER_KEY_WR_LOCK",
+                            "description": "When set locks APB write access to OTP_MASTER_KEY shadow registers. (Fuse 264)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-9",
+                            "name": "SEC_BOOT_CFG5_WR_LOCK",
+                            "description": "When set locks APB write access to SEC_BOOT_CFG[5] shadow registers. (Fuse 265)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse9",
+                    "name": "CUST_WR_RD_LOCK1",
+                    "description": "Fuses used to define read/write access permissions to shadows registers of customer configured OTP words. This is a redundant OTP word hence only 16 bits defined.",
+                    "index_int": "0x0009",
+                    "shadow_reg_offset_int": "0x0024",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-4",
+                            "name": "CRC4_WR_LOCK",
+                            "description": "When set locks APB write access to CRC4 shadow register. (Fuse 292)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-5",
+                            "name": "CRC4_RD_LOCK",
+                            "description": "When set locks APB read access to CRC4 shadow register. (Fuse 293)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-6",
+                            "name": "CRC5_WR_LOCK",
+                            "description": "When set locks APB write access to CRC5 shadow register. (Fuse 294)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-7",
+                            "name": "CRC5_RD_LOCK",
+                            "description": "When set locks APB read access to CRC5 shadow register. (Fuse 295)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-8",
+                            "name": "CRC6_WR_LOCK",
+                            "description": "When set locks APB write access to CRC6 shadow register. (Fuse 296)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-9",
+                            "name": "CRC6_RD_LOCK",
+                            "description": "When set locks APB read access to CRC6 shadow register. (Fuse 297)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-10",
+                            "name": "CRC7_WR_LOCK",
+                            "description": "When set locks APB write access to CRC7 shadow register. (Fuse 298)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-11",
+                            "name": "CRC7_RD_LOCK",
+                            "description": "When set locks APB read access to CRC7 shadow register. (Fuse 299)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-12",
+                            "name": "BOOT_CFG0_WR_LOCK",
+                            "description": "When set locks APB write access to BOOT_CFG0 and RKTH shadow register. (Fuse 300)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-13",
+                            "name": "BOOT_CFG1_WR_LOCK",
+                            "description": "When set locks APB write access to BOOT_CFG1 shadow register. (Fuse 301)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-14",
+                            "name": "BOOT_CFG2_WR_LOCK",
+                            "description": "When set locks APB write access to BOOT_CFG2 shadow register. (Fuse 302)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-15",
+                            "name": "BOOT_CFG3_WR_LOCK",
+                            "description": "When set locks APB write access to BOOT_CFG3 shadow register. (Fuse 303)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "DEBUG_CFG",
+                "description": "DEBUG_CFG group"
+            },
+            "registers": [
+                {
+                    "id": "fuse95",
+                    "name": "DCFG_CC_SOCU",
+                    "description": "Debug Configuration word (tier-1 developer). Use DCFG_CC_SOCU_WR to write lock this OTP word.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+                    "index_int": "0x005F",
+                    "shadow_reg_offset_int": "0x017C",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0001"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse95-bits-0-7",
+                            "name": "CRC8",
+                            "description": "CRC-8/ITU of upper 3 bytes of this register. Polynomial=0x07, initial value= 0x00, XorOut=0x55.",
+                            "calculated": "CRC-8/ITU"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-8",
+                            "name": "DFLT_NIDEN",
+                            "description": "Fixed state of Non-secure non-invasive debug enable, when PINNED_NIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-9",
+                            "name": "DFLT_DBGEN",
+                            "description": "Fixed state of Non-secure invasive debug enable, when PINNED_DBGEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-10",
+                            "name": "DFLT_SPNIDEN",
+                            "description": "Fixed state of secure non-invasive debug enable, when PINNED_SPNIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-11",
+                            "name": "DFLT_SPIDEN",
+                            "description": "Fixed state of secure invasive debug enable, when PINNED_SPIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-12",
+                            "name": "DFLT_TAPEN",
+                            "description": "Fixed state of Test Access Port enable, when PINNED_TAPEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-13",
+                            "name": "DFLT_DSPEN",
+                            "description": "Fixed state of DSP invasive debug enable, when PINNED_DSPEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-14",
+                            "name": "DFLT_ISPCMDEN",
+                            "description": "Fixed state of ISP boot flow commands enable, when PINNED_ISPCMDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-15",
+                            "name": "DFLT_PMCMDEN",
+                            "description": "Fixed state of permanent modification commands (set Fault analysis mode)  enable, when PINNED_NIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-16",
+                            "name": "PINNED_NIDEN",
+                            "description": "Fix the state of Non-secure non-invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-17",
+                            "name": "PINNED_DBGEN",
+                            "description": "Fix the state of Non-secure invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-18",
+                            "name": "PINNED_SPNIDEN",
+                            "description": "Fix the state of secure non-invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-19",
+                            "name": "PINNED_SPIDEN",
+                            "description": "Fix the state of secure invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-20",
+                            "name": "PINNED_TAPEN",
+                            "description": "Fix the state of  Test Access Port enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-21",
+                            "name": "PINNED_DSPEN",
+                            "description": "Fix the state of DSP invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-22",
+                            "name": "PINNED_ISPCMDEN",
+                            "description": "Fix the state of ISP boot flow commands enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-23",
+                            "name": "PINNED_PMCMDEN",
+                            "description": "Fix the state of permanent modification commands (set Fault analysis mode) enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-24",
+                            "name": "FORCE_UUID_MATCH",
+                            "description": "When set, debug authentication protocol only accepts \"Debug Credential\" certificates (DC) with matching UUID.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6,
+                            "id": "fuse95-bits-25-30",
+                            "name": "Reserved",
+                            "description": "Reserved for NXP internal (and future) use only. Users should keep this zero."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse95-bit-31",
+                            "name": "DEV_TEST_EN",
+                            "description": "Enable test mode.\nThis bit should be clear in OTP words. But during development to test different\nDCFG_CC_SOCU settings without programming OTP words, developers can write the\nvalues to shadow registers corresponding to OTP words (95 & 104) with this bit set.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse100",
+                    "name": "DCFG_CC_SOCU_NS",
+                    "description": "Debug Configuration word (tier-2 developer). Use DCFG_CC_SOCU_NS_WR to write lock this OTP word.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+                    "index_int": "0x0064",
+                    "shadow_reg_offset_int": "0x0190",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0002"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse100-bits-0-7",
+                            "name": "CRC8",
+                            "description": "CRC-8/ITU of upper 3 bytes of this register. Polynomial=0x07, initial value= 0x00, XorOut=0x55.",
+                            "calculated": "CRC-8/ITU"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-8",
+                            "name": "DFLT_NIDEN",
+                            "description": "Fixed state of Non-secure non-invasive debug enable, when PINNED_NIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-9",
+                            "name": "DFLT_DBGEN",
+                            "description": "Fixed state of Non-secure invasive debug enable, when PINNED_DBGEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-10",
+                            "name": "DFLT_SPNIDEN",
+                            "description": "Fixed state of secure non-invasive debug enable, when PINNED_SPNIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-11",
+                            "name": "DFLT_SPIDEN",
+                            "description": "Fixed state of secure invasive debug enable, when PINNED_SPIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-12",
+                            "name": "DFLT_TAPEN",
+                            "description": "Fixed state of Test Access Port enable, when PINNED_TAPEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-13",
+                            "name": "DFLT_DSPEN",
+                            "description": "Fixed state of DSP invasive debug enable, when PINNED_DSPEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-14",
+                            "name": "DFLT_ISPCMDEN",
+                            "description": "Fixed state of ISP boot flow commands enable, when PINNED_ISPCMDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-15",
+                            "name": "DFLT_PMCMDEN",
+                            "description": "Fixed state of permanent modification commands (set Fault analysis mode)  enable, when PINNED_NIDEN is set.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-16",
+                            "name": "PINNED_NIDEN",
+                            "description": "Fix the state of Non-secure non-invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-17",
+                            "name": "PINNED_DBGEN",
+                            "description": "Fix the state of Non-secure invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-18",
+                            "name": "PINNED_SPNIDEN",
+                            "description": "Fix the state of secure non-invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-19",
+                            "name": "PINNED_SPIDEN",
+                            "description": "Fix the state of secure invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-20",
+                            "name": "PINNED_TAPEN",
+                            "description": "Fix the state of  Test Access Port enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "State of the field is fixed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-21",
+                            "name": "PINNED_DSPEN",
+                            "description": "Fix the state of DSP invasive debug enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-22",
+                            "name": "PINNED_ISPCMDEN",
+                            "description": "Fix the state of ISP boot flow commands enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-23",
+                            "name": "PINNED_PMCMDEN",
+                            "description": "Fix the state of permanent modification commands (set Fault analysis mode) enable.",
+                            "values": [
+                                {
+                                    "name": "DAR_CC",
+                                    "value": 0,
+                                    "description": "Debug Authentication Response determines the state."
+                                },
+                                {
+                                    "name": "FIXED",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-24",
+                            "name": "FORCE_UUID_MATCH",
+                            "description": "When set, debug authentication protocol only accepts \"Debug Credential\" certificates (DC) with matching UUID.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6,
+                            "id": "fuse100-bits-25-30",
+                            "name": "Reserved",
+                            "description": "Reserved for NXP internal (and future) use only. Users should keep this zero."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse100-bit-31",
+                            "name": "DEV_TEST_EN",
+                            "description": "Enable test mode.\nThis bit should be clear in OTP words. But during development to test different\nDCFG_CC_SOCU settings without programming OTP words, developers can write the\nvalues to shadow registers corresponding to OTP words (95 & 104) with this bit set.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse104",
+                    "name": "DCFG_CC_SOCU_AP",
+                    "description": "Anti-pole (inverse) value of Debug Configuration word(DCFG_CC_SOCU). Use DCFG_CC_SOCU_WR to write lock this OTP word.",
+                    "index_int": "0x0068",
+                    "shadow_reg_offset_int": "0x01A0",
+                    "individual_write_lock": "always_lock",
+                    "calculated": {
+                        "method": "inverse",
+                        "src_register_id": "fuse95"
+                    },
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0001"
+                    }
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "BOOT_CFG",
+                "description": "BOOT_CFG group"
+            },
+            "registers": [
+                {
+                    "id": "fuse96",
+                    "name": "BOOT_CFG[0]",
+                    "description": "Boot configuration word0. Shadow register is present for this word thus SW could access the register directly to read contents.",
+                    "index_int": "0x0060",
+                    "shadow_reg_offset_int": "0x0180",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse96-bits-0-3",
+                            "name": "PRIMARY_BOOT_SRC",
+                            "description": "Primary boot Source. (a.k.a. Master boot source)",
+                            "values": [
+                                {
+                                    "name": "ISP_PIN_BOOT",
+                                    "value": 0,
+                                    "description": "ISP pins will determine boot source."
+                                },
+                                {
+                                    "name": "QSPI_BOOT",
+                                    "value": 1,
+                                    "description": "Boot from Octal/Quad SPI flash device using FlexSpi channel A interface pins."
+                                },
+                                {
+                                    "name": "SDHC0_BOOT",
+                                    "value": 2,
+                                    "description": "Boot from eMMC device or SD card connected to SDHC0 port."
+                                },
+                                {
+                                    "name": "SDHC1_BOOT",
+                                    "value": 3,
+                                    "description": "Boot from eMMC device or SD card connected to SDHC1 port."
+                                },
+                                {
+                                    "name": "SPI_SLV_BOOT",
+                                    "value": 4,
+                                    "description": "Boot using SPI slave interface using master boot mode."
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 5,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "UART_BOOT",
+                                    "value": 6,
+                                    "description": "Boot using UART interface using master boot mode."
+                                },
+                                {
+                                    "name": "SPI_FC_BOOT",
+                                    "value": 7,
+                                    "description": "Boot from 1-bit SPI flash device from FlexCom interface pins selected by REDUNDANT_SPI_PORT field. Only load-to-RAM images are supported in this mode."
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 8,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "ISP_MODE",
+                                    "value": 9,
+                                    "description": "Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface."
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 10,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 11,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "QSPI_REC_BOOT",
+                                    "value": 12,
+                                    "description": "Boot from Octal/Quad SPI flash device using FlexSPI channel A interface pins. If image is not found check recovery boot using SPI-flash device through FlexComm."
+                                },
+                                {
+                                    "name": "SDHC0_REC_BOOT",
+                                    "value": 13,
+                                    "description": "Boot from SDHC0 port device. If image is not found check recovery boot using SPI-flash device through FlexComm."
+                                },
+                                {
+                                    "name": "SDHC1_REC_BOOT",
+                                    "value": 14,
+                                    "description": "Boot from SDHC1 port device. If image is not found check recovery boot using SPI-flash device  through FlexComm."
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 15,
+                                    "description": "Reserved"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse96-bits-4-6",
+                            "name": "DEFAULT_ISP_MODE",
+                            "description": "When a valid image is not available to master boot, ROM switches to ISP mode for programming primary boot devices. This field determines the default ISP mode.",
+                            "values": [
+                                {
+                                    "name": "AUTO_ISP",
+                                    "value": 0,
+                                    "description": "Auto detect ISP mode. ROM monitors USB, UART, SPI and I2C interfaces for any activity."
+                                },
+                                {
+                                    "name": "USB_HID_ISP",
+                                    "value": 1,
+                                    "description": "Support ISP command interface using USB HID class only."
+                                },
+                                {
+                                    "name": "UART_ISP",
+                                    "value": 2,
+                                    "description": "Support ISP command interface on UART port only."
+                                },
+                                {
+                                    "name": "SPI_ISP",
+                                    "value": 3,
+                                    "description": "Support ISP command interface on SPI port only."
+                                },
+                                {
+                                    "name": "I2C_ISP",
+                                    "value": 4,
+                                    "description": "Support ISP command interface on I2C port only."
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 5,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "DISABLE_ISP",
+                                    "value": 7,
+                                    "description": "Disable ISP fall through when proper image is not found on primary boot device."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse96-bit-7",
+                            "name": "BOOT_CLK_SPEED",
+                            "description": "Defines clock speeds during boot.",
+                            "values": [
+                                {
+                                    "name": "NORMAL_CLK",
+                                    "value": 0,
+                                    "description": "Normal boot. All clocks are set to 48MHz using IRC48M, except USB block. USB block will use external XTAL clock."
+                                },
+                                {
+                                    "name": "HISPEED_CLK",
+                                    "value": 1,
+                                    "description": "High-speed boot.\n   o Core clock is set to 198MHz using main_pll with IRC48M as input\n   o UART, I2C : 48MHz (IRC48M)\n   o SPI, SDHC: 198MHz (main_pll)\n   o USB: external XTAL\n   o OSPI: Set to different speed using aux0_pll. Speed of OSPI interface is obtained from Boot Configuration Block present on OSPI-flash device.\n       \u00b7 SDR: 30/50/60/72/80/90/100 MHz\n       \u00b7 DDR: 30/50/60/72/80 MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse96-bit-8",
+                            "name": "RSA4K_EN",
+                            "description": "Use 4096 bit RSA keys only for certificate validations. By default the ROM assume 2048-bit keys.",
+                            "values": [
+                                {
+                                    "name": "RSA2K",
+                                    "value": 0,
+                                    "description": "Use RSA2K or higher key length operations to validate certificates, image and debug credentials."
+                                },
+                                {
+                                    "name": "RSA4K",
+                                    "value": 1,
+                                    "description": "Use RSA4K operations to validate certificates, image and debug credentials."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse96-bits-9-10",
+                            "name": "WDT_WAIT",
+                            "description": "Refresh time period for Watchdog timer. IF configured boot ROM starts watchdog timer for the specified refresh period. If the timer is not refreshed or halted SoC reset is issued. This feature is used for detecting denial of service attacks during secure boot.",
+                            "values": [
+                                {
+                                    "name": "WDT_DISABLE",
+                                    "value": 0,
+                                    "description": "Watchdog timer is disabled."
+                                },
+                                {
+                                    "name": "WDT_250_MS",
+                                    "value": 1,
+                                    "description": "Refresh timer is set to 250 milliseconds."
+                                },
+                                {
+                                    "name": "WDT_500_MS",
+                                    "value": 2,
+                                    "description": "Refresh timer is set to 500 milliseconds."
+                                },
+                                {
+                                    "name": "WDT_1000_MS",
+                                    "value": 3,
+                                    "description": "Refresh timer is set to 500 milliseconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse96-bits-13-14",
+                            "name": "TZM_IMAGE_TYPE",
+                            "description": "TZM_IMAGE_TYPE field",
+                            "values": [
+                                {
+                                    "name": "TZM_NORMAL",
+                                    "value": 0,
+                                    "description": "TrustZone-M mode is determined by the image header."
+                                },
+                                {
+                                    "name": "TZM_DISABLE",
+                                    "value": 1,
+                                    "description": "Disable TrustZone-M features. ROM will always boot to a non-secure code and all TZ-M features are disabled."
+                                },
+                                {
+                                    "name": "TZM_ENABLE",
+                                    "value": 2,
+                                    "description": "TrustZone-M features are enabled. ROM will always boot to secure code."
+                                },
+                                {
+                                    "name": "TZM_PRESET",
+                                    "value": 3,
+                                    "description": "TrustZone-M features are enabled and setting are loaded from image header and locked before branching to user code."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse96-bit-15",
+                            "name": "PSA_BSTATE_SKIP",
+                            "description": "If set, ROM skips computation of boot state defined by PSA specification. As part of boot state computation ROM includes OTP words \n- Shadow register values of 95 to 104 \n- Fuse values of words 128 to 147.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse96-bit-16",
+                            "name": "PSA_BSTATE_INC_KEYS",
+                            "description": "If set, boot state computation includes OTP shadow register values of words 106 to 127.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse96-bits-17-19",
+                            "name": "REDUNDANT_SPI_PORT",
+                            "description": "FlexComm port to use for redundant SPI flash boot.",
+                            "values": [
+                                {
+                                    "name": "FC0",
+                                    "value": 0,
+                                    "description": "Use FlexCom0 pins P0_0 (SCK), P0_1 (MISO), P0_2 (MOSI), P0_3 (SEL)"
+                                },
+                                {
+                                    "name": "FC1",
+                                    "value": 1,
+                                    "description": "Use FlexCom1 pins P0_7 (SCK), P0_8 (MISO), P0_9 (MOSI), P0_10 (SEL)"
+                                },
+                                {
+                                    "name": "FC2",
+                                    "value": 2,
+                                    "description": "Use FlexCom2 pins P0_14 (SCK), P0_15 (MISO), P0_16 (MOSI), P0_17 (SEL)"
+                                },
+                                {
+                                    "name": "FC3",
+                                    "value": 3,
+                                    "description": "Use FlexCom3 pins P0_21 (SCK), P0_22 (MISO), P0_23 (MOSI), P0_24 (SEL)"
+                                },
+                                {
+                                    "name": "FC4",
+                                    "value": 4,
+                                    "description": "Use FlexCom4 pins P0_28 (SCK), P0_29 (MISO), P0_30 (MOSI), P0_31 (SEL)"
+                                },
+                                {
+                                    "name": "FC5",
+                                    "value": 5,
+                                    "description": "Use FlexCom5 pins P1_3 (SCK), P1_4 (MISO), P1_5 (MOSI), P1_6 (SEL)"
+                                },
+                                {
+                                    "name": "FC6",
+                                    "value": 6,
+                                    "description": "Use FlexCom6 pins P3_25 (SCK), P3_26 (MISO), P3_27 (MOSI), P3_28 (SEL)"
+                                },
+                                {
+                                    "name": "FC7",
+                                    "value": 7,
+                                    "description": "Use FlexCom7 pins P4_0 (SCK), P4_1 (MISO), P4_2 (MOSI), P4_3 (SEL)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse96-bits-20-21",
+                            "name": "SECURE_BOOT_EN",
+                            "description": "Force secure image only.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Allow non-secure images with and without CRC. Used during development."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Secure boot is enabled. The images have to be signed and optionally AES-CTR encrypted using pre-shared key. ROM does signature checking first and then does decryption of authenticated image."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 2,
+                                    "description": "Secure boot is enabled."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 3,
+                                    "description": "Secure boot is enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse96-bit-22",
+                            "name": "DICE_INC_OTP",
+                            "description": "Include non-field updatable OTP Fields in DICE computation. OTP values in shadow registers are used in computation for words 95, 96, 98, 99, 104, 120 - 127.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse96-bit-23",
+                            "name": "DICE_SKIP",
+                            "description": "If set, ROM skips computation of Composite Device Identifier (CDI) defined in DICE specification. But ROM will continue to hide UDS source in OTP and PUF (index 15) before passing control to user code.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse96-bits-24-31",
+                            "name": "BOOT_FAIL_PIN",
+                            "description": "GPIO port and pin number to use for indicating boot failure.  Boot ROM will drive this pin high before locking the chip on error conditions. Applications can use this pin to power cycle the system.\n[2:0] - Defines GPIO port\n[7:3] - Defines GPIO pin"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse97",
+                    "name": "BOOT_CFG[1]",
+                    "description": "Boot configuration word specifying Quad/Octal-SPI flash devices settings.",
+                    "index_int": "0x0061",
+                    "shadow_reg_offset_int": "0x0184",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x2000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse97-bit-0",
+                            "name": "QSPI_AUTO_PROBE_EN",
+                            "description": "Octal/Quad SPI flash auto probe feature enable.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse97-bits-1-3",
+                            "name": "QSPI_PROBE_TYPE",
+                            "description": "Octal/Quad SPI flash probe type.",
+                            "values": [
+                                {
+                                    "name": "QSPI_NOR",
+                                    "value": 0,
+                                    "description": "QuadSPI NOR"
+                                },
+                                {
+                                    "name": "MICRON_OCTAL",
+                                    "value": 1,
+                                    "description": "Micron Octal FLASH"
+                                },
+                                {
+                                    "name": "MACRONIX_OCTAL",
+                                    "value": 2,
+                                    "description": "Macronix Octal FLASH"
+                                },
+                                {
+                                    "name": "ADESTO_OCTAL",
+                                    "value": 3,
+                                    "description": "Adesto Octal FLASH"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 4,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 5,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 7,
+                                    "description": "Reserved"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse97-bits-4-6",
+                            "name": "QSPI_FLASH_TYPE",
+                            "description": "Define typical Serial NOR Flash types",
+                            "values": [
+                                {
+                                    "name": "QSPI_ADDR_3B",
+                                    "value": 0,
+                                    "description": "Use 3byte (24-bit) address read (0x03) by default"
+                                },
+                                {
+                                    "name": "QSPI_ADDR_4B",
+                                    "value": 1,
+                                    "description": "Use 4byte (32-bit) address read (0x13) by default"
+                                },
+                                {
+                                    "name": "HYPER_1V8",
+                                    "value": 2,
+                                    "description": "HyperFlash 1V8"
+                                },
+                                {
+                                    "name": "HYPER_3V3",
+                                    "value": 3,
+                                    "description": "HyperFlash 3V3"
+                                },
+                                {
+                                    "name": "OSPI_DDR_MXIC",
+                                    "value": 4,
+                                    "description": "MXIC Octal DDR"
+                                },
+                                {
+                                    "name": "OSPI_DDR_MICRON",
+                                    "value": 5,
+                                    "description": "Micron Octal DDR"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 7,
+                                    "description": "Reserved"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse97-bits-7-10",
+                            "name": "QSPI_DUMMY_CYCLES",
+                            "description": "Octal/Quad SPI flash dummy cycles for read command."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse97-bits-11-13",
+                            "name": "QSPI_FREQUENCY",
+                            "description": "Octal/Quad SPI flash interface frequency.",
+                            "values": [
+                                {
+                                    "name": "QSPI_60MHZ",
+                                    "value": 0,
+                                    "description": "60MHz"
+                                },
+                                {
+                                    "name": "QSPI_80MHZ",
+                                    "value": 1,
+                                    "description": "80MHz"
+                                },
+                                {
+                                    "name": "QSPI_90MHZ",
+                                    "value": 2,
+                                    "description": "90MHz"
+                                },
+                                {
+                                    "name": "QSPI_100MHZ",
+                                    "value": 3,
+                                    "description": "100MHz"
+                                },
+                                {
+                                    "name": "QSPI_120MHZ",
+                                    "value": 4,
+                                    "description": "120MHz"
+                                },
+                                {
+                                    "name": "QSPI_133MHZ",
+                                    "value": 5,
+                                    "description": "133MHz"
+                                },
+                                {
+                                    "name": "QSPI_166MHZ",
+                                    "value": 6,
+                                    "description": "166MHz"
+                                },
+                                {
+                                    "name": "QSPI_200MHZ",
+                                    "value": 7,
+                                    "description": "200MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse97-bit-14",
+                            "name": "QSPI_RESET_PIN_ENABLE",
+                            "description": "Use QSPI_RESET_PIN to reset the flash device.",
+                            "values": [
+                                {
+                                    "name": "NO_RESET",
+                                    "value": 0,
+                                    "description": "Octal/Quad SPI flash device reset pin is not connected or available."
+                                },
+                                {
+                                    "name": "EN_RESET",
+                                    "value": 1,
+                                    "description": "Octal/Quad SPI flash device reset pin is connected to a GPIO (QSPI_RESET_PIN)."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse97-bits-15-17",
+                            "name": "QSPI_RESET_PIN_GPIO_PORT",
+                            "description": "GPIO port and pin number to use for Octal/Quad SPI flash reset function.\nDefines GPIO port."
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse97-bits-18-22",
+                            "name": "QSPI_RESET_PIN_GPIO_PIN_NUM",
+                            "description": "GPIO port and pin number to use for Octal/Quad SPI flash reset function.\nDefines GPIO pin number."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse97-bits-23-24",
+                            "name": "QSPI_HOLD TIME",
+                            "description": "Wait time before access to Serial Flash.",
+                            "values": [
+                                {
+                                    "name": "WAIT_500_US",
+                                    "value": 0,
+                                    "description": "Wait for 500 micro seconds."
+                                },
+                                {
+                                    "name": "WAIT_1_MS",
+                                    "value": 1,
+                                    "description": "Wait for 1 milliseconds."
+                                },
+                                {
+                                    "name": "WAIT_3_MS",
+                                    "value": 2,
+                                    "description": "Wait for 3 milliseconds."
+                                },
+                                {
+                                    "name": "WAIT_10_MS",
+                                    "value": 3,
+                                    "description": "Wait for 10 milliseconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse97-bits-25-28",
+                            "name": "QSPI_PWR_HOLD_TIME",
+                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by QSPI_HOLD TIME field.",
+                            "values": [
+                                {
+                                    "name": "NO_DELAY",
+                                    "value": 0,
+                                    "description": "No delay"
+                                },
+                                {
+                                    "name": "100US_DELAY",
+                                    "value": 1,
+                                    "description": "Waits additional 100 micro-seconds."
+                                },
+                                {
+                                    "name": "500US_DELAY",
+                                    "value": 2,
+                                    "description": "Waits additional 500 micro-seconds."
+                                },
+                                {
+                                    "name": "1MS_DELAY",
+                                    "value": 3,
+                                    "description": "Waits additional 1 milli-seconds."
+                                },
+                                {
+                                    "name": "10MS_DELAY",
+                                    "value": 4,
+                                    "description": "Waits additional 10 milli-seconds."
+                                },
+                                {
+                                    "name": "20MS_DELAY",
+                                    "value": 5,
+                                    "description": "Waits additional 20 milli-seconds."
+                                },
+                                {
+                                    "name": "40MS_DELAY",
+                                    "value": 6,
+                                    "description": "Waits additional 40 milli-seconds."
+                                },
+                                {
+                                    "name": "60MS_DELAY",
+                                    "value": 7,
+                                    "description": "Waits additional 60 milli-seconds."
+                                },
+                                {
+                                    "name": "80MS_DELAY",
+                                    "value": 8,
+                                    "description": "Waits additional 80 milli-seconds."
+                                },
+                                {
+                                    "name": "100MS_DELAY",
+                                    "value": 9,
+                                    "description": "Waits additional 100 milli-seconds."
+                                },
+                                {
+                                    "name": "120MS_DELAY",
+                                    "value": 10,
+                                    "description": "Waits additional 120 milli-seconds."
+                                },
+                                {
+                                    "name": "140MS_DELAY",
+                                    "value": 11,
+                                    "description": "Waits additional 140 milli-seconds."
+                                },
+                                {
+                                    "name": "160MS_DELAY",
+                                    "value": 12,
+                                    "description": "Waits additional 160 milli-seconds."
+                                },
+                                {
+                                    "name": "180MS_DELAY",
+                                    "value": 13,
+                                    "description": "Waits additional 180 milli-seconds."
+                                },
+                                {
+                                    "name": "200MS_DELAY",
+                                    "value": 14,
+                                    "description": "Waits additional 200 milli-seconds."
+                                },
+                                {
+                                    "name": "220MS_DELAY",
+                                    "value": 15,
+                                    "description": "Waits additional 220 milli-seconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse97-bit-31",
+                            "name": "QSPI_ISP_AUTO_PROBE_EN",
+                            "description": "Enable auto probing of Octal/Quad SPI flash device on SP mode entry.  \nSet this bit when using secure update (receive-sb ISP command) feature with PUF keystore. So that ROM auto-detects the flash device and loads the PUF key store prior to receiving ISP commands.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse98",
+                    "name": "BOOT_CFG[2]",
+                    "description": "Boot configuration word specifying settings for SD card and eMMC boot interface.",
+                    "index_int": "0x0062",
+                    "shadow_reg_offset_int": "0x0188",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-0",
+                            "name": "SDHC_DEVICE_TYPE",
+                            "description": "Device type connected to SDHC port.",
+                            "values": [
+                                {
+                                    "name": "eMMC_DEV",
+                                    "value": 0,
+                                    "description": "eMMC device"
+                                },
+                                {
+                                    "name": "SD_DEV",
+                                    "value": 1,
+                                    "description": "SD card device"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse98-bits-1-2",
+                            "name": "SDHC_BUS_WIDTH",
+                            "description": "Bus width of the device connected to SDHC.",
+                            "values": [
+                                {
+                                    "name": "SD_1B_MMC_4B",
+                                    "value": 0,
+                                    "description": "For SD cards use 1-bit data bus. \nFor eMMC use 4-bit data bus."
+                                },
+                                {
+                                    "name": "SD_4B_MMC_8B",
+                                    "value": 1,
+                                    "description": "For SD cards use 4-bit data bus. \nFor eMMC use 8-bit data bus."
+                                },
+                                {
+                                    "name": "MMC_4B_DDR",
+                                    "value": 2,
+                                    "description": "For eMMC use 4-bit bus in DDR mode."
+                                },
+                                {
+                                    "name": "MMC_8B_DDR",
+                                    "value": 3,
+                                    "description": "For eMMC use 8-bit bus in DDR mode."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse98-bits-3-4",
+                            "name": "SDHC_SPEED",
+                            "description": "Speed ratings of eMMC devices and SD card devices.",
+                            "values": [
+                                {
+                                    "name": "NORMAL",
+                                    "value": 0,
+                                    "description": "Normal speed for eMMC devices. SDR12 speeds for SD."
+                                },
+                                {
+                                    "name": "HIGH",
+                                    "value": 1,
+                                    "description": "High speed for eMMC devices.  SDR25 speeds for SD."
+                                },
+                                {
+                                    "name": "SDR50",
+                                    "value": 2,
+                                    "description": "SDR50 speeds for SD card."
+                                },
+                                {
+                                    "name": "SDR104",
+                                    "value": 3,
+                                    "description": "SDR104"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-5",
+                            "name": "SDHC_PWR_CYCLE_EN",
+                            "description": "Enable SDHC power cycle via USDHC_RST pad.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disabled."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-6",
+                            "name": "SDHC0_PWR_POL",
+                            "description": "Polarity of power enable signal for SDHC0 port.",
+                            "values": [
+                                {
+                                    "name": "ACTIVE_HIGH",
+                                    "value": 0,
+                                    "description": "Active high signal."
+                                },
+                                {
+                                    "name": "ACTIVE_LOW",
+                                    "value": 1,
+                                    "description": "Active low signal."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-7",
+                            "name": "SDHC1_PWR_POL",
+                            "description": "Polarity of power enable signal for SDHC1 port.",
+                            "values": [
+                                {
+                                    "name": "ACTIVE_HIGH",
+                                    "value": 0,
+                                    "description": "Active high signal."
+                                },
+                                {
+                                    "name": "ACTIVE_LOW",
+                                    "value": 1,
+                                    "description": "Active low signal."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse98-bits-8-9",
+                            "name": "SDHC_PWR_CYCLE_WAIT",
+                            "description": "Wait time after powering down the SDHC devices.",
+                            "values": [
+                                {
+                                    "name": "WAIT_20_MS",
+                                    "value": 0,
+                                    "description": "Wait 20 milliseconds."
+                                },
+                                {
+                                    "name": "WAIT_10_MS",
+                                    "value": 1,
+                                    "description": "Wait 10 milliseconds."
+                                },
+                                {
+                                    "name": "WAIT_05_MS",
+                                    "value": 2,
+                                    "description": "Wait 5 milliseconds."
+                                },
+                                {
+                                    "name": "WAIT_2_5_MS",
+                                    "value": 3,
+                                    "description": "Wait 2.5 milliseconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-10",
+                            "name": "SDHC_PWR_STABLE_WAIT",
+                            "description": "Wait time for power to stabilize after enabling power to SDHC devices.",
+                            "values": [
+                                {
+                                    "name": "WAIT_5_MS",
+                                    "value": 0,
+                                    "description": "Wait 5 milliseconds."
+                                },
+                                {
+                                    "name": "WAIT_2_5_MS",
+                                    "value": 1,
+                                    "description": "Wait 2.5 milliseconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-11",
+                            "name": "SDHC0_CARD_VOLTAGE",
+                            "description": "SD Voltage selection for SDHC0 port.",
+                            "values": [
+                                {
+                                    "name": "3V3",
+                                    "value": 0,
+                                    "description": "Uses 3v3 rail."
+                                },
+                                {
+                                    "name": "1V8",
+                                    "value": 1,
+                                    "description": "Uses 1v8 rail."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-12",
+                            "name": "SDHC1_CARD_VOLTAGE",
+                            "description": "SD Voltage selection for SDHC1 port.",
+                            "values": [
+                                {
+                                    "name": "3V3",
+                                    "value": 0,
+                                    "description": "Uses 3v3 rail."
+                                },
+                                {
+                                    "name": "1V8",
+                                    "value": 1,
+                                    "description": "Uses 1v8 rail."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-13",
+                            "name": "MMC_RESET_PRE_IDLE_STATE",
+                            "description": "Reset the MMC to Pre-Idle state before starting boot mode",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-14",
+                            "name": "SDHC_FASTBOOT_MODE",
+                            "description": "Specifies if the boot mode is enabled in Extended CSD register of the eMMC device.",
+                            "values": [
+                                {
+                                    "name": "NORMAL_MODE",
+                                    "value": 0,
+                                    "description": "eMMC operates in transfer mode after power-up."
+                                },
+                                {
+                                    "name": "BOOT_MODE",
+                                    "value": 1,
+                                    "description": "eMMC operates in boot mode after power-up."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-15",
+                            "name": "SDHC_FASTBOOT_ACK_EN",
+                            "description": "Specifies if the eMMC device sends boot acknowledge pattern during boot operation.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-16",
+                            "name": "SDHC_PAD_CTL_FREEZE",
+                            "description": "When using SDHC interface in high speed modes, the auto pad compensation control logic could cause interference due to modifications in IO drive strength. Hence it is recommended to freeze the compensated value and enable auto compensation periodically in application code by putting the pad back to normal mode. When this field is set ROM freezes the auto compensation circuit during boot.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-17",
+                            "name": "SDHC_PAD_CTL_FAST_FREEZE",
+                            "description": "Same as SDHC_PAD_CTL_FREEZE, but in this mode the time taken for switching the compensation from Fast Freeze mode to Normal mode is considerably smaller than the delay incurred in switching from Freeze mode to Normal mode.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-18",
+                            "name": "QSPI_PAD_CTL_FREEZE",
+                            "description": "When using QSPI interface in high speed modes, the auto pad compensation control logic could cause interference due to modifications in IO drive strength. Hence it is recommended to freeze the compensated value and enable auto compensation periodically in application code by putting the pad back to normal mode. When this field is set ROM freezes the auto compensation circuit during boot.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse98-bit-19",
+                            "name": "QSPI_PAD_CTL_FAST_FREEZE",
+                            "description": "Same as QSPI_PAD_CTL_FREEZE, but in this mode the time taken for switching the compensation from Fast Freeze mode to Normal mode is considerably smaller than the delay incurred in switching from Freeze mode to Normal mode.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse98-bits-28-31",
+                            "name": "QSPI_IMAGE_SIZE",
+                            "description": "Any offset in memory mapped FlexSPI area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. QSPI_IMAGE_OFFSET field specifies the offset location of second image. QSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped.",
+                            "values": [
+                                {
+                                    "name": "SIZE_OFFSET",
+                                    "value": 0,
+                                    "description": "Size of the remapped area (aka second half) is same as first half. It is determined by QSPI_IMAGE_OFFSET Field. \n          Remap size = QSPI_IMAGE_OFFSET * 256KByte;"
+                                },
+                                {
+                                    "name": "SIZE_1MB",
+                                    "value": 1,
+                                    "description": "Size of remapped area is 1MByte."
+                                },
+                                {
+                                    "name": "SIZE_2MB",
+                                    "value": 2,
+                                    "description": "Size of remapped area is 2MByte."
+                                },
+                                {
+                                    "name": "SIZE_3MB",
+                                    "value": 3,
+                                    "description": "Size of remapped area is 3MByte."
+                                },
+                                {
+                                    "name": "SIZE_4MB",
+                                    "value": 4,
+                                    "description": "Size of remapped area is 4MByte."
+                                },
+                                {
+                                    "name": "SIZE_5MB",
+                                    "value": 5,
+                                    "description": "Size of remapped area is 5MByte."
+                                },
+                                {
+                                    "name": "SIZE_6MB",
+                                    "value": 6,
+                                    "description": "Size of remapped area is 6MByte."
+                                },
+                                {
+                                    "name": "SIZE_7MB",
+                                    "value": 7,
+                                    "description": "Size of remapped area is 7MByte."
+                                },
+                                {
+                                    "name": "SIZE_8MB",
+                                    "value": 8,
+                                    "description": "Size of remapped area is 8MByte."
+                                },
+                                {
+                                    "name": "SIZE_9MB",
+                                    "value": 9,
+                                    "description": "Size of remapped area is 9MByte."
+                                },
+                                {
+                                    "name": "SIZE_10MB",
+                                    "value": 10,
+                                    "description": "Size of remapped area is 10MByte."
+                                },
+                                {
+                                    "name": "SIZE_11MB",
+                                    "value": 11,
+                                    "description": "Size of remapped area is 11MByte."
+                                },
+                                {
+                                    "name": "SIZE_12MB",
+                                    "value": 12,
+                                    "description": "Size of remapped area is 12MByte."
+                                },
+                                {
+                                    "name": "SIZE_256KB",
+                                    "value": 13,
+                                    "description": "Size of remapped area is 256KByte."
+                                },
+                                {
+                                    "name": "SIZE_512KB",
+                                    "value": 14,
+                                    "description": "Size of remapped area is 512KByte."
+                                },
+                                {
+                                    "name": "SIZE_768KB",
+                                    "value": 15,
+                                    "description": "Size of remapped area is 768KByte."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse99",
+                    "name": "BOOT_CFG[3]",
+                    "description": "Boot configuration word specifying delay lines settings for SDHC and QSPI interfaces.",
+                    "index_int": "0x0063",
+                    "shadow_reg_offset_int": "0x018C",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x8000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 7,
+                            "id": "fuse99-bits-0-6",
+                            "name": "QSPI_DELAY_CELL_NUM",
+                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS)"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse99-bit-7",
+                            "name": "SDHC_DLL_TUNING_OVERRIDE_ENABLE",
+                            "description": "SDHC_DLL_TUNING_OVERRIDE_ENABLE field",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Default\uff1a DLL delay tuning start 10, DLL delay tuning step 2 ( this config can cover most of user cases.)"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Override by SDHC_DLL_SETTING"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse99-bits-8-15",
+                            "name": "SDHC_DLL_TUNING_START",
+                            "description": "DLL delay tuning start."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse99-bits-16-18",
+                            "name": "SDHC_DLL_TUNING_STEP",
+                            "description": "DLL delay tuning step."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse99-bits-19-21",
+                            "name": "USB_PLL_DIV_SEL",
+                            "description": "USB PLL divider value. Used for configuring USB PLL during USB ISP and DFU boot modes. The value corresponds to the PLL_DIV_SEL field of the USBPHY_PLL_SIC register."
+                        },
+                        {
+                            "width": 10,
+                            "id": "fuse99-bits-22-31",
+                            "name": "QSPI_IMAGE_OFFSET",
+                            "description": "Any offset within memory mapped FlexSPI area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which can be programmed at offset 0 or higher offset. QSPI_IMAGE_OFFSET field specifies the offset location of second image. QSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. \nIf this field is left blank boot ROM assumes that application intends to not use dual image boot feature. The physical flash offset is computed as below:\n       physical offset = QSPI_IMAGE_OFFSET * 256KByte;"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SECURITY_EPOCH",
+                "description": "OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different lifecycle stages of the device."
+            },
+            "registers": [
+                {
+                    "id": "fuse101",
+                    "name": "SEC_BOOT_CFG[5]",
+                    "description": "Boot configuration word5. \n- This word is set in redundant mode. Thus individual bits can be programmed separately at different lifecycle stages of the device.",
+                    "index_int": "0x0065",
+                    "shadow_reg_offset_int": "0x0194",
+                    "individual_write_lock": "user",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse101-bits-0-3",
+                            "name": "REVOKE_ROOTKEY",
+                            "description": "Revoke up to 4 root keys. When a bit is set corresponding root key is revoked."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse101-bit-4",
+                            "name": "FA_MODE_EN",
+                            "description": "Enable Fault Analysis mode.\n- When set ROM checks and erases customer sensitive assets (AES keys or key codes) stored in IFR/OTP.  \n- Issues zeroized command to PUF (disables key decoding until POR)\n- Blocks all HW routed OTP keys and set lock bits on those registers\n- Enables all debug ports and waits in loop for tester.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse101-bits-5-6",
+                            "name": "ENABLE_CRC_CHECK",
+                            "description": "Enable CRC checking of OTP words.",
+                            "values": [
+                                {
+                                    "name": "CRC_DISABLE",
+                                    "value": 0,
+                                    "description": "CRC checking of OTP words is disabled."
+                                },
+                                {
+                                    "name": "CRC_ENABLE",
+                                    "value": 1,
+                                    "description": "CRC check of all OTP words is enabled."
+                                },
+                                {
+                                    "name": "CRC_NXPONLY",
+                                    "value": 2,
+                                    "description": "CRC check is enabled only for NXP programmed OTP words."
+                                },
+                                {
+                                    "name": "CRC_ENABLE2",
+                                    "value": 3,
+                                    "description": "CRC check of all OTP words is enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse101-bit-7",
+                            "name": "USE_PUF",
+                            "description": "Use PUF to store AES keys and UDS.",
+                            "values": [
+                                {
+                                    "name": "KEY_IN_OTP",
+                                    "value": 0,
+                                    "description": "AES keys and UDS are read from OTP."
+                                },
+                                {
+                                    "name": "KEY_IN_PUF",
+                                    "value": 1,
+                                    "description": "AES keys and UDS are read from PUF."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse101-bit-8",
+                            "name": "PUF_BLOCK_ENROLL",
+                            "description": "Block further enrollment of PUF block. When this bit is set ROM blocks generation of new activation codes.",
+                            "values": [
+                                {
+                                    "name": "ENROLL_EN",
+                                    "value": 0,
+                                    "description": "Enable generation of new activation code."
+                                },
+                                {
+                                    "name": "ENROLL_DIS",
+                                    "value": 1,
+                                    "description": "Disable generation of new activation code."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse101-bit-9",
+                            "name": "PUF_BLOCK_SET_KEY",
+                            "description": "Block further enrollment of PUF block. When this bit is set ROM blocks generation of new key codes.",
+                            "values": [
+                                {
+                                    "name": "KEY_GEN_EN",
+                                    "value": 0,
+                                    "description": "Enable generation of new key codes."
+                                },
+                                {
+                                    "name": "KEY_GEN_DIS",
+                                    "value": 1,
+                                    "description": "Disable generation of new key codes."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse102",
+                    "name": "REVOKE_IMG_KEY",
+                    "description": "Image keys revocation identifier.",
+                    "index_int": "0x0066",
+                    "shadow_reg_offset_int": "0x0198",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse102-bits-0-15",
+                            "name": "REVOKE_IMG_KEY",
+                            "description": "To implement anti-rollback feature, the image key certificate should be revoked using this field. The in-field FW update process should blow the least unblown bit. During image key certificate validation this field is compare with the certificate content (upper 2 bytes of serial number field in X.509 certificate)."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse103",
+                    "name": "SEC_BOOT_CFG[7]",
+                    "description": "Boot configuration word7. \n- This word is set in redundant mode. Thus individual bits can be programmed separately at different lifecycle stages of the device.",
+                    "index_int": "0x0067",
+                    "shadow_reg_offset_int": "0x019C",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse103-bits-0-15",
+                            "name": "DAP_VENDOR_USAGE",
+                            "description": "Lower 16-bits of Vendor Usage field in Debug Credentials defined in NXP's Debug Authentication Protocol specifications Version 1.0."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USB_CFG",
+                "description": "USB_CFG group"
+            },
+            "registers": [
+                {
+                    "id": "fuse105",
+                    "name": "USB_ID",
+                    "description": "Override default USB ID's used by ROM during USB master boot and ISP modes.",
+                    "index_int": "0x0069",
+                    "individual_write_lock": "always_lock",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse105-bits-0-15",
+                            "name": "USB_VID",
+                            "description": "USB vendor ID."
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse105-bits-16-31",
+                            "name": "USB_PID",
+                            "description": "USB product ID."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "OTFAD_CFG",
+                "description": "OTFAD_CFG group"
+            },
+            "registers": [
+                {
+                    "id": "fuse106",
+                    "name": "OTFAD_CFG",
+                    "description": "Configuration word to control OTFAD key blob loading during boot process.",
+                    "index_int": "0x006A",
+                    "shadow_reg_offset_int": "0x01A8",
+                    "individual_write_lock": "user",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0004"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 12
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse106-bit-12",
+                            "name": "OTFAD_ENABLE",
+                            "description": "When this field is set, it indicates to ROM that OTFAD feature is enabled and should initialize the OTFAD engine before accessing the memory mapped QSPI flash buffer area.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse106-bit-13",
+                            "name": "KEYBLOB_RESTRICT_REG",
+                            "description": "ROM after loading OTFAD registers restricts read access before jumping to user code. Only CTR registers are writable in this mode.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "KEY_STORE",
+                "description": "KEY_STORE group"
+            },
+            "registers": [
+                {
+                    "id": "fuse107",
+                    "name": "KEY_SCRAMBLE_SEED",
+                    "description": "Key scramble data used as input to scramble master key stored in OTP.",
+                    "index_int": "0x006B",
+                    "shadow_reg_offset_int": "0x01AC",
+                    "write_priority": "first",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0010",
+                        "read_lock_int": "0x0020"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse107-bits-0-31",
+                            "name": "SCRAMBLE_INPUT",
+                            "description": "32-bit random value programmed by user which will be used as one of the two inputs to scramble OTP_MASTER_KEY key."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse108",
+                    "name": "OTFAD_KEK_SEED_31_0",
+                    "description": "When OTP key store is used (USE_PUF = 0), this 128-bit user programmed value is used to derive OTFAD_KEK.\n\nOTFAD_KEK[127:0] = AES_ENCRYPT (OTP_MASTER_KEY, OTFAD_KEK_SEED[127:0]);",
+                    "index_int": "0x006C",
+                    "shadow_reg_offset_int": "0x01B0",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0040"
+                    }
+                },
+                {
+                    "id": "fuse109",
+                    "name": "OTFAD_KEK_SEED_63_32",
+                    "description": "OTFAD_KEK_SEED_63_32 register",
+                    "index_int": "0x006D",
+                    "shadow_reg_offset_int": "0x01B4",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0040"
+                    }
+                },
+                {
+                    "id": "fuse110",
+                    "name": "OTFAD_KEK_SEED_95_64",
+                    "description": "OTFAD_KEK_SEED_95_64 register",
+                    "index_int": "0x006E",
+                    "shadow_reg_offset_int": "0x01B8",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0040"
+                    }
+                },
+                {
+                    "id": "fuse111",
+                    "name": "OTFAD_KEK_SEED_127_96",
+                    "description": "OTFAD_KEK_SEED_127_96 register",
+                    "index_int": "0x006F",
+                    "shadow_reg_offset_int": "0x01BC",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0040"
+                    }
+                },
+                {
+                    "id": "fuse112",
+                    "name": "OTP_MASTER_KEY[31:0]",
+                    "description": "Master Key used to derive different usage keys (HMAC_KEY, ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). \n\n- ENC_BOOT_HMAC_KEY[127:0] = AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000000);\n- ENC_BOOT_AES_KEY[255:0] = AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000002);\n- SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000003) ||  AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000004); \n- OTFAD_KEK[127:0] = AES_ENCRYPT (OTP_MASTER_KEY, OTFAD_KEK_SEED[127:0]);",
+                    "index_int": "0x0070",
+                    "shadow_reg_offset_int": "0x01C0",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse113",
+                    "name": "OTP_MASTER_KEY[63:32]",
+                    "description": "OTP_MASTER_KEY[63:32] register",
+                    "index_int": "0x0071",
+                    "shadow_reg_offset_int": "0x01C4",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse114",
+                    "name": "OTP_MASTER_KEY[95:64]",
+                    "description": "OTP_MASTER_KEY[95:64] register",
+                    "index_int": "0x0072",
+                    "shadow_reg_offset_int": "0x01C8",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse115",
+                    "name": "OTP_MASTER_KEY[127:96]",
+                    "description": "OTP_MASTER_KEY[127:96] register",
+                    "index_int": "0x0073",
+                    "shadow_reg_offset_int": "0x01CC",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse116",
+                    "name": "OTP_MASTER_KEY[159:128]",
+                    "description": "OTP_MASTER_KEY[159:128] register",
+                    "index_int": "0x0074",
+                    "shadow_reg_offset_int": "0x01D0",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse117",
+                    "name": "OTP_MASTER_KEY[191:160]",
+                    "description": "OTP_MASTER_KEY[191:160] register",
+                    "index_int": "0x0075",
+                    "shadow_reg_offset_int": "0x01D4",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse118",
+                    "name": "OTP_MASTER_KEY[223:192]",
+                    "description": "OTP_MASTER_KEY[223:192] register",
+                    "index_int": "0x0076",
+                    "shadow_reg_offset_int": "0x01D8",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse119",
+                    "name": "OTP_MASTER_KEY[255:224]",
+                    "description": "OTP_MASTER_KEY[255:224] register",
+                    "index_int": "0x0077",
+                    "shadow_reg_offset_int": "0x01DC",
+                    "is_readable": false,
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0100"
+                    }
+                },
+                {
+                    "id": "fuse120",
+                    "name": "RKTH_255_224",
+                    "description": "SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).\nFor i in 0..3:\n  Let M[i] = BE(Modulus i)\n  Let E[i] = BE(Exponent i)\n  Let RKH[i] = SHA256( M[i] || E[i] )\n  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )\nNote: Documentation update needed when using blhost due to endianness issue.",
+                    "index_int": "0x0078",
+                    "shadow_reg_offset_int": "0x01E0",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse121",
+                    "name": "RKTH_223_192",
+                    "description": "RKTH_223_192 register",
+                    "index_int": "0x0079",
+                    "shadow_reg_offset_int": "0x01E4",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse122",
+                    "name": "RKTH_191_160",
+                    "description": "RKTH_191_160 register",
+                    "index_int": "0x007A",
+                    "shadow_reg_offset_int": "0x01E8",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse123",
+                    "name": "RKTH_159_128",
+                    "description": "RKTH_159_128 register",
+                    "index_int": "0x007B",
+                    "shadow_reg_offset_int": "0x01EC",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse124",
+                    "name": "RKTH_127_96",
+                    "description": "RKTH_127_96 register",
+                    "index_int": "0x007C",
+                    "shadow_reg_offset_int": "0x01F0",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse125",
+                    "name": "RKTH_95_64",
+                    "description": "RKTH_95_64 register",
+                    "index_int": "0x007D",
+                    "shadow_reg_offset_int": "0x01F4",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse126",
+                    "name": "RKTH_63_32",
+                    "description": "RKTH_63_32 register",
+                    "index_int": "0x007E",
+                    "shadow_reg_offset_int": "0x01F8",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                },
+                {
+                    "id": "fuse127",
+                    "name": "RKTH_31_0",
+                    "description": "RKTH_31_0 register",
+                    "index_int": "0x007F",
+                    "shadow_reg_offset_int": "0x01FC",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x1000"
+                    }
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "NT_FW_VERSION",
+                "description": "NT_FW_VERSION group"
+            },
+            "registers": [
+                {
+                    "id": "fuse128",
+                    "name": "NT_FW_VER_15_0",
+                    "description": "Non-trusted firmware version counter (0 - 255). OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different point in time throughout the life of device.",
+                    "index_int": "0x0080",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse128-bits-0-15",
+                            "name": "NT_FW_VER_15_0",
+                            "description": "Non-trusted firmware version counter (0 - 255). OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different point in time throughout the life of device."
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse129",
+                    "name": "NT_FW_VER_31_16",
+                    "description": "NT_FW_VER_31_16 register",
+                    "index_int": "0x0081",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse129-bits-0-15",
+                            "name": "NT_FW_VER_31_16",
+                            "description": "NT_FW_VER_31_16 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse130",
+                    "name": "NT_FW_VER_47_32",
+                    "description": "NT_FW_VER_47_32 register",
+                    "index_int": "0x0082",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse130-bits-0-15",
+                            "name": "NT_FW_VER_47_32",
+                            "description": "NT_FW_VER_47_32 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse131",
+                    "name": "NT_FW_VER_63_48",
+                    "description": "NT_FW_VER_63_48 register",
+                    "index_int": "0x0083",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse131-bits-0-15",
+                            "name": "NT_FW_VER_63_48",
+                            "description": "NT_FW_VER_63_48 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse132",
+                    "name": "NT_FW_VER_79_64",
+                    "description": "NT_FW_VER_79_64 register",
+                    "index_int": "0x0084",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse132-bits-0-15",
+                            "name": "NT_FW_VER_79_64",
+                            "description": "NT_FW_VER_79_64 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse133",
+                    "name": "NT_FW_VER_95_80",
+                    "description": "NT_FW_VER_95_80 register",
+                    "index_int": "0x0085",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse133-bits-0-15",
+                            "name": "NT_FW_VER_95_80",
+                            "description": "NT_FW_VER_95_80 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse134",
+                    "name": "NT_FW_VER_111_96",
+                    "description": "NT_FW_VER_111_96 register",
+                    "index_int": "0x0086",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse134-bits-0-15",
+                            "name": "NT_FW_VER_111_96",
+                            "description": "NT_FW_VER_111_96 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse135",
+                    "name": "NT_FW_VER_127_112",
+                    "description": "NT_FW_VER_127_112 register",
+                    "index_int": "0x0087",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse135-bits-0-15",
+                            "name": "NT_FW_VER_127_112",
+                            "description": "NT_FW_VER_127_112 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse136",
+                    "name": "NT_FW_VER_143_128",
+                    "description": "NT_FW_VER_143_128 register",
+                    "index_int": "0x0088",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse136-bits-0-15",
+                            "name": "NT_FW_VER_143_128",
+                            "description": "NT_FW_VER_143_128 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse137",
+                    "name": "NT_FW_VER_159_144",
+                    "description": "NT_FW_VER_159_144 register",
+                    "index_int": "0x0089",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse137-bits-0-15",
+                            "name": "NT_FW_VER_159_144",
+                            "description": "NT_FW_VER_159_144 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse138",
+                    "name": "NT_FW_VER_175_160",
+                    "description": "NT_FW_VER_175_160 register",
+                    "index_int": "0x008A",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse138-bits-0-15",
+                            "name": "NT_FW_VER_175_160",
+                            "description": "NT_FW_VER_175_160 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse139",
+                    "name": "NT_FW_VER_191_176",
+                    "description": "NT_FW_VER_191_176 register",
+                    "index_int": "0x008B",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse139-bits-0-15",
+                            "name": "NT_FW_VER_191_176",
+                            "description": "NT_FW_VER_191_176 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse140",
+                    "name": "NT_FW_VER_207_192",
+                    "description": "NT_FW_VER_207_192 register",
+                    "index_int": "0x008C",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse140-bits-0-15",
+                            "name": "NT_FW_VER_207_192",
+                            "description": "NT_FW_VER_207_192 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse141",
+                    "name": "NT_FW_VER_223_208",
+                    "description": "NT_FW_VER_223_208 register",
+                    "index_int": "0x008D",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse141-bits-0-15",
+                            "name": "NT_FW_VER_223_208",
+                            "description": "NT_FW_VER_223_208 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse142",
+                    "name": "NT_FW_VER_239_224",
+                    "description": "NT_FW_VER_239_224 register",
+                    "index_int": "0x008E",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse142-bits-0-15",
+                            "name": "NT_FW_VER_239_224",
+                            "description": "NT_FW_VER_239_224 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse143",
+                    "name": "NT_FW_VER_255_240",
+                    "description": "NT_FW_VER_255_240 register",
+                    "index_int": "0x008F",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse143-bits-0-15",
+                            "name": "NT_FW_VER_255_240",
+                            "description": "NT_FW_VER_255_240 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "TZ_FW_VERSION",
+                "description": "TZ_FW_VERSION group"
+            },
+            "registers": [
+                {
+                    "id": "fuse144",
+                    "name": "TZ_FW_VER_15_0",
+                    "description": "Trusted firmware version counter (0 - 63). OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different point in time throughout the life of device.",
+                    "index_int": "0x0090",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse144-bits-0-15",
+                            "name": "TZ_FW_VER_15_0",
+                            "description": "Trusted firmware version counter (0 - 63). OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different point in time throughout the life of device."
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse145",
+                    "name": "TZ_FW_VER_31_16",
+                    "description": "TZ_FW_VER_31_16 register",
+                    "index_int": "0x0091",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse145-bits-0-15",
+                            "name": "TZ_FW_VER_31_16",
+                            "description": "TZ_FW_VER_31_16 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse146",
+                    "name": "TZ_FW_VER_47_32",
+                    "description": "TZ_FW_VER_47_32 register",
+                    "index_int": "0x0092",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse146-bits-0-15",
+                            "name": "TZ_FW_VER_47_32",
+                            "description": "TZ_FW_VER_47_32 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse147",
+                    "name": "TZ_FW_VER_63_48",
+                    "description": "TZ_FW_VER_63_48 register",
+                    "index_int": "0x0093",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse147-bits-0-15",
+                            "name": "TZ_FW_VER_63_48",
+                            "description": "TZ_FW_VER_63_48 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_DATA",
+                "description": "USER_DATA group"
+            },
+            "registers": [
+                {
+                    "id": "fuse148",
+                    "name": "USER_RED_0",
+                    "description": "Customer defined data.OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different point in time throughout the life of device.",
+                    "index_int": "0x0094",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse148-bits-0-15",
+                            "name": "USER_RED_0",
+                            "description": "Customer defined data.OTP words in this block are redundant fuse words. Thus individual bits can be programmed separately at different point in time throughout the life of device."
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse149",
+                    "name": "USER_RED_1",
+                    "description": "USER_RED_1 register",
+                    "index_int": "0x0095",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse149-bits-0-15",
+                            "name": "USER_RED_1",
+                            "description": "USER_RED_1 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse150",
+                    "name": "USER_RED_2",
+                    "description": "USER_RED_2 register",
+                    "index_int": "0x0096",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse150-bits-0-15",
+                            "name": "USER_RED_2",
+                            "description": "USER_RED_2 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse151",
+                    "name": "USER_RED_3",
+                    "description": "USER_RED_3 register",
+                    "index_int": "0x0097",
+                    "individual_write_lock": "user",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse151-bits-0-15",
+                            "name": "USER_RED_3",
+                            "description": "USER_RED_3 register"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse152",
+                    "name": "USER_ECC_0",
+                    "description": "Customer defined data.OTP words in this block are ECC fuse words. Thus all bits in these words can be programmed at one shot.",
+                    "index_int": "0x0098",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse153",
+                    "name": "USER_ECC_1",
+                    "description": "USER_ECC_1 register",
+                    "index_int": "0x0099",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse154",
+                    "name": "USER_ECC_2",
+                    "description": "USER_ECC_2 register",
+                    "index_int": "0x009A",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse155",
+                    "name": "USER_ECC_3",
+                    "description": "USER_ECC_3 register",
+                    "index_int": "0x009B",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse156",
+                    "name": "USER_ECC_4",
+                    "description": "USER_ECC_4 register",
+                    "index_int": "0x009C",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse157",
+                    "name": "USER_ECC_5",
+                    "description": "USER_ECC_5 register",
+                    "index_int": "0x009D",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse158",
+                    "name": "USER_ECC_6",
+                    "description": "USER_ECC_6 register",
+                    "index_int": "0x009E",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse159",
+                    "name": "USER_ECC_7",
+                    "description": "USER_ECC_7 register",
+                    "index_int": "0x009F",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK1",
+                "description": "USER_BANK1 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse392",
+                    "name": "USER_BANK1_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x0188",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse393",
+                    "name": "USER_BANK1_1",
+                    "description": "USER_BANK1_1 register",
+                    "index_int": "0x0189",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse394",
+                    "name": "USER_BANK1_2",
+                    "description": "USER_BANK1_2 register",
+                    "index_int": "0x018A",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse395",
+                    "name": "USER_BANK1_3",
+                    "description": "USER_BANK1_3 register",
+                    "index_int": "0x018B",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse396",
+                    "name": "USER_BANK1_4",
+                    "description": "USER_BANK1_4 register",
+                    "index_int": "0x018C",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse397",
+                    "name": "USER_BANK1_5",
+                    "description": "USER_BANK1_5 register",
+                    "index_int": "0x018D",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse398",
+                    "name": "USER_BANK1_6",
+                    "description": "USER_BANK1_6 register",
+                    "index_int": "0x018E",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse399",
+                    "name": "USER_BANK1_7",
+                    "description": "USER_BANK1_7 register",
+                    "index_int": "0x018F",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK2",
+                "description": "USER_BANK2 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse400",
+                    "name": "USER_BANK2_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x0190",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse401",
+                    "name": "USER_BANK2_1",
+                    "description": "USER_BANK2_1 register",
+                    "index_int": "0x0191",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse402",
+                    "name": "USER_BANK2_2",
+                    "description": "USER_BANK2_2 register",
+                    "index_int": "0x0192",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse403",
+                    "name": "USER_BANK2_3",
+                    "description": "USER_BANK2_3 register",
+                    "index_int": "0x0193",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse404",
+                    "name": "USER_BANK2_4",
+                    "description": "USER_BANK2_4 register",
+                    "index_int": "0x0194",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse405",
+                    "name": "USER_BANK2_5",
+                    "description": "USER_BANK2_5 register",
+                    "index_int": "0x0195",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse406",
+                    "name": "USER_BANK2_6",
+                    "description": "USER_BANK2_6 register",
+                    "index_int": "0x0196",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse407",
+                    "name": "USER_BANK2_7",
+                    "description": "USER_BANK2_7 register",
+                    "index_int": "0x0197",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK3",
+                "description": "USER_BANK3 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse408",
+                    "name": "USER_BANK3_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x0198",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse409",
+                    "name": "USER_BANK3_1",
+                    "description": "USER_BANK3_1 register",
+                    "index_int": "0x0199",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse410",
+                    "name": "USER_BANK3_2",
+                    "description": "USER_BANK3_2 register",
+                    "index_int": "0x019A",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse411",
+                    "name": "USER_BANK3_3",
+                    "description": "USER_BANK3_3 register",
+                    "index_int": "0x019B",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse412",
+                    "name": "USER_BANK3_4",
+                    "description": "USER_BANK3_4 register",
+                    "index_int": "0x019C",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse413",
+                    "name": "USER_BANK3_5",
+                    "description": "USER_BANK3_5 register",
+                    "index_int": "0x019D",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse414",
+                    "name": "USER_BANK3_6",
+                    "description": "USER_BANK3_6 register",
+                    "index_int": "0x019E",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse415",
+                    "name": "USER_BANK3_7",
+                    "description": "USER_BANK3_7 register",
+                    "index_int": "0x019F",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK4",
+                "description": "USER_BANK4 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse416",
+                    "name": "USER_BANK4_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x01A0",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse417",
+                    "name": "USER_BANK4_1",
+                    "description": "USER_BANK4_1 register",
+                    "index_int": "0x01A1",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse418",
+                    "name": "USER_BANK4_2",
+                    "description": "USER_BANK4_2 register",
+                    "index_int": "0x01A2",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse419",
+                    "name": "USER_BANK4_3",
+                    "description": "USER_BANK4_3 register",
+                    "index_int": "0x01A3",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse420",
+                    "name": "USER_BANK4_4",
+                    "description": "USER_BANK4_4 register",
+                    "index_int": "0x01A4",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse421",
+                    "name": "USER_BANK4_5",
+                    "description": "USER_BANK4_5 register",
+                    "index_int": "0x01A5",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse422",
+                    "name": "USER_BANK4_6",
+                    "description": "USER_BANK4_6 register",
+                    "index_int": "0x01A6",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse423",
+                    "name": "USER_BANK4_7",
+                    "description": "USER_BANK4_7 register",
+                    "index_int": "0x01A7",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK5",
+                "description": "USER_BANK5 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse424",
+                    "name": "USER_BANK5_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x01A8",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse425",
+                    "name": "USER_BANK5_1",
+                    "description": "USER_BANK5_1 register",
+                    "index_int": "0x01A9",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse426",
+                    "name": "USER_BANK5_2",
+                    "description": "USER_BANK5_2 register",
+                    "index_int": "0x01AA",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse427",
+                    "name": "USER_BANK5_3",
+                    "description": "USER_BANK5_3 register",
+                    "index_int": "0x01AB",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse428",
+                    "name": "USER_BANK5_4",
+                    "description": "USER_BANK5_4 register",
+                    "index_int": "0x01AC",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse429",
+                    "name": "USER_BANK5_5",
+                    "description": "USER_BANK5_5 register",
+                    "index_int": "0x01AD",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse430",
+                    "name": "USER_BANK5_6",
+                    "description": "USER_BANK5_6 register",
+                    "index_int": "0x01AE",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse431",
+                    "name": "USER_BANK5_7",
+                    "description": "USER_BANK5_7 register",
+                    "index_int": "0x01AF",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK6",
+                "description": "USER_BANK6 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse432",
+                    "name": "USER_BANK6_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x01B0",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse433",
+                    "name": "USER_BANK6_1",
+                    "description": "USER_BANK6_1 register",
+                    "index_int": "0x01B1",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse434",
+                    "name": "USER_BANK6_2",
+                    "description": "USER_BANK6_2 register",
+                    "index_int": "0x01B2",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse435",
+                    "name": "USER_BANK6_3",
+                    "description": "USER_BANK6_3 register",
+                    "index_int": "0x01B3",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse436",
+                    "name": "USER_BANK6_4",
+                    "description": "USER_BANK6_4 register",
+                    "index_int": "0x01B4",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse437",
+                    "name": "USER_BANK6_5",
+                    "description": "USER_BANK6_5 register",
+                    "index_int": "0x01B5",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse438",
+                    "name": "USER_BANK6_6",
+                    "description": "USER_BANK6_6 register",
+                    "index_int": "0x01B6",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse439",
+                    "name": "USER_BANK6_7",
+                    "description": "USER_BANK6_7 register",
+                    "index_int": "0x01B7",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK7",
+                "description": "USER_BANK7 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse440",
+                    "name": "USER_BANK7_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x01B8",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse441",
+                    "name": "USER_BANK7_1",
+                    "description": "USER_BANK7_1 register",
+                    "index_int": "0x01B9",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse442",
+                    "name": "USER_BANK7_2",
+                    "description": "USER_BANK7_2 register",
+                    "index_int": "0x01BA",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse443",
+                    "name": "USER_BANK7_3",
+                    "description": "USER_BANK7_3 register",
+                    "index_int": "0x01BB",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse444",
+                    "name": "USER_BANK7_4",
+                    "description": "USER_BANK7_4 register",
+                    "index_int": "0x01BC",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse445",
+                    "name": "USER_BANK7_5",
+                    "description": "USER_BANK7_5 register",
+                    "index_int": "0x01BD",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse446",
+                    "name": "USER_BANK7_6",
+                    "description": "USER_BANK7_6 register",
+                    "index_int": "0x01BE",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse447",
+                    "name": "USER_BANK7_7",
+                    "description": "USER_BANK7_7 register",
+                    "index_int": "0x01BF",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "USER_BANK8",
+                "description": "USER_BANK8 group"
+            },
+            "registers": [
+                {
+                    "id": "fuse448",
+                    "name": "USER_BANK8_0",
+                    "description": "Customer programmable fuse bank containing 8 independent 32-bit fuse words. Each OTP word in this block are ECC protected. Thus all 32-bits in a word should be programmed at once.",
+                    "index_int": "0x01C0",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse449",
+                    "name": "USER_BANK8_1",
+                    "description": "USER_BANK8_1 register",
+                    "index_int": "0x01C1",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse450",
+                    "name": "USER_BANK8_2",
+                    "description": "USER_BANK8_2 register",
+                    "index_int": "0x01C2",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse451",
+                    "name": "USER_BANK8_3",
+                    "description": "USER_BANK8_3 register",
+                    "index_int": "0x01C3",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse452",
+                    "name": "USER_BANK8_4",
+                    "description": "USER_BANK8_4 register",
+                    "index_int": "0x01C4",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse453",
+                    "name": "USER_BANK8_5",
+                    "description": "USER_BANK8_5 register",
+                    "index_int": "0x01C5",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse454",
+                    "name": "USER_BANK8_6",
+                    "description": "USER_BANK8_6 register",
+                    "index_int": "0x01C6",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse455",
+                    "name": "USER_BANK8_7",
+                    "description": "USER_BANK8_7 register",
+                    "index_int": "0x01C7",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CRC_BANK",
+                "description": "CRC_BANK group"
+            },
+            "registers": [
+                {
+                    "id": "fuse492",
+                    "name": "CRC4",
+                    "description": "CRC of BOOT_CFG configuration data. Word 96 to 100 (0x180 - 0x18F).",
+                    "index_int": "0x01EC",
+                    "shadow_reg_offset_int": "0x07B0",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x0010",
+                        "read_lock_int": "0x0020"
+                    }
+                },
+                {
+                    "id": "fuse493",
+                    "name": "CRC5",
+                    "description": "CRC of SECURE_CFG configuration data. Word 107 to 127 (0x1A4 - 0x200).",
+                    "index_int": "0x01ED",
+                    "shadow_reg_offset_int": "0x07B4",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0080"
+                    }
+                },
+                {
+                    "id": "fuse494",
+                    "name": "CRC6",
+                    "description": "CRC of customer programmed mode fuse (Word 8 and 9).",
+                    "index_int": "0x01EE",
+                    "shadow_reg_offset_int": "0x07B8",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x0100",
+                        "read_lock_int": "0x0200"
+                    }
+                },
+                {
+                    "id": "fuse495",
+                    "name": "CRC7",
+                    "description": "Customer defined.",
+                    "index_int": "0x01EF",
+                    "shadow_reg_offset_int": "0x07BC",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x0400",
+                        "read_lock_int": "0x0800"
+                    }
+                }
+            ]
+        }
+    ]
+}

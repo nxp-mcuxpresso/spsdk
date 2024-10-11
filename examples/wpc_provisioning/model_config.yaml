@@ -35,5 +35,5 @@ target_parameters:
   model_dir: target_model/dev2
   # ----------------------------------------===== Target family [Required] =====----------------------------------------
   # Description: Name of the target family
-  # Possible options: <mwct2xxxs>
-  family: mwct2xxxs
+  # Possible options: <mwct2d17s>
+  family: mwct2d17s

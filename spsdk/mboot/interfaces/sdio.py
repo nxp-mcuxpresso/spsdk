@@ -9,7 +9,7 @@
 import logging
 import struct
 from sys import platform
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -59,7 +59,7 @@ class MbootSdioInterface(MbootSerialProtocol):
         cls,
         device_path: str,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected SDIO devices.
 
         :param device_path: device path string
@@ -101,7 +101,7 @@ class MbootSdioInterface(MbootSerialProtocol):
             return parse_cmd_response(data)
         return data
 
-    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected
@@ -115,7 +115,7 @@ class MbootSdioInterface(MbootSerialProtocol):
 
     def _parse_frame_header(
         self, frame: bytes, expected_frame_type: Optional[FPType] = None
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected

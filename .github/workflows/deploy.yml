@@ -1,0 +1,46 @@
+# This workflow will install Python dependencies, run tests and other codechecks on SPSDK project
+
+name: Publish To PyPi
+
+on:
+  push:
+    tags:
+      - 'v*' # Create release if a tag with version is pushed
+
+jobs:
+  package:
+    name: Build Package
+    runs-on: ubuntu-latest
+    permissions: # Required by attest-build-provenance-github.
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build and Check Package
+        uses: hynek/build-and-inspect-python-package@v2.8.0
+        with:
+          attest-build-provenance-github: 'true'
+
+  deploy:
+    name: Upload Release To PyPI
+    needs: [package]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/spsdk/
+    permissions:
+      id-token: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download Package
+      uses: actions/download-artifact@v4
+      with:
+        name: Packages
+        path: dist
+
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.9.0 # The authentication is provided by OpenID Connect: https://docs.pypi.org/trusted-publishers/adding-a-publisher/

@@ -16,6 +16,7 @@ from spsdk.mboot.properties import (
     EnumValue,
     ExternalMemoryAttributesValue,
     FuseLockedStatus,
+    IntListValue,
     IntValue,
     IrqNotifierPinValue,
     PropertyTag,
@@ -48,7 +49,7 @@ def test_version_class():
 
 def test_none_value():
     value = parse_property_value(1000, [0])
-    assert value is None
+    assert isinstance(value, IntListValue)
 
 
 def test_bool_value():

@@ -6,15 +6,28 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """USBSIO Mboot interface implementation."""
-from typing import List, Optional
+from typing import Optional, Union
 
 from typing_extensions import Self
 
-from spsdk.mboot.protocol.serial_protocol import MbootSerialProtocol
+from spsdk.mboot.protocol.serial_protocol import MbootSerialProtocol, to_int
 from spsdk.utils.interfaces.device.usbsio_device import UsbSioI2CDevice, UsbSioSPIDevice
 
 
-class MbootUsbSioI2CInterface(MbootSerialProtocol):
+class MbootUsbSioInterface(MbootSerialProtocol):
+    """USBSIO interface."""
+
+    device: Union[UsbSioI2CDevice, UsbSioSPIDevice]
+
+    def _wait_for_data(self) -> int:
+        """Wait for first "not ready" frame."""
+        if not self.device.is_nirq_enabled:
+            return super()._wait_for_data()
+        self.device.wait_for_nirq_state(state=0)
+        return to_int(self.device.read(1))
+
+
+class MbootUsbSioI2CInterface(MbootUsbSioInterface):
     """USBSIO I2C interface."""
 
     device: UsbSioI2CDevice
@@ -28,7 +41,7 @@ class MbootUsbSioI2CInterface(MbootSerialProtocol):
         super().__init__(device=device)
 
     @classmethod
-    def scan(cls, config: Optional[str] = None, timeout: Optional[int] = None) -> List[Self]:
+    def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
         """Scan connected USB-SIO bridge devices.
 
         :param config: Configuration string identifying spi or i2c SIO interface
@@ -41,7 +54,7 @@ class MbootUsbSioI2CInterface(MbootSerialProtocol):
         return [cls(device) for device in spi_devices]
 
 
-class MbootUsbSioSPIInterface(MbootSerialProtocol):
+class MbootUsbSioSPIInterface(MbootUsbSioInterface):
     """USBSIO I2C interface."""
 
     # START_NOT_READY may be 0x00 or 0xFF depending on the implementation
@@ -57,7 +70,7 @@ class MbootUsbSioSPIInterface(MbootSerialProtocol):
         super().__init__(device)
 
     @classmethod
-    def scan(cls, config: Optional[str] = None, timeout: Optional[int] = None) -> List[Self]:
+    def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
         """Scan connected USB-SIO bridge devices.
 
         :param config: Configuration string identifying spi or i2c SIO interface

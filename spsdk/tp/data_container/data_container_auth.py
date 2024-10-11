@@ -10,9 +10,8 @@
 from abc import abstractmethod
 from typing import Mapping, Optional, Type
 
-from crcmod.predefined import mkPredefinedCrcFun
-
 from spsdk.crypto.cmac import cmac, cmac_validate
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
 from spsdk.crypto.spsdk_hmac import hmac, hmac_validate
@@ -101,21 +100,25 @@ class HMAC_256(_HMAC):
 class _CRC(AuthenticationProvider):
     """Base for CRC Authenticators."""
 
-    CRC_NAME = "invalid-crc-name"
+    CRC_NAME = None
 
     @classmethod
     def sign(cls, data: bytes, key: Optional[bytes] = None) -> bytes:
         """Generate CRC code."""
-        crc_func = mkPredefinedCrcFun(cls.CRC_NAME)
-        crc = crc_func(data)
+        if cls.CRC_NAME is None:
+            raise SPSDKTpError("CRC_NAME attribute must be defined in subclass")
+        crc_obj = from_crc_algorithm(cls.CRC_NAME)
+        crc = crc_obj.calculate(data)
         crc_bytes = int.to_bytes(crc, length=cls.DATA_LEN, byteorder=Endianness.LITTLE.value)
         return crc_bytes
 
     @classmethod
     def validate(cls, data: bytes, signature: bytes, key: Optional[bytes] = None) -> bool:
         """Validate CRC code."""
-        crc_func = mkPredefinedCrcFun(cls.CRC_NAME)
-        crc = crc_func(data)
+        if cls.CRC_NAME is None:
+            raise SPSDKTpError("CRC_NAME attribute must be defined in subclass")
+        crc_obj = from_crc_algorithm(cls.CRC_NAME)
+        crc = crc_obj.calculate(data)
         crc_bytes = int.to_bytes(crc, length=cls.DATA_LEN, byteorder=Endianness.LITTLE.value)
         return crc_bytes == signature
 
@@ -126,7 +129,7 @@ class CRC32(_CRC):
 
     TYPE = AuthenticationType.CRC32
     DATA_LEN = 4
-    CRC_NAME = "crc32"
+    CRC_NAME = CrcAlg.CRC32  # type: ignore
 
 
 # pylint: disable=invalid-name

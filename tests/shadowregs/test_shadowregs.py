@@ -7,6 +7,7 @@
 """ Tests for shadow registers support API."""
 import os
 from copy import copy
+from typing import Optional
 
 import pytest
 import yaml
@@ -16,7 +17,7 @@ import spsdk.utils.registers as REGS
 from spsdk.apps.shadowregs import main
 from spsdk.exceptions import SPSDKError
 from spsdk.utils import database
-from spsdk.utils.database import Database
+from spsdk.utils.database import Database, DevicesQuickInfo, QuickDatabase
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.misc import Endianness, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
@@ -39,7 +40,23 @@ def get_probe():
 class TestDatabaseManager:
     """Main SPSDK database."""
 
-    db: Database = None
+    _instance = None
+    _db: Optional[Database] = None
+    _quick_info: Optional[DevicesQuickInfo] = None
+
+    @property
+    def db(self) -> Database:
+        """Get Database."""
+        db = type(self)._db
+        assert isinstance(db, Database)
+        return db
+
+    @property
+    def quick_info(self) -> QuickDatabase:
+        """Get quick info Database."""
+        quick_info = type(self)._quick_info
+        assert isinstance(quick_info, QuickDatabase)
+        return quick_info
 
     """List all SPSDK supported features"""
     FEATURE1 = "feature1"
@@ -51,7 +68,10 @@ class TestDatabaseManager:
 @pytest.fixture
 def mock_test_database(monkeypatch, data_dir):
     """Change the SPSDK Database"""
-    TestDatabaseManager.db = Database(os.path.join(data_dir, "../../utils/data/test_db"))
+    TestDatabaseManager._db = Database(
+        os.path.join(data_dir, "../../utils/data/test_db"), complete_load=True
+    )
+    TestDatabaseManager._quick_info = QuickDatabase.create(TestDatabaseManager._db)
     monkeypatch.setattr(database, "DatabaseManager", TestDatabaseManager)
 
 
@@ -321,7 +341,7 @@ def test_shadow_register_enable_debug_invalid_probe():
     """Test Shadow Registers - Enable debug algorithm check with invalid probe."""
     probe = None
     with pytest.raises(SPSDKError):
-        SR.enable_debug(probe)
+        SR.enable_debug(probe, "lpc55s6x")
 
 
 def test_shadow_register_enable_debug_device_cannot_enable():
@@ -330,7 +350,7 @@ def test_shadow_register_enable_debug_device_cannot_enable():
     # invalid run
     # Setup the simulated data for reading of AP registers
     probe.mem_read_cause_exception(2)
-    assert not SR.enable_debug(probe)
+    assert not SR.enable_debug(probe, "lpc55s6x")
 
 
 def test_shadow_register_enable_debug():
@@ -341,7 +361,7 @@ def test_shadow_register_enable_debug():
     # Setup the simulated data for reading of AP registers
     access_port = {12: ["Exception", 0x12345678], 0x02000000: [2, 0, 2, 0], 0x02000008: [0]}
     probe.set_coresight_ap_substitute_data(access_port)
-    assert SR.enable_debug(probe)
+    assert SR.enable_debug(probe, "lpc55s6x")
 
 
 def test_shadow_register_enable_debug_already_enabled():
@@ -350,7 +370,7 @@ def test_shadow_register_enable_debug_already_enabled():
     # Setup the simulated data for reading of AP registers
     mem_ap = {12: [0x12345678]}
     probe.set_coresight_ap_substitute_data(mem_ap)
-    assert SR.enable_debug(probe)
+    assert SR.enable_debug(probe, "lpc55s6x")
 
 
 def test_shadow_register_enable_debug_probe_exceptions():
@@ -360,7 +380,7 @@ def test_shadow_register_enable_debug_probe_exceptions():
         assert isinstance(probe, DebugProbeVirtual)
         probe.mem_read_cause_exception()  # To fail test connection function
         probe.ap_write_cause_exception()  # To fail write to debug mailbox
-        assert not SR.enable_debug(probe)
+        assert not SR.enable_debug(probe, "lpc55s6x")
 
 
 def test_generate_template(cli_runner: CliRunner, tmpdir):
@@ -380,7 +400,7 @@ def test_generate_template(cli_runner: CliRunner, tmpdir):
     [
         ("rt5xx", "RKTH_255_224", "RKTH_31_0"),
         ("rt6xx", "RKTH_255_224", "RKTH_31_0"),
-        ("rw61x", "RKTH0", "RKTH7"),
+        ("rw61x", "RKTH[383:352]", "RKTH[159:128]"),
     ],
 )
 def test_rkth_order(family, rkth0, rkth7, data_dir):

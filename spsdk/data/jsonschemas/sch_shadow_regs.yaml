@@ -2,16 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-sr_family_rev:
+sr_device_back_compatible:
   type: object
-  required: [family]
+
   properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      enum: []
-      template_value: rt5xx
     device:
       type: string
       title: MCU family
@@ -19,12 +13,6 @@ sr_family_rev:
       enum: []
       template_value: rt5xx
       skip_in_template: True
-
-    revision:
-      type: string
-      title: Chip silicon revision
-      description: If needed this could be used to specify silicon revision of device.
-      template_value: latest
 
 sr_registers:
   type: object

@@ -1,7 +1,7 @@
 NXP Software Content Register
 
 Package:                   NXP SPSDK
-Version:                   2.2.1
+Version:                   2.3.0
 Outgoing License:          BSD-3-Clause
 License Files:             LICENSE
 Type of content:           Source code

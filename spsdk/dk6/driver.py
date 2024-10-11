@@ -8,7 +8,7 @@
 import logging
 import time
 from enum import Enum
-from typing import List, Union
+from typing import Union
 
 from spsdk.dk6.serial_device import SerialDevice
 from spsdk.exceptions import SPSDKError
@@ -112,7 +112,7 @@ class DriverInterface:
                 from pyftdi import ftdi
             except ImportError as e:
                 raise SPSDKError(
-                    "PYFTDI backed was selected, but required 'pyftdi` package is not installed. "
+                    "PYFTDI backend was selected, but required 'pyftdi` package is not installed. "
                     "Please install DK6 extras."
                 ) from e
 
@@ -124,7 +124,7 @@ class DriverInterface:
                 from pylibftdi import Device, Driver
             except ImportError as e:
                 raise SPSDKError(
-                    "PYLIBFTDI backed was selected, but required 'pylibftdi` package is not installed. "
+                    "PYLIBFTDI backend was selected, but required 'pylibftdi` package is not installed. "
                     "Please install DK6 extras."
                 ) from e
 
@@ -136,7 +136,7 @@ class DriverInterface:
                 import ftd2xx  # pylint: disable=unused-import
             except ImportError as e:
                 raise SPSDKError(
-                    "FTD2xx backed was selected, but required 'ftd2xx` package is not installed. "
+                    "FTD2xx backend was selected, but required 'ftd2xx` package is not installed. "
                     "Please install DK6 extras."
                 ) from e
             except OSError as e:
@@ -175,7 +175,7 @@ class DriverInterface:
         else:
             logger.error("Selected backend does not have method for ISP sequence")
 
-    def list_devices(self) -> List[DeviceInfo]:
+    def list_devices(self) -> list[DeviceInfo]:
         """Returns a list of devices that are connected for selected backend.
 
         :return: List of devices

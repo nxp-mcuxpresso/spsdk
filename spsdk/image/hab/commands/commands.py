@@ -11,22 +11,23 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, List, Mapping, Optional, Type, Union
+from typing import Any, List, Mapping, Optional, Type, Union
 
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.crypto_types import SPSDKEncoding
-from spsdk.crypto.signature_provider import get_signature_provider
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.keys import PrivateKeyEcc
+from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKFileNotFoundError, SPSDKKeyError, SPSDKTypeError, SPSDKValueError
 from spsdk.image.commands import (
+    UNLOCK_COMMANDS_MAPPING,
     CmdAuthData,
     CmdBase,
     CmdInstallKey,
     CmdSet,
     CmdUnlockAbstract,
-    CmdUnlockCAAM,
-    CmdUnlockSNVS,
     EnumAuthDat,
     EnumCertFormat,
     EnumEngine,
@@ -85,10 +86,21 @@ def determine_private_key_path(cert_file_path: str) -> Optional[str]:
     return None
 
 
+def get_hab_signature_provider(
+    sp_cfg: Optional[str] = None, local_file_key: Optional[str] = None, **kwargs: Any
+) -> SignatureProvider:
+    """Get the HAB signature provider from configuration."""
+    signature_provider = get_signature_provider(sp_cfg, local_file_key, **kwargs)
+    if isinstance(signature_provider, PlainFileSP):
+        if isinstance(signature_provider.private_key, PrivateKeyEcc):
+            signature_provider.hash_alg = EnumHashAlgorithm.SHA256
+    return signature_provider
+
+
 class SecCommandBase(ABC):
     """Sec command abstract class."""
 
-    PARAMS: Dict[str, bool]
+    PARAMS: dict[str, bool]
 
     def __init__(self, cmd: CmdBase) -> None:
         """Install SRK class constructor.
@@ -102,7 +114,7 @@ class SecCommandBase(ABC):
 
     @classmethod
     @abstractmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -162,7 +174,7 @@ class SecCsfHeader:
         self.version = self.cmd.param
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -189,7 +201,7 @@ class SecCsfInstallSrk(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -216,7 +228,7 @@ class SecCsfInstallCsfk(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -260,7 +272,7 @@ class SecCsfAuthenticateCsf(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -291,7 +303,7 @@ class SecCsfAuthenticateCsf(SecCommandBase):
             )
 
         try:
-            signature_provider = get_signature_provider(
+            signature_provider = get_hab_signature_provider(
                 sp_cfg=command_params.get("AuthenticateCsf_SignProvider"),
                 local_file_key=command_params.get("AuthenticateCsf_PrivateKeyFile"),
                 search_paths=search_paths,
@@ -301,7 +313,7 @@ class SecCsfAuthenticateCsf(SecCommandBase):
             private_key_path = determine_private_key_path(install_csfk_params[cert_path_param])
             if not private_key_path:
                 raise SPSDKFileNotFoundError("Private key could not be determined.") from exc
-            signature_provider = get_signature_provider(
+            signature_provider = get_hab_signature_provider(
                 local_file_key=private_key_path, search_paths=search_paths
             )
 
@@ -328,7 +340,7 @@ class SecCsfInstallKey(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -375,7 +387,7 @@ class SecCsfAuthenticateData(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -416,7 +428,7 @@ class SecCsfAuthenticateData(SecCommandBase):
                 "AuthenticateData_KeyPass option is deprecated. The interactive prompt will be used instead."
             )
         try:
-            signature_provider = get_signature_provider(
+            signature_provider = get_hab_signature_provider(
                 sp_cfg=command_params.get("AuthenticateData_SignProvider"),
                 local_file_key=command_params.get("AuthenticateData_PrivateKeyFile"),
                 search_paths=search_paths,
@@ -426,7 +438,7 @@ class SecCsfAuthenticateData(SecCommandBase):
             private_key_path = determine_private_key_path(install_key_params[cert_path_param])
             if not private_key_path:
                 raise SPSDKFileNotFoundError("Private key could not be determined.") from exc
-            signature_provider = get_signature_provider(
+            signature_provider = get_hab_signature_provider(
                 local_file_key=private_key_path, search_paths=search_paths
             )
 
@@ -455,7 +467,7 @@ class SecSetEngine(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -488,43 +500,58 @@ class SecSetEngine(SecCommandBase):
 class SecUnlock(SecCommandBase):
     """Unlock engine command."""
 
-    ENGINE_CLASSES: Dict[str, Type[CmdUnlockAbstract]] = {
-        "SNVS": CmdUnlockSNVS,
-        "CAAM": CmdUnlockCAAM,
-    }
-    UNLOCK_FEARTURES = {"LP SWR": 1, "ZMK WRITE": 2}
-    PARAMS = {"Unlock_Engine": True, "Unlock_Features": False}
+    PARAMS = {"Unlock_Engine": True, "Unlock_Features": False, "Unlock_UID": False}
 
-    def __init__(self, cmd: Union[CmdUnlockSNVS, CmdUnlockCAAM]) -> None:
+    def __init__(self, cmd: CmdUnlockAbstract) -> None:
         """Unlock class constructor."""
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
-        :raises SPSDKKeyError: Unknown features.
+        :raises SPSDKKeyError: Unknown engine.
         """
         command_params = config.commands.get_command_params(SecCommand.UNLOCK)
         cls.check_config_section_params(command_params)
 
-        unlock_engine = command_params["Unlock_Engine"]
-        if unlock_engine not in cls.ENGINE_CLASSES:
+        unlock_engine = EnumEngine.from_label(command_params["Unlock_Engine"])
+        if unlock_engine not in UNLOCK_COMMANDS_MAPPING:
             raise SPSDKKeyError(f"Unknown engine {unlock_engine}")
-
-        unlock_features = command_params.get("Unlock_Features")
+        klass = UNLOCK_COMMANDS_MAPPING[unlock_engine]
+        kwargs = {}
+        unlock_features: str = command_params.get("Unlock_Features")
         if unlock_features is not None:
-            if unlock_features not in SecUnlock.UNLOCK_FEARTURES:
-                raise SPSDKKeyError(f"Unknown features {unlock_features}")
-            unlock_features = SecUnlock.UNLOCK_FEARTURES[unlock_features]
-
-        cmd = cls.ENGINE_CLASSES[unlock_engine]()
-        assert isinstance(cmd, (CmdUnlockSNVS, CmdUnlockCAAM))
-        if unlock_features is not None:
-            cmd.features = unlock_features
+            # features may be defined as single feature of coma separated list of features
+            features = [
+                klass.FEATURES.from_label(feature.strip()).tag
+                for feature in unlock_features.split(",")
+            ]
+            kwargs["features"] = cls.calc_features_value(features)
+        unlock_uid: str = command_params.get("Unlock_UID")
+        if unlock_uid:
+            uids = [int(uid.strip(), 0) for uid in unlock_uid.split(",")]
+            kwargs["uid"] = cls.calc_uid(uids)
+        cmd = klass(**kwargs)
         return cls(cmd)
+
+    @classmethod
+    def calc_features_value(cls, features: List[int]) -> int:
+        """Calculate the unlock features value."""
+        result = 0
+        for feature in features:
+            result |= feature
+        return result
+
+    @classmethod
+    def calc_uid(cls, uid_values: List[int]) -> int:
+        """Calculate the unlock uid value."""
+        result = 0
+        for uid in uid_values:
+            result = (result << 8) | uid
+        return result
 
 
 class SecInstallSecretKey(SecCommandBase):
@@ -543,7 +570,7 @@ class SecInstallSecretKey(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config
@@ -599,7 +626,7 @@ class SecDecryptData(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load configuration into the command.
 
         :param config: Section config

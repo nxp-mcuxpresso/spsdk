@@ -223,7 +223,7 @@ def get_mbi_doc() -> None:
         os.remove(MBI_SCHEMAS_FILE)
     image_classes = get_all_mbi_classes()
     for cls in image_classes:
-        validation_schemas = cls.get_validation_schemas()
+        validation_schemas = cls.get_validation_schemas("lpc55s36")
         schema = get_schema(validation_schemas)
         schema["title"] = cls.hash()
         parsed_schema = parse_schema(schema)
@@ -436,7 +436,7 @@ def write_table(header: List[str], values: List[List[str]], table_name: str, tab
     """Write MD table to file using pytablewriter
 
     :param header: table header
-    :param values: values to be writter
+    :param values: values to be written
     :param table_name: Name of the table
     :param table_file_path: Path to the file
     """

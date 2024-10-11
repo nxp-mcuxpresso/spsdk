@@ -137,7 +137,7 @@
                             "width": "4",
                             "name": "optionSize",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "reset_value_int": "0x1",
                             "description": "Option Size",
                             "values": [
                                 {

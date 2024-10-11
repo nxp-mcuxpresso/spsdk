@@ -462,3 +462,10 @@ After the reset the device boots from flash and user image is programmed success
 .. click:: spsdk.apps.blhost:ele_message
     :prog: blhost ele-message
     :nested: full
+
+
+-------------
+Error Codes
+-------------
+
+.. include:: ../_prebuild/mboot_error_codes.inc

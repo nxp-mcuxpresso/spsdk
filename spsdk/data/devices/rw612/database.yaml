@@ -1,0 +1,247 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a1:
+    # ======== DAT section ========
+    dat:
+      socc: 0x04 # SOCC identification is same as on LPC55S3x in rev 1
+    # Remove the revision A1 from the database in 2025-2026 when it's disappear from the market, and all exceptions from LPC55S3x (rot_could_be_invalid: True)
+  a2: {}
+latest: a2
+
+# General MCU information
+info:
+  purpose: Wireless Connectivity
+  spsdk_predecessor_name: rw61x
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612
+  memory_map: # Memory map basic info
+    flexspi_ns:
+      start_int: 0x8000000
+      size_int: 0x8000000
+      external: true
+    flexspi_s:
+      start_int: 0x18000000
+      size_int: 0x8000000
+      external: true
+      mirror_of: flexspi_ns
+    sram:
+      start_int: 0x20000000
+      size_int: 0x130000
+      external: false
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0020
+
+features:
+  # ======== Fuses description section ========
+  fuses:
+    grouped_registers:
+      - uid: rkth
+        name: RKTH
+        width: 384
+        config_as_hexstring: true
+        reversed: true
+        alternative_widths: [256]
+        description:
+          ROTKH field is compounded by 12 32-bit fields and contains Root key
+          table hash. For ECC P-256 keys RKTH is a 32-byte SHA-256 digest of four
+          SHA-256 digests computed over four OEM public keys (OEM has four
+          private-public key pairs in case one of its private keys becomes
+          compromised) or in case that ECC P-384 keys are used, RKTH is 48-byte
+          SHA-384 digest.
+        sub_regs:
+          [
+            fuse104,
+            fuse105,
+            fuse106,
+            fuse107,
+            fuse108,
+            fuse109,
+            fuse110,
+            fuse111,
+            fuse112,
+            fuse113,
+            fuse114,
+            fuse115,
+          ]
+        otp_index: 104
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_8000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_cert21]
+    rot_type: cert_block_21
+
+  # ======== DAT section ========
+  dat:
+    socc: 0x0A # SOCC identification
+    rot_not_part_of_dac: True
+    dmbox_ap_ix: 3
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinAppTrustZone
+      plain_ram:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinAppTrustZone
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      signed_ram:
+        image_type: SIGNED_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifestDigest
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinFwVersion
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifestDigest
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinFwVersion
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
+    images:
+      xip:
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+      load_to_ram:
+        plain: plain_ram
+        crc: crc_ram
+        signed: signed_ram
+
+  # ======== Shadow registers section ========
+  shadow_regs:
+    write_address_offset: -0x0FEE_4000 # = 0x4000_A000 - 0x3012_6000 The rw61x is using different address for shadow registers write operations
+    flush_func: rw61x_update_scratch_reg
+    reset_type: nvic_reset # possible options: [hw_reset, nvic_reset]
+    possible_verification: False # RW61x doesn't allow verify writing of shadow registers
+    inverted_regs:
+      fuse33: fuse34 # DCFG_CC_SOCU -> DCFG_CC_SOCU_AP
+    computed_fields:
+      fuse33: # DCFG_CC_SOCU
+        fuse33-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8[7:0]
+      fuse31: # DCFG_CC_SOCU_NS
+        fuse31-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8_NS[7:0]
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      internal:
+        segments:
+          mbi: 0x00
+      flexspi_nor:
+        segments:
+          fcb: 0x0400
+          image_version_ap: 0x0600
+          mbi: 0x1000
+        remap_align: 0x40000 # 256 KB
+        image_pattern: ones
+
+  # ======== Secure binary v3.1 section ========
+  sb31:
+    supported_commands:
+      - erase
+      - load
+      - execute
+      - programFuses
+      - programIFR
+      - copy
+      - loadKeyBlob
+      - configureMemory
+      - fillMemory
+      - checkFwVersion
+
+  # ======== Device Hardware Security Module (HSM) section ========
+  devhsm:
+    supported_commands:
+      - erase
+      - load
+      - programFuses
+      - copy
+      - loadKeyBlob
+      - configureMemory
+      - fillMemory
+    flag: 0x2
+    key_blob_offset: 0xF05C
+    key_blob_command_position: -1
+    devhsm_class: DevHsmSB31
+
+  # ======== TrustZone section ========
+  tz:
+    reg_spec: tz.yaml
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [0]
+      spi_nor:
+        instances: [0, 1, 2, 3, 4]
+
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_name: RW6
+    prov_method: dispatch_fw
+    fw_load_address: 0x08001000
+    ignored_otp: [104]
+    ignored_otp_ranges: [92, 103]

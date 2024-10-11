@@ -204,6 +204,9 @@ def test_load_file(data_dir):
     text = load_file(os.path.join(data_dir, "file.txt"))
     assert text == "Hello\nworld"
 
+    text2 = load_file(os.path.join(data_dir, "file_special.txt"))
+    assert text2 == "AÁBCČDĎEÉĚFGHChIÍJKLMNŇOÓPQRŘSŠTŤUÚŮVWXYÝZŽ\n"
+
 
 def test_write_file(data_dir, tmpdir):
     """Test writing data to data using write_file."""
@@ -407,12 +410,13 @@ def test_value_to_bytes(value, res, exc):
     [
         (0, False, False),
         (False, False, False),
+        (None, False, False),
         ("False", False, False),
         (1, True, False),
         (True, True, False),
         ("True", True, False),
         ("T", True, False),
-        (b"\x20", True, True),
+        (b"\x20", True, False),
     ],
 )
 def test_value_to_bool(value, res, exc):

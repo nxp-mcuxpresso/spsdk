@@ -1,0 +1,35 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  purpose: General Purpose MCU
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc800-32-bit-arm-cortex-m0-plus-based-low-cost-mcu:LPC80X
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x8000
+      external: false
+    ram0:
+      start_int: 0x1000_0000
+      size_int: 0x1000
+      external: false
+  isp:
+    rom:
+      protocol: lpc
+      interfaces: ["uart"]
+
+features:
+  lpcprog:
+    part_ids:
+      "8040": LPC804M101JBD64
+      "8041": LPC804M101JDH20
+      "8042": LPC804M101JDH24
+      "8043": LPC804M111JDH24
+      "8044": LPC804M101JHI33

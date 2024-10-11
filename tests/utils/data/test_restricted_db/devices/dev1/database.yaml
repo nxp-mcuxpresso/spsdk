@@ -7,7 +7,7 @@ revisions:
   rev2:
     features:
       feature2:
-        atrribute_int1: 4
+        attribute_int1: 4
 latest: rev2
 
 info: {}
@@ -18,8 +18,8 @@ features:
 
   # ======== Feature 2 ========
   feature2:
-    atrribute_int1: 3
+    attribute_int1: 3
 
   # ======== Feature 2 ========
   feature3:
-    atribute__int1: 10
+    attribute__int1: 10

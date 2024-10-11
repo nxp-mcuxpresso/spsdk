@@ -8,7 +8,7 @@
 """Module defining a USB filtering class."""
 import platform
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from spsdk.utils.database import UsbId
 from spsdk.utils.misc import get_hash
@@ -87,7 +87,7 @@ class USBDeviceFilter:
         self.usb_id = usb_id
         self.search_by_pid = search_by_pid
 
-    def compare(self, usb_device_object: Dict[str, Any]) -> bool:
+    def compare(self, usb_device_object: dict[str, Any]) -> bool:
         """Compares the internal `usb_id` with provided `usb_device_object`.
 
         The provided USB ID during initialization may be VID or PID, VID/PID pair,
@@ -242,7 +242,7 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
     def __init__(
         self,
         usb_id: Optional[str] = None,
-        nxp_device_names: Optional[Dict[str, List[UsbId]]] = None,
+        nxp_device_names: Optional[dict[str, list[UsbId]]] = None,
     ):
         """Initialize the USB Device Filtering.
 

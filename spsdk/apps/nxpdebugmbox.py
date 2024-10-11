@@ -9,13 +9,14 @@
 
 import contextlib
 import datetime
+import inspect
 import logging
 import os
 import struct
 import sys
 from dataclasses import dataclass
 from time import sleep
-from typing import Callable, Iterator, List, Optional
+from typing import Any, Callable, Iterator, Optional, Type
 
 import click
 import colorama
@@ -24,6 +25,8 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    SpsdkClickGroup,
+    move_cmd_to_grp,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
@@ -38,18 +41,15 @@ from spsdk.apps.utils.utils import (
     format_raw_data,
     progress_bar,
 )
-from spsdk.dat import dm_commands
+from spsdk.dat import dm_commands, famode_image
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
-from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
-from spsdk.dat.debug_mailbox import DebugMailbox
-from spsdk.dat.famode_image import (
-    check_famode_data,
-    create_config,
-    generate_config_templates,
-    get_supported_families,
-    modify_input_config,
+from spsdk.dat.debug_credential import (
+    DebugCredentialCertificate,
+    DebugCredentialCertificateEcc,
+    ProtocolVersion,
 )
+from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.utils import PROBES, load_all_probe_types, open_debug_probe, test_ahb_access
 from spsdk.exceptions import SPSDKError
 from spsdk.image.mbi.mbi import MasterBootImage, get_mbi_class
@@ -57,8 +57,10 @@ from spsdk.utils.crypto.cert_blocks import find_root_certificates
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     Endianness,
+    align_block,
     find_file,
     get_abs_path,
+    get_printable_path,
     load_binary,
     load_configuration,
     value_to_int,
@@ -68,6 +70,32 @@ from spsdk.utils.plugins import load_plugin_from_source
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
+
+
+class NxpDebugMbox_DeprecatedCommand2_4(click.Command):
+    """Better printing deprecated warning of command."""
+
+    def format_help_text(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Writes the help text to the formatter if it exists."""
+        if self.help is not None:
+            # truncate the help text to the first form feed
+            text = inspect.cleandoc(self.help).partition("\f")[0]
+        else:
+            text = ""
+
+        if self.deprecated:
+            text = (
+                colorama.Fore.YELLOW
+                + "Deprecated Command! It will be removed in SPSDK v2.4. The command has been moved to sub group.\n"
+                + colorama.Fore.RESET
+                + text
+            )
+
+        if text:
+            formatter.write_paragraph()
+
+            with formatter.indentation():
+                formatter.write_text(text)
 
 
 def get_debug_probe_options_help() -> str:
@@ -102,6 +130,8 @@ class DebugProbeParams:
 class DebugMailboxParams:
     """Debug mailbox related parameters."""
 
+    family: str
+    revision: str
     reset: bool
     more_delay: float
     operation_timeout: int
@@ -128,6 +158,8 @@ def _open_debugmbox(
         debug_probe.connect()
         dm = DebugMailbox(
             debug_probe=debug_probe,
+            family=debug_mailbox_params.family,
+            revision=debug_mailbox_params.revision,
             reset=debug_mailbox_params.reset,
             moredelay=debug_mailbox_params.more_delay,
             op_timeout=debug_mailbox_params.operation_timeout,
@@ -141,6 +173,12 @@ def _open_debugmbox(
 
 
 @click.group(name="nxpdebugmbox", no_args_is_help=True, cls=CommandsTreeGroup)
+@spsdk_family_option(
+    families=DebugCredentialCertificate.get_supported_families(),
+    required=False,
+    help="Select the chip family.",
+)
+@spsdk_revision_option
 @click.option(
     "-i",
     "--interface",
@@ -164,6 +202,7 @@ def _open_debugmbox(
     f'Available options are: {", ".join(ProtocolVersion.VERSIONS)}. '
     "If not set, the version will be determined from the RoT public key type.",
     type=click.Choice(ProtocolVersion.VERSIONS, case_sensitive=False),
+    hidden=True,
 )
 @click.option(
     "-t",
@@ -201,19 +240,23 @@ def _open_debugmbox(
 @click.pass_context
 def main(
     ctx: click.Context,
+    family: str,
+    revision: str,
     interface: str,
     protocol: str,
     log_level: int,
     timing: float,
     serial_no: str,
-    debug_probe_option: List[str],
+    debug_probe_option: list[str],
     no_reset: bool,
     operation_timeout: int,
     plugin: str,
 ) -> int:
     """Tool for working with Debug Mailbox."""
     spsdk_logger.install(level=log_level)
-    spsdk_logger.configure_pyocd_logger()
+
+    if protocol:
+        logger.warning("The -p/--protocol option is deprecated and will be removed in version 2.4.")
 
     if plugin:
         load_plugin_from_source(plugin)
@@ -232,21 +275,35 @@ def main(
         par_splitted = par.split("=")
         probe_user_params[par_splitted[0]] = par_splitted[1]
 
+    if not family:
+        logger.warning(
+            "The Family is not specified. This is a new option that will be "
+            "mandatory since SPSDK 2.4. Please update your scripts."
+        )
     ctx.obj = {
         "debug_mailbox_params": DebugMailboxParams(
-            reset=no_reset, more_delay=timing, operation_timeout=operation_timeout
+            family=family,
+            revision=revision,
+            reset=no_reset,
+            more_delay=timing,
+            operation_timeout=operation_timeout,
         ),
         "debug_probe_params": DebugProbeParams(
             interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
         ),
-        "protocol": ProtocolVersion(version=protocol) if protocol is not None else None,
     }
 
     return 0
 
 
-@main.command(name="auth", no_args_is_help=True)
-@click.option("-b", "--beacon", type=INT(), required=True, help="Authentication beacon")
+@main.command(
+    name="auth",
+    no_args_is_help=True,
+    cls=NxpDebugMbox_DeprecatedCommand2_4,
+    hidden=True,
+    deprecated=True,
+)
+@click.option("-b", "--beacon", type=INT(), default="0", help="Authentication beacon")
 @click.option("-c", "--certificate", help="Path to Debug Credentials.")
 @click.option("-k", "--key", help="Path to DCK private key.")
 @click.option(
@@ -282,43 +339,58 @@ def auth_command(
 ) -> None:
     """Perform the Debug Authentication.
 
-    The -p protocol option must be defined in main application.
+    The -p option must be defined in main application.
     """
+    debug_mailbox_params: DebugMailboxParams = pass_obj["debug_mailbox_params"]
+
+    family = debug_mailbox_params.family
+    if not family:
+        debug_cred_data = load_binary(certificate)
+        debug_cred = DebugCredentialCertificate.parse(debug_cred_data)
+        family = DebugCredentialCertificate.get_family_ambassador(debug_cred.socc)
+    # auth command can recognize the file or signature provider
+    sign_prov = None
+    local_key = None
+    if not key:
+        raise SPSDKAppError("Path to DCK private key or signature provider must be provided")
+    if os.path.exists(key):
+        local_key = key
+    else:
+        sign_prov = key
+    config = {
+        "family": family,
+        "certificate": certificate,
+        "beacon": beacon,
+        "srk_set": "nxp" if nxp_keys else "oem",
+        "dck_private_key": local_key,
+        "sign_provider": sign_prov,
+    }
+
     auth(
         pass_obj["debug_probe_params"],
-        pass_obj["debug_mailbox_params"],
-        pass_obj["protocol"],
-        beacon,
-        certificate,
-        key,
-        no_exit,
-        nxp_keys,
-        address,
+        debug_mailbox_params,
+        config=config,
+        no_exit=no_exit,
+        address=address,
     )
 
 
 def auth(
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
-    protocol: Optional[ProtocolVersion],
-    beacon: int,
-    certificate: str,
-    key: str,
+    config: dict[str, Any],
     no_exit: bool,
-    nxp_keys: bool,
     address: int,
+    search_paths: Optional[list[str]] = None,
 ) -> None:
     """Perform the Debug Authentication.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
-    :param protocol: Debug authentication protocol.
-    :param beacon: Authentication beacon.
-    :param certificate: Path to Debug Credentials.
-    :param key: Path to DCK private key.
+    :param config: Configuration of DAT.
     :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
-    :param nxp_keys: When true, Use the ROM NXP keys to authenticate.
     :param address: The AHB access test address, default is 0x2000_0000.
+    :param search_paths: Optional list of search paths.
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
@@ -327,17 +399,12 @@ def auth(
             debug_probe_params.debug_probe_user_params["test_address"] = address
 
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
-            debug_cred_data = load_binary(certificate)
-            debug_cred = DebugCredentialCertificate.parse(debug_cred_data)
-            protocol = protocol or debug_cred.version
-            dac_rsp_len = (
-                18
-                + DebugAuthenticationChallenge.get_rot_hash_length(
-                    debug_cred.socc, protocol.major, protocol.minor
-                )
-                // 4
-            )
 
+            debug_cred_data = load_binary(config["certificate"], search_paths)
+            debug_cred = DebugCredentialCertificate.parse(debug_cred_data)
+            dac_rsp_len = 18 + debug_cred.rot_hash_length // 4
+
+            nxp_keys = config.get("srk_set", "oem") == "nxp"
             if nxp_keys:
                 dac_data = dm_commands.NxpDebugAuthenticationStart(
                     dm=mail_box, resplen=dac_rsp_len
@@ -346,21 +413,23 @@ def auth(
                 dac_data = dm_commands.DebugAuthenticationStart(
                     dm=mail_box, resplen=dac_rsp_len
                 ).run()
-            # convert List[int] to bytes
+            # convert list[int] to bytes
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
+
             logger.info(f"DAC: \n{str(dac)}")
-            dac.validate_against_dc(debug_cred)
-            dar = DebugAuthenticateResponse.create(
-                version=protocol,
-                dc=debug_cred,
-                auth_beacon=beacon,
-                dac=dac,
-                dck=key,
+            family = debug_mailbox_params.family
+            if not family:
+                family = debug_cred.get_family_ambassador(debug_cred.socc)
+            dac.validate_against_dc(family, debug_cred)
+            search_paths = search_paths or []
+            search_paths.append(os.path.dirname(config["certificate"]))
+            dar = DebugAuthenticateResponse.load_from_config(
+                config=config, dac=dac, search_paths=search_paths
             )
             logger.info(f"DAR:\n{str(dar)}")
-            dar_data = dar.export()
-            # convert bytes to List[int]
+            dar_data = align_block(dar.export(), alignment=4)
+            # convert bytes to list[int]
             dar_data_words = list(struct.unpack(f"<{len(dar_data) // 4}I", dar_data))
             if nxp_keys:
                 dar_response = dm_commands.NxpDebugAuthenticationResponse(
@@ -401,7 +470,7 @@ def auth(
         ) from e
 
 
-@main.command(name="reset")
+@main.command(name="reset", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option(
     "-h",
     "--hard-reset",
@@ -454,7 +523,7 @@ def reset(
         raise SPSDKAppError(f"Reset MCU by Debug Mailbox failed: {e}") from e
 
 
-@main.command(name="start")
+@main.command(name="start", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.pass_obj
 def start_command(pass_obj: dict) -> None:
     """Start DebugMailBox."""
@@ -476,7 +545,7 @@ def start(debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailb
         raise SPSDKAppError(f"Start Debug Mailbox failed: {e}") from e
 
 
-@main.command(name="exit")
+@main.command(name="exit", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.pass_obj
 def exit_command(pass_obj: dict) -> None:  # pylint: disable=redefined-builtin
     """Exit DebugMailBox."""
@@ -500,7 +569,7 @@ def exit_debug_mbox(
         raise SPSDKAppError(f"Exit Debug Mailbox failed: {e}") from e
 
 
-@main.command(name="erase")
+@main.command(name="erase", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.pass_obj
 def erase_command(pass_obj: dict) -> None:
     """Erase Flash."""
@@ -522,7 +591,7 @@ def erase(debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailb
         raise SPSDKAppError(f"Mass flash erase failed: {e}") from e
 
 
-@main.command(name="famode")
+@main.command(name="famode", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option(
     "-m",
     "--message",
@@ -563,7 +632,7 @@ def famode(
         raise SPSDKAppError(f"Set fault analysis mode failed: {e}") from e
 
 
-@main.command(name="ispmode", no_args_is_help=True)
+@main.command(name="ispmode", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option("-m", "--mode", type=INT(), required=True)
 @click.pass_obj
 def ispmode_command(pass_obj: dict, mode: int) -> None:
@@ -589,7 +658,7 @@ def ispmode(
         raise SPSDKAppError(f"Entering into ISP mode failed: {e}") from e
 
 
-@main.command(name="token_auth", no_args_is_help=True)
+@main.command(name="token_auth", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option(
     "-f", "--file", type=click.Path(), required=True, help="Path to token file (string hex format)."
 )
@@ -665,7 +734,7 @@ def token_auth(
         raise SPSDKAppError(f"Debug authentication using token  failed: {e}") from e
 
 
-@main.command(name="get-crp")
+@main.command(name="get-crp", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.pass_obj
 def get_crp_command(pass_obj: dict) -> None:
     """Get CRP level. This command should be called after 'start' command and with no-reset '-n' option."""
@@ -686,12 +755,20 @@ def get_crp(
     try:
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             crp_level = dm_commands.GetCRPLevel(dm=mail_box).run()[0]
-            click.echo(f"CRP level is: 0x{crp_level:02X}.")
+            if dm_commands.GetCRPLevel.CMD_ID in mail_box.non_standard_statuses:
+                if crp_level in mail_box.non_standard_statuses[dm_commands.GetCRPLevel.CMD_ID]:
+                    click.echo(
+                        f"CRP level is: {mail_box.non_standard_statuses[dm_commands.GetCRPLevel.CMD_ID][crp_level]}."
+                    )
+                else:
+                    click.echo(f"CRP level is: 0x{crp_level:08X}.")
+            else:
+                click.echo(f"CRP level is: 0x{crp_level:02X}.")
     except Exception as e:
         raise SPSDKAppError(f"Get CRP Level failed: {e}") from e
 
 
-@main.command(name="start-debug-session")
+@main.command(name="start-debug-session", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.pass_obj
 def start_debug_session_command(pass_obj: dict) -> None:
     """Start debug session."""
@@ -716,7 +793,7 @@ def start_debug_session(
         raise SPSDKAppError(f"Start debug session failed: {e}") from e
 
 
-@main.command(name="test-connection")
+@main.command(name="test-connection", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option(
     "-a",
     "--address",
@@ -755,7 +832,7 @@ def test_connection(debug_probe_params: DebugProbeParams, address: int = 0x2000_
         raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
 
 
-@main.command(name="read-memory", no_args_is_help=True)
+@main.command(name="read-memory", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @click.option("-c", "--count", type=INT(), required=True, help="Number of bytes to read")
 @spsdk_output_option(required=False)
@@ -825,7 +902,7 @@ def read_memory(
     return data
 
 
-@main.command(name="write-memory", no_args_is_help=True)
+@main.command(name="write-memory", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @optgroup("Data Source", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option(
@@ -897,7 +974,7 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
                     )
 
 
-@main.command(name="get-uuid")
+@main.command(name="get-uuid", cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.pass_obj
 def get_uuid_command(pass_obj: dict) -> None:
     """Get the UUID from target if possible.
@@ -936,6 +1013,8 @@ def get_uuid(
             try:
                 dm = DebugMailbox(
                     debug_probe=debug_probe,
+                    family=debug_mailbox_params.family,
+                    revision=debug_mailbox_params.revision,
                     reset=debug_mailbox_params.reset,
                     moredelay=debug_mailbox_params.more_delay,
                     op_timeout=debug_mailbox_params.operation_timeout,
@@ -947,12 +1026,14 @@ def get_uuid(
                 debug_probe.connect()
                 dm = DebugMailbox(
                     debug_probe=debug_probe,
+                    family=debug_mailbox_params.family,
+                    revision=debug_mailbox_params.revision,
                     reset=debug_mailbox_params.reset,
                     moredelay=debug_mailbox_params.more_delay,
                     op_timeout=debug_mailbox_params.operation_timeout,
                 )
                 dac_data = dm_commands.DebugAuthenticationStart(dm=dm, resplen=30).run()
-            # convert List[int] to bytes
+            # convert list[int] to bytes
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
     except Exception as e:
@@ -967,7 +1048,7 @@ def get_uuid(
     return dac.uuid
 
 
-@main.command(name="gendc", no_args_is_help=True)
+@main.command(name="gendc", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @spsdk_config_option()
 @click.option(
     "-e",
@@ -988,7 +1069,6 @@ def gendc_command(
 ) -> None:
     """Generate debug certificate (DC)."""
     gendc(
-        pass_obj["protocol"],
         plugin,
         output,
         config,
@@ -998,7 +1078,6 @@ def gendc_command(
 
 
 def gendc(
-    protocol: Optional[ProtocolVersion],
     plugin: str,
     output: str,
     config: str,
@@ -1006,7 +1085,6 @@ def gendc(
 ) -> None:
     """Generate debug certificate (DC).
 
-    :param protocol: Debug authentication protocol.
     :param plugin: Path to external python file containing a custom SignatureProvider implementation.
     :param output: Path to debug certificate file.
     :param config: YAML credential config file.
@@ -1019,6 +1097,16 @@ def gendc(
         logger.info("Loading configuration from yml file...")
         yaml_content = load_configuration(config)
 
+        family = yaml_content.get("family")
+        revision = yaml_content.get("revision", "latest")
+        if not family:  # backward compatibility code to get at least ambassador of family
+            socc_raw = yaml_content.get("socc")
+            if socc_raw is None:
+                raise SPSDKAppError("You need to define 'family' in the configuration file")
+            socc = value_to_int(socc_raw)
+            family = DebugCredentialCertificate.get_family_ambassador(socc)
+
+        config_dir = os.path.dirname(config)
         if rot_config:
             rot_config_dir = os.path.dirname(rot_config)
             logger.info("Loading configuration from cert block/MBI config file...")
@@ -1032,10 +1120,15 @@ def gendc(
                 except SPSDKError as e:
                     raise SPSDKAppError("certBlock must be provided as YAML configuration") from e
 
-            public_keys = find_root_certificates(config_data)
-            yaml_content["rot_meta"] = [
-                find_file(x, search_paths=[rot_config_dir]) for x in public_keys
-            ]
+            try:
+                public_keys = find_root_certificates(config_data)
+                yaml_content["rot_meta"] = [
+                    find_file(x, search_paths=[rot_config_dir]) for x in public_keys
+                ]
+            except SPSDKError:
+                logger.warning(
+                    "Cannot load RoT certificates from RoT configuration (MBI/CertBlock)"
+                )
 
             private_key = (
                 config_data.get("signPrivateKey")
@@ -1053,24 +1146,18 @@ def gendc(
             if rot_index is not None:
                 yaml_content["rot_id"] = value_to_int(rot_index)
 
-        family = yaml_content.get("family")
-        if not family:  # backward compatibility code to get at least ambassador of family
-            socc_raw = yaml_content.get("socc")
-            if socc_raw is None:
-                raise SPSDKAppError("\nYou need to define 'family' in the configuration file")
-            socc = value_to_int(socc_raw)
-            family = DebugCredentialCertificate.get_family_ambassador(socc)
-
+        klass = DebugCredentialCertificate._get_class_from_cfg(
+            config=yaml_content, family=family, search_paths=[config_dir], revision=revision
+        )
         check_config(
             yaml_content,
-            DebugCredentialCertificate.get_validation_schemas(family),
-            search_paths=[os.path.dirname(config)],
+            klass.get_validation_schemas(family, revision),
+            search_paths=[config_dir],
         )
 
-        dc = DebugCredentialCertificate.create_from_yaml_config(
-            version=protocol,
+        dc = klass.create_from_yaml_config(
             config=yaml_content,
-            search_paths=[os.path.dirname(config)],
+            search_paths=[config_dir],
         )
         logger.info(
             f"Creating {'RSA' if dc.version.is_rsa() else 'ECC'} debug credential object..."
@@ -1087,31 +1174,42 @@ def gendc(
         raise SPSDKAppError(f"The generating of Debug Credential file failed: {e}") from e
 
 
-@main.command(name="get-template", no_args_is_help=True)
-@spsdk_family_option(
-    families=DebugCredentialCertificate.get_supported_families(),
-    required=True,
-    help="If needed select the chip family.",
-)
-@spsdk_revision_option
+@main.command(name="get-template", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @spsdk_output_option(force=True)
-def get_template_command(family: str, revision: str, output: str) -> None:
+@click.pass_obj
+def get_template_command(pass_obj: dict, output: str) -> None:
     """Generate the template of Debug Credentials YML configuration file."""
-    get_template(family, revision, output)
-    click.echo(f"The configuration template file has been created: {output}")
+    dm_params: DebugMailboxParams = pass_obj["debug_mailbox_params"]
+    if not dm_params.family:
+        raise SPSDKAppError("The family must be specified.")
+
+    get_template(dm_params, output)
+    click.echo(
+        f"The Debug Credentials template for {dm_params.family} has been saved into "
+        f"{get_printable_path(output)} YAML file"
+    )
 
 
-def get_template(family: str, revision: str, output: str) -> None:
+def get_template(dm_params: DebugMailboxParams, output: str) -> None:
     """Generate the template of Debug Credentials YML configuration file.
 
-    :param family: Optional family to have specific template per family.
-    :param revision: Optional chip revision to specify MCU family.
+    :param dm_params: Debug mailbox parameters.
     :param output: Path to output file.
     """
-    write_file(DebugCredentialCertificate.generate_config_template(family, revision), output)
+    try:
+        klass: Type[DebugCredentialCertificate] = DebugCredentialCertificate._get_class(
+            family=dm_params.family, revision=dm_params.revision
+        )
+    except SPSDKError:
+        klass = DebugCredentialCertificateEcc
+
+    write_file(
+        klass.generate_config_template(dm_params.family, dm_params.revision),
+        output,
+    )
 
 
-@main.command(name="erase-one-sector", no_args_is_help=True)
+@main.command(name="erase-one-sector", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @click.pass_obj
 def erase_one_sector_command(pass_obj: dict, address: int) -> None:
@@ -1137,7 +1235,7 @@ def erase_one_sector(
         raise SPSDKAppError(f"Erasing one sector failed: {e}") from e
 
 
-@main.command(name="write-to-flash", no_args_is_help=True)
+@main.command(name="write-to-flash", no_args_is_help=True, cls=NxpDebugMbox_DeprecatedCommand2_4)
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @click.option("-f", "--file", type=click.Path(), required=True, help="Path to file.")
 @click.pass_obj
@@ -1176,7 +1274,7 @@ def write_to_flash(
         raise SPSDKAppError(f"Write words to flash failed: {e}") from e
 
 
-@main.group("famode-image", no_args_is_help=True)
+@main.group("famode-image", no_args_is_help=True, cls=SpsdkClickGroup)
 def famode_image_group() -> None:
     """Group of sub-commands related to Fault Analysis Mode Image (related to some families)."""
 
@@ -1202,9 +1300,13 @@ def famode_image_export(config: str, plugin: Optional[str] = None) -> None:
     if plugin:
         load_plugin_from_source(plugin)
     config_dir = os.path.dirname(config)
-    config_data = modify_input_config(config_data)
+    config_data = famode_image.modify_input_config(config_data)
     mbi_cls = get_mbi_class(config_data)
-    check_config(config_data, mbi_cls.get_validation_schemas(), search_paths=[config_dir, "."])
+    check_config(
+        config_data,
+        mbi_cls.get_validation_schemas(config_data["family"]),
+        search_paths=[config_dir, "."],
+    )
     mbi_obj = mbi_cls()
     mbi_obj.load_from_config(config_data, search_paths=[config_dir, "."])
     mbi_data = mbi_obj.export()
@@ -1217,7 +1319,7 @@ def famode_image_export(config: str, plugin: Optional[str] = None) -> None:
 
 
 @famode_image_group.command(name="parse", no_args_is_help=True)
-@spsdk_family_option(families=get_supported_families())
+@spsdk_family_option(families=famode_image.get_supported_families())
 @click.option(
     "-b",
     "--binary",
@@ -1238,14 +1340,14 @@ def famode_image_parse(family: str, binary: str, output: str) -> None:
     if not mbi:
         click.echo(f"Failed. (FA mode image: {binary} parsing failed.)")
         return
-    check_famode_data(mbi)
-    cfg = create_config(mbi, output)
+    famode_image.check_famode_data(mbi)
+    cfg = famode_image.create_config(mbi, output)
     yaml_data = CommentedConfig(
         main_title=(
             f"Fault Analysis mode Image ({mbi.__class__.__name__}) recreated configuration from :"
             f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
         ),
-        schemas=mbi.get_validation_schemas(),
+        schemas=mbi.get_validation_schemas(family),
     ).get_config(cfg)
 
     write_file(yaml_data, os.path.join(output, "famode_config.yaml"))
@@ -1254,7 +1356,7 @@ def famode_image_parse(family: str, binary: str, output: str) -> None:
 
 
 @famode_image_group.command("get-templates", no_args_is_help=True)
-@spsdk_family_option(families=get_supported_families())
+@spsdk_family_option(families=famode_image.get_supported_families())
 @spsdk_output_option(directory=True, force=True)
 def famode_image_get_templates_command(family: str, output: str) -> None:
     """Create template of Fault Analysis mode image configurations in YAML format."""
@@ -1263,11 +1365,260 @@ def famode_image_get_templates_command(family: str, output: str) -> None:
 
 def famode_image_get_templates(family: str, output: str) -> None:
     """Create template of Fault Analysis mode image configurations in YAML format."""
-    templates = generate_config_templates(family)
+    templates = famode_image.generate_config_templates(family)
     for file_name, template in templates.items():
         full_file_name = os.path.join(output, file_name + ".yaml")
         click.echo(f"Creating {full_file_name} template file.")
         write_file(template, full_file_name)
+
+
+@main.group("dat", no_args_is_help=True, cls=SpsdkClickGroup)
+def dat_group() -> None:
+    """Group of commands for working with Debug Authentication Procedure."""
+
+
+@dat_group.command(name="auth", no_args_is_help=True)
+@click.option("-c", "--config", help="Path to Debug Authentication configuration file.")
+@click.option(
+    "-n",
+    "--no-exit",
+    is_flag=True,
+    help="When used, exit debug mailbox command is not executed after debug authentication.",
+)
+@click.option(
+    "-a",
+    "--address",
+    type=INT(),
+    default="0x2000_0000",
+    help="The AHB access test address, the default is 0x2000_0000, but some chips needs different.",
+)
+@click.pass_obj
+def auth_command_new(
+    pass_obj: dict,
+    config: str,
+    no_exit: bool,
+    address: int,
+) -> None:
+    """Perform the Debug Authentication."""
+    auth(
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        config=load_configuration(config),
+        no_exit=no_exit,
+        address=address,
+        search_paths=[os.path.dirname(config)],
+    )
+
+
+@dat_group.command("get-template", no_args_is_help=True)
+@spsdk_output_option(force=True)
+@click.pass_obj
+def dat_get_template_command(pass_obj: dict, output: str) -> None:
+    """Create template of Debug authentication configurations in YAML format."""
+    dm_params: DebugMailboxParams = pass_obj["debug_mailbox_params"]
+    dat_get_template(dm_params.family, output, dm_params.revision)
+
+
+def dat_get_template(family: str, output: str, revision: str = "latest") -> None:
+    """Create template of Debug authentication configurations in YAML format."""
+    template = DebugAuthenticateResponse.generate_config_template(family, revision)
+    click.echo(f"Creating {get_printable_path(output)} template file.")
+    write_file(template, output)
+
+
+@main.group("cmd", no_args_is_help=True, cls=SpsdkClickGroup)
+def cmd_group() -> None:
+    """Group of commands for working with raw Debug MailBox commands."""
+
+
+move_cmd_to_grp(main, cmd_group, "erase")
+move_cmd_to_grp(main, cmd_group, "erase-one-sector")
+move_cmd_to_grp(main, cmd_group, "exit")
+move_cmd_to_grp(main, cmd_group, "famode")
+move_cmd_to_grp(main, cmd_group, "get-crp")
+move_cmd_to_grp(main, cmd_group, "ispmode")
+move_cmd_to_grp(main, cmd_group, "start")
+move_cmd_to_grp(main, cmd_group, "start-debug-session")
+move_cmd_to_grp(main, cmd_group, "token_auth", "token-auth")
+move_cmd_to_grp(main, cmd_group, "write-to-flash")
+
+
+@cmd_group.command(name="get-dac", no_args_is_help=True)
+@spsdk_output_option()
+@click.option(
+    "-l",
+    "--rot-hash-length",
+    type=click.Choice(["32", "48", "66"], case_sensitive=False),
+    help="""
+    \b
+    The length of Root of Trust hash in Debug authentication challenge packet.
+    There is simple key do decide:
+        - Most device depends on used RoT keys type:
+        -- RSA (all types): 32
+        -- ECC 256: 32
+        -- ECC 384: 48
+        -- ECC 521: 66
+        - The exceptions:
+        -- The KW45xx devices has always 32 bytes
+        -- Devices based on EdgeLock Enclave security element has 32 bytes""",
+)
+@click.option(
+    "-x",
+    "--nxp-keys",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use the ROM NXP keys to authenticate.",
+)
+@click.pass_obj
+def get_dac_command(
+    pass_obj: dict,
+    nxp_keys: bool,
+    rot_hash_length: int,
+    output: str,
+) -> None:
+    """Perform the Start of Debug Authentication and get the DAC.
+
+    The -p option must be defined in main application.
+    """
+    dac_data = get_dac(
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        rot_hash_length=int(rot_hash_length),
+        nxp_keys=nxp_keys,
+    )
+    click.echo(f"The DAC data has been stored to: {output}.")
+    write_file(dac_data, output, mode="wb")
+
+
+def get_dac(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    rot_hash_length: int,
+    nxp_keys: bool = False,
+) -> bytes:
+    """Perform the Start of Debug Authentication and get the DAC.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
+    :param rot_hash_length: Select the RoT hash length, choices are [32,48,66].
+    :param nxp_keys: When true, the NXP start authentication challenge is performed instead of OEM.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        logger.info("Starting Debug Authentication")
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
+            dac_rsp_len = 18 + rot_hash_length // 4
+            if nxp_keys:
+                dac_data = dm_commands.NxpDebugAuthenticationStart(
+                    dm=mail_box, resplen=dac_rsp_len
+                ).run()
+            else:
+                dac_data = dm_commands.DebugAuthenticationStart(
+                    dm=mail_box, resplen=dac_rsp_len
+                ).run()
+            # convert list[int] to bytes
+            dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
+            dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
+
+            logger.info(f"DAC: \n{str(dac)}")
+            return dac_data_bytes
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"The Start of Debug Authentication failed: {str(exc)}") from exc
+
+
+@cmd_group.command(name="send-dar", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary with DAR packet.",
+)
+@click.option(
+    "-x",
+    "--nxp-keys",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use the ROM NXP keys to authenticate.",
+)
+@click.pass_obj
+def send_dar_command(
+    pass_obj: dict,
+    binary: str,
+    nxp_keys: bool,
+) -> None:
+    """Send the Debug Authentication response to device."""
+    send_dar(
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        dar=load_binary(binary),
+        nxp_keys=nxp_keys,
+    )
+    click.echo("The DAR data has been sent to device.")
+
+
+def send_dar(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    dar: bytes,
+    nxp_keys: bool = False,
+) -> None:
+    """Send the Debug Authentication response.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
+    :param dar: The DAR packet in bytes.
+    :param nxp_keys: When true, the NXP start authentication challenge is performed instead of OEM.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        logger.info("Sending Debug Authentication Response")
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
+            # logger.info(str(DebugAuthenticateResponse.parse(dar)))
+            dar_data = align_block(dar, alignment=4)
+            # convert bytes to list[int]
+            dar_data_words = list(struct.unpack(f"<{len(dar_data) // 4}I", dar_data))
+            if nxp_keys:
+                dar_response = dm_commands.NxpDebugAuthenticationResponse(
+                    dm=mail_box, paramlen=len(dar_data_words)
+                ).run(dar_data_words)
+            else:
+                dar_response = dm_commands.DebugAuthenticationResponse(
+                    dm=mail_box, paramlen=len(dar_data_words)
+                ).run(dar_data_words)
+            logger.debug(f"DAR response: {dar_response}")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"The send Debug Authentication Response failed: {str(exc)}") from exc
+
+
+@dat_group.group("dc", no_args_is_help=True, cls=SpsdkClickGroup)
+def dc_group() -> None:
+    """Group of commands for Debug Credential binaries."""
+
+
+move_cmd_to_grp(main, dc_group, "gendc", "export")
+move_cmd_to_grp(main, dc_group, "get-template")
+
+
+@main.group("mem-tool", no_args_is_help=True, cls=SpsdkClickGroup)
+def mem_group() -> None:
+    """Group of commands for working with target memory over debug probe."""
+
+
+move_cmd_to_grp(main, mem_group, "read-memory")
+move_cmd_to_grp(main, mem_group, "write-memory")
+move_cmd_to_grp(main, mem_group, "test-connection")
+
+
+@main.group("tool", no_args_is_help=True, cls=SpsdkClickGroup)
+def tool_group() -> None:
+    """Group of commands for working with various tools over debug probe."""
+
+
+move_cmd_to_grp(main, tool_group, "reset")
+move_cmd_to_grp(main, tool_group, "get-uuid")
 
 
 @catch_spsdk_error

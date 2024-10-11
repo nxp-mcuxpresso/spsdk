@@ -18,7 +18,7 @@ It is delivered in a form of python library with functionality presented as CLI 
 """
 import os
 
-from spsdk.utils.misc import get_spsdk_version
+from spsdk.utils.misc import get_spsdk_version, value_to_bool
 
 version = get_spsdk_version()
 
@@ -55,11 +55,16 @@ SPSDK_ADDONS_DATA_FOLDER = os.environ.get(SPSDK_ADDONS_DATA_FOLDER_ENV_VERSION) 
 
 
 # SPSDK_CACHE_DISABLED might be redefined by SPSDK_CACHE_DISABLED_{version} env variable, default is False
-SPSDK_ENV_CACHE_DISABLED = "SPSDK_CACHE_DISABLED_" + SPSDK_VERSION_FOLDER_SUFFIX
-SPSDK_CACHE_DISABLED = bool(
-    os.environ.get(SPSDK_ENV_CACHE_DISABLED) or os.environ.get("SPSDK_CACHE_DISABLED")
+SPSDK_CACHE_DISABLED = value_to_bool(os.environ.get("SPSDK_CACHE_DISABLED"))
+SPSDK_CACHE_DISABLED |= value_to_bool(
+    os.environ.get(f"SPSDK_CACHE_DISABLED_{SPSDK_VERSION_FOLDER_SUFFIX}")
 )
-SPSDK_INTERACTIVE_DISABLED = bool(os.environ.get("SPSDK_INTERACTIVE_DISABLED"))
+
+SPSDK_INTERACTIVE_DISABLED = value_to_bool(os.environ.get("SPSDK_INTERACTIVE_DISABLED"))
+
+SPSDK_DEBUG = value_to_bool(os.environ.get("SPSDK_DEBUG"))
+# SPSDK_DEBUG_DB enables debug loggers for utils/database module
+SPSDK_DEBUG_DB = SPSDK_DEBUG or value_to_bool(os.environ.get("SPSDK_DEBUG_DB"))
 
 SPSDK_YML_INDENT = 2
 

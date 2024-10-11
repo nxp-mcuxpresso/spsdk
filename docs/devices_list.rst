@@ -5,14 +5,14 @@ List of supported devices
 Digital Signal Controller
 ========================================================
 
-mc56f816xx
+mc56f81646
 --------------------------
 
 Latest revision: b1
 
 All supported chip revisions: b1
 
-Weblink: `mc56f816xx <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+Weblink: `mc56f81646 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
 
 .. table::
 
@@ -21,16 +21,18 @@ Weblink: `mc56f816xx <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
 
 
-mc56f817xx
+mc56f81648
 --------------------------
 
 Latest revision: b1
 
 All supported chip revisions: b1
 
-Weblink: `mc56f817xx <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+Weblink: `mc56f81648 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
 
 .. table::
 
@@ -39,16 +41,160 @@ Weblink: `mc56f817xx <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
 
 
-mc56f818xx
+mc56f81666
 --------------------------
 
 Latest revision: b1
 
 All supported chip revisions: b1
 
-Weblink: `mc56f818xx <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+Weblink: `mc56f81666 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mc56f81668
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81668 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mc56f81746
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81746 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mc56f81748
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81748 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mc56f81766
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81766 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mc56f81768
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81768 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mc56f81866
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81866 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |vX     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
+    +------------------------------+-------+
+
+
+mc56f81868
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mc56f81868 <https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx>`_
 
 .. table::
 
@@ -63,8 +209,171 @@ Weblink: `mc56f818xx <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
 
 ========================================================
+General Purpose MCU
+========================================================
+
+lpc804
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc804 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc800-32-bit-arm-cortex-m0-plus-based-low-cost-mcu:LPC80X>`_
+
+.. table::
+
+    +--------------+-------+
+    |   Feature    |Support|
+    +==============+=======+
+    |:ref:`lpcprog`|✅     |
+    +--------------+-------+
+
+
+lpc810
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc810 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc810-and-lpc830-32-bit-arm-cortex-m0-plus-based-low-cost-mcu:LPC81X_LPC83X>`_
+
+.. table::
+
+    +--------------+-------+
+    |   Feature    |Support|
+    +==============+=======+
+    |:ref:`lpcprog`|✅     |
+    +--------------+-------+
+
+
+lpc812
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc812 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc810-and-lpc830-32-bit-arm-cortex-m0-plus-based-low-cost-mcu:LPC81X_LPC83X>`_
+
+.. table::
+
+    +--------------+-------+
+    |   Feature    |Support|
+    +==============+=======+
+    |:ref:`lpcprog`|✅     |
+    +--------------+-------+
+
+
+lpc845
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc845 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc840-32-bit-arm-cortex-m0-plus-based-low-cost-mcu:LPC84X>`_
+
+.. table::
+
+    +--------------+-------+
+    |   Feature    |Support|
+    +==============+=======+
+    |:ref:`lpcprog`|✅     |
+    +--------------+-------+
+
+
+lpc864
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc864 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc860-32-bit-arm-cortex-m0-plus-based-low-cost-mcu-with-i3c-interface:LPC86X>`_
+
+.. table::
+
+    +--------------+-------+
+    |   Feature    |Support|
+    +==============+=======+
+    |:ref:`lpcprog`|✅     |
+    +--------------+-------+
+
+
+lpc865
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc865 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc860-32-bit-arm-cortex-m0-plus-based-low-cost-mcu-with-i3c-interface:LPC86X>`_
+
+.. table::
+
+    +--------------+-------+
+    |   Feature    |Support|
+    +==============+=======+
+    |:ref:`lpcprog`|✅     |
+    +--------------+-------+
+
+========================================================
 General Purpose Processor
 ========================================================
+
+mcxa132
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa132 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+
+mcxa133
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa133 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
 
 mcxa142
 --------------------------
@@ -73,14 +382,20 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa142 <https://www.nxp.com>`_
+Weblink: `mcxa142 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -93,14 +408,20 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa143 <https://www.nxp.com>`_
+Weblink: `mcxa143 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -113,14 +434,18 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa144 <https://www.nxp.com>`_
+Weblink: `mcxa144 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -133,14 +458,18 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa145 <https://www.nxp.com>`_
+Weblink: `mcxa145 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -153,14 +482,18 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa146 <https://www.nxp.com>`_
+Weblink: `mcxa146 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -173,14 +506,20 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa152 <https://www.nxp.com>`_
+Weblink: `mcxa152 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -193,14 +532,20 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa153 <https://www.nxp.com>`_
+Weblink: `mcxa153 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -213,14 +558,18 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa154 <https://www.nxp.com>`_
+Weblink: `mcxa154 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -233,14 +582,18 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa155 <https://www.nxp.com>`_
+Weblink: `mcxa155 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -253,14 +606,18 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa156 <https://www.nxp.com>`_
+Weblink: `mcxa156 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X>`_
 
 .. table::
 
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
@@ -269,14 +626,14 @@ Weblink: `mcxa156 <https://www.nxp.com>`_
 LPC5500 Series
 ========================================================
 
-lpc550x
+lpc5502
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `lpc550x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
+Weblink: `lpc5502 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
 
 .. table::
 
@@ -285,22 +642,22 @@ Weblink: `lpc550x <https://www.nxp.com/products/processors-and-microcontrollers/
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
 
 
-lpc551x
+lpc5504
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `lpc551x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
+Weblink: `lpc5504 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
 
 .. table::
 
@@ -309,22 +666,118 @@ Weblink: `lpc551x <https://www.nxp.com/products/processors-and-microcontrollers/
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
 
 
-lpc552x
+lpc5506
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc5506 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+
+
+lpc5512
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc5512 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+
+
+lpc5514
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc5514 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+
+
+lpc5516
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `lpc5516 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+
+
+lpc5526
 --------------------------
 
 Latest revision: 1b
 
 All supported chip revisions: 1a, 1b
 
-Weblink: `lpc552x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x>`_
+Weblink: `lpc5526 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x>`_
 
 .. table::
 
@@ -333,22 +786,46 @@ Weblink: `lpc552x <https://www.nxp.com/products/processors-and-microcontrollers/
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
 
 
-lpc553x
+lpc5528
+--------------------------
+
+Latest revision: 1b
+
+All supported chip revisions: 1a, 1b
+
+Weblink: `lpc5528 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+
+
+lpc5534
 --------------------------
 
 Latest revision: 1a
 
 All supported chip revisions: 0a, 1a
 
-Weblink: `lpc553x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x>`_
+Weblink: `lpc5534 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x>`_
 
 .. table::
 
@@ -357,22 +834,46 @@ Weblink: `lpc553x <https://www.nxp.com/products/processors-and-microcontrollers/
     +========================================+=======+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
 
 
-lpc55s0x
+lpc5536
+--------------------------
+
+Latest revision: 1a
+
+All supported chip revisions: 0a, 1a
+
+Weblink: `lpc5536 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+
+
+lpc55s04
 --------------------------
 
 Latest revision: a1
 
 All supported chip revisions: a1
 
-Weblink: `lpc55s0x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
+Weblink: `lpc55s04 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
 
 .. table::
 
@@ -385,28 +886,28 @@ Weblink: `lpc55s0x <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
+    |:ref:`tz`                     |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
-    |:ref:`tz`                     |✅     |
-    +------------------------------+-------+
-    |:ref:`nxpmemcfg`              |✅     |
-    +------------------------------+-------+
 
 
-lpc55s1x
+lpc55s06
 --------------------------
 
 Latest revision: a1
 
 All supported chip revisions: a1
 
-Weblink: `lpc55s1x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
+Weblink: `lpc55s06 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x>`_
 
 .. table::
 
@@ -419,28 +920,28 @@ Weblink: `lpc55s1x <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
+    |:ref:`tz`                     |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
-    |:ref:`tz`                     |✅     |
-    +------------------------------+-------+
-    |:ref:`nxpmemcfg`              |✅     |
-    +------------------------------+-------+
 
 
-lpc55s2x
+lpc55s14
 --------------------------
 
 Latest revision: a1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a1
 
-Weblink: `lpc55s2x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x>`_
+Weblink: `lpc55s14 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
 
 .. table::
 
@@ -453,28 +954,126 @@ Weblink: `lpc55s2x <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
+    |:ref:`tz`                     |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+
+lpc55s16
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a1
+
+Weblink: `lpc55s16 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v1.0   |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
     |:ref:`tz`                     |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`Secure Binary 2.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tphost`                 |✅     |
+    +------------------------------+-------+
 
 
-lpc55s3x
+lpc55s26
 --------------------------
 
 Latest revision: a1
 
 All supported chip revisions: a0, a1
 
-Weblink: `lpc55s3x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x>`_
+Weblink: `lpc55s26 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v1.0   |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary 2.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tphost`                 |✅     |
+    +------------------------------+-------+
+
+
+lpc55s28
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `lpc55s28 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v1.0   |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary 2.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tphost`                 |✅     |
+    +------------------------------+-------+
+
+
+lpc55s36
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `lpc55s36 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x>`_
 
 .. table::
 
@@ -487,32 +1086,34 @@ Weblink: `lpc55s3x <https://www.nxp.com/products/processors-and-microcontrollers
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
     |:ref:`Secure Binary 3.1`                |✅     |
-    +----------------------------------------+-------+
-    |:ref:`nxpdevhsm`                        |✅     |
-    +----------------------------------------+-------+
-    |:ref:`tphost`                           |✅     |
     +----------------------------------------+-------+
     |:ref:`tz`                               |✅     |
     +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`tphost`                           |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdice`                          |✅     |
     +----------------------------------------+-------+
 
 
-lpc55s6x
+lpc55s66
 --------------------------
 
 Latest revision: a1
 
 All supported chip revisions: a0, a1
 
-Weblink: `lpc55s6x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/high-efficiency-arm-cortex-m33-based-microcontroller-family:LPC55S6x>`_
+Weblink: `lpc55s66 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/high-efficiency-arm-cortex-m33-based-microcontroller-family:LPC55S6x>`_
 
 .. table::
 
@@ -525,31 +1126,65 @@ Weblink: `lpc55s6x <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
+    |:ref:`tz`                     |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+
+lpc55s69
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `lpc55s69 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/high-efficiency-arm-cortex-m33-based-microcontroller-family:LPC55S6x>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v1.0   |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
     |:ref:`tz`                     |✅     |
     +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary 2.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
 
 ========================================================
 MCX Industrial and IoT Microcontrollers
 ========================================================
 
-mcxn23x
+mcxn235
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxn23x <https://www.nxp.com>`_
+Weblink: `mcxn235 <https://www.nxp.com>`_
 
 .. table::
 
@@ -562,103 +1197,69 @@ Weblink: `mcxn23x <https://www.nxp.com>`_
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
-    |:ref:`Bootable image`         |✅     |
-    +------------------------------+-------+
     |:ref:`Secure Binary 3.1`      |✅     |
-    +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
     |:ref:`tz`                     |✅     |
     +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
 
 
-mcxn54x
+mcxn236
 --------------------------
 
-Latest revision: a1
+Latest revision: a0
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0
 
-Weblink: `mcxn54x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X>`_
+Weblink: `mcxn236 <https://www.nxp.com>`_
 
 .. table::
 
-    +----------------------------------------+-------+
-    |                Feature                 |Support|
-    +========================================+=======+
-    |:ref:`RoT`                              |v2.1   |
-    +----------------------------------------+-------+
-    |:ref:`nxpdebugmbox`                     |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Master Boot Image (MBI)`          |✅     |
-    +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 3.1`                |✅     |
-    +----------------------------------------+-------+
-    |:ref:`nxpdevhsm`                        |✅     |
-    +----------------------------------------+-------+
-    |:ref:`tphost`                           |✅     |
-    +----------------------------------------+-------+
-    |:ref:`tz`                               |✅     |
-    +----------------------------------------+-------+
-
-
-mcxn94x
---------------------------
-
-Latest revision: a1
-
-All supported chip revisions: a0, a1
-
-Weblink: `mcxn94x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X>`_
-
-.. table::
-
-    +----------------------------------------+-------+
-    |                Feature                 |Support|
-    +========================================+=======+
-    |:ref:`RoT`                              |v2.1   |
-    +----------------------------------------+-------+
-    |:ref:`nxpdebugmbox`                     |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Master Boot Image (MBI)`          |✅     |
-    +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 3.1`                |✅     |
-    +----------------------------------------+-------+
-    |:ref:`nxpdevhsm`                        |✅     |
-    +----------------------------------------+-------+
-    |:ref:`tphost`                           |✅     |
-    +----------------------------------------+-------+
-    |:ref:`tz`                               |✅     |
-    +----------------------------------------+-------+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary 3.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tz`                     |✅     |
+    +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
+    +------------------------------+-------+
 
 ========================================================
 Wireless Connectivity
 ========================================================
 
-k32w1xx
+k32w148
 --------------------------
 
 Latest revision: a2
 
 All supported chip revisions: a0, a1, a2
 
-Weblink: `k32w1xx <https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-core-secure-and-ultra-low-power-mcu-for-matter-over-thread-and-bluetooth-le-5-3:K32W148>`_
+Weblink: `k32w148 <https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-core-secure-and-ultra-low-power-mcu-for-matter-over-thread-and-bluetooth-le-5-3:K32W148>`_
 
 .. table::
 
@@ -666,6 +1267,8 @@ Weblink: `k32w1xx <https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
     +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
@@ -677,16 +1280,20 @@ Weblink: `k32w1xx <https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-
     +------------------------------+-------+
     |:ref:`tz`                     |✅     |
     +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
 
 
-kw45xx
+kw45b41z5
 --------------------------
 
 Latest revision: a2
 
 All supported chip revisions: a0, a1, a2
 
-Weblink: `kw45xx <https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45>`_
+Weblink: `kw45b41z5 <https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45>`_
 
 .. table::
 
@@ -694,6 +1301,8 @@ Weblink: `kw45xx <https://www.nxp.com/products/wireless/bluetooth-low-energy/32-
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
     +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
@@ -705,16 +1314,20 @@ Weblink: `kw45xx <https://www.nxp.com/products/wireless/bluetooth-low-energy/32-
     +------------------------------+-------+
     |:ref:`tz`                     |✅     |
     +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
 
 
-mcxw71xx
+kw45b41z8
 --------------------------
 
 Latest revision: a2
 
 All supported chip revisions: a0, a1, a2
 
-Weblink: `mcxw71xx <https://www.nxp.com>`_
+Weblink: `kw45b41z8 <https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45>`_
 
 .. table::
 
@@ -722,6 +1335,8 @@ Weblink: `mcxw71xx <https://www.nxp.com>`_
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
     +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
@@ -733,16 +1348,88 @@ Weblink: `mcxw71xx <https://www.nxp.com>`_
     +------------------------------+-------+
     |:ref:`tz`                     |✅     |
     +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
 
 
-nhs52sxx
+mcxw716a
 --------------------------
 
-Latest revision: a1
+Latest revision: a2
 
-All supported chip revisions: a1
+All supported chip revisions: a0, a1, a2
 
-Weblink: `nhs52sxx <https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52s04-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52S04>`_
+Weblink: `mcxw716a <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-w-series-microcontrollers/mcx-w71x-secure-and-ultra-low-power-mcus-for-matter-thread-zigbee-and-bluetooth-le:MCX-W71X>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`ifr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary 3.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tz`                     |✅     |
+    +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+mcxw716c
+--------------------------
+
+Latest revision: a2
+
+All supported chip revisions: a0, a1, a2
+
+Weblink: `mcxw716c <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-w-series-microcontrollers/mcx-w71x-secure-and-ultra-low-power-mcus-for-matter-thread-zigbee-and-bluetooth-le:MCX-W71X>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`ifr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary 3.1`      |✅     |
+    +------------------------------+-------+
+    |:ref:`tz`                     |✅     |
+    +------------------------------+-------+
+    |:ref:`el2go-host`             |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+
+nhs52s04
+--------------------------
+
+Latest revision: a4
+
+All supported chip revisions: a4
+
+Weblink: `nhs52s04 <https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52s04-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52S04>`_
 
 .. table::
 
@@ -755,22 +1442,24 @@ Weblink: `nhs52sxx <https://www.nxp.com/products/wireless-connectivity/bluetooth
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`tz`                     |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
-    |:ref:`tz`                     |✅     |
-    +------------------------------+-------+
 
 
-rw61x
+rw610
 --------------------------
 
 Latest revision: a2
 
 All supported chip revisions: a1, a2
 
-Weblink: `rw61x <https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612>`_
+Weblink: `rw610 <https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612>`_
 
 .. table::
 
@@ -783,35 +1472,73 @@ Weblink: `rw61x <https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
-    |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
     |:ref:`Secure Binary 3.1`                |✅     |
-    +----------------------------------------+-------+
-    |:ref:`shadowregs`                       |✅     |
-    +----------------------------------------+-------+
-    |:ref:`nxpdevhsm`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`tz`                               |✅     |
     +----------------------------------------+-------+
+    |:ref:`el2go-host`                       |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
-    |:ref:`el2go`                            |✅     |
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`shadowregs`                       |✅     |
+    +----------------------------------------+-------+
+
+
+rw612
+--------------------------
+
+Latest revision: a2
+
+All supported chip revisions: a1, a2
+
+Weblink: `rw612 <https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v2.1   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 3.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`el2go-host`                       |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
 
 ========================================================
 Wireless Power
 ========================================================
 
-mwct2x12
+mwct2012
 --------------------------
 
 Latest revision: b1
 
 All supported chip revisions: b1
 
-Weblink: `mwct2x12 <https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS>`_
+Weblink: `mwct2012 <https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS>`_
 
 .. table::
 
@@ -820,18 +1547,96 @@ Weblink: `mwct2x12 <https://www.nxp.com/products/power-management/wireless-power
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
 
 
-mwct2xd2
+mwct2012a
 --------------------------
 
 Latest revision: b1
 
 All supported chip revisions: b1
 
-Weblink: `mwct2xd2 <https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS>`_
+Weblink: `mwct2012a <https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpwpc`                 |✅     |
+    +------------------------------+-------+
+
+
+mwct2014s
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mwct2014s <https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`nxpwpc`|✅     |
+    +-------------+-------+
+
+
+mwct2015s
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mwct2015s <https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`nxpwpc`|✅     |
+    +-------------+-------+
+
+
+mwct2016s
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mwct2016s <https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`nxpwpc`|✅     |
+    +-------------+-------+
+
+
+mwct20d2
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mwct20d2 <https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS>`_
 
 .. table::
 
@@ -848,14 +1653,56 @@ Weblink: `mwct2xd2 <https://www.nxp.com/products/power-management/wireless-power
     +------------------------------+-------+
 
 
-mwct2xxxs
+mwct20d2a
+--------------------------
+
+Latest revision: b1
+
+All supported chip revisions: b1
+
+Weblink: `mwct20d2a <https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`RoT`                    |vX     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpwpc`                 |✅     |
+    +------------------------------+-------+
+
+
+mwct2d16s
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mwct2xxxs <https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS>`_
+Weblink: `mwct2d16s <https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`nxpwpc`|✅     |
+    +-------------+-------+
+
+
+mwct2d17s
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mwct2d17s <https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS>`_
 
 .. table::
 
@@ -869,14 +1716,14 @@ Weblink: `mwct2xxxs <https://www.nxp.com/products/power-management/wireless-powe
 i.MX 8 Applications Processors
 ========================================================
 
-mx8ulp
+mimx8ulp
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mx8ulp <https://www.nxp.com>`_
+Weblink: `mimx8ulp <https://www.nxp.com>`_
 
 .. table::
 
@@ -887,25 +1734,27 @@ Weblink: `mx8ulp <https://www.nxp.com>`_
     +---------------------+--------+
     |:ref:`nxpdebugmbox`  |✅      |
     +---------------------+--------+
-    |:ref:`ahab`          |✅      |
-    +---------------------+--------+
     |:ref:`Bootable image`|✅      |
     +---------------------+--------+
+    |:ref:`ahab`          |✅      |
+    +---------------------+--------+
     |:ref:`nxpele`        |✅      |
+    +---------------------+--------+
+    |:ref:`nxpuuu`        |✅      |
     +---------------------+--------+
 
 ========================================================
 i.MX 9 Applications Processors
 ========================================================
 
-mx93
+mimx9352
 --------------------------
 
 Latest revision: a1
 
 All supported chip revisions: a0, a1
 
-Weblink: `mx93 <https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/i-mx-93-applications-processor-family-arm-cortex-a55-ml-acceleration-power-efficient-mpu:i.MX93>`_
+Weblink: `mimx9352 <https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/i-mx-93-applications-processor-family-arm-cortex-a55-ml-acceleration-power-efficient-mpu:i.MX93>`_
 
 .. table::
 
@@ -916,27 +1765,29 @@ Weblink: `mx93 <https://www.nxp.com/products/processors-and-microcontrollers/arm
     +---------------------+--------+
     |:ref:`nxpdebugmbox`  |✅      |
     +---------------------+--------+
-    |:ref:`ahab`          |✅      |
-    +---------------------+--------+
     |:ref:`Bootable image`|✅      |
     +---------------------+--------+
-    |:ref:`otfad`         |✅      |
+    |:ref:`ahab`          |✅      |
     +---------------------+--------+
     |:ref:`nxpele`        |✅      |
+    +---------------------+--------+
+    |:ref:`nxpuuu`        |✅      |
+    +---------------------+--------+
+    |:ref:`otfad`         |✅      |
     +---------------------+--------+
 
 ========================================================
 i.MX RT Crossover MCUs
 ========================================================
 
-rt1010
+mimxrt1010
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt1010 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1010-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1010>`_
+Weblink: `mimxrt1010 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1010-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1010>`_
 
 .. table::
 
@@ -945,28 +1796,26 @@ Weblink: `rt1010 <https://www.nxp.com/products/processors-and-microcontrollers/a
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
-    |:ref:`bee`                              |✅     |
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
     |:ref:`otfad`                            |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
 
 
-rt1015
+mimxrt1015
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt1015 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1015-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-500-mhz:i.MX-RT1015>`_
+Weblink: `mimxrt1015 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1015-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-500-mhz:i.MX-RT1015>`_
 
 .. table::
 
@@ -975,26 +1824,26 @@ Weblink: `rt1015 <https://www.nxp.com/products/processors-and-microcontrollers/a
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
 
 
-rt102x
+mimxrt1020
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt102x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020>`_
+Weblink: `mimxrt1020 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020>`_
 
 .. table::
 
@@ -1003,26 +1852,26 @@ Weblink: `rt102x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
 
 
-rt104x
+mimxrt1024
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt104x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1040-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-600-mhz-and-extended-temperature-range:i.MX-RT1040>`_
+Weblink: `mimxrt1024 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020>`_
 
 .. table::
 
@@ -1031,26 +1880,26 @@ Weblink: `rt104x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
 
 
-rt105x
+mimxrt1040
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt105x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1050-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1050>`_
+Weblink: `mimxrt1040 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1040-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-600-mhz-and-extended-temperature-range:i.MX-RT1040>`_
 
 .. table::
 
@@ -1059,26 +1908,26 @@ Weblink: `rt105x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
 
 
-rt106x
+mimxrt1050
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt106x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060>`_
+Weblink: `mimxrt1050 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1050-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1050>`_
 
 .. table::
 
@@ -1087,26 +1936,82 @@ Weblink: `rt106x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
 
 
-rt116x
+mimxrt1060
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt116x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1160-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m4:i.MX-RT1160>`_
+Weblink: `mimxrt1060 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |SRK HAB|
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
+
+
+mimxrt1064
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1064 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |SRK HAB|
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`hab`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`bee`                              |✅     |
+    +----------------------------------------+-------+
+
+
+mimxrt1165
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1165 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1160-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m4:i.MX-RT1160>`_
 
 .. table::
 
@@ -1115,30 +2020,30 @@ Weblink: `rt116x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
-    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
+    |:ref:`nxpmemcfg`                                |✅     |
+    +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
-    |:ref:`otfad`                                    |✅     |
-    +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
-    +------------------------------------------------+-------+
 
 
-rt117x
+mimxrt1166
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `rt117x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1170-crossover-mcu-family-first-ghz-mcu-with-arm-cortex-m7-and-cortex-m4-cores:i.MX-RT1170>`_
+Weblink: `mimxrt1166 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1160-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m4:i.MX-RT1160>`_
 
 .. table::
 
@@ -1147,30 +2052,190 @@ Weblink: `rt117x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
-    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
+    |:ref:`nxpmemcfg`                                |✅     |
+    +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
-    |:ref:`otfad`                                    |✅     |
+
+
+mimxrt1171
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1171 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1170-crossover-mcu-family-first-ghz-mcu-with-arm-cortex-m7-and-cortex-m4-cores:i.MX-RT1170>`_
+
+.. table::
+
+    +------------------------------------------------+-------+
+    |                    Feature                     |Support|
+    +================================================+=======+
+    |:ref:`RoT`                                      |SRK HAB|
+    +------------------------------------------------+-------+
+    |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+    |:ref:`iee`                                      |✅     |
+    +------------------------------------------------+-------+
 
 
-rt118x
+mimxrt1172
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1172 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1170-crossover-mcu-family-first-ghz-mcu-with-arm-cortex-m7-and-cortex-m4-cores:i.MX-RT1170>`_
+
+.. table::
+
+    +------------------------------------------------+-------+
+    |                    Feature                     |Support|
+    +================================================+=======+
+    |:ref:`RoT`                                      |SRK HAB|
+    +------------------------------------------------+-------+
+    |:ref:`Bootable image`                           |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`nxpmemcfg`                                |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+    |:ref:`iee`                                      |✅     |
+    +------------------------------------------------+-------+
+
+
+mimxrt1173
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1173 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1170-crossover-mcu-family-first-ghz-mcu-with-arm-cortex-m7-and-cortex-m4-cores:i.MX-RT1170>`_
+
+.. table::
+
+    +------------------------------------------------+-------+
+    |                    Feature                     |Support|
+    +================================================+=======+
+    |:ref:`RoT`                                      |SRK HAB|
+    +------------------------------------------------+-------+
+    |:ref:`Bootable image`                           |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`nxpmemcfg`                                |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+    |:ref:`iee`                                      |✅     |
+    +------------------------------------------------+-------+
+
+
+mimxrt1175
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1175 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1170-crossover-mcu-family-first-ghz-mcu-with-arm-cortex-m7-and-cortex-m4-cores:i.MX-RT1170>`_
+
+.. table::
+
+    +------------------------------------------------+-------+
+    |                    Feature                     |Support|
+    +================================================+=======+
+    |:ref:`RoT`                                      |SRK HAB|
+    +------------------------------------------------+-------+
+    |:ref:`Bootable image`                           |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`nxpmemcfg`                                |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+    |:ref:`iee`                                      |✅     |
+    +------------------------------------------------+-------+
+
+
+mimxrt1176
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimxrt1176 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1170-crossover-mcu-family-first-ghz-mcu-with-arm-cortex-m7-and-cortex-m4-cores:i.MX-RT1170>`_
+
+.. table::
+
+    +------------------------------------------------+-------+
+    |                    Feature                     |Support|
+    +================================================+=======+
+    |:ref:`RoT`                                      |SRK HAB|
+    +------------------------------------------------+-------+
+    |:ref:`Bootable image`                           |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`nxpmemcfg`                                |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`otfad`                                    |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`hab`                                      |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+    |:ref:`iee`                                      |✅     |
+    +------------------------------------------------+-------+
+
+
+mimxrt1181
 --------------------------
 
 Latest revision: b0
 
 All supported chip revisions: a0, b0
 
-Weblink: `rt118x <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1180-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m33-with-tsn-switch:i.MX-RT1180>`_
+Weblink: `mimxrt1181 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1180-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m33-with-tsn-switch:i.MX-RT1180>`_
 
 .. table::
 
@@ -1181,32 +2246,140 @@ Weblink: `rt118x <https://www.nxp.com/products/processors-and-microcontrollers/a
     +------------------------------------------------+--------+
     |:ref:`nxpdebugmbox`                             |✅      |
     +------------------------------------------------+--------+
-    |:ref:`ahab`                                     |✅      |
-    +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
     +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
+    +------------------------------------------------+--------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`otfad`                                    |✅      |
     +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
     |:ref:`iee`                                      |✅      |
     +------------------------------------------------+--------+
-    |:ref:`otfad`                                    |✅      |
+
+
+mimxrt1182
+--------------------------
+
+Latest revision: b0
+
+All supported chip revisions: a0, b0
+
+Weblink: `mimxrt1182 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1180-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m33-with-tsn-switch:i.MX-RT1180>`_
+
+.. table::
+
     +------------------------------------------------+--------+
-    |:ref:`nxpele`                                   |✅      |
+    |                    Feature                     |Support |
+    +================================================+========+
+    |:ref:`RoT`                                      |SRK AHAB|
+    +------------------------------------------------+--------+
+    |:ref:`nxpdebugmbox`                             |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`Bootable image`                           |✅      |
     +------------------------------------------------+--------+
     |:ref:`nxpmemcfg`                                |✅      |
     +------------------------------------------------+--------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅      |
+    +------------------------------------------------+--------+
+    |:ref:`iee`                                      |✅      |
+    +------------------------------------------------+--------+
 
 
-rt5xx
+mimxrt1187
 --------------------------
 
 Latest revision: b0
 
 All supported chip revisions: a0, b0
 
-Weblink: `rt5xx <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500>`_
+Weblink: `mimxrt1187 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1180-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m33-with-tsn-switch:i.MX-RT1180>`_
+
+.. table::
+
+    +------------------------------------------------+--------+
+    |                    Feature                     |Support |
+    +================================================+========+
+    |:ref:`RoT`                                      |SRK AHAB|
+    +------------------------------------------------+--------+
+    |:ref:`nxpdebugmbox`                             |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`Bootable image`                           |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅      |
+    +------------------------------------------------+--------+
+    |:ref:`iee`                                      |✅      |
+    +------------------------------------------------+--------+
+
+
+mimxrt1189
+--------------------------
+
+Latest revision: b0
+
+All supported chip revisions: a0, b0
+
+Weblink: `mimxrt1189 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1180-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m33-with-tsn-switch:i.MX-RT1180>`_
+
+.. table::
+
+    +------------------------------------------------+--------+
+    |                    Feature                     |Support |
+    +================================================+========+
+    |:ref:`RoT`                                      |SRK AHAB|
+    +------------------------------------------------+--------+
+    |:ref:`nxpdebugmbox`                             |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`Bootable image`                           |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅      |
+    +------------------------------------------------+--------+
+    |:ref:`iee`                                      |✅      |
+    +------------------------------------------------+--------+
+
+
+mimxrt533s
+--------------------------
+
+Latest revision: b0
+
+All supported chip revisions: a0, b0
+
+Weblink: `mimxrt533s <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500>`_
 
 .. table::
 
@@ -1219,30 +2392,30 @@ Weblink: `rt5xx <https://www.nxp.com/products/processors-and-microcontrollers/ar
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
-    |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`otfad`                            |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 2.1`                |✅     |
-    +----------------------------------------+-------+
-    |:ref:`shadowregs`                       |✅     |
-    +----------------------------------------+-------+
     |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`otfad`                            |✅     |
+    +----------------------------------------+-------+
+    |:ref:`shadowregs`                       |✅     |
+    +----------------------------------------+-------+
 
 
-rt6xx
+mimxrt555s
 --------------------------
 
 Latest revision: b0
 
 All supported chip revisions: a0, b0
 
-Weblink: `rt6xx <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600>`_
+Weblink: `mimxrt555s <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500>`_
 
 .. table::
 
@@ -1255,18 +2428,126 @@ Weblink: `rt6xx <https://www.nxp.com/products/processors-and-microcontrollers/ar
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
-    |:ref:`Bootable image`                   |✅     |
-    +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`otfad`                            |✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 2.1`                |✅     |
-    +----------------------------------------+-------+
-    |:ref:`shadowregs`                       |✅     |
-    +----------------------------------------+-------+
     |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`otfad`                            |✅     |
+    +----------------------------------------+-------+
+    |:ref:`shadowregs`                       |✅     |
+    +----------------------------------------+-------+
+
+
+mimxrt595s
+--------------------------
+
+Latest revision: b0
+
+All supported chip revisions: a0, b0
+
+Weblink: `mimxrt595s <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v1.0   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`otfad`                            |✅     |
+    +----------------------------------------+-------+
+    |:ref:`shadowregs`                       |✅     |
+    +----------------------------------------+-------+
+
+
+mimxrt685s
+--------------------------
+
+Latest revision: b0
+
+All supported chip revisions: a0, b0
+
+Weblink: `mimxrt685s <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v1.0   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`otfad`                            |✅     |
+    +----------------------------------------+-------+
+    |:ref:`shadowregs`                       |✅     |
+    +----------------------------------------+-------+
+
+
+mimxrt798s
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0, a1
+
+Weblink: `mimxrt798s <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------------------------+-------+
+    |                    Feature                     |Support|
+    +================================================+=======+
+    |:ref:`RoT`                                      |v2.1   |
+    +------------------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                             |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`                  |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`Secure Binary 3.1`                        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`tz`                                       |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`Bootable image`                           |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`nxpdevhsm`                                |✅     |
+    +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+    |:ref:`shadowregs`                               |✅     |
+    +------------------------------------------------+-------+
 

@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Low level CAN device."""
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from typing_extensions import Self
 
@@ -61,7 +61,7 @@ class CANDevice(DeviceBase):
     def is_opened(self) -> bool:
         """Indicates whether device is open.
 
-        :return: True if device is open, False othervise.
+        :return: True if device is open, False otherwise.
         """
         return self.device is not None and self._opened
 
@@ -149,7 +149,7 @@ class CANDevice(DeviceBase):
         timeout: Optional[int] = None,
         txid: Optional[int] = None,
         rxid: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected CAN devices.
 
         :param interface: CAN interface

@@ -1,0 +1,32 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mc56f81768
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: Wireless Power
+  spsdk_predecessor_name: mwct2x12
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x20000
+      external: false
+    ram:
+      start_int: 0x60000
+      size_int: 0x5000
+      external: false
+
+
+features:
+  wpc:
+    id_type: rsid
+    id_length: 96
+    insert_puc_only: true
+    need_reset: true
+    need_address_adjust: true
+    check_lifecycle: 3

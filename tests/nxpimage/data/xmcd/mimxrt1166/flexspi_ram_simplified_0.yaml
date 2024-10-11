@@ -1,0 +1,29 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  XMCD converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: rt116x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189']
+revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']
+mem_type: flexspi_ram # [Required], Memory type; Specify type of memory used by XMCD description; Possible options:['flexspi_ram', 'semc_sdram']
+config_type: simplified # [Required], Configuration type; Specify type of configuration used by XMCD description; Possible options:['simplified', 'full']
+xmcd_settings: # [Required], rt116x
+  header:  # [Optional]
+    bitfields:  # [Required]
+      configurationBlockSize: 8  # [Optional], configurationBlockSize; Configuration block size including XMCD header itself
+      configurationBlockType: 0 # [Optional], configurationBlockType; Configuration block type: 0 - Simplified, 1 - Full
+      instance: 0 # [Optional], instance; SoC defined instances
+      memoryInterface: 0 # [Optional], memoryInterface; Memory interface: 0 - FlexSPI, 1 - SEMC
+      version: 0 # [Optional], Version, fixed value 0x0
+      tag: 12 # [Optional], Tag, fixed value 0xC
+  configOption0: # [Optional]
+    bitfields:  # [Required]
+      sizeInMB: 0  # [Optional], sizeInMB; Size in MB: 0 - Auto detection, Others - Size in MB
+      maximumFrequency: 7 # [Optional], maximumFrequency; Maximum frequency (SoC specific definitions)
+      misc: 0 # [Optional], Misc. For HyperRAM: 0 - 1.8V, 1 - 3V
+      reserved: 0 # [Optional], Reserved for future use
+      deviceType: 0 # [Optional], deviceType; Device type: 0 - HyperRAM, 1 - APMemory
+      optionSize: 0 # [Optional], optionSize; Option Size
+      tag: 12 # [Optional], Tag, fixed value 0xC

@@ -22,7 +22,7 @@
                             "id": "field400-bits15-19",
                             "offset": "0xf",
                             "width": "5",
-                            "name": "TestBitfiled",
+                            "name": "TestBitfield",
                             "access": "RW",
                             "reset_value_int": "0x1e",
                             "description": "Test Bitfield Description",

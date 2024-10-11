@@ -6,11 +6,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import filecmp
+import hashlib
 import logging
 import os
 import shutil
 from itertools import zip_longest
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -28,7 +29,8 @@ from spsdk.crypto.keys import (
     PublicKey,
     PublicKeyRsa,
 )
-from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError
+from spsdk.crypto.crc import Crc, CrcAlg, from_crc_algorithm
+from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKKeyError, SPSDKSyntaxError
 from spsdk.utils.misc import Endianness, load_binary, load_text, use_working_directory, write_file
 from tests.cli_runner import CliRunner
 from tests.misc import GetPassMock
@@ -107,6 +109,7 @@ def test_nxpcrypto_key_convert(
         ("prk_secp256_d_3.pem", "raw", "prk_secp256_d_3.bin"),
         ("prk_secp256_d_3.bin", "der", "puk_secp256_d_3.pem"),
         ("puk_secp256_d_5.pem", "der", "puk_secp256_d_5.der"),
+        ("puk_secp256_d_5.bin", "der", "puk_secp256_d_5.der"),
         ("prk_rsa4096.pem", "der", "prk_rsa4096.der"),
         ("prk_rsa4096.pem", "pem", "puk_rsa4096.pem"),
     ],
@@ -277,8 +280,8 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
                 "ec_secp256r1_cert2.pem",
                 "ec_secp256r1_cert3.pem",
             ],
-            "rt118x",
-            "2fa79d4d4cadefe5cc33b7d0f56e760cfdf65681e8da8f65c737d53066479e7f",
+            "mimxrt1189",
+            "0c0e76750d713f3aae35b550eef79def59c1765bc1edf7e43df90aa5f4ec909d",
             False,
         ),
         (
@@ -288,7 +291,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
                 "SRK3_sha256_secp384r1_v3_ca_crt.pem",
                 "SRK4_sha256_secp384r1_v3_ca_crt.pem",
             ],
-            "rt117x",
+            "mimxrt1176",
             "bcd8f444bd7f9ccd8048a8bcf8c2764f085058ed527c6978037a94ffb81c14e8",
             False,
         ),
@@ -299,8 +302,8 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
                 "ec_secp256r1_cert2.pem",
                 "ec_secp256r1_cert3.pem",
             ],
-            "rt118x",
-            "L6edTUyt7+XMM7fQ9W52DP32VoHo2o9lxzfVMGZHnn8=",
+            "mimxrt1189",
+            "DA52dQ1xPzquNbVQ7ved71nBdlvB7ffkPfkKpfTskJ0=",
             True,
         ),
     ],
@@ -309,7 +312,7 @@ def test_nxpcrypto_rot_calc_hash(
     cli_runner: CliRunner,
     data_dir: str,
     tmpdir: str,
-    keys: List,
+    keys: list,
     family: str,
     ref_rotkth: str,
     base64: bool,
@@ -352,8 +355,8 @@ def test_nxpcrypto_rot_calc_hash(
                 "SRK3_sha256_secp384r1_v3_ca_crt.pem",
                 "SRK4_sha256_secp384r1_v3_ca_crt.pem",
             ],
-            "rt117x",
-            "rot_rt117x.bin",
+            "mimxrt1176",
+            "rot_mimxrt1176.bin",
         ),
         (
             [
@@ -362,13 +365,13 @@ def test_nxpcrypto_rot_calc_hash(
                 "ec_secp256r1_cert2.pem",
                 "ec_secp256r1_cert3.pem",
             ],
-            "rt118x",
-            "rot_rt118x.bin",
+            "mimxrt1189",
+            "rot_mimxrt1189.bin",
         ),
     ],
 )
 def test_nxpcrypto_rot_export(
-    cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: List, family: str, ref_rot: str
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: list, family: str, ref_rot: str
 ):
     out_file = os.path.join(tmpdir, "rot_table.bin")
     ref_file = os.path.join(data_dir, ref_rot)
@@ -387,7 +390,6 @@ def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir):
     assert os.path.isfile(f"{tmpdir}/cert.yml")
 
 
-@patch("spsdk.crypto.keys.getpass", GetPassMock)
 @pytest.mark.parametrize("password", [None, "password123"])
 @pytest.mark.parametrize(
     "key_type",
@@ -413,14 +415,15 @@ def test_nxpcrypto_cert_generate(
     cmd = ["key", "generate", "-k", key_type, "-o", issuer_key, "-e", encoding]
     if password:
         cmd.extend(["--password", password])
-        GetPassMock.PASSWORD = password
     cli_runner.invoke(nxpcrypto.main, cmd)
 
     shutil.copy(os.path.join(data_dir, "cert.yaml"), tmpdir)
     crt_config = os.path.join(tmpdir, "cert.yaml")
     out_crt = os.path.join(tmpdir, "cert.crt")
     cmd = ["cert", "generate", "-c", crt_config, "-o", out_crt, "-e", encoding]
-    cli_runner.invoke(nxpcrypto.main, cmd)
+
+    with patch("spsdk.crypto.keys.getpass", GetPassMock(password)):
+        cli_runner.invoke(nxpcrypto.main, cmd)
     assert os.path.isfile(out_crt)
     Certificate.load(out_crt)
 
@@ -497,7 +500,7 @@ def test_nxpcrypto_create_signature_algorithm_mandatory(
     data_dir: str,
     tmpdir,
     key_type: str,
-    algorithms: List[Optional[EnumHashAlgorithm]],
+    algorithms: list[Optional[EnumHashAlgorithm]],
 ):
     for algorithm in algorithms:
         run_signature(cli_runner, data_dir, tmpdir, key_type, algorithm)
@@ -519,7 +522,7 @@ def test_nxpcrypto_create_signature_algorithm_optional(
     data_dir: str,
     tmpdir,
     key_type: str,
-    algorithms: List[Optional[EnumHashAlgorithm]],
+    algorithms: list[Optional[EnumHashAlgorithm]],
 ):
     for algorithm in algorithms:
         run_signature(cli_runner, data_dir, tmpdir, key_type, algorithm)
@@ -628,7 +631,7 @@ def test_nxpcrypto_signature_create_signature_encoding(
         assert len(signature) == KEY_INFO[int(key_type.replace("dil", ""))].signature_size
 
 
-@patch("spsdk.crypto.keys.getpass", GetPassMock)
+@patch("spsdk.crypto.keys.getpass", GetPassMock("test1234"))
 @pytest.mark.parametrize(
     "key_type",
     ["secp256r1", "secp384r1", "secp521r1", "rsa2048", "rsa4096"],
@@ -637,7 +640,6 @@ def test_nxpcrypto_create_signature_password(
     cli_runner: CliRunner, data_dir: str, key_type: str, tmpdir: str
 ):
     password = "test1234"
-    GetPassMock.PASSWORD = password
     priv_key_path = os.path.join(tmpdir, "key.pem")
 
     cmd = f"key generate -k {key_type} -o {priv_key_path} --password {password}"
@@ -682,7 +684,7 @@ def test_nxpcrypto_create_signature_regions_rsa(
     cli_runner: CliRunner,
     data_dir: str,
     key_type: str,
-    regions: List[str],
+    regions: list[str],
     signature: str,
     tmpdir: str,
 ):
@@ -720,7 +722,7 @@ def test_nxpcrypto_create_signature_regions_rsa(
     ],
 )
 def test_nxpcrypto_create_signature_regions_rsa_invalid(
-    cli_runner: CliRunner, data_dir: str, tmpdir: str, regions: List[str], exception
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, regions: list[str], exception
 ):
     priv_key, _ = get_key_path(data_dir, "secp521r1")
     out = os.path.join(tmpdir, "signature.bin")
@@ -795,3 +797,111 @@ def test_nxpcrypto_verify_signature(
     cmd = f"signature verify -k {pub_key} -i {modified_file} -s {output_file}"
     result = run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert SIGNATURE_NOT_MATCHING in result.output
+
+
+def test_nxpcrypto_digest(cli_runner: CliRunner, data_dir: str, tmpdir: str):
+    # Setup test environment
+    input_file = os.path.join(data_dir, "data_to_digest.bin")
+    output_digest_file = os.path.join(tmpdir, "output_digest.txt")
+    content = b"Test data for digest"
+    expected_digest = hashlib.sha256(content).hexdigest()
+    write_file(expected_digest, output_digest_file)
+    ssl_format = f"SHA256(/expected_digest.txt)= {expected_digest}\n"
+
+    # Run digest command with compare from CLI
+    cmd = f"digest -i {input_file} -h sha256 -c {expected_digest}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "Digest command failed"
+    assert expected_digest in result.stdout
+
+    # Run digest command with compare from CLI negative test
+    cmd = f"digest -i {input_file} -h sha256 -c {expected_digest}1"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
+
+    # Run digest command with compare from file
+    cmd = f"digest -i {input_file} -h sha256 -c {output_digest_file}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "Digest command failed"
+
+    write_file(ssl_format, output_digest_file)
+    # Run digest command with compare from file SSL format
+    cmd = f"digest -i {input_file} -h sha256 -c {output_digest_file}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "Digest command failed"
+
+
+@pytest.mark.parametrize(
+    "encoding",
+    ["pem"],
+)
+@pytest.mark.parametrize(
+    "pki_type",
+    ["ahab", "hab"],
+)
+@pytest.mark.parametrize(
+    "key_type",
+    [
+        "secp521r1",
+        "rsa4096",
+    ],
+)
+def test_nxpcrypto_pki_tree(
+    cli_runner: CliRunner, pki_type: str, tmpdir: str, key_type: str, encoding: str
+):
+    cmd = f"pki-tree {pki_type} -k {key_type} -o {tmpdir}/ahab_tree_{key_type}_{encoding} -e {encoding} -ca"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "PKI Tree command failed"
+    assert os.path.isfile(
+        f"{tmpdir}/ahab_tree_{key_type}_{encoding}/crts/CA0_{key_type}_ca_cert.{encoding}"
+    )
+    assert os.path.isfile(
+        f"{tmpdir}/ahab_tree_{key_type}_{encoding}/keys/SRK0_{key_type}_ca_key.{encoding}"
+    )
+
+
+CRC_TEST_VECTORS = [
+    (CrcAlg.CRC32, 127766482),
+    (CrcAlg.CRC32_MPEG, 992315916),
+    (CrcAlg.CRC16_XMODEM, 41226),
+]
+
+
+@pytest.mark.parametrize(
+    "alg,ref_crc",
+    CRC_TEST_VECTORS,
+)
+def test_nxpcrypto_crc_calculate(alg, ref_crc):
+    data = bytes.fromhex("123ABC")
+    crc_obj = from_crc_algorithm(alg)
+    crc = crc_obj.calculate(data)
+    assert crc == ref_crc
+
+
+@pytest.mark.parametrize(
+    "alg,ref_crc",
+    CRC_TEST_VECTORS,
+)
+def test_nxpcrypto_crc_verify(alg, ref_crc):
+    data = bytes.fromhex("123ABC")
+    crc_obj = from_crc_algorithm(alg)
+    is_matching = crc_obj.verify(data, ref_crc)
+    assert is_matching
+
+
+@pytest.mark.parametrize(
+    "alg,exception",
+    [
+        (CrcAlg.CRC32, None),
+        (CrcAlg.CRC32_MPEG, None),
+        (CrcAlg.CRC16_XMODEM, None),
+        ("crc32-mpeg", None),
+        ("invalid", SPSDKKeyError),
+    ],
+)
+def test_nxpcrypto_crc_from_alg(alg, exception):
+    if exception:
+        with pytest.raises(exception):
+            from_crc_algorithm(alg)
+    else:
+        crc_obj = from_crc_algorithm(alg)
+        assert isinstance(crc_obj, Crc)

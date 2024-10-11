@@ -10,7 +10,8 @@
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from collections import defaultdict
+from typing import Any, Optional
 
 import click
 import colorama
@@ -20,13 +21,14 @@ from click_option_group import AllOptionGroup, optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    FamilyChoice,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
-from spsdk.memcfg.memcfg import MemoryConfig
+from spsdk.memcfg.memcfg import Memory, MemoryConfig
 from spsdk.utils.misc import load_configuration, write_file
 from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import CommentedConfig, check_config
@@ -53,7 +55,7 @@ def main(log_level: int) -> None:
 def family_info(family: str, peripheral: Optional[str] = None) -> None:
     """List known memory configurations for the family."""
 
-    def _get_instance_val(val: List[int]) -> str:
+    def _get_instance_val(val: list[int]) -> str:
         if val:
             if len(val) == 1 and val[0] == 0:
                 return colorama.Fore.BLUE + "Yes" + colorama.Style.RESET_ALL
@@ -80,37 +82,43 @@ def family_info(family: str, peripheral: Optional[str] = None) -> None:
     click.echo(table_p)
 
     # ####### Print out known Option words if any ##############
-    known_option_words = (
-        MemoryConfig.get_known_option_words(family=family, peripheral=peripheral)
+    memories = (
+        MemoryConfig.get_known_memories(family=family, peripheral=peripheral)
         if family
-        else MemoryConfig.get_all_known_option_words(peripheral)
+        else MemoryConfig.get_all_known_memories(peripheral)
     )
-    if known_option_words:
+    if memories:
         click.echo("List of all known memory configuration option words:")
         table_ow = prettytable.PrettyTable(
-            ["#", "Peripheral", "Manufacturer", "Name", "Interface", "Option words"]
+            ["#", "Peripheral", "Manufacturer", "Name", "Interface", "Option words", "Tested"]
         )
         table_ow.set_style(prettytable.DOUBLE_BORDER)
         table_ow.align["Option words"] = "l"
         i = 0
-        for p, man_dict in known_option_words.items():
-            for manufacturer, chips_dict in man_dict.items():
-                for chip_name, mem_type_dict in chips_dict.items():
-                    for mem_type, option_words in mem_type_dict.items():
-                        option_words_pretty = f"Opt0: 0x{option_words[0]:08X}"
-                        for ow_i, ow in enumerate(option_words[1:]):
-                            option_words_pretty += f", Opt{ow_i+1}: 0x{ow:08X}"
-                        table_ow.add_row(
-                            [
-                                colorama.Fore.YELLOW + str(i) + colorama.Style.RESET_ALL,
-                                colorama.Fore.GREEN + p + colorama.Style.RESET_ALL,
-                                colorama.Fore.WHITE + manufacturer + colorama.Style.RESET_ALL,
-                                colorama.Fore.WHITE + chip_name + colorama.Style.RESET_ALL,
-                                colorama.Fore.CYAN + mem_type + colorama.Style.RESET_ALL,
-                                colorama.Fore.BLUE + option_words_pretty + colorama.Style.RESET_ALL,
-                            ]
-                        )
-                        i += 1
+
+        grouped_by_peripheral = defaultdict(list[Memory])  # type: ignore
+        for memory in memories:
+            grouped_by_peripheral[memory.peripheral].append(memory)
+        for memory_group in grouped_by_peripheral.values():
+            for memory in memory_group:
+                table_ow.add_row(
+                    [
+                        colorama.Fore.YELLOW + str(i) + colorama.Style.RESET_ALL,
+                        colorama.Fore.GREEN + memory.peripheral + colorama.Style.RESET_ALL,
+                        colorama.Fore.WHITE + memory.manufacturer + colorama.Style.RESET_ALL,
+                        colorama.Fore.WHITE + memory.name + colorama.Style.RESET_ALL,
+                        colorama.Fore.CYAN + memory.interface + colorama.Style.RESET_ALL,
+                        colorama.Fore.BLUE
+                        + memory.get_option_words_string()
+                        + colorama.Style.RESET_ALL,
+                        (
+                            colorama.Fore.BLUE + "*" + colorama.Style.RESET_ALL
+                            if memory.tested
+                            else ""
+                        ),
+                    ]
+                )
+                i += 1
             table_ow._dividers[-1] = True
 
         click.echo(table_ow)
@@ -154,7 +162,7 @@ def parse_command(
     memory_chip: Optional[str],
     interface: Optional[str],
     peripheral: Optional[str],
-    option_word: Optional[List[int]],
+    option_word: Optional[list[int]],
     output: str,
 ) -> None:
     """Parse the existing memory configuration option words."""
@@ -176,7 +184,7 @@ def parse(
     memory_chip: Optional[str],
     interface: Optional[str],
     peripheral: Optional[str],
-    option_word: Optional[List[int]],
+    option_word: Optional[list[int]],
 ) -> MemoryConfig:
     """Parse the existing memory configuration option words.
 
@@ -192,10 +200,11 @@ def parse(
     if memory_chip and interface:
         peripheral = MemoryConfig.get_known_chip_peripheral(memory_chip)
         click.echo(f"Detected peripheral {peripheral} for {memory_chip}")
-        option_words = MemoryConfig.get_known_chip_option_words(
+        memory = MemoryConfig.get_known_chip_memory(
             peripheral=peripheral, chip_name=memory_chip, interface=interface
         )
-        click.echo(f"Loaded option words: {MemoryConfig.get_option_words_string(option_words)}")
+        click.echo(f"Loaded option words: {memory.get_option_words_string()}")
+        option_words = memory.option_words
     elif option_word:
         option_words = option_word
     else:
@@ -226,7 +235,7 @@ def export_command(
     )
 
 
-def export(config: Dict[str, Any]) -> MemoryConfig:
+def export(config: dict[str, Any]) -> MemoryConfig:
     """Export the configuration option words from configuration.
 
     :param config: Memory Configuration dictionary.
@@ -251,7 +260,7 @@ def export(config: Dict[str, Any]) -> MemoryConfig:
 @optgroup.option(
     "-f",
     "--family",
-    type=click.Choice(choices=MemoryConfig.get_supported_families(), case_sensitive=False),
+    type=FamilyChoice(choices=MemoryConfig.get_supported_families()),
     help="Select the chip family.",
 )
 @optgroup.option(
@@ -279,6 +288,13 @@ def export(config: Dict[str, Any]) -> MemoryConfig:
         "Be aware that script will contain also erase of 4KB on base address."
     ),
 )
+@click.option(
+    "--secure-addresses",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help=("If defined, the secure address will be used in case of generating FCB block."),
+)
 @spsdk_output_option(
     required=False,
     force=True,
@@ -291,6 +307,7 @@ def blhost_script_command(
     interface: Optional[str],
     instance: Optional[int],
     fcb: Optional[str],
+    secure_addresses: bool,
     output: Optional[str],
 ) -> None:
     """Export the configuration option words to blhost script."""
@@ -314,7 +331,9 @@ def blhost_script_command(
     else:
         memcfg = export(load_configuration(config))
 
-    script = memcfg.create_blhost_batch_config(instance=instance, fcb_output_name=fcb)
+    script = memcfg.create_blhost_batch_config(
+        instance=instance, fcb_output_name=fcb, secure_addresses=secure_addresses
+    )
 
     click.echo("Exported blhost script.")
     if output:
@@ -343,7 +362,9 @@ def get_templates(family: str, output: str) -> None:
         ).get_template()
 
         full_file_name = os.path.join(output, f"ow_{peripheral}.yaml")
-        click.echo(f"Creating {full_file_name} template file.")
+        click.echo(
+            f"The Memory Configuration template for {family} has been saved into {output} YAML file"
+        )
         write_file(yaml_data, full_file_name)
 
 

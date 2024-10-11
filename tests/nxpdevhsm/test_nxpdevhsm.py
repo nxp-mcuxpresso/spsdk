@@ -78,22 +78,6 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
         assert load_binary("test_bin.bin") in processed
 
 
-def test_load_commands_with_keyblob4(data_dir):
-    """Test loading commands from SB3.1 config file."""
-
-    with use_working_directory(data_dir):
-        with pytest.raises(SPSDKError):
-            devhsm = DevHsmSB31(
-                mboot=None,
-                cust_mk_sk=b"abcd",
-                oem_share_input=b"abcd",
-                info_print=None,
-                container_conf="cfg_sb3_keyblob4.yaml",
-                family="lpc55s3x",
-            )
-            devhsm.get_cmd_from_config()
-
-
 @pytest.mark.parametrize(
     "family,expected_cls",
     [
@@ -130,7 +114,7 @@ def test_sbx_devhsm(data_dir):
         ("lpc55s3x"),
         ("mc56f818xx"),
         ("mcxn9xx"),
-        ("mwct2xd2"),
+        ("mwct20d2"),
         ("rw61x"),
     ],
 )

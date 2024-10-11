@@ -75,6 +75,7 @@ class Hash:
 
         :param value: Integer value to be hashed
         """
+        value = abs(value)
         data = value.to_bytes(length=ceil(value.bit_length() / 8), byteorder=Endianness.BIG.value)
         self.update(data)
 

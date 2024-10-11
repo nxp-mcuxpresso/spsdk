@@ -50,7 +50,6 @@ def test_supported_devices():
     """Test PFR tool - Getting supported devices."""
     cfpa_devices = CFPA.get_supported_families()
     cmpa_devices = CMPA.get_supported_families()
-    cmpa_devices.remove("mcxa1xx")
     cmpa_devices.remove("mcxa156")
     cmpa_devices.remove("mcxa155")
     cmpa_devices.remove("mcxa154")
@@ -61,6 +60,8 @@ def test_supported_devices():
     cmpa_devices.remove("mcxa143")
     cmpa_devices.remove("mcxa152")
     cmpa_devices.remove("mcxa153")
+    cmpa_devices.remove("mcxa132")
+    cmpa_devices.remove("mcxa133")
     assert sorted(cmpa_devices) == sorted(cfpa_devices)
 
 
@@ -137,7 +138,7 @@ def test_config_cmpa_yml(tmpdir):
     config = cmpa.get_config()
 
     assert cmpa.get_config(True) == {
-        "family": "lpc55s3x",
+        "family": "lpc55s36",
         "revision": "a1",
         "type": "CMPA",
         "settings": {},
@@ -151,7 +152,7 @@ def test_config_cmpa_yml(tmpdir):
     out_config = cmpa2.get_config(True)
 
     assert out_config == {
-        "family": "lpc55s3x",
+        "family": "lpc55s36",
         "revision": "a1",
         "type": "CMPA",
         "settings": {
@@ -243,7 +244,9 @@ def test_invalid_key_size(data_dir):
 
 
 def test_base_config_area_invalid_device_revision():
-    with pytest.raises(SPSDKError, match="SPSDK: The device with name bb is not in the database."):
+    with pytest.raises(
+        SPSDKError, match="SPSDK: Cannot load the device 'bb' - Doesn't exists in database."
+    ):
         BaseConfigArea(family="bb")
     with pytest.raises(SPSDKError, match="SPSDK: Requested revision HH is not supported."):
         BaseConfigArea(family="lpc55s6x", revision="HH")

@@ -9,7 +9,7 @@
 
 import logging
 import os
-from typing import List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -40,7 +40,7 @@ class WPCTargetModel(WPCTarget):
     # This is just a workaround for relative paths in config data
     # TODO: if config validator would replace relative paths for full path, this can be deleted
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> Self:
+    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.

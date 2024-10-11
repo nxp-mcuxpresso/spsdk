@@ -1,0 +1,282 @@
+# ===========================  External Memory Configuration Data template for mimxrt1176.  ============================
+
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+# Note for settings:
+# All registers is possible to define also as one value although the bitfields are used. Instead of bitfields: ...
+# field, the value: ... definition works as well.
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <mimxrt1166, mimxrt1176, mimxrt1189>
+family: mimxrt1176
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by XMCD description.
+# Possible options: <flexspi_ram, semc_sdram>
+mem_type: semc_sdram
+# --------------------------------------===== Configuration type [Required] =====---------------------------------------
+# Description: Specify type of configuration used by XMCD description.
+# Possible options: <simplified, full>
+config_type: full
+# ------------------------------------------===== mimxrt1176 [Required] =====-------------------------------------------
+xmcd_settings:
+  # -------------------------------------------===== header [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; XMCD Header
+  header:
+    # ----------------------------------===== configurationBlockSize [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 12b, Configuration block size including XMCD header itself
+    configurationBlockSize: 72
+    # ----------------------------------===== configurationBlockType [Optional] =====-----------------------------------
+    # Description: Offset: 12b, Width: 4b, Configuration block type: 0 - Simplified, 1 - Full
+    # - XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, (0): Simplified configuration block type
+    # - XMCD_CONFIG_BLOCK_TYPE_FULL, (1): Full configuration block type
+    # Possible options: <XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, XMCD_CONFIG_BLOCK_TYPE_FULL>
+    configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_FULL
+    # -----------------------------------------===== instance [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 4b, SoC defined instances
+    instance: 0
+    # --------------------------------------===== memoryInterface [Optional] =====--------------------------------------
+    # Description: Offset: 20b, Width: 4b, Memory interface: 0 - FlexSPI, 1 - SEMC
+    # - XMCD_MEMORY_INTERFACE_FLEXSPI, (0): FlexSPI memory interface
+    # - XMCD_MEMORY_INTERFACE_SEMC, (1): SEMC memory interface
+    # Possible options: <XMCD_MEMORY_INTERFACE_FLEXSPI, XMCD_MEMORY_INTERFACE_SEMC>
+    memoryInterface: XMCD_MEMORY_INTERFACE_SEMC
+    # ------------------------------------------===== version [Optional] =====------------------------------------------
+    # Description: Offset: 24b, Width: 4b, Version, fixed value 0x0
+    version: 0
+    # --------------------------------------------===== tag [Optional] =====--------------------------------------------
+    # Description: Offset: 28b, Width: 4b, Tag, fixed value 0xC
+    tag: 12
+  # -----------------------------------------===== magicNumber [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000004, Width: 8b; Fixed to 0xA1
+  magicNumber: '0x00'
+  # -------------------------------------------===== version [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000005, Width: 8b; Set to 1 for this implementation
+  version: '0x00'
+  # ----------------------------------------===== configOption [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000006, Width: 8b; Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case
+  configOption:
+    # ---------------------------------------===== configOption [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Config option
+    # - XMCD_SEMC_SDRAM_CONFIG_FULL, (0): Full configuration. Must configure all fields.
+    # Possible options: <XMCD_SEMC_SDRAM_CONFIG_FULL>
+    configOption: '0xFF'
+  # -------------------------------------------===== clkMhz [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000007, Width: 8b; Set the working frequency in the unit of MHz
+  clkMhz: '0x00'
+  # -----------------------------------------===== sdramSizeKb [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range:
+  # 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  sdramSizeKb: '0x00000000'
+  # ------------------------------------------===== portSize [Optional] =====-------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b; Port size of SDRAM: 0 - 8-bit, 1 - 16-bit, 2 - 32-bit
+  portSize:
+    # -----------------------------------------===== portSize [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Port size of SDRAM
+    # - XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT, (0): 8-bit
+    # - XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT, (1): 16-bit
+    # - XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT, (2): 32-bit
+    # Possible options: <XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT, XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT,
+    # XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT>
+    portSize: XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT
+  # ----------------------------------------===== pinConfigPull [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000000D, Width: 8b; Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull
+  # down, 3 - No pull, Others - Invalid value
+  pinConfigPull:
+    # ---------------------------------------===== pinConfigPull [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 8b, Pull config of the SDRAM GPIO pin
+    # - XMCD_SEMC_SDRAM_PIN_CONFIG_FORBIDDEN, (0): Forbidden
+    # - XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_UP, (1): Pull up
+    # - XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_DOWN, (2): Pull down
+    # - XMCD_SEMC_SDRAM_PIN_CONFIG_NO_PULL, (3): No pull
+    # Possible options: <XMCD_SEMC_SDRAM_PIN_CONFIG_FORBIDDEN, XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_UP,
+    # XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_DOWN, XMCD_SEMC_SDRAM_PIN_CONFIG_NO_PULL>
+    pinConfigPull: XMCD_SEMC_SDRAM_PIN_CONFIG_NO_PULL
+  # -----------------------------------===== pinConfigDriveStrength [Optional] =====------------------------------------
+  # Description: Offset: 0x0000000E, Width: 8b; Driver config of SDRAM GPIO pin: 0 - High driver, 1 - Normal driver,
+  # Others - Invalid value
+  pinConfigDriveStrength:
+    # ----------------------------------===== pinConfigDriveStrength [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 8b, Driver config of SDRAM GPIO pin
+    # - XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_HIGH, (0): High driver
+    # - XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_NORM, (1): Normal driver
+    # Possible options: <XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_HIGH, XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_NORM>
+    pinConfigDriveStrength: XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_HIGH
+  # -------------------------------------------===== muxRdy [Optional] =====--------------------------------------------
+  # Description: Offset: 0x0000000F, Width: 8b; SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3,
+  # Others - Invalid for SDRAM, select other external devices
+  muxRdy:
+    # ------------------------------------------===== muxRdy [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b, SDRAM CSn device selection
+    # - XMCD_SEMC_SDRAM_MUX_RDY_CS1, (1): SDRAM CS1
+    # - XMCD_SEMC_SDRAM_MUX_RDY_CS2, (2): SDRAM CS2
+    # - XMCD_SEMC_SDRAM_MUX_RDY_CS3, (3): SDRAM CS3
+    # Possible options: <XMCD_SEMC_SDRAM_MUX_RDY_CS1, XMCD_SEMC_SDRAM_MUX_RDY_CS2, XMCD_SEMC_SDRAM_MUX_RDY_CS3>
+    muxRdy: XMCD_SEMC_SDRAM_MUX_RDY_CS1
+  # -------------------------------------------===== muxCsx0 [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000010, Width: 8b; SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3,
+  # Others - Invalid for SDRAM, select other external devices
+  muxCsx0:
+    # ------------------------------------------===== muxCsx0 [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, SDRAM CSn device selection
+    # - XMCD_SEMC_SDRAM_MUX_CSX0_CS1, (1): SDRAM CS1
+    # - XMCD_SEMC_SDRAM_MUX_CSX0_CS2, (2): SDRAM CS2
+    # - XMCD_SEMC_SDRAM_MUX_CSX0_CS3, (3): SDRAM CS3
+    # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX0_CS1, XMCD_SEMC_SDRAM_MUX_CSX0_CS2, XMCD_SEMC_SDRAM_MUX_CSX0_CS3>
+    muxCsx0: XMCD_SEMC_SDRAM_MUX_CSX0_CS1
+  # -------------------------------------------===== muxCsx1 [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000011, Width: 8b; SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3,
+  # Others - Invalid for SDRAM, select other external devices
+  muxCsx1:
+    # ------------------------------------------===== muxCsx1 [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, SDRAM CSn device selection
+    # - XMCD_SEMC_SDRAM_MUX_CSX1_CS1, (1): SDRAM CS1
+    # - XMCD_SEMC_SDRAM_MUX_CSX1_CS2, (2): SDRAM CS2
+    # - XMCD_SEMC_SDRAM_MUX_CSX1_CS3, (3): SDRAM CS3
+    # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX1_CS1, XMCD_SEMC_SDRAM_MUX_CSX1_CS2, XMCD_SEMC_SDRAM_MUX_CSX1_CS3>
+    muxCsx1: XMCD_SEMC_SDRAM_MUX_CSX1_CS1
+  # -------------------------------------------===== muxCsx2 [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000012, Width: 8b; SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3,
+  # Others - Invalid for SDRAM, select other external devices
+  muxCsx2:
+    # ------------------------------------------===== muxCsx2 [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, SDRAM CSn device selection
+    # - XMCD_SEMC_SDRAM_MUX_CSX2_CS1, (1): SDRAM CS1
+    # - XMCD_SEMC_SDRAM_MUX_CSX2_CS2, (2): SDRAM CS2
+    # - XMCD_SEMC_SDRAM_MUX_CSX2_CS3, (3): SDRAM CS3
+    # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX2_CS1, XMCD_SEMC_SDRAM_MUX_CSX2_CS2, XMCD_SEMC_SDRAM_MUX_CSX2_CS3>
+    muxCsx2: XMCD_SEMC_SDRAM_MUX_CSX2_CS1
+  # -------------------------------------------===== muxCsx3 [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000013, Width: 8b; SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3,
+  # Others - Invalid for SDRAM, select other external devices
+  muxCsx3:
+    # ------------------------------------------===== muxCsx3 [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, SDRAM CSn device selection
+    # - XMCD_SEMC_SDRAM_MUX_CSX3_CS1, (1): SDRAM CS1
+    # - XMCD_SEMC_SDRAM_MUX_CSX3_CS2, (2): SDRAM CS2
+    # - XMCD_SEMC_SDRAM_MUX_CSX3_CS3, (3): SDRAM CS3
+    # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX3_CS1, XMCD_SEMC_SDRAM_MUX_CSX3_CS2, XMCD_SEMC_SDRAM_MUX_CSX3_CS3>
+    muxCsx3: XMCD_SEMC_SDRAM_MUX_CSX3_CS1
+  # --------------------------------------------===== bank [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000014, Width: 8b; Bank numbers of SDRAM device: 0 - 4 banks, 1 - 2 banks, Others - Invalid
+  # value
+  bank:
+    # -------------------------------------------===== bank [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Bank numbers of SDRAM device
+    # - XMCD_SEMC_SDRAM_BANK_4, (0): 4 banks
+    # - XMCD_SEMC_SDRAM_BANK_2, (1): 2 banks
+    # Possible options: <XMCD_SEMC_SDRAM_BANK_4, XMCD_SEMC_SDRAM_BANK_2>
+    bank: XMCD_SEMC_SDRAM_BANK_4
+  # ------------------------------------------===== burstLen [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000015, Width: 8b; Burst length: 0 - 1, 1 - 2, 2 - 4, 3 - 8, Others - Invalid value
+  burstLen:
+    # -----------------------------------------===== burstLen [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Burst length
+    # - XMCD_SEMC_SDRAM_BURST_LEN_1, (0): 1
+    # - XMCD_SEMC_SDRAM_BURST_LEN_2, (1): 2
+    # - XMCD_SEMC_SDRAM_BURST_LEN_4, (2): 4
+    # - XMCD_SEMC_SDRAM_BURST_LEN_8, (3): 8
+    # Possible options: <XMCD_SEMC_SDRAM_BURST_LEN_1, XMCD_SEMC_SDRAM_BURST_LEN_2, XMCD_SEMC_SDRAM_BURST_LEN_4,
+    # XMCD_SEMC_SDRAM_BURST_LEN_8>
+    burstLen: XMCD_SEMC_SDRAM_BURST_LEN_1
+  # --------------------------------------===== columnAddrBitNum [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000016, Width: 8b; Column address bit number: 0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9
+  # bit, 4 - 8 bit, Others - Invalid value
+  columnAddrBitNum:
+    # -------------------------------------===== columnAddrBitNum [Optional] =====--------------------------------------
+    # Description: Offset: 0b, Width: 8b, Column address bit number
+    # - XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_12, (0): 12 bit
+    # - XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_11, (1): 11 bit
+    # - XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_10, (2): 10 bit
+    # - XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_9, (3): 9 bit
+    # - XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_8, (4): 8 bit
+    # Possible options: <XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_12, XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_11,
+    # XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_10, XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_9, XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_8>
+    columnAddrBitNum: XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_12
+  # -----------------------------------------===== casLatency [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000017, Width: 8b; CAS Latency: 1 - 1, 2 - 2, 3 - 3, Others - Invalid value
+  casLatency:
+    # ----------------------------------------===== casLatency [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 8b, CAS Latency
+    # - XMCD_SEMC_SDRAM_CAS_LATENCY_1, (1): 1
+    # - XMCD_SEMC_SDRAM_CAS_LATENCY_2, (2): 2
+    # - XMCD_SEMC_SDRAM_CAS_LATENCY_3, (3): 3
+    # Possible options: <XMCD_SEMC_SDRAM_CAS_LATENCY_1, XMCD_SEMC_SDRAM_CAS_LATENCY_2, XMCD_SEMC_SDRAM_CAS_LATENCY_3>
+    casLatency: XMCD_SEMC_SDRAM_CAS_LATENCY_1
+  # ---------------------------------------===== writeRecoveryNs [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000018, Width: 8b; Write recovery time in unit of nanosecond. This could help to meet tWR
+  # timing requirement by the SDRAM device.
+  writeRecoveryNs: '0x00'
+  # --------------------------------------===== refreshRecoveryNs [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000019, Width: 8b; Refresh recovery time in unit of nanosecond. This could help to meet
+  # tRFC timing requirement by the SDRAM device.
+  refreshRecoveryNs: '0x00'
+  # ---------------------------------------===== act2readwriteNs [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001A, Width: 8b; Act to read/write wait time in unit of nanosecond. This could help to
+  # meet tRCD timing requirement by the SDRAM device.
+  act2readwriteNs: '0x00'
+  # ---------------------------------------===== precharge2actNs [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001B, Width: 8b; Precharge to active wait time in unit of nanosecond. This could help to
+  # meet tRP timing requirement by SDRAM device.
+  precharge2actNs: '0x00'
+  # ---------------------------------------===== act2actBanksNs [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000001C, Width: 8b; Active to active wait time between two different banks in unit of
+  # nanosecond. This could help to meet tRRD timing requirement by the SDRAM device.
+  act2actBanksNs: '0x00'
+  # --------------------------------------===== refresh2refreshNs [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000001D, Width: 8b; Auto refresh to auto refresh wait time in unit of nanosecond. This could
+  # help to meet tRFC timing requirement by the SDRAM device.
+  refresh2refreshNs: '0x00'
+  # --------------------------------------===== selfrefRecoveryNs [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000001E, Width: 8b; Self refresh recovery time in unit of nanosecond. This could help to
+  # meet tXSR timing requirement by the SDRAM device.
+  selfrefRecoveryNs: '0x00'
+  # -------------------------------------===== act2prechargeMinNs [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000001F, Width: 8b; ACT to Precharge minimum time in unit of nanosecond. This could help to
+  # meet tRAS(max) timing requirement by the SDRAM device.
+  act2prechargeMinNs: '0x00'
+  # -------------------------------------===== act2prechargeMaxNs [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; ACT to Precharge maximum time in unit of nanosecond. This could help to
+  # meet tRAS(max) timing requirement by the SDRAM device.
+  act2prechargeMaxNs: '0x00000000'
+  # ------------------------------------===== refreshperiodPerrowNs [Optional] =====------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; Refresh timer period in unit of nanosecond. Set to (tREF(ms) *
+  # 1000000/rows) value.
+  refreshperiodPerrowNs: '0x00000000'
+  # ----------------------------------------===== modeRegister [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000028, Width: 32b; Define the specific mode of operation of SDRAM. Set to the value
+  # required by SDRAM device.
+  modeRegister: '0x00000000'
+  # -----------------------------------------===== sdram0Base [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b; Base address of SDRAM CS0. Range: 0x8000_0000~0xDFFF_FFFF.
+  sdram0Base: '0x00000000'
+  # -----------------------------------------===== sdram1Base [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000030, Width: 32b; Base address of SDRAM CS1. Range: 0x8000_0000~0xDFFF_FFFF. If CS1 is
+  # not being used, set the address to 0.
+  sdram1Base: '0x00000000'
+  # -----------------------------------------===== sdram2Base [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000034, Width: 32b; Base address of SDRAM CS2. Range: 0x8000_0000~0xDFFF_FFFF. If CS2 is
+  # not being used, set the address to 0.
+  sdram2Base: '0x00000000'
+  # -----------------------------------------===== sdram3Base [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000038, Width: 32b; Base address of SDRAM CS3. Range: 0x8000_0000~0xDFFF_FFFF. If CS3 is
+  # not being used, set the address to 0.
+  sdram3Base: '0x00000000'
+  # ----------------------------------------===== sdram1SizeKb [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000003C, Width: 32b; Set the memory size of SDRAM CS1 in unit of kbytes. Range:
+  # 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  sdram1SizeKb: '0x00000000'
+  # ----------------------------------------===== sdram2SizeKb [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b; Set the memory size of SDRAM CS2 in unit of kbytes. Range:
+  # 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  sdram2SizeKb: '0x00000000'
+  # ----------------------------------------===== sdram3SizeKb [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000044, Width: 32b; Set the memory size of SDRAM CS3 in unit of kbytes. Range:
+  # 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  sdram3SizeKb: '0x00000000'

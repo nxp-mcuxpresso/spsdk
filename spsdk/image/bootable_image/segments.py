@@ -12,7 +12,7 @@ import logging
 import os
 from inspect import isclass
 from struct import unpack
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -26,6 +26,7 @@ from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.sbfile.sb31.images import SecureBinary31
 from spsdk.utils.abstract import BaseClass
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     BinaryPattern,
@@ -37,6 +38,7 @@ from spsdk.utils.misc import (
 )
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,7 @@ class Segment(BaseClass):
         self.revision = revision
         self.raw_block = raw_block
         self.excluded = False
+        self.not_parsed = True
 
     @property
     def is_present(self) -> bool:
@@ -167,9 +170,9 @@ class Segment(BaseClass):
 
     @staticmethod
     def find_segment_offset(binary: bytes) -> int:
-        """Try to find the start of the AHAB Image in data blob.
+        """Try to find the start of the Segment in data blob.
 
-        :param binary: Data  to be used to find AHAB container.
+        :param binary: Data  to be used to find Segment.
         :return: Offset in data to new data container.
         """
         return 0
@@ -191,10 +194,12 @@ class Segment(BaseClass):
         :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes
         """
+        self.not_parsed = True
         if self.SIZE > 0 and len(binary) < self.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than parsed segment.")
         if self._is_padding(binary):
             raise SPSDKSegmentNotPresent(f"The segment {self.NAME.label} is not present")
+        self.not_parsed = False
         self.raw_block = binary[: self.SIZE] if self.SIZE > 0 else binary
 
     @classmethod
@@ -218,7 +223,7 @@ class Segment(BaseClass):
         write_file(self.export(), os.path.join(output_dir, ret), mode="wb")
         return ret
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -230,16 +235,54 @@ class Segment(BaseClass):
                 f"The segment '{self.NAME.label}' is not present in the config file"
             )
 
-        if not isinstance(cfg_value, str):
+        try:
+            self.raw_block = load_binary(path=cfg_value, search_paths=search_paths)
+        except SPSDKError as exc:
             raise SPSDKValueError(
                 f"The binary file path to load {self.NAME.label} segment expected."
+            ) from exc
+
+    def pre_parse_verify(self, data: bytes) -> Verifier:
+        """Pre-Parse binary to see main issue before parsing.
+
+        :param data: Bootable image binary.
+        :return: Verifier object of preparsed data.
+        """
+        ret = Verifier(f"Segment({self.NAME}) pre-parse")
+        if self.SIZE > 0 and len(data) < self.SIZE:
+            ret.add_record(
+                "Data",
+                VerifierResult.ERROR,
+                f"Invalid length: Current-{len(data)} < Expected-{self.SIZE}.",
             )
-        binary = load_binary(path=cfg_value, search_paths=search_paths)
-        if self.SIZE > 0 and len(binary) > self.SIZE:
-            raise SPSDKValueError(
-                f"The binary file has invalid length for {self.NAME.label} segment: {len(binary)} != {self.SIZE}."
+        else:
+            ret.add_record("Data", VerifierResult.SUCCEEDED, "Fits")
+
+        return ret
+
+    def verify(self) -> Verifier:
+        """Get verifier object of segment.
+
+        :return: Verifier of current object.
+        """
+        ret = Verifier(f"Segment({self.NAME}) details")
+        ret.add_record_range("Offset", self._offset, min_val=-1)
+        bin_size = len(self.raw_block) if (self.raw_block is not None) else 0
+        ret.add_record_range("Size", bin_size)
+        if self.not_parsed:
+            ret.add_record("Raw data", VerifierResult.WARNING, "Not used")
+        elif self.raw_block is None:
+            ret.add_record("Raw data", VerifierResult.ERROR, "Is missing")
+        elif self.SIZE > 0 and bin_size > self.SIZE:
+            ret.add_record(
+                "Raw data",
+                VerifierResult.ERROR,
+                f"Invalid length: Current-{len(self.raw_block)} != Expected-{self.SIZE}.",
             )
-        self.raw_block = binary
+        else:
+            ret.add_record_bytes("Raw data", self.raw_block)
+
+        return ret
 
 
 class SegmentKeyBlob(Segment):
@@ -291,10 +334,13 @@ class SegmentFcb(Segment):
         :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes
         """
+        self.not_parsed = True
         if len(binary) < self.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than FCB.")
         if binary[:4] in [FCB.TAG, FCB.TAG_SWAPPED]:
-            if self.family in FCB.get_supported_families():
+            devices = FCB.get_supported_families()
+            devices += list(DatabaseManager().quick_info.devices.get_predecessors(devices).keys())
+            if self.family in devices:
                 self.raw_block = binary[: self.SIZE]
                 self.fcb = FCB.parse(
                     binary[: self.SIZE],
@@ -302,6 +348,7 @@ class SegmentFcb(Segment):
                     mem_type=self.mem_type,
                     revision=self.revision,
                 )
+                self.not_parsed = False
                 return
 
             logger.warning("Get the FCB binary from device where FCB is not yet supported.")
@@ -321,7 +368,7 @@ class SegmentFcb(Segment):
             write_file(self.fcb.create_config(), os.path.join(output_dir, "segment_fcb.yaml"))
         return ret
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -370,8 +417,7 @@ class SegmentImageVersion(Segment):
         :param binary: binary image.
         :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         """
-        if self.SIZE > 0 and len(binary) < self.SIZE:
-            raise SPSDKParsingError("The input binary block is smaller than parsed segment.")
+        self.not_parsed = False
         self.raw_block = binary[: self.SIZE] if self.SIZE > 0 else binary
 
     def create_config(self, output_dir: str) -> Union[str, int]:
@@ -385,7 +431,7 @@ class SegmentImageVersion(Segment):
         assert self.raw_block is not None
         return int.from_bytes(self.raw_block[:4], Endianness.LITTLE.value)
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -397,6 +443,18 @@ class SegmentImageVersion(Segment):
                 f"Invalid value of image version. It should be integer, and is: {cfg_value}"
             )
         self.raw_block = cfg_value.to_bytes(length=self.SIZE, byteorder=Endianness.LITTLE.value)
+
+    def verify(self) -> Verifier:
+        """Get verifier object of segment.
+
+        :return: Verifier of current object.
+        """
+        ret = super().verify()
+        if self.raw_block:
+            ret.add_record_range(
+                "Image Version", int.from_bytes(self.raw_block[:4], Endianness.LITTLE.value)
+            )
+        return ret
 
 
 class SegmentImageVersionAntiPole(Segment):
@@ -418,7 +476,7 @@ class SegmentImageVersionAntiPole(Segment):
         assert self.raw_block is not None
         return int.from_bytes(self.raw_block[:2], Endianness.LITTLE.value)
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -442,19 +500,37 @@ class SegmentImageVersionAntiPole(Segment):
         :param binary: binary image.
         :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         """
+        self.not_parsed = True
         if len(binary) < self.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than Image version needs.")
-        version_data = binary[:4]
-        image_version, image_version_anti = unpack("<HH", version_data)
-        # unprogrammed value 0xFFFFFFFF is also considered as a valid value.
-        if image_version == (image_version_anti ^ 0xFFFF) or (
-            image_version == image_version_anti == self.UNPROGRAMMED_VALUE
-        ):
-            self.raw_block = binary[:4]
-            return
-        raise SPSDKParsingError(
-            f"The image version '{image_version}' must be inverted to {image_version_anti}."
-        )
+        self.not_parsed = False
+        self.raw_block = binary[:4]
+
+    def verify(self) -> Verifier:
+        """Get verifier object of segment.
+
+        :return: Verifier of current object.
+        """
+        ret = super().verify()
+        if not ret.has_errors and self.raw_block:
+            image_version, image_version_anti = unpack("<HH", self.raw_block)
+            if image_version == (image_version_anti ^ 0xFFFF):
+                ret.add_record(
+                    "Image version",
+                    VerifierResult.SUCCEEDED,
+                    f"{str(image_version)}, 0x{hex(image_version)}",
+                )
+            # unprogrammed value 0xFFFFFFFF is also considered as a valid value.
+            elif image_version == image_version_anti == self.UNPROGRAMMED_VALUE:
+                ret.add_record("Image version", VerifierResult.WARNING, "Has default value: 0xffff")
+            else:
+                ret.add_record(
+                    "Image version",
+                    VerifierResult.ERROR,
+                    f" Image version doesn't match antipole part"
+                    f"{hex(image_version)} != ^{hex(image_version_anti)}",
+                )
+        return ret
 
 
 class SegmentKeyStore(Segment):
@@ -519,6 +595,7 @@ class SegmentXmcd(Segment):
         :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes
         """
+        self.not_parsed = True
         if len(binary) < self.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than XMCD.")
         # Check if the header of XMCD exists
@@ -528,6 +605,7 @@ class SegmentXmcd(Segment):
         xmcd = XMCD.parse(binary, family=self.family, revision=self.revision)
         self.raw_block = xmcd.export()
         self.xmcd = xmcd
+        self.not_parsed = False
 
     def create_config(self, output_dir: str) -> Union[str, int]:
         """Create configuration including store the data to specified path.
@@ -540,7 +618,7 @@ class SegmentXmcd(Segment):
             write_file(self.xmcd.create_config(), os.path.join(output_dir, "segment_xmcd.yaml"))
         return ret
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -556,6 +634,16 @@ class SegmentXmcd(Segment):
             self.xmcd = xmcd
         except SPSDKError:
             super().load_config(config=config, search_paths=search_paths)
+
+    def verify(self) -> Verifier:
+        """Get verifier object of segment.
+
+        :return: Verifier of current object.
+        """
+        ret = super().verify()
+        if not ret.has_errors and self.xmcd:
+            ret.add_child(self.xmcd.verify())
+        return ret
 
 
 class SegmentMbi(Segment):
@@ -606,17 +694,25 @@ class SegmentMbi(Segment):
         image.name = self.NAME.label
         return image
 
+    def __len__(self) -> int:
+        """MBI segment length."""
+        if self.mbi:
+            return self.mbi.total_len
+        return super().__len__()
+
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
         :param binary: binary image.
         """
+        self.not_parsed = True
         if len(binary) == 0:
             raise SPSDKParsingError("The input binary block has zero length.")
         mbi = MasterBootImage.parse(family=self.family, data=binary)
         mbi.validate()
         self.raw_block = binary
         self.mbi = mbi
+        self.not_parsed = False
 
     def create_config(self, output_dir: str) -> Union[str, int]:
         """Create configuration including store the data to specified path.
@@ -629,7 +725,7 @@ class SegmentMbi(Segment):
             self.mbi.create_config(output_dir)
         return ret
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -649,7 +745,9 @@ class SegmentMbi(Segment):
                 new_search_paths.extend(search_paths)
             mbi_cls = get_mbi_class(config_data)
             check_config(
-                config_data, mbi_cls.get_validation_schemas(), search_paths=new_search_paths
+                config_data,
+                mbi_cls.get_validation_schemas(self.family),
+                search_paths=new_search_paths,
             )
             mbi = mbi_cls()
             mbi.load_from_config(config_data, search_paths=new_search_paths)
@@ -700,6 +798,12 @@ class SegmentHab(Segment):
         super().clear()
         self.hab = None
 
+    def __len__(self) -> int:
+        """Hab segment length."""
+        if self.hab:
+            return len(self.hab)
+        return super().__len__()
+
     def image_info(self) -> BinaryImage:
         """Get Image info format.
 
@@ -718,13 +822,15 @@ class SegmentHab(Segment):
 
         :param binary: binary image.
         """
+        self.not_parsed = True
         if len(binary) == 0:
             raise SPSDKParsingError("The input binary block has zero length.")
         hab = HabContainer.parse(data=binary)
         self.raw_block = binary
         self.hab = hab
+        self.not_parsed = False
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -780,6 +886,12 @@ class SegmentAhab(Segment):
         if ahab and raw_block and len(raw_block) != len(ahab.export()):
             logger.info("The AHAB block doesn't match the raw data.")
 
+    def __len__(self) -> int:
+        """Ahab segment length."""
+        if self.ahab:
+            return len(self.ahab)
+        return super().__len__()
+
     def clear(self) -> None:
         """Clear the segment to init state."""
         super().clear()
@@ -803,13 +915,14 @@ class SegmentAhab(Segment):
 
         :param binary: binary image.
         """
+        self.not_parsed = True
         if len(binary) == 0:
             raise SPSDKParsingError("The input binary block has zero length.")
         ahab = AHABImage(family=self.family, revision=self.revision)
         ahab.parse(binary)
-        ahab.update_fields()
         self.raw_block = binary[: len(ahab)]
         self.ahab = ahab
+        self.not_parsed = False
 
     @staticmethod
     def find_segment_offset(binary: bytes) -> int:
@@ -828,7 +941,6 @@ class SegmentAhab(Segment):
         """
         ret = super().create_config(output_dir)
         if self.ahab:
-            # TODO Why is ahab written in separate folder?
             ahab_parse_path = os.path.join(output_dir, self.NAME.label)
             yaml = CommentedConfig(
                 "AHAB configuration",
@@ -841,7 +953,7 @@ class SegmentAhab(Segment):
             ret = os.path.join(f"{self.NAME.label}", f"segment_{self.NAME.label}.yaml")
         return ret
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -849,6 +961,10 @@ class SegmentAhab(Segment):
         """
         # Try to load AHAB from configuration as a first attempt
         cfg_value = config[self.cfg_key()]
+        if not cfg_value:
+            raise SPSDKSegmentNotPresent(
+                f"The segment '{self.NAME.label}' is not present in the config file"
+            )
         try:
             config_data = load_configuration(cfg_value, search_paths=search_paths)
         except SPSDKError:
@@ -866,12 +982,33 @@ class SegmentAhab(Segment):
             )
             check_config(config_data, schemas, search_paths=new_search_paths)
             ahab = AHABImage.load_from_config(config_data, search_paths=new_search_paths)
+            ahab.update_fields()
             self.raw_block = ahab.export()
             self.ahab = ahab
         except SPSDKError as exc:
             raise SPSDKValueError(
                 f"Cannot export AHAB container from the configuration:\n{str(exc)}"
             ) from exc
+
+    def pre_parse_verify(self, data: bytes) -> Verifier:
+        """Pre-Parse binary T osee main issue before parsing.
+
+        :param data: Bootable image binary.
+        :return: Verifier object of preparsed data.
+        """
+        ret = super().pre_parse_verify(data)
+        ret.add_child(AHABImage.pre_parse_verify(data))
+        return ret
+
+    def verify(self) -> Verifier:
+        """Get verifier object of segment.
+
+        :return: Verifier of current object.
+        """
+        ret = super().verify()
+        if not ret.has_errors and self.ahab:
+            ret.add_child(self.ahab.verify())
+        return ret
 
 
 class SegmentPrimaryAhab(SegmentAhab):
@@ -885,6 +1022,7 @@ class SegmentSecondaryAhab(SegmentAhab):
 
     NAME = BootableImageSegment.SECONDARY_IMAGE_CONTAINER_SET
     OFFSET_ALIGNMENT = 1024
+    INIT_SEGMENT = False
 
 
 class SegmentSB21(Segment):
@@ -922,7 +1060,7 @@ class SegmentSB21(Segment):
         super().clear()
         self.sb21 = None
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -957,6 +1095,7 @@ class SegmentSB21(Segment):
 
         :param binary: binary image.
         """
+        self.not_parsed = True
         BootImageV21.validate_header(binary)
         super().parse_binary(binary=binary)
 
@@ -994,7 +1133,7 @@ class SegmentSB31(Segment):
         super().clear()
         self.sb31 = None
 
-    def load_config(self, config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> None:
+    def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
         """Load segment from configuration.
 
         :param config: Configuration of Segment.
@@ -1031,11 +1170,12 @@ class SegmentSB31(Segment):
 
         :param binary: binary image.
         """
+        self.not_parsed = True
         SecureBinary31.validate_header(binary)
         super().parse_binary(binary=binary)
 
 
-def get_segments() -> Dict[BootableImageSegment, Type[Segment]]:
+def get_segments() -> dict[BootableImageSegment, Type[Segment]]:
     """Get list of all supported segments."""
     ret = {}
     for var in globals():

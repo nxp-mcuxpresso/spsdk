@@ -7,140 +7,200 @@ flash_chips:
   flexspi_nor:
     Winbond:
       W25QxxxJV:
-        quad_spi: [0xc0000207]
+        quad_spi:
+          option_words: [0xc0000207]
+          tested: False
       W35T51NW:
-        octal_spi: [0xc0603005]
+        octal_spi:
+          option_words: [0xc0603005]
     Macronix:
       MX25Uxxx32F:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       MX25Lxxx45G:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       MX25UMxxx45G:
-        octal_spi: [0xc0403037]
+        octal_spi:
+          option_words: [0xc0403037]
       MX66UMxxx45G:
-        octal_spi: [0xc0403037]
+        octal_spi:
+          option_words: [0xc0403037]
       MX25LMxxx45G:
-        octal_spi: [0xc0403037]
+        octal_spi:
+          option_words: [0xc0403037]
       MX25UM51345G:
-        octal_spi: [0xc0403037]
+        octal_spi:
+          option_words: [0xc0403037]
       MX25UM51345G_2nd:
-        octal_spi: [0xc1503051, 0x20000014]
+        octal_spi:
+          option_words: [0xc1503051, 0x20000014]
     GigaDevice:
       GD25QxxxC:
-        quad_spi: [0xc0000406]
+        quad_spi:
+          option_words: [0xc0000406]
       GD25LBxxxE:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       GD25LTxxxE:
-        quad_spi: [0xc0000008]
+        quad_spi:
+          option_words: [0xc0000008]
       GD25LXxxxE:
-        quad_spi: [0xc0603008]
+        quad_spi:
+          option_words: [0xc0603008]
     ISSI:
       IS25LPxxxA:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       IS25WPxxxA:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       IS25LXxxx:
-        octal_spi: [0xC0603005]
+        octal_spi:
+          option_words: [0xC0603005]
       IS25WXxxx:
-        octal_spi: [0xC0603005]
+        octal_spi:
+          option_words: [0xC0603005]
       IS26KSxxxS:
-        hyper_flash: [0xc0233007]
+        hyper_flash:
+          option_words: [0xc0233007]
       IS26KLxxxS:
-        hyper_flash: [0xc0233007]
+        hyper_flash:
+          option_words: [0xc0233007]
     Micron:
       MT25QLxxxA:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       RW303-MT35XUxxxABA1G:
-        octal_spi: [0xC0603005]
+        octal_spi:
+          option_words: [0xC0603005]
       RW304-MT35XUxxxABA2G:
-        octal_spi: [0xC0633005]
+        octal_spi:
+          option_words: [0xC0633005]
     Adesto:
       AT25SFxxxA:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       ATXPxxx:
-        octal_spi: [0xc0803007]
+        octal_spi:
+          option_words: [0xc0803007]
     Cypress:
       S25FSxxxS:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       S25FLxxxS:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       S26KSxxxS:
-        hyper_flash: [0xc0233007]
+        hyper_flash:
+          option_words: [0xc0233007]
       S26KLxxxS:
-        hyper_flash: [0xc0233007]
+        hyper_flash:
+          option_words: [0xc0233007]
     Microchip:
       SST26VFxxxB:
-        quad_spi: [0xc0000005]
+        quad_spi:
+          option_words: [0xc0000005]
     FudanMicro:
       FM25Qxxx:
-        quad_spi: [0xc0000205]
+        quad_spi:
+          option_words: [0xc0000205]
     BoyaMicro:
       BY25QxxxBS:
-        quad_spi: [0xc0000405]
+        quad_spi:
+          option_words: [0xc0000405]
     XMC:
       XM25QHxxxB:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
       XM25QUxxxB:
-        quad_spi: [0xc0000007]
+        quad_spi:
+          option_words: [0xc0000007]
     XTXtech:
       X25FxxxB:
-        quad_spi: [0xc0000407]
+        quad_spi:
+          option_words: [0xc0000407]
       X25QxxxD:
-        quad_spi: [0xc0000407]
+        quad_spi:
+          option_words: [0xc0000407]
     Puya:
       P25QxxxLE:
-        quad_spi: [0xc0000405]
+        quad_spi:
+          option_words: [0xc0000405]
       P25QxxxH:
-        quad_spi: [0xc0000405]
+        quad_spi:
+          option_words: [0xc0000405]
       P25QxxxU:
-        quad_spi: [0xc0000405]
+        quad_spi:
+          option_words: [0xc0000405]
     AMIC:
       A25LQxxx:
-        quad_spi: [0xc0000105]
+        quad_spi:
+          option_words: [0xc0000105]
   flexspi_nand:
     Winbond:
       W25N01G:
-        quad_spi: [0xC1010026, 0x000000ef]
+        quad_spi:
+          option_words: [0xC1010026, 0x000000ef]
       W25N02K:
-        quad_spi: [0xC1020026, 0x000000ef]
+        quad_spi:
+          option_words: [0xC1020026, 0x000000ef]
     Macronix:
       MX35UF1G:
-        quad_spi: [0xC1010026, 0x000000c2]
+        quad_spi:
+          option_words: [0xC1010026, 0x000000c2]
       MX35LF1G:
-        quad_spi: [0xC1010026, 0x000000c2]
+        quad_spi:
+          option_words: [0xC1010026, 0x000000c2]
       MX35UF2G:
-        quad_spi: [0xC1020026, 0x000000c2]
+        quad_spi:
+          option_words: [0xC1020026, 0x000000c2]
       MX35LF2G:
-        quad_spi: [0xC1020026, 0x000000c2]
+        quad_spi:
+          option_words: [0xC1020026, 0x000000c2]
     GigaDevice:
       GD5F1GQ5:
-        quad_spi: [0xC1010026, 0x000000c8]
+        quad_spi:
+          option_words: [0xC1010026, 0x000000c8]
       GD5F2GQ5:
-        quad_spi: [0xC1020026, 0x000000c8]
+        quad_spi:
+          option_words: [0xC1020026, 0x000000c8]
     Micron:
       MT29F1G01AA:
-        quad_spi: [0xC1011022, 0x0000002c]
+        quad_spi:
+          option_words: [0xC1011022, 0x0000002c]
       MT29F2G01AA:
-        quad_spi: [0xC1021022, 0x0000002c]
+        quad_spi:
+          option_words: [0xC1021022, 0x0000002c]
     Paragon:
       PN26Q01A:
-        quad_spi: [0xC1010026, 0x000000a1]
+        quad_spi:
+          option_words: [0xC1010026, 0x000000a1]
       PN26G01A:
-        quad_spi: [0xC1010026, 0x000000a1]
+        quad_spi:
+          option_words: [0xC1010026, 0x000000a1]
       PN26Q02A:
-        quad_spi: [0xC1020026, 0x000000a1]
+        quad_spi:
+          option_words: [0xC1020026, 0x000000a1]
       PN26G02A:
-        quad_spi: [0xC1020026, 0x000000a1]
+        quad_spi:
+          option_words: [0xC1020026, 0x000000a1]
   semc_nor:
     Micron:
       MT28EW128ABA:
-        parallel: [0xD0000600]
+        parallel:
+          option_words: [0xD0000600]
       MT28UG128ABA:
-        parallel: [0xD0000601]
+        parallel:
+          option_words: [0xD0000601]
   sd:
     General:
       1bit_sdr12:
-        instance_0: [0xD0000000]
-        instance_1: [0xD0000001]
-        instance_2: [0xD0000002]
-        instance_3: [0xD0000003]
+        instance_0:
+          option_words: [0xD0000000]
+        instance_1:
+          option_words: [0xD0000001]
+        instance_2:
+          option_words: [0xD0000002]
+        instance_3:
+          option_words: [0xD0000003]

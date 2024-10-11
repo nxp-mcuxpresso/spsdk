@@ -66,7 +66,7 @@ def test_get_desc() -> None:
     assert SpsdkEnumNumbers.get_description(1, "Default") == "Default"
     with pytest.raises(SPSDKKeyError):
         assert SpsdkEnumNumbers.get_description(10)
-    # Backwards incompatrible!!
+    # Backwards incompatible!!
     with pytest.raises(SPSDKKeyError):
         assert SpsdkEnumNumbers.get_description(10, "default")
     with pytest.raises(SPSDKKeyError):

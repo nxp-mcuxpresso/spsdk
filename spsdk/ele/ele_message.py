@@ -10,13 +10,13 @@
 
 import logging
 from struct import pack, unpack
-from typing import Dict, List, Optional
+from typing import Optional
 
-from crcmod.predefined import mkPredefinedCrcFun
-
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.ele.ele_constants import (
     EleCsalState,
     EleFwStatus,
+    EleImemState,
     EleInfo2Commit,
     EleTrngState,
     KeyBlobEncryptionAlgorithm,
@@ -27,6 +27,7 @@ from spsdk.ele.ele_constants import (
     MessageUnitId,
     ResponseIndication,
     ResponseStatus,
+    SocId,
 )
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.signed_msg import SignedMessage
@@ -308,7 +309,7 @@ class EleMessageDumpDebugBuffer(EleMessage):
     def __init__(self) -> None:
         """Class object initialized."""
         super().__init__()
-        self.debug_words: List[int] = [0] * 20
+        self.debug_words: list[int] = [0] * 20
 
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
@@ -512,7 +513,7 @@ class EleMessageGetEvents(EleMessage):
         """
         super().__init__()
         self.event_cnt = 0
-        self.events: List[int] = [0] * self.MAX_EVENT_CNT
+        self.events: list[int] = [0] * self.MAX_EVENT_CNT
 
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
@@ -617,7 +618,7 @@ class EleMessageCommit(EleMessage):
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
-    def __init__(self, info_to_commit: List[EleInfo2Commit]) -> None:
+    def __init__(self, info_to_commit: list[EleInfo2Commit]) -> None:
         """Class object initialized."""
         super().__init__()
         self.info_to_commit = info_to_commit
@@ -630,7 +631,7 @@ class EleMessageCommit(EleMessage):
             ret |= rule.tag
         return ret
 
-    def mask_to_info2commit(self, mask: int) -> List[EleInfo2Commit]:
+    def mask_to_info2commit(self, mask: int) -> list[EleInfo2Commit]:
         """Get list of info to commit from mask."""
         ret = []
         for bit in range(32):
@@ -657,10 +658,12 @@ class EleMessageCommit(EleMessage):
         super().decode_response(response)
         mask = int.from_bytes(response[8:12], Endianness.LITTLE.value)
         if mask != self.info2commit_mask:
-            logger.error(
-                f"Only those information has been committed: {[x.label for x in self.mask_to_info2commit(mask)]},"
-                f" from those:{[x.label for x in self.info_to_commit]}"
+            warning_message = (
+                "Only the following information has been committed: "
+                + f"{[x.label for x in self.mask_to_info2commit(mask)]},"
+                + f" out of the provided information: {[x.label for x in self.info_to_commit]}"
             )
+            logger.warning(warning_message)
 
 
 class EleMessageGetFwStatus(EleMessage):
@@ -812,6 +815,7 @@ class EleMessageGetInfo(EleMessage):
         self.info_imem_state = 0
         self.info_csal_state = 0
         self.info_trng_state = 0
+        self.info_oem_pqc_srkh = bytes()
 
     def export(self) -> bytes:
         """Exports message to final bytes array.
@@ -847,11 +851,12 @@ class EleMessageGetInfo(EleMessage):
         self.info_sha256_rom_patch = response_data[28:60]
         self.info_sha256_fw = response_data[60:92]
         if self.info_version == 0x02:
-            self.info_oem_srkh = response_data[92:156]
-            self.info_oem_srkh = response_data[92:156]
+            self.info_oem_srkh = response_data[92:124]  # SRKH for AHAB devices is SHA-256
             (self.info_trng_state, self.info_csal_state, self.info_imem_state, _) = unpack(
                 LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8, response_data[156:160]
             )
+
+        self.info_oem_pqc_srkh = response_data[160:224]  # PQC SRKH
 
     def response_info(self) -> str:
         """Print specific information of ELE.
@@ -861,7 +866,7 @@ class EleMessageGetInfo(EleMessage):
         ret = f"Command:          {hex(self.info_cmd)}\n"
         ret += f"Version:          {self.info_version}\n"
         ret += f"Length:           {self.info_length}\n"
-        ret += f"SoC ID:           {self.info_soc_id:04X}\n"
+        ret += f"SoC ID:           {SocId.get_label(self.info_soc_id)} - 0x{self.info_soc_id:04X}\n"
         ret += f"SoC version:      {self.info_soc_rev:04X}\n"
         ret += f"Life Cycle:       {LifeCycle.get_label(self.info_life_cycle)} - 0x{self.info_life_cycle:04X}\n"
         ret += f"SSSM state:       {self.info_sssm_state}\n"
@@ -871,15 +876,25 @@ class EleMessageGetInfo(EleMessage):
         if self.info_version == 0x02:
             ret += "Advanced information:\n"
             ret += f"  OEM SRKH:       {self.info_oem_srkh.hex()}\n"
-            ret += f"  IMEM state:     {self.info_imem_state}\n"
+            ret += (
+                f"  IMEM state:     "
+                f"{EleImemState.get_description(self.info_imem_state, str(self.info_imem_state))}"
+                f" - 0x{self.info_imem_state:02X}\n"
+            )
             ret += (
                 f"  CSAL state:     "
-                f"{EleCsalState.get_description(self.info_csal_state, str(self.info_csal_state))}\n"
+                f"{EleCsalState.get_description(self.info_csal_state, str(self.info_csal_state))}"
+                f" - 0x{self.info_csal_state:02X}\n"
             )
             ret += (
                 f"  TRNG state:     "
-                f"{EleTrngState.get_description(self.info_trng_state, str(self.info_trng_state))}\n"
+                f"{EleTrngState.get_description(self.info_trng_state, str(self.info_trng_state))}"
+                f" - 0x{self.info_trng_state:02X}\n"
             )
+            if (
+                SocId.from_tag(self.info_soc_id) == SocId.MX95
+            ):  # PQC only applicable for MX95 at the moment
+                ret += f"  OEM PQC SRKH:  {self.info_oem_pqc_srkh.hex()}\n"
 
         return ret
 
@@ -953,18 +968,21 @@ class EleMessageSigned(EleMessage):
 
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
-    def __init__(self, signed_msg: bytes) -> None:
+    def __init__(self, signed_msg: bytes, family: str, revision: str = "latest") -> None:
         """Class object initialized.
 
         :param signed_msg: Signed message container.
+        :param family: Chip family name.
+        :param revision: Chip family revision name.
         """
         super().__init__()
         self.signed_msg_binary = signed_msg
         # Get the command inside the signed message
-        self.signed_msg = SignedMessage.parse(signed_msg)
-        self.signed_msg.update_fields()
-        assert self.signed_msg.message
-        self.command = self.signed_msg.message.cmd
+        self.signed_msg = SignedMessage(family=family, revision=revision)
+        self.signed_msg.parse(signed_msg)
+        self.signed_msg.verify().validate()
+        assert self.signed_msg.signed_msg_container and self.signed_msg.signed_msg_container.message
+        self.command = self.signed_msg.signed_msg_container.message.cmd
         self._command_data_size = len(self.signed_msg_binary)
 
     def export(self) -> bytes:
@@ -1000,7 +1018,7 @@ class EleMessageGenerateKeyBlob(EleMessage):
 
     KEYBLOB_NAME = "Unknown"
     # List of supported algorithms and theirs key sizes
-    SUPPORTED_ALGORITHMS: Dict[SpsdkEnum, List[int]] = {}
+    SUPPORTED_ALGORITHMS: dict[SpsdkEnum, list[int]] = {}
 
     KEYBLOB_TAG = 0x81
     KEYBLOB_VERSION = 0x00
@@ -1074,7 +1092,7 @@ class EleMessageGenerateKeyBlob(EleMessage):
         return ret
 
     @classmethod
-    def get_supported_algorithms(cls) -> List[str]:
+    def get_supported_algorithms(cls) -> list[str]:
         """Get the list of supported algorithms.
 
         :return: List of supported algorithm names.
@@ -1248,8 +1266,8 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
             end_address,
             0,
         )
-        crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
-        crc: int = crc32_function(otfad_config)
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        crc: int = crc_obj.calculate(otfad_config)
         return header + options + otfad_config + crc.to_bytes(4, Endianness.LITTLE.value)
 
     def info(self) -> str:
@@ -1360,8 +1378,7 @@ class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
             key2,
             lock_options,
         )
-        crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
-        crc: int = crc32_function(iee_config)
+        crc = from_crc_algorithm(CrcAlg.CRC32_MPEG).calculate(iee_config)
         return header + options + iee_config + crc.to_bytes(4, Endianness.LITTLE.value)
 
     def info(self) -> str:

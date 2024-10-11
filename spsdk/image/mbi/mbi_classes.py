@@ -10,11 +10,11 @@
 
 import logging
 import struct
-from typing import List, Optional, Sequence, Tuple, TypeVar
+from typing import Optional, Sequence, TypeVar
 
-from crcmod.predefined import mkPredefinedCrcFun
 from typing_extensions import Self
 
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.trustzone import TrustZone
@@ -66,18 +66,21 @@ class MasterBootImageManifest:
         return data
 
     @classmethod
-    def parse(cls, family: str, data: bytes) -> Self:
+    def parse(cls, family: str, data: bytes, revision: str = "latest") -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
+        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Invalid header is detected.
         :return: MBI Manifest object
         """
         fw_version, _, extra_data = cls._parse_manifest(data)
         trust_zone = None
         if len(extra_data) > 0:
-            trust_zone = TrustZone.from_binary(family=family, raw_data=extra_data)
+            trust_zone = TrustZone.from_binary(
+                family=family, raw_data=extra_data, revision=revision
+            )
         return cls(firmware_version=fw_version, trust_zone=trust_zone)
 
     @classmethod
@@ -101,7 +104,7 @@ class MasterBootImageManifest:
             )
 
     @classmethod
-    def _parse_manifest(cls, data: bytes) -> Tuple[int, Optional[EnumHashAlgorithm], bytes]:
+    def _parse_manifest(cls, data: bytes) -> tuple[int, Optional[EnumHashAlgorithm], bytes]:
         """Parse manifest binary data.
 
         :param data: Binary data with MBI Manifest.
@@ -168,22 +171,25 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         }.get(algorithm, 0)
 
     @classmethod
-    def parse(cls, family: str, data: bytes) -> Self:
+    def parse(cls, family: str, data: bytes, revision: str = "latest") -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
+        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Invalid header is detected.
         :return: MBI Manifest object
         """
         fw_version, hash_algo, extra_data = cls._parse_manifest(data)
         trust_zone = None
         if len(extra_data) > 0:
-            trust_zone = TrustZone.from_binary(family=family, raw_data=extra_data)
+            trust_zone = TrustZone.from_binary(
+                family=family, raw_data=extra_data, revision=revision
+            )
         return cls(firmware_version=fw_version, trust_zone=trust_zone, digest_hash_algo=hash_algo)
 
     @classmethod
-    def _parse_manifest(cls, data: bytes) -> Tuple[int, Optional[EnumHashAlgorithm], bytes]:
+    def _parse_manifest(cls, data: bytes) -> tuple[int, Optional[EnumHashAlgorithm], bytes]:
         """Parse manifest binary data.
 
         :param data: Binary data with MBI Manifest.
@@ -231,11 +237,12 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
         return data
 
     @classmethod
-    def parse(cls, family: str, data: bytes) -> Self:
+    def parse(cls, family: str, data: bytes, revision: str = "latest") -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
+        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Invalid header is detected.
         :return: MBI Manifest object
         """
@@ -246,7 +253,9 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
         crc = int.from_bytes(extra_data[-4:], Endianness.LITTLE.value)
         trust_zone = None
         if extra_data[:-4]:
-            trust_zone = TrustZone.from_binary(family=family, raw_data=extra_data[:-4])
+            trust_zone = TrustZone.from_binary(
+                family=family, raw_data=extra_data[:-4], revision=revision
+            )
         mcx_manifest = cls(firmware_version=fw_version, trust_zone=trust_zone)
         mcx_manifest.crc = crc
         return mcx_manifest
@@ -259,7 +268,8 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
 
         :param image: Image data to be used to compute CRC
         """
-        self.crc = mkPredefinedCrcFun("crc-32-mpeg")(image)
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        self.crc = crc_obj.calculate(image)
 
 
 T_Manifest = TypeVar(
@@ -364,7 +374,7 @@ class MultipleImageTable:
 
     def __init__(self) -> None:
         """Initialize the Multiple Image Table."""
-        self._entries: List[MultipleImageEntry] = []
+        self._entries: list[MultipleImageEntry] = []
         self.start_address = 0
 
     @property

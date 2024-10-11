@@ -12,7 +12,7 @@ import os
 import shlex
 import sys
 from struct import pack
-from typing import List, Optional
+from typing import Optional
 
 import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
@@ -20,6 +20,7 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    SpsdkClickGroup,
     buspal_option,
     is_click_help,
     lpcusbsio_option,
@@ -35,7 +36,12 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.ele import ele_message
-from spsdk.ele.ele_comm import EleMessageHandler, EleMessageHandlerMBoot, EleMessageHandlerUBoot
+from spsdk.ele.ele_comm import (
+    EleDevice,
+    EleMessageHandler,
+    EleMessageHandlerMBoot,
+    EleMessageHandlerUBoot,
+)
 from spsdk.ele.ele_constants import (
     EleInfo2Commit,
     KeyBlobEncryptionAlgorithm,
@@ -46,10 +52,10 @@ from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootCommandError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.uboot.uboot import Uboot
+from spsdk.uboot.uboot import UbootFastboot, UbootSerial
 from spsdk.utils.crypto.iee import IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes, IeeNxp
 from spsdk.utils.crypto.otfad import KeyBlob, OtfadNxp
-from spsdk.utils.database import DatabaseManager
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     BinaryPattern,
@@ -72,19 +78,58 @@ logger = logging.getLogger(__name__)
 @spsdk_family_option(families=EleMessageHandler.get_supported_families(), required=True)
 @timeout_option(timeout=5000)
 @spsdk_revision_option
+@click.option(
+    "-d",
+    "--device",
+    type=click.Choice(
+        EleMessageHandler.get_supported_ele_devices(),
+        case_sensitive=False,
+    ),
+    required=False,
+    help="Select connection method for ELE communication, otherwise default from DB will be used",
+)
+@click.option(
+    "--buffer-addr",
+    type=INT(),
+    required=False,
+    help="Override default buffer address for ELE communication",
+)
+@click.option(
+    "--buffer-size",
+    type=INT(),
+    required=False,
+    help="Override default buffer size for ELE communication",
+)
+@click.option(
+    "--fb-addr",
+    type=INT(),
+    required=False,
+    help="Override default buffer address for fastboot",
+)
+@click.option(
+    "--fb-size",
+    type=INT(),
+    required=False,
+    help="Override default buffer size for fastboot",
+)
 @click.pass_context
 def main(
     ctx: click.Context,
-    port: str,
-    usb: str,
-    lpcusbsio: str,
-    buspal: str,
+    port: Optional[str],
+    usb: Optional[str],
+    lpcusbsio: Optional[str],
+    buspal: Optional[str],
     log_level: int,
     timeout: int,
     family: str,
     revision: str,
+    device: Optional[str],
+    buffer_addr: Optional[int],
+    buffer_size: Optional[int],
+    fb_addr: Optional[int],
+    fb_size: Optional[int],
 ) -> int:
-    """Utility for communication with the EdgeLock Enclave on target over BLHOST."""
+    """Utility for communication with the EdgeLock Enclave on target over BLHOST or UBOOT."""
     log_level = log_level or logging.WARNING
     spsdk_logger.install(level=log_level)
 
@@ -94,12 +139,29 @@ def main(
     # Or the command doesn't need communication with target.
     if is_click_help(ctx, sys.argv):
         return 0
-    default_device = EleMessageHandler.get_ele_device(family)
-    if default_device == "uboot":
+
+    default_device = device or EleMessageHandler.get_ele_device(family, revision)
+    if default_device == EleDevice.UBOOT_FASTBOOT:
+        db = get_db(device=family, revision=revision)
+        fb_buff_addr = fb_addr or db.get_int(DatabaseManager.FASTBOOT, "address")
+        fb_buff_size = fb_size or db.get_int(DatabaseManager.FASTBOOT, "size")
+
+        uboot_device = UbootFastboot(
+            timeout=timeout, buffer_address=fb_buff_addr, buffer_size=fb_buff_size, serial_port=port
+        )
+        ctx.obj = EleMessageHandlerUBoot(
+            device=uboot_device,
+            family=family,
+            revision=revision,
+            comm_buffer_address_override=buffer_addr,
+            comm_buffer_size_override=buffer_size,
+        )
+
+    elif default_device == EleDevice.UBOOT_SERIAL:
         if not port:
-            raise SPSDKAppError("Only UART is supported for U-Boot")
-        device = Uboot(port, timeout // 5000)
-        ctx.obj = EleMessageHandlerUBoot(device=device, family=family, revision=revision)
+            raise SPSDKAppError("Port must be specified")
+        uboot_serial = UbootSerial(port, timeout)
+        ctx.obj = EleMessageHandlerUBoot(uboot_serial, family, revision)
     else:
         iface_params = load_interface_config(
             {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
@@ -107,7 +169,13 @@ def main(
         interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
         interface = interface_cls.scan_single(**iface_params.get_scan_args())
         mboot = McuBoot(interface, cmd_exception=True)
-        ctx.obj = EleMessageHandlerMBoot(device=mboot, family=family, revision=revision)
+        ctx.obj = EleMessageHandlerMBoot(
+            device=mboot,
+            family=family,
+            revision=revision,
+            comm_buffer_address_override=buffer_addr,
+            comm_buffer_size_override=buffer_size,
+        )
     return 0
 
 
@@ -535,13 +603,13 @@ def ele_oem_cntn_auth(
     multiple=True,
 )
 @click.pass_obj
-def cmd_commit(handler: EleMessageHandler, commit_info: List[str]) -> None:
+def cmd_commit(handler: EleMessageHandler, commit_info: list[str]) -> None:
     """Commit information."""
     ele_commit(handler, [EleInfo2Commit.from_label(i) for i in commit_info])
     click.echo("Commit ends successfully.")
 
 
-def ele_commit(ele_handler: EleMessageHandler, commit_info: List[EleInfo2Commit]) -> None:
+def ele_commit(ele_handler: EleMessageHandler, commit_info: list[EleInfo2Commit]) -> None:
     """Commit info.
 
     :param ele_handler: ELE handler class
@@ -718,7 +786,11 @@ def ele_signed_message(ele_handler: EleMessageHandler, signed_msg_path: str) -> 
     :param ele_handler: ELE handler class
     :param signed_msg_path: Path to signed message binary file
     """
-    signed_msg = ele_message.EleMessageSigned(load_binary(signed_msg_path))
+    signed_msg = ele_message.EleMessageSigned(
+        signed_msg=load_binary(signed_msg_path),
+        family=ele_handler.family,
+        revision=ele_handler.revision,
+    )
     with ele_handler:
         ele_handler.send_message(signed_msg)
     click.echo(f"ELE signed message ends successfully:\n{signed_msg.info()}")
@@ -806,7 +878,7 @@ def ele_load_keyblob(ele_handler: EleMessageHandler, key_id: int, binary: bytes)
     click.echo("ELE load keyblob ends successfully.")
 
 
-@main.group(name="generate-keyblob", no_args_is_help=True)
+@main.group(name="generate-keyblob", no_args_is_help=True, cls=SpsdkClickGroup)
 def gen_keyblob_group() -> None:
     """Group of sub-commands related to generate Keyblob."""
 
@@ -1120,7 +1192,7 @@ def ele_gen_keyblob_otfad_whole_keyblob(
         )
         # Concatenate the final keyblob - remove the headers
         logger.debug(f"Keyblob data: {keyblob_data.hex()}")
-        logger.debug(f"Keyblog length: {len(keyblob_data)} bytes")
+        logger.debug(f"Keyblob length: {len(keyblob_data)} bytes")
         otfad_keyblobs.add_image(
             BinaryImage(
                 name=f"Keyblob {i}",

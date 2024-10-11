@@ -20,6 +20,24 @@ Since SPSDK version 2.2.0, support for AHAB extensions have been added.
 This allows the user to create the standard images like U-Boot for example in the similar manner as with the imx-mkimage tool, without knowing the details of the AHAB format.
 
 
+AHAB Sign
+==========
+Since SPSDK version 2.3.0 it is possible to sign and encrypt existing image or image container set, without parsing.
+
+It parses the input image, loads the configuration file and iterates over the segments in the image. If the segment is AHAB image, it iterates over all the containers and if the container is not NXP signed,
+it signs them with the key (signature provider) provided in the configuration.
+
+If the blob is specified, it also iterates over all images in the container and encrypt them.
+
+Then signed (encrypted) image is saved to the path provided.
+
+Template for signing might be generated using the get-template command with --sign/-s flag:
+``nxpimage ahab get-template -f <family> -o sign_template.yaml --sign``
+
+Example of use for sign and encrypt AHAB container
+``nxpimage -v ahab sign -c "path\to\config\file.yaml" -c "ahab_image_to_be_signed.bin" -o "path\to_signed_image"``
+
+
 Supported configuration options
 ================================
 

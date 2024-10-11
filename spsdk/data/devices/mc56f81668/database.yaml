@@ -1,0 +1,8 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mc56f81768
+
+info:
+  spsdk_predecessor_name: mc56f816xx

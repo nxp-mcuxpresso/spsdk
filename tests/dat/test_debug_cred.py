@@ -11,9 +11,14 @@
 import pytest
 import yaml
 
+from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc
-from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
+from spsdk.dat.debug_credential import (
+    DebugCredentialCertificate,
+    DebugCredentialEdgeLockEnclaveV2,
+    ProtocolVersion,
+)
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
@@ -159,6 +164,42 @@ def test_lpc55s3x_export_parse(data_dir, yml_file_name, version):
         with open(yml_file_name, "r") as f:
             yaml_config = yaml.safe_load(f)
         dc = DebugCredentialCertificate.create_from_yaml_config(version=version, config=yaml_config)
+        dc.sign()
+        data = dc.export()
+        dc_parsed = dc.parse(data)
+        assert dc == dc_parsed
+
+
+@pytest.mark.parametrize(
+    "yml_file_name",
+    [
+        ("dc_mx95_ecc256.yaml"),
+        pytest.param(
+            "dc_mx95_ecc256_pqc.yaml",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dc_mx95_ecc384_pqc.yaml",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dc_mx95_pqc.yaml",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+    ],
+)
+def test_elev2_export_parse(data_dir, yml_file_name):
+    """Verifies the signature for lpc55s3x for different versions."""
+    with use_working_directory(data_dir):
+        with open(yml_file_name, "r") as f:
+            yaml_config = yaml.safe_load(f)
+        dc = DebugCredentialEdgeLockEnclaveV2.create_from_yaml_config(config=yaml_config)
         dc.sign()
         data = dc.export()
         dc_parsed = dc.parse(data)

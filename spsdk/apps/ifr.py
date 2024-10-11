@@ -36,7 +36,13 @@ from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.pfr import pfr
 from spsdk.pfr.exceptions import SPSDKPfrError
-from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
+from spsdk.utils.misc import (
+    get_printable_path,
+    load_binary,
+    load_configuration,
+    size_fmt,
+    write_file,
+)
 from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
@@ -56,13 +62,6 @@ def ifr_device_type_options(no_type: bool = False) -> Callable:
             "--revision",
             help="Chip revision; if not specified, most recent one will be used",
             default="latest",
-        )(options)
-        options = click.option(
-            "-f",
-            "--family",
-            type=click.Choice(pfr.ROMCFG.get_supported_families(), case_sensitive=False),
-            help="Device to use",
-            required=True,
         )(options)
         if not no_type:
             options = click.option(
@@ -88,6 +87,7 @@ def main(log_level: int) -> int:
 
 
 @main.command(name="get-template", no_args_is_help=True)
+@spsdk_family_option(pfr.ROMCFG.get_supported_families())
 @spsdk_output_option(
     required=False,
     force=True,
@@ -102,10 +102,15 @@ def get_template(family: str, revision: str, sector: str, output: str, full: boo
     ifr_cls = pfr.get_ifr_pfr_class(sector, family)
     schemas = ifr_cls.get_validation_schemas(family=family, revision=revision)
     yaml_data = CommentedConfig("IFR configuration template", schemas).get_template()
-    _store_output(yaml_data, output, msg="IFR configuration template has been created.")
+    _store_output(
+        yaml_data,
+        output,
+        msg=f"The IFR template for {family} has been saved into {get_printable_path(output)} YAML file",
+    )
 
 
 @main.command(name="parse-binary", no_args_is_help=True)
+@spsdk_family_option(pfr.ROMCFG.get_supported_families())
 @ifr_device_type_options()
 @spsdk_output_option(
     required=False,
@@ -130,7 +135,9 @@ def parse_binary(
         area=sector,
         show_diff=show_diff,
     )
-    _store_output(yaml_data, output, msg=f"Success. (IFR: {binary} has been parsed.")
+    _store_output(
+        yaml_data, output, msg=f"Success. (IFR: {get_printable_path(binary)} has been parsed."
+    )
 
 
 @main.command(name="generate-binary", no_args_is_help=True)
@@ -156,6 +163,7 @@ def generate_binary(output: str, config: str, family: str, revision: str) -> Non
 
 @main.command(name="write", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
+@spsdk_family_option(pfr.ROMCFG.get_supported_families())
 @ifr_device_type_options()
 @click.option(
     "-b",
@@ -199,7 +207,7 @@ def write(
         if family != ifr_obj.family:
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
         data = ifr_obj.export()
-    ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, ifr_obj.DB_SUB_KEYS + ["address"])
+    ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, [ifr_obj.DB_SUB_FEATURE, "address"])
     ifr_page_length = ifr_obj.BINARY_SIZE
 
     click.echo(f"{ifr_obj.__class__.__name__} page address on {family} is {ifr_page_address:#x}")
@@ -218,6 +226,7 @@ def write(
 
 @main.command(name="read", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True)
+@spsdk_family_option(pfr.ROMCFG.get_supported_families())
 @ifr_device_type_options()
 @spsdk_output_option(
     required=False,
@@ -247,7 +256,7 @@ def read(
 ) -> None:
     """Read IFR page from the device."""
     ifr_obj = pfr.get_ifr_pfr_class(sector, family)(family=family, revision=revision)
-    ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, ifr_obj.DB_SUB_KEYS + ["address"])
+    ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, [ifr_obj.DB_SUB_FEATURE, "address"])
     ifr_page_length = ifr_obj.BINARY_SIZE
     ifr_page_name = ifr_obj.__class__.__name__
 

@@ -9,27 +9,32 @@
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Type, TypeVar, Union
 
 from typing_extensions import Self
 
 from spsdk.__version__ import version
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.image.ahab.ahab_abstract_interfaces import Container
+from spsdk.exceptions import SPSDKError
+from spsdk.image.ahab.ahab_abstract_interfaces import Container, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
     BINARY_IMAGE_ALIGNMENTS,
     RESERVED,
-    TARGET_MEMORY_BOOT_OFFSETS,
     UINT32,
     UINT64,
     AhabChipContainerConfig,
     AHABSignHashAlgorithm,
+    AHABSignHashAlgorithmV1,
+    AHABSignHashAlgorithmV2,
+    AHABTags,
     AhabTargetMemory,
+    load_images_types,
 )
 from spsdk.utils.database import DatabaseManager, Features, get_db
 from spsdk.utils.misc import (
     align,
     align_block,
+    clean_up_file_name,
     extend_block,
     load_binary,
     value_to_bool,
@@ -100,6 +105,10 @@ class ImageArrayEntry(Container):
     METADATA_START_PARTITION_ID_OFFSET = 20
     METADATA_START_PARTITION_ID_SIZE = 8
 
+    FLAGS_HASH_ALGORITHM_TYPE: Type[Union[AHABSignHashAlgorithmV1, AHABSignHashAlgorithmV2]] = (
+        AHABSignHashAlgorithmV1
+    )
+
     def __init__(
         self,
         chip_config: AhabChipContainerConfig,
@@ -113,6 +122,8 @@ class ImageArrayEntry(Container):
         image_iv: Optional[bytes] = None,
         already_encrypted_image: bool = False,
         image_name: Optional[str] = None,
+        gap_after_image: int = 0,
+        image_size_alignment: Optional[int] = None,
     ) -> None:
         """Class object initializer.
 
@@ -130,6 +141,8 @@ class ImageArrayEntry(Container):
         :param already_encrypted_image: The input image is already encrypted.
             Used only for encrypted images.
         :param image_name: Optional name of the image
+        :param gap_after_image: Size of Gap after the image in container.
+        :param image_size_alignment: Optional force non standard alignment for image size.
         """
         self._image_offset = 0
         self.chip_config = chip_config
@@ -137,6 +150,7 @@ class ImageArrayEntry(Container):
         self.already_encrypted_image = already_encrypted_image
         self.image = image if image else b""
         self.image_offset = image_offset
+        self.image_size_alignment = image_size_alignment
         self.image_size = self._get_valid_size(self.image)
         self.load_address = load_address
         self.entry_point = entry_point
@@ -147,6 +161,7 @@ class ImageArrayEntry(Container):
             if self.flags_is_encrypted
             else bytes(self.IV_LEN)
         )
+        self.gap_after_image = gap_after_image
         self.image_name = image_name
 
     @property
@@ -162,14 +177,8 @@ class ImageArrayEntry(Container):
         """
         self._image_offset = offset - self.chip_config.container_offset
 
-    @property
-    def image_offset_real(self) -> int:
-        """Real offset in Bootable image."""
-        target_memory = self.chip_config.base.target_memory
-        return self.image_offset + TARGET_MEMORY_BOOT_OFFSETS[target_memory]
-
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, ImageArrayEntry):
+        if isinstance(other, type(self)):
             if (
                 self._image_offset  # pylint: disable=too-many-boolean-expressions
                 == other._image_offset
@@ -189,11 +198,10 @@ class ImageArrayEntry(Container):
         return f"AHAB Image Array Entry, load address({hex(self.load_address)})"
 
     def __str__(self) -> str:
-        return (
+        ret = (
             "AHAB Image Array Entry:\n"
             f"  Image size:             {self.image_size}B\n"
             f"  Image offset in table:  {hex(self._image_offset)}\n"
-            f"  Image offset real:      {hex(self.image_offset_real)}\n"
             f"  Entry point:            {hex(self.entry_point)}\n"
             f"  Load address:           {hex(self.load_address)}\n"
             f"  Flags:                  {hex(self.flags)})\n"
@@ -206,6 +214,9 @@ class ImageArrayEntry(Container):
             f"  Boot flags:             {self.flags_boot_flags}\n"
             f"  Start CPU ID:           {self.metadata_start_cpu_id}\n"
         )
+        if self.image_size_alignment:
+            ret += f"  Image size alignment:   {self.image_size_alignment}\n"
+        return ret
 
     @property
     def image(self) -> bytes:
@@ -258,11 +269,12 @@ class ImageArrayEntry(Container):
         if not self.image_hash:
             algorithm = self.get_hash_from_flags(self.flags)
             self.image_hash = extend_block(
-                get_hash(self.image, algorithm=algorithm),
+                get_hash(extend_block(self.image, self.image_size), algorithm=algorithm),
                 self.HASH_LEN,
                 padding=0,
             )
-        if not self.image_iv and self.flags_is_encrypted:
+        # Check if the image IV is not set (all zeros) and the image is encrypted
+        if self.image_iv.count(0) == len(self.image_iv) and self.flags_is_encrypted:
             self.image_iv = get_hash(self.plain_image, algorithm=EnumHashAlgorithm.SHA256)
 
     @staticmethod
@@ -279,11 +291,12 @@ class ImageArrayEntry(Container):
         meta_data |= start_partition_id << 20
         return meta_data
 
-    @staticmethod
+    @classmethod
     def create_flags(
+        cls,
         image_type: int,
         core_id: int,
-        hash_type: AHABSignHashAlgorithm = AHABSignHashAlgorithm.SHA256,
+        hash_type: AHABSignHashAlgorithm,
         is_encrypted: bool = False,
         boot_flags: int = 0,
     ) -> int:
@@ -297,24 +310,37 @@ class ImageArrayEntry(Container):
         :return: Image flags data field.
         """
         flags_data = image_type
-        flags_data |= core_id << ImageArrayEntry.FLAGS_CORE_ID_OFFSET
-        flags_data |= hash_type.tag << ImageArrayEntry.FLAGS_HASH_OFFSET
-        flags_data |= 1 << ImageArrayEntry.FLAGS_IS_ENCRYPTED_OFFSET if is_encrypted else 0
-        flags_data |= boot_flags << ImageArrayEntry.FLAGS_BOOT_FLAGS_OFFSET
+        flags_data |= core_id << cls.FLAGS_CORE_ID_OFFSET
+        flags_data |= hash_type.tag << cls.FLAGS_HASH_OFFSET
+        flags_data |= 1 << cls.FLAGS_IS_ENCRYPTED_OFFSET if is_encrypted else 0
+        flags_data |= boot_flags << cls.FLAGS_BOOT_FLAGS_OFFSET
 
         return flags_data
 
-    @staticmethod
-    def get_hash_from_flags(flags: int) -> EnumHashAlgorithm:
+    def get_hash_from_flags(self, flags: int) -> EnumHashAlgorithm:
         """Get Hash algorithm name from flags.
 
         :param flags: Value of flags.
         :return: Hash name.
         """
-        hash_val = (flags >> ImageArrayEntry.FLAGS_HASH_OFFSET) & (
-            (1 << ImageArrayEntry.FLAGS_HASH_SIZE) - 1
+        hash_val = (flags >> self.FLAGS_HASH_OFFSET) & ((1 << self.FLAGS_HASH_SIZE) - 1)
+        return EnumHashAlgorithm.from_label(
+            self.FLAGS_HASH_ALGORITHM_TYPE.from_tag(hash_val).label.lower()
         )
-        return EnumHashAlgorithm.from_label(AHABSignHashAlgorithm.from_tag(hash_val).label.lower())
+
+    @staticmethod
+    def get_image_types(chip_config: AhabChipContainerConfig, core_id: int) -> Type[SpsdkSoftEnum]:
+        """Get correct image type enum.
+
+        :param chip_config: Container chip config
+        :param core_id: Core ID
+        :return: Enumeration of Image types
+        """
+        image_type_group = "application"
+        for k, v in chip_config.base.image_types_mapping.items():
+            if core_id in v:
+                image_type_group = k
+        return chip_config.base.image_types[image_type_group]
 
     @property
     def flags_image_type(self) -> SpsdkSoftEnum:
@@ -322,9 +348,8 @@ class ImageArrayEntry(Container):
 
         :return: Image type
         """
-        return self.chip_config.base.image_types.from_tag(
-            (self.flags >> ImageArrayEntry.FLAGS_TYPE_OFFSET)
-            & ((1 << ImageArrayEntry.FLAGS_TYPE_SIZE) - 1)
+        return self.get_image_types(self.chip_config, self.flags_core_id.tag).from_tag(
+            (self.flags >> self.FLAGS_TYPE_OFFSET) & ((1 << self.FLAGS_TYPE_SIZE) - 1)
         )
 
     @property
@@ -342,8 +367,7 @@ class ImageArrayEntry(Container):
         :return: Core ID
         """
         return self.chip_config.base.core_ids.from_tag(
-            (self.flags >> ImageArrayEntry.FLAGS_CORE_ID_OFFSET)
-            & ((1 << ImageArrayEntry.FLAGS_CORE_ID_SIZE) - 1)
+            (self.flags >> self.FLAGS_CORE_ID_OFFSET) & ((1 << self.FLAGS_CORE_ID_SIZE) - 1)
         )
 
     @property
@@ -361,8 +385,8 @@ class ImageArrayEntry(Container):
         :return: True if is encrypted, false otherwise
         """
         return bool(
-            (self.flags >> ImageArrayEntry.FLAGS_IS_ENCRYPTED_OFFSET)
-            & ((1 << ImageArrayEntry.FLAGS_IS_ENCRYPTED_SIZE) - 1)
+            (self.flags >> self.FLAGS_IS_ENCRYPTED_OFFSET)
+            & ((1 << self.FLAGS_IS_ENCRYPTED_SIZE) - 1)
         )
 
     @property
@@ -371,8 +395,8 @@ class ImageArrayEntry(Container):
 
         :return: Boot flags
         """
-        return (self.flags >> ImageArrayEntry.FLAGS_BOOT_FLAGS_OFFSET) & (
-            (1 << ImageArrayEntry.FLAGS_BOOT_FLAGS_SIZE) - 1
+        return (self.flags >> self.FLAGS_BOOT_FLAGS_OFFSET) & (
+            (1 << self.FLAGS_BOOT_FLAGS_SIZE) - 1
         )
 
     @property
@@ -381,8 +405,8 @@ class ImageArrayEntry(Container):
 
         :return: Start CPU ID
         """
-        return (self.image_meta_data >> ImageArrayEntry.METADATA_START_CPU_ID_OFFSET) & (
-            (1 << ImageArrayEntry.METADATA_START_CPU_ID_SIZE) - 1
+        return (self.image_meta_data >> self.METADATA_START_CPU_ID_OFFSET) & (
+            (1 << self.METADATA_START_CPU_ID_SIZE) - 1
         )
 
     @property
@@ -391,8 +415,8 @@ class ImageArrayEntry(Container):
 
         :return: Start CPU MU ID
         """
-        return (self.image_meta_data >> ImageArrayEntry.METADATA_MU_CPU_ID_OFFSET) & (
-            (1 << ImageArrayEntry.METADATA_MU_CPU_ID_SIZE) - 1
+        return (self.image_meta_data >> self.METADATA_MU_CPU_ID_OFFSET) & (
+            (1 << self.METADATA_MU_CPU_ID_SIZE) - 1
         )
 
     @property
@@ -401,8 +425,8 @@ class ImageArrayEntry(Container):
 
         :return: Start Partition ID
         """
-        return (self.image_meta_data >> ImageArrayEntry.METADATA_START_PARTITION_ID_OFFSET) & (
-            (1 << ImageArrayEntry.METADATA_START_PARTITION_ID_SIZE) - 1
+        return (self.image_meta_data >> self.METADATA_START_PARTITION_ID_OFFSET) & (
+            (1 << self.METADATA_START_PARTITION_ID_SIZE) - 1
         )
 
     def export(self) -> bytes:
@@ -458,13 +482,13 @@ class ImageArrayEntry(Container):
             ver_flags = Verifier("Flags")
             ver_flags.add_record_bit_range("Range", self.flags)
             ver_flags.add_record_enum(
-                "Image type", self.flags_image_type, self.chip_config.base.image_types
+                "Image type",
+                self.flags_image_type,
+                self.get_image_types(self.chip_config, self.flags_core_id.tag),
             )
             ver_flags.add_record_enum("Core Id", self.flags_core_id, self.chip_config.base.core_ids)
-            hash_val = (self.flags >> ImageArrayEntry.FLAGS_HASH_OFFSET) & (
-                (1 << ImageArrayEntry.FLAGS_HASH_SIZE) - 1
-            )
-            ver_flags.add_record_enum("Hash algorithm", hash_val, AHABSignHashAlgorithm)
+            hash_val = (self.flags >> self.FLAGS_HASH_OFFSET) & ((1 << self.FLAGS_HASH_SIZE) - 1)
+            ver_flags.add_record_enum("Hash algorithm", hash_val, self.FLAGS_HASH_ALGORITHM_TYPE)
             ver_flags.add_record("Boot flags", VerifierResult.SUCCEEDED, self.flags_boot_flags)
             ver_flags.add_record("Is encrypted", VerifierResult.SUCCEEDED, self.flags_is_encrypted)
             ret.add_child(ver_flags)
@@ -494,8 +518,11 @@ class ImageArrayEntry(Container):
                 )
             else:
                 image_hash_cmp = extend_block(
-                    get_hash(self.image, algorithm=ImageArrayEntry.get_hash_from_flags(self.flags)),
-                    ImageArrayEntry.HASH_LEN,
+                    get_hash(
+                        extend_block(self.image, self.image_size),
+                        algorithm=self.get_hash_from_flags(self.flags),
+                    ),
+                    self.HASH_LEN,
                     padding=0,
                 )
                 ret.add_record(
@@ -518,24 +545,24 @@ class ImageArrayEntry(Container):
     def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore # pylint: disable=arguments-differ
         """Parse input binary chunk to the container object.
 
-        :param chip_config: AHAB container chip configuration.
         :param data: Binary data with Image Array Entry block to parse.
+        :param chip_config: AHAB container chip configuration.
         :raises SPSDKLengthError: If invalid length of image is detected.
         :raises SPSDKValueError: Invalid hash for image.
         :return: Object recreated from the binary data.
         """
         # Just updates offsets from AHAB Image start As is feature of none xip containers
-        ImageArrayEntry._check_fixed_input_length(data).validate()
+        cls._check_fixed_input_length(data).validate()
         (
             image_offset,
-            _,  # image_size
+            image_size,
             load_address,
             entry_point,
             flags,
             image_meta_data,
             image_hash,
             image_iv,
-        ) = unpack(ImageArrayEntry.format(), data[: ImageArrayEntry.fixed_length()])
+        ) = unpack(cls.format(), data[: cls.fixed_length()])
 
         iae = cls(
             chip_config=chip_config,
@@ -548,27 +575,24 @@ class ImageArrayEntry(Container):
             image_hash=image_hash,
             image_iv=image_iv,
             already_encrypted_image=bool(
-                (flags >> ImageArrayEntry.FLAGS_IS_ENCRYPTED_OFFSET)
-                & ((1 << ImageArrayEntry.FLAGS_IS_ENCRYPTED_SIZE) - 1)
+                (flags >> cls.FLAGS_IS_ENCRYPTED_OFFSET) & ((1 << cls.FLAGS_IS_ENCRYPTED_SIZE) - 1)
             ),
         )
+        iae.image_size = image_size
         iae._image_offset = image_offset
 
         logger.debug(
             (
                 "Parsing Image array Entry:\n"
                 f"Image offset: {hex(iae.image_offset)}\n"
-                f"Image offset raw: {hex(iae._image_offset)}\n"
-                f"Image offset real: {hex(iae.image_offset_real)}"
+                f"Image offset raw: {hex(iae._image_offset)}"
             )
         )
 
         return iae
 
-    @staticmethod
-    def load_from_config(
-        chip_config: AhabChipContainerConfig, config: Dict[str, Any]
-    ) -> "ImageArrayEntry":
+    @classmethod
+    def load_from_config(cls, chip_config: AhabChipContainerConfig, config: dict[str, Any]) -> Self:
         """Converts the configuration option into an AHAB image array entry object.
 
         "config" content of container configurations.
@@ -578,20 +602,22 @@ class ImageArrayEntry(Container):
         :return: Container Header Image Array Entry object.
         """
         image_path = config.get("image_path")
+        image_size_alignment = config.get("image_size_alignment")
         search_paths = chip_config.base.search_paths
         is_encrypted = config.get("is_encrypted", False)
-        meta_data = ImageArrayEntry.create_meta(
+        meta_data = cls.create_meta(
             value_to_int(config.get("meta_data_start_cpu_id", 0)),
             value_to_int(config.get("meta_data_mu_cpu_id", 0)),
             value_to_int(config.get("meta_data_start_partition_id", 0)),
         )
         image_data = load_binary(image_path, search_paths=search_paths) if image_path else b""
-        flags = ImageArrayEntry.create_flags(
-            image_type=chip_config.base.image_types.from_label(
-                config.get("image_type", "executable")
-            ).tag,
-            core_id=chip_config.base.core_ids.from_label(config.get("core_id", "Unknown")).tag,
-            hash_type=AHABSignHashAlgorithm.from_label(config.get("hash_type", "sha256")),
+        core_id = chip_config.base.core_ids.from_label(config.get("core_id", "Unknown")).tag
+        flags = cls.create_flags(
+            image_type=cls.get_image_types(chip_config, core_id)
+            .from_label(config.get("image_type", "executable"))
+            .tag,
+            core_id=core_id,
+            hash_type=cls.FLAGS_HASH_ALGORITHM_TYPE.from_label(config.get("hash_type", "sha256")),
             is_encrypted=is_encrypted,
             boot_flags=value_to_int(config.get("boot_flags", 0)),
         )
@@ -601,7 +627,9 @@ class ImageArrayEntry(Container):
         else:
             image_offset = value_to_int(config.get("image_offset", 0))
 
-        return ImageArrayEntry(
+        gap_after_image = value_to_int(config.get("gap_after_image", 0))
+
+        return cls(
             chip_config=chip_config,
             image=image_data,
             image_offset=image_offset,
@@ -610,9 +638,11 @@ class ImageArrayEntry(Container):
             flags=flags,
             image_meta_data=meta_data,
             image_iv=None,  # IV data are updated by UpdateFields function
+            gap_after_image=gap_after_image,
+            image_size_alignment=image_size_alignment,
         )
 
-    def create_config(self, index: int, image_index: int, data_path: str) -> Dict[str, Any]:
+    def create_config(self, index: int, image_index: int, data_path: str) -> dict[str, Any]:
         """Create configuration of the AHAB Image data blob.
 
         :param index: Container index.
@@ -620,19 +650,21 @@ class ImageArrayEntry(Container):
         :param data_path: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        ret_cfg: Dict[str, Union[str, int, bool]] = {}
+        ret_cfg: dict[str, Union[str, int, bool]] = {}
         image_name = None
         if self.plain_image:
-            image_name = (
+            image_name = clean_up_file_name(
                 f"container{index}_image{image_index}_"
                 f"{self.flags_image_type_name}_{self.flags_core_id_name}.bin"
             )
-            write_file(self.plain_image, os.path.join(data_path, image_name), "wb")
+            write_file(self.plain_image, os.path.join(data_path, image_name), mode="wb")
         if self.encrypted_image:
-            image_name_encrypted = (
+            image_name_encrypted = clean_up_file_name(
                 f"container{index}_image{image_index}_{self.flags_image_type_name}_encrypted.bin"
             )
-            write_file(self.encrypted_image, os.path.join(data_path, image_name_encrypted), "wb")
+            write_file(
+                self.encrypted_image, os.path.join(data_path, image_name_encrypted), mode="wb"
+            )
             if not image_name:
                 image_name = image_name_encrypted
 
@@ -669,6 +701,8 @@ class ImageArrayEntry(Container):
         """
         if not image:
             return 0
+        if self.image_size_alignment:
+            return align(len(image), self.image_size_alignment)
         return align(len(image), 4 if self.flags_image_type_name == "ele" else 1)
 
     def get_valid_offset(self, original_offset: int) -> int:
@@ -680,6 +714,20 @@ class ImageArrayEntry(Container):
         alignment = self.get_valid_alignment()
         alignment = max(alignment, self.chip_config.base.valid_offset_minimal_alignment)
         return align(original_offset, alignment)
+
+
+class ImageArrayEntryV2(ImageArrayEntry):
+    """Class representing image array entry as part of image array in the AHAB container version 2."""
+
+    # The bits for HASH description has been expanded to 4 bits
+    FLAGS_HASH_SIZE = 4
+    # The encrypted flag has been moved due to hash field expansion
+    FLAGS_IS_ENCRYPTED_OFFSET = 12
+    # The Container version 2 using more hash algorithms
+    FLAGS_HASH_ALGORITHM_TYPE = AHABSignHashAlgorithmV2
+
+
+IAE_TYPE = TypeVar("IAE_TYPE", Type[ImageArrayEntry], Type[ImageArrayEntryV2])
 
 
 class ImageArrayEntryTemplates:
@@ -694,7 +742,7 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         default: Optional[Any] = None,
     ) -> Any:
         """Load value from all sources."""
@@ -709,7 +757,7 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         default: Optional[int] = None,
     ) -> int:
         """Load integer value from all sources."""
@@ -722,7 +770,7 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         default: Optional[bool] = None,
     ) -> bool:
         """Load boolean value from all sources."""
@@ -735,7 +783,7 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         default: Optional[str] = None,
     ) -> str:
         """Load string value from all sources."""
@@ -744,14 +792,29 @@ class ImageArrayEntryTemplates:
         return ret
 
     @classmethod
+    def _load_str_int(
+        cls,
+        database: Features,
+        key_name: str,
+        config: Optional[dict[str, Any]] = None,
+        default: Optional[Union[str, int]] = None,
+    ) -> Union[str, int]:
+        """Load string value from all sources."""
+        ret = cls._load_value(database=database, key_name=key_name, config=config, default=default)
+        assert isinstance(ret, (str, int))
+        return ret
+
+    @classmethod
     def _create_image_array_entry(
         cls,
+        iae_cls: IAE_TYPE,
         binary: bytes,
         chip_config: AhabChipContainerConfig,
-        config: Dict[str, Any],
-    ) -> ImageArrayEntry:
+        config: dict[str, Any],
+    ) -> Union[ImageArrayEntry, ImageArrayEntryV2]:
         """Create Image array entry from config and database information.
 
+        :param iae_cls: Image Array Entry class to create.
         :param binary: Binary image data
         :param chip_configuration: Ahab chip configuration
         :param config: Configuration dictionary
@@ -765,11 +828,11 @@ class ImageArrayEntryTemplates:
         )
         load_address = cls._load_int(database, "load_address", config=config)
         entry_point = cls._load_int(database, "entry_point", config=config, default=load_address)
-        image_type = chip_config.base.image_types.from_attr(
-            cls._load_str(database, "image_type", config=config, default="executable")
-        )
         core_id = chip_config.base.core_ids.from_attr(
             cls._load_str(database, "core_id", config=config)
+        )
+        image_type = iae_cls.get_image_types(chip_config, core_id.tag).from_attr(
+            cls._load_str(database, "image_type", config=config, default="executable")
         )
         is_encrypted = cls._load_bool(database, "is_encrypted", config=config, default=False)
         boot_flags = cls._load_int(database, "boot_flags", config=config, default=0)
@@ -782,23 +845,28 @@ class ImageArrayEntryTemplates:
         meta_data_start_partition_id = cls._load_int(
             database, "meta_data_start_partition_id", config=config, default=0
         )
-        hash_type = AHABSignHashAlgorithm.from_attr(
+        hash_type = AHABSignHashAlgorithmV1.from_attr(
             cls._load_str(database, "hash_type", config=config, default="SHA384")
         )
-        meta_data = ImageArrayEntry.create_meta(
+        meta_data = iae_cls.create_meta(
             start_cpu_id=meta_data_start_cpu_id,
             mu_cpu_id=meta_data_mu_cpu_id,
             start_partition_id=meta_data_start_partition_id,
         )
-        flags = ImageArrayEntry.create_flags(
+        flags = iae_cls.create_flags(
             image_type=image_type.tag,
             core_id=core_id.tag,
             hash_type=hash_type,
             is_encrypted=is_encrypted,
             boot_flags=boot_flags,
         )
+        gap_after_image = cls._load_int(database, "gap_after_image", config=config, default=0)
+        try:
+            image_size_alignment = cls._load_int(database, "image_size_alignment", config=config)
+        except SPSDKError:
+            image_size_alignment = None
 
-        return ImageArrayEntry(
+        return iae_cls(
             chip_config=chip_config,
             image=binary,
             image_offset=image_offset,
@@ -807,6 +875,8 @@ class ImageArrayEntryTemplates:
             flags=flags,
             image_meta_data=meta_data,
             image_name=cls.IMAGE_NAME,
+            gap_after_image=gap_after_image,
+            image_size_alignment=image_size_alignment,
         )
 
     @classmethod
@@ -816,20 +886,27 @@ class ImageArrayEntryTemplates:
         :param family: Family name of device
         :return: Default text description
         """
+
+        def get_image_types() -> Type[SpsdkSoftEnum]:
+            image_type_group = "application"
+            db_image_types_mapping = database.get_dict(DatabaseManager.AHAB, "image_types_mapping")
+            db_image_types = load_images_types(database)
+            for k, v in db_image_types_mapping.items():
+                if core_id.tag in v:
+                    image_type_group = k
+            return db_image_types[image_type_group]
+
         database = get_db(family)
         core_ids = SpsdkSoftEnum.create_from_dict(
             "AHABCoreId", database.get_dict(DatabaseManager.AHAB, "core_ids")
         )
-        image_types = SpsdkSoftEnum.create_from_dict(
-            "AHABImageTypes", database.get_dict(DatabaseManager.AHAB, "image_types")
-        )
         image_offset = cls._load_int(database, "image_offset", default=cls.DEFAULT_OFFSET)
         load_address = cls._load_int(database, "load_address")
         entry_point = cls._load_int(database, "entry_point", default=load_address)
-        image_type = image_types.from_attr(
-            cls._load_str(database, "image_type", default="executable")
+        core_id = core_ids.from_attr(cls._load_str_int(database, "core_id"))
+        image_type = get_image_types().from_attr(
+            cls._load_str_int(database, "image_type", default="executable")
         )
-        core_id = core_ids.from_attr(cls._load_str(database, "core_id"))
         is_encrypted = cls._load_bool(database, "is_encrypted", default=False)
         boot_flags = cls._load_int(database, "boot_flags", default=0)
         meta_data_start_cpu_id = cls._load_int(database, "meta_data_start_cpu_id", default=0)
@@ -837,17 +914,19 @@ class ImageArrayEntryTemplates:
         meta_data_start_partition_id = cls._load_int(
             database, "meta_data_start_partition_id", default=0
         )
-        hash_type = AHABSignHashAlgorithm.from_attr(
+        hash_type = AHABSignHashAlgorithmV2.from_attr(
             cls._load_str(database, "hash_type", default="SHA384")
         )
         ret = "Image array default settings. Can be overridden by definitions that are hidden in the template:\n"
-        if image_offset != ImageArrayEntryTemplates.DEFAULT_OFFSET:
+        if image_offset != cls.DEFAULT_OFFSET:
             ret += f"image_offset:                  0x{image_offset:08X}\n"
         ret += f"load_address:                  0x{load_address:016X}\n"
         if entry_point != load_address:
             ret += f"entry_point:                   0x{entry_point:016X}\n"
-        ret += f"image_type:                    {image_type.label}\n"
-        ret += f"core_id:                       {core_id.label}\n"
+        if image_type.tag != 0:
+            ret += f"image_type:                    {image_type.label}\n"
+        if core_id.tag != 0:
+            ret += f"core_id:                       {core_id.label}\n"
         if is_encrypted:
             ret += f"is_encrypted:                  {is_encrypted}\n"
         if boot_flags != 0:
@@ -864,19 +943,133 @@ class ImageArrayEntryTemplates:
 
     @classmethod
     def create_image_array_entry(
-        cls, chip_config: AhabChipContainerConfig, config: Dict[str, Any]
-    ) -> ImageArrayEntry:
+        cls,
+        iae_cls: IAE_TYPE,
+        chip_config: AhabChipContainerConfig,
+        config: dict[str, Any],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
         """Create Image array entry from config and database information.
 
+        :param iae_cls: Image Array Entry class
         :param chip_config: AHAB Container chip configuration
         :param config: Configuration dictionary
         :return: Image array entry
         """
-        return cls._create_image_array_entry(
-            binary=load_binary(config[cls.KEY], search_paths=chip_config.base.search_paths),
-            chip_config=chip_config,
-            config=config,
+        return [
+            cls._create_image_array_entry(
+                iae_cls,
+                binary=load_binary(config[cls.KEY], search_paths=chip_config.base.search_paths),
+                chip_config=chip_config,
+                config=config,
+            )
+        ]
+
+    @classmethod
+    def create_image_array_entries(
+        cls,
+        iae_cls: IAE_TYPE,
+        chip_config: AhabChipContainerConfig,
+        config: list[dict[str, Any]],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+        """Create Image array entry list of records.
+
+        :param iae_cls: Image array class type
+        :param chip_config: AHAB container configuration
+        :param config: Configuration from user
+        :return: List of image array entries
+        """
+        config_loaders = ImageArrayEntryTemplates.__subclasses__()
+        image_array: list = []
+        for image in config:
+            hit = False
+            if "image_path" in image:
+                image_array.append(iae_cls.load_from_config(chip_config, image))
+                continue
+            for iae_template_class in config_loaders:
+                if image.get(iae_template_class.KEY):
+                    image_array.extend(
+                        iae_template_class.create_image_array_entry(
+                            iae_cls,
+                            chip_config,
+                            image,
+                        )
+                    )
+                    hit = True
+                    break
+            if not hit:
+                logger.error(f"Can't handle {image} configuration record")
+
+        return image_array
+
+
+class IaeDoubleAuthentication(ImageArrayEntryTemplates):
+    """Class to handle NXP images to be double authenticated (also by OEM) for AHAB Image array entries."""
+
+    IMAGE_NAME: str = "Double Authentication for NXP images"
+    KEY: str = "double_authentication"
+
+    @classmethod
+    def create_image_array_entry(
+        cls,
+        iae_cls: Type[ImageArrayEntry],
+        chip_config: AhabChipContainerConfig,
+        config: dict[str, Any],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+        """Create Image array entry from config and database information.
+
+        :param iae_cls: Image Array Entry class
+        :param chip_config: AHAB Container chip configuration
+        :param config: Configuration dictionary
+        :return: Image array entry
+        """
+        ret = []
+        search_paths = chip_config.base.search_paths
+        # load lpddr binary files
+        logger.info("Adding Double Authentication NXP firmware image")
+        nxp_image = load_binary(config[cls.KEY], search_paths)
+
+        # Try to get ELE FW
+        header = HeaderContainerData.parse(nxp_image)
+        if header.tag != AHABTags.CONTAINER_HEADER.tag:
+            raise SPSDKError("Invalid NXP Container")
+        if header.version == 0 and iae_cls != ImageArrayEntry:
+            raise SPSDKError("Invalid NXP container version")
+        container_size = 0x4000 if header.version == 1 else 0x400
+        ele_iae = iae_cls.parse(nxp_image[0x10:], chip_config)
+        ele_container = (
+            nxp_image[:container_size]
+            + bytes(ele_iae.image_offset - container_size)
+            + ele_iae.image
         )
+        config["core_id"] = "ele"
+        config["image_type"] = "ele_as_image"
+        ret.append(
+            cls._create_image_array_entry(
+                iae_cls=iae_cls, binary=ele_container, chip_config=chip_config, config=config
+            )
+        )
+
+        # Try to get V2X FW
+        header = HeaderContainerData.parse(nxp_image[container_size:])
+        if header.tag == AHABTags.CONTAINER_HEADER.tag:
+            v2xfhp_iae = iae_cls.parse(nxp_image[container_size + 0x10 :], chip_config)
+            v2xfhs_iae = iae_cls.parse(nxp_image[container_size + 0x80 + 0x10 :], chip_config)
+            v2xfh_container = nxp_image[container_size : 2 * container_size]
+            v2xfh_container += bytes(v2xfhp_iae._image_offset)  # Add Padding
+            v2xfh_container += nxp_image[
+                container_size
+                + v2xfhp_iae._image_offset : container_size
+                + v2xfhs_iae._image_offset
+                + v2xfhs_iae.image_size
+            ]
+            config["core_id"] = "v2x-1"
+            config["image_type"] = "v2x_as_image"
+            ret.append(
+                cls._create_image_array_entry(
+                    iae_cls=iae_cls, binary=v2xfh_container, chip_config=chip_config, config=config
+                )
+            )
+        return ret
 
 
 class IaeSPLDDR(ImageArrayEntryTemplates):
@@ -887,10 +1080,14 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
 
     @classmethod
     def create_image_array_entry(
-        cls, chip_config: AhabChipContainerConfig, config: Dict[str, Any]
-    ) -> ImageArrayEntry:
+        cls,
+        iae_cls: Type[ImageArrayEntry],
+        chip_config: AhabChipContainerConfig,
+        config: dict[str, Any],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
         """Create Image array entry from config and database information.
 
+        :param iae_cls: Image Array Entry class
         :param chip_config: AHAB Container chip configuration
         :param config: Configuration dictionary
         :return: Image array entry
@@ -925,9 +1122,18 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
         # merge to final binary
         binary_image = align_block(ddr_fw, ddr_fw_alignment) + ddr_binary
 
-        return cls._create_image_array_entry(
-            binary=binary_image, chip_config=chip_config, config=config
-        )
+        # Check if binary fits into device OCRAM
+        ocram_size = database.device.info.memory_map.get_memory("ocram_ns").size
+        if len(binary_image) > ocram_size:
+            logger.warning(
+                f"The SPL DDR binary is too large for the OCRAM {hex(len(binary_image))} > {hex(ocram_size)}"
+            )
+
+        return [
+            cls._create_image_array_entry(
+                iae_cls=iae_cls, binary=binary_image, chip_config=chip_config, config=config
+            )
+        ]
 
 
 class IaeSPL(ImageArrayEntryTemplates):
@@ -945,10 +1151,14 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
 
     @classmethod
     def create_image_array_entry(
-        cls, chip_config: AhabChipContainerConfig, config: Dict[str, Any]
-    ) -> ImageArrayEntry:
+        cls,
+        iae_cls: Type[ImageArrayEntry],
+        chip_config: AhabChipContainerConfig,
+        config: dict[str, Any],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
         """Create Image array entry from config and database information.
 
+        :param iae_cls: Image Array Entry class
         :param chip_config: AHAB Container chip configuration
         :param config: Configuration dictionary
         :return: Image array entry
@@ -959,24 +1169,30 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
 
         search_paths = chip_config.base.search_paths
         # load lpddr binary files
-        lpddr_imem_1d = load_binary(config["lpddr_imem_1d"], search_paths)
-        lpddr_dmem_1d = load_binary(config["lpddr_dmem_1d"], search_paths)
-        lpddr_imem_2d = load_binary(config["lpddr_imem_2d"], search_paths)
-        lpddr_dmem_2d = load_binary(config["lpddr_dmem_2d"], search_paths)
+        lpddr_imem = load_binary(config["lpddr_imem"], search_paths)
+        lpddr_dmem = load_binary(config["lpddr_dmem"], search_paths)
+        quick_boot = config.get("lpddr_imem_qb") and config.get("lpddr_dmem_qb")
+
+        if quick_boot:
+            lpddr_imem_qb = load_binary(config["lpddr_imem_qb"], search_paths)
+            lpddr_dmem_qb = load_binary(config["lpddr_dmem_qb"], search_paths)
 
         binary_image = align_block(load_binary(config["oei_ddr"], search_paths), 4)
         # add ddr fw header
-        binary_image += create_fw_header(lpddr_imem_1d, lpddr_dmem_1d)
-        binary_image += lpddr_imem_1d
-        binary_image += lpddr_dmem_1d
-        # add ddr fw header
-        binary_image += create_fw_header(lpddr_imem_2d, lpddr_dmem_2d)
-        binary_image += lpddr_imem_2d
-        binary_image += lpddr_dmem_2d
+        binary_image += create_fw_header(lpddr_imem, lpddr_dmem)
+        binary_image += lpddr_imem
+        binary_image += lpddr_dmem
+        if quick_boot:
+            # add ddr fw header for quick boot
+            binary_image += create_fw_header(lpddr_imem_qb, lpddr_dmem_qb)
+            binary_image += lpddr_imem_qb
+            binary_image += lpddr_dmem_qb
 
-        return cls._create_image_array_entry(
-            binary=binary_image, chip_config=chip_config, config=config
-        )
+        return [
+            cls._create_image_array_entry(
+                iae_cls=iae_cls, binary=binary_image, chip_config=chip_config, config=config
+            )
+        ]
 
 
 class IaeOEITCM(ImageArrayEntryTemplates):
@@ -1015,10 +1231,14 @@ class IaeUBoot(ImageArrayEntryTemplates):
 
     @classmethod
     def create_image_array_entry(
-        cls, chip_config: AhabChipContainerConfig, config: Dict[str, Any]
-    ) -> ImageArrayEntry:
+        cls,
+        iae_cls: Type[ImageArrayEntry],
+        chip_config: AhabChipContainerConfig,
+        config: dict[str, Any],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
         """Create Image array entry from config and database information.
 
+        :param iae_cls: Image Array Entry class
         :param chip_config: AHAB Container chip configuration
         :param config: Configuration dictionary
         :return: Image array entry
@@ -1026,11 +1246,14 @@ class IaeUBoot(ImageArrayEntryTemplates):
         search_paths = chip_config.base.search_paths
         binary_image = load_binary(config[cls.KEY], search_paths)
         spsdk_signature = "SPSDK " + version
-        return cls._create_image_array_entry(
-            binary=binary_image + bytes(spsdk_signature, encoding="ascii") + b"\xa0",
-            chip_config=chip_config,
-            config=config,
-        )
+        return [
+            cls._create_image_array_entry(
+                iae_cls=iae_cls,
+                binary=binary_image + bytes(spsdk_signature, encoding="ascii") + b"\xa0",
+                chip_config=chip_config,
+                config=config,
+            )
+        ]
 
 
 class IaeTEE(ImageArrayEntryTemplates):
@@ -1048,10 +1271,14 @@ class IaeV2XDummy(ImageArrayEntryTemplates):
 
     @classmethod
     def create_image_array_entry(
-        cls, chip_config: AhabChipContainerConfig, config: Dict[str, Any]
-    ) -> ImageArrayEntry:
+        cls,
+        iae_cls: Type[ImageArrayEntry],
+        chip_config: AhabChipContainerConfig,
+        config: dict[str, Any],
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
         """Create Image array entry from config and database information.
 
+        :param iae_cls: Image Array Entry class
         :param chip_config: AHAB Container chip configuration
         :param config: Configuration dictionary
         :return: Image array entry
@@ -1061,8 +1288,11 @@ class IaeV2XDummy(ImageArrayEntryTemplates):
                 "The setting of V2X dummy in configuration doesn't affect the presence "
                 "in Image Array Entry table, just presence in configuration it enables."
             )
-        return cls._create_image_array_entry(
-            binary=b"",
-            chip_config=chip_config,
-            config=config,
-        )
+        return [
+            cls._create_image_array_entry(
+                iae_cls=iae_cls,
+                binary=b"",
+                chip_config=chip_config,
+                config=config,
+            )
+        ]

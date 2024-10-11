@@ -6,12 +6,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """This module contains generic implementation of image segment."""
 import abc
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from spsdk.exceptions import SPSDKValueError
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import get_db, get_families
+from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.registers import Registers
 
 
@@ -27,10 +26,6 @@ class SegmentBase(BaseClass):
         :param revision: Optional Chip family revision.
         :raises SPSDKValueError: Unsupported family.
         """
-        if family not in self.get_supported_families():
-            raise SPSDKValueError(
-                f"Unsupported chip family:{family}. {family} not in {self.get_supported_families()}"
-            )
         self.family = family
         self.revision = revision
         self.db = get_db(family, revision)
@@ -49,7 +44,7 @@ class SegmentBase(BaseClass):
 
     @staticmethod
     @abc.abstractmethod
-    def load_from_config(config: Dict) -> Any:
+    def load_from_config(config: dict) -> Any:
         """Load configuration file.
 
         :param config: Segment configuration file.
@@ -64,7 +59,7 @@ class SegmentBase(BaseClass):
         """
 
     @classmethod
-    def get_supported_families(cls) -> List:
+    def get_supported_families(cls) -> list:
         """Return list of supported families.
 
         :return: List of supported families.
@@ -72,7 +67,7 @@ class SegmentBase(BaseClass):
         return get_families(cls.FEATURE)
 
     @classmethod
-    def get_memory_types_config(cls, family: str, revision: str = "latest") -> Dict[str, Dict]:
+    def get_memory_types_config(cls, family: str, revision: str = "latest") -> dict[str, dict]:
         """Get memory types data from database.
 
         :param family: Chip family.
@@ -83,7 +78,7 @@ class SegmentBase(BaseClass):
     @classmethod
     def get_supported_memory_types(
         cls, family: Optional[str] = None, revision: str = "latest"
-    ) -> List[MemoryType]:
+    ) -> list[MemoryType]:
         """Get list of supported memory types data from database.
 
         :param family: Chip family.
@@ -94,14 +89,7 @@ class SegmentBase(BaseClass):
                 MemoryType.from_label(mem_type)
                 for mem_type in cls.get_memory_types_config(family, revision).keys()
             ]
-        mem_types = []
-        families = cls.get_supported_families()
-        for supported_family in families:
-            database = get_db(supported_family, revision)
-            mem_types.extend(
-                [
-                    MemoryType.from_label(memory)
-                    for memory in database.get_dict(cls.FEATURE, "mem_types").keys()
-                ]
-            )
-        return list(set(mem_types))
+        return [
+            MemoryType.from_label(memory)
+            for memory in DatabaseManager().quick_info.features_data.get_mem_types(cls.FEATURE)
+        ]

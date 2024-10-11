@@ -13,7 +13,7 @@ import os
 import re
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Iterator, Optional, Union
 
 import click
 import hexdump
@@ -125,12 +125,12 @@ def catch_spsdk_error(function: Callable) -> Callable:
             return retval
         except SPSDKAppError as app_exc:
             if app_exc.description:
-                click.echo(str(app_exc))
+                click.echo(f"{app_exc.__class__.__name__}: {app_exc}", err=True)
             if app_exc.error_code > 0 and app_exc.error_code < 256:
                 sys.exit(app_exc.error_code)
             sys.exit(1)
         except (AssertionError, SPSDKError) as spsdk_exc:
-            click.echo(f"ERROR:{spsdk_exc}", err=True)
+            click.echo(f"{spsdk_exc.__class__.__name__}: {spsdk_exc}", err=True)
             logger.debug(str(spsdk_exc), exc_info=True)
             sys.exit(2)
         except UnicodeEncodeError as encode_exc:
@@ -151,7 +151,7 @@ def catch_spsdk_error(function: Callable) -> Callable:
     return wrapper
 
 
-def parse_file_and_size(file_and_size: str) -> Tuple[str, int]:
+def parse_file_and_size(file_and_size: str) -> tuple[str, int]:
     """Parse composite file-size params.
 
     :param file_and_size: original param that possibly contains size constrain
@@ -205,7 +205,7 @@ def store_key(file_name: str, key: bytes, reverse: bool = False) -> None:
 
 
 def filepath_from_config(
-    config: Dict,
+    config: dict,
     key: str,
     default_value: str,
     base_dir: str,
@@ -267,7 +267,7 @@ def resolve_path_relative_to_config(
 
     :param path_key: key in configuration
     :param config: path to YAML/JSON configuration
-    :param override_path: If provided path will be overriden, defaults to None
+    :param override_path: If provided path will be overridden, defaults to None
     :return: absolute path calculated from the relative path in config file
     """
     out_file = None

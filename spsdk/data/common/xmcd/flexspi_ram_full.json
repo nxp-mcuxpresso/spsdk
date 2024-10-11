@@ -637,7 +637,7 @@
                             "name": "bit7",
                             "access": "RW",
                             "reset_value_int": "0x0",
-                            "description": " Bit7 - Pad Settings Overide Enable"
+                            "description": " Bit7 - Pad Settings Override Enable"
                         },
                         {
                             "id": "field040-bit8",
@@ -2074,7 +2074,7 @@
                     "offset_int": "0x1cf",
                     "reg_width": "8",
                     "name": "needRestoreNoCmdMode",
-                    "description": " Need to Restore NoCmd mode after IP commmand execution",
+                    "description": " Need to Restore NoCmd mode after IP command execution",
                     "reset_value_int": "0x0"
                 },
                 {

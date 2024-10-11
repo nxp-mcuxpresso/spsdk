@@ -4,21 +4,8 @@
 
 base:
   type: object
-  required: [family, peripheral]
+  required: [peripheral]
   properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      # enum: []
-      template_value: rt118x
-
-    revision:
-      type: string
-      title: Chip silicon revision
-      description: If needed this could be used to specify silicon revision of device.
-      template_value: latest
-
     peripheral:
       type: string
       title: Peripheral name

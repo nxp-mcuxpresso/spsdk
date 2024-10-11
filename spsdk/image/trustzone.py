@@ -8,12 +8,12 @@
 """Module provides support for TrustZone configuration data."""
 import logging
 import struct
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import format_value, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class TrustZone:
         )
 
     @classmethod
-    def from_config(cls, config_data: Dict[str, Any]) -> "TrustZone":
+    def from_config(cls, config_data: dict[str, Any]) -> "TrustZone":
         """Alternate constructor using configuration data.
 
         :raises SPSDKError: Invalid configuration file.
@@ -133,17 +133,17 @@ class TrustZone:
         return len(data) * 4
 
     @classmethod
-    def get_validation_schemas_family(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for TZ supported families.
         """
-        sch_cfg = get_schema_file(DatabaseManager.TZ)
-        sch_cfg["tz_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
-        return [sch_cfg["tz_family_rev"]]
+        sch_cfg = get_schema_file("general")["family"]
+        update_validation_schema_family(sch_cfg["properties"], cls.get_supported_families())
+        return [sch_cfg]
 
     @classmethod
-    def get_validation_schemas(cls, family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
@@ -152,6 +152,7 @@ class TrustZone:
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.TZ)
+        sch_family = get_schema_file("general")["family"]
         preset_properties = {}
 
         try:
@@ -170,15 +171,15 @@ class TrustZone:
             if "patternProperties" in sch_cfg["tz"]["properties"]["trustZonePreset"].keys():
                 sch_cfg["tz"]["properties"]["trustZonePreset"].pop("patternProperties")
             sch_cfg["tz"]["properties"]["trustZonePreset"]["properties"] = preset_properties
-            sch_cfg["tz_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
-            sch_cfg["tz_family_rev"]["properties"]["family"]["template_value"] = family
-            sch_cfg["tz_family_rev"]["properties"]["revision"]["template_value"] = revision
-            return [sch_cfg["tz_family_rev"], sch_cfg["tz"]]
+            update_validation_schema_family(
+                sch_family["properties"], cls.get_supported_families(), family
+            )
+            return [sch_family, sch_cfg["tz"]]
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} or revision {revision} is not supported") from exc
 
     @classmethod
-    def generate_config_template(cls, family: str, revision: str = "latest") -> Dict[str, str]:
+    def generate_config_template(cls, family: str, revision: str = "latest") -> dict[str, str]:
         """Generate configuration for selected family.
 
         :param family: Family description.
@@ -186,7 +187,7 @@ class TrustZone:
         :raises SPSDKError: Revision is not supported.
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
-        ret: Dict[str, str] = {}
+        ret: dict[str, str] = {}
         schemas = cls.get_validation_schemas(family, revision)
 
         yaml_data = CommentedConfig(
@@ -203,7 +204,7 @@ class TrustZone:
         return f"<TrustZone: type: {self.type} ({self.type.description})"
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Return list of supported families."""
         return get_families(DatabaseManager.TZ)
 

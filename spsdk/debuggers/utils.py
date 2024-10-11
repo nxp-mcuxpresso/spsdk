@@ -9,7 +9,7 @@
 import contextlib
 import logging
 from types import ModuleType
-from typing import Callable, Dict, Iterator, Optional, Type
+from typing import Callable, Iterator, Optional, Type
 
 from spsdk import SPSDK_INTERACTIVE_DISABLED
 from spsdk.debuggers.debug_probe import (
@@ -25,13 +25,13 @@ from spsdk.utils.plugins import PluginsManager, PluginType
 
 logger = logging.getLogger(__name__)
 
-PROBES: Dict[str, Type[DebugProbe]] = {}
+PROBES: dict[str, Type[DebugProbe]] = {}
 
 
 def get_connected_probes(
     interface: Optional[str] = None,
     hardware_id: Optional[str] = None,
-    options: Optional[Dict] = None,
+    options: Optional[dict] = None,
 ) -> DebugProbes:
     """Functions returns the list of all connected probes in system.
 
@@ -151,7 +151,7 @@ def test_ahb_access(
 def open_debug_probe(
     interface: Optional[str] = None,
     serial_no: Optional[str] = None,
-    debug_probe_params: Optional[Dict] = None,
+    debug_probe_params: Optional[dict] = None,
     print_func: Callable[[str], None] = print,
     input_func: Callable[[], str] = input,
 ) -> Iterator[DebugProbe]:
@@ -179,12 +179,12 @@ def open_debug_probe(
         debug_probe.close()
 
 
-def get_all_debug_probe_plugins() -> Dict[str, Type[DebugProbe]]:
+def get_all_debug_probe_plugins() -> dict[str, Type[DebugProbe]]:
     """Get dictionary of all available debug probe types."""
 
     def get_subclasses(
         base_class: Type,
-    ) -> Dict[str, Type[DebugProbe]]:
+    ) -> dict[str, Type[DebugProbe]]:
         """Recursively find all subclasses."""
         subclasses = {}
         for subclass in base_class.__subclasses__():
@@ -200,7 +200,7 @@ def get_all_debug_probe_plugins() -> Dict[str, Type[DebugProbe]]:
     return get_subclasses(DebugProbe)
 
 
-def load_debug_probe_plugins() -> Dict[str, ModuleType]:
+def load_debug_probe_plugins() -> dict[str, ModuleType]:
     """Load all installed signature provider plugins."""
     plugins_manager = PluginsManager()
     plugins_manager.load_from_entrypoints(PluginType.DEBUG_PROBE.label)

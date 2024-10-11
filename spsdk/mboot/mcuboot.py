@@ -12,7 +12,7 @@ import logging
 import struct
 import time
 from types import TracebackType
-from typing import Callable, Dict, List, Optional, Sequence, Type
+from typing import Callable, Optional, Sequence, Type, Union
 
 from spsdk.mboot.commands import (
     CmdPacket,
@@ -43,7 +43,14 @@ from spsdk.mboot.exceptions import (
     SPSDKError,
 )
 from spsdk.mboot.memories import ExtMemId, ExtMemRegion, FlashRegion, MemoryRegion, RamRegion
-from spsdk.mboot.properties import PropertyTag, PropertyValueBase, Version, parse_property_value
+from spsdk.mboot.properties import (
+    AvailableCommandsValue,
+    PropertyTag,
+    PropertyValueBase,
+    Version,
+    get_property_tag_label,
+    parse_property_value,
+)
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
 
@@ -88,6 +95,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self.reopen = False
         self.enable_data_abort = False
         self._pause_point: Optional[int] = None
+        self.available_commands_lst: list[CommandTag] = []
+        self.max_packet_size: Optional[int] = None
 
     def __enter__(self) -> "McuBoot":
         self.reopen = True
@@ -195,7 +204,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def _send_data(
         self,
         cmd_tag: CommandTag,
-        data: List[bytes],
+        data: list[bytes],
         progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bool:
         """Send Data part of specific command.
@@ -262,6 +271,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         :return int: max packet size in B
         """
+        if self.max_packet_size is not None:
+            logger.debug(f"Using cached max_packet_size={self.max_packet_size}")
+            return self.max_packet_size
+
         packet_size_property = None
         try:
             packet_size_property = self.get_property(prop_tag=PropertyTag.MAX_PACKET_SIZE)
@@ -272,9 +285,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.warning(
                 f"CMD: Unable to get MAX PACKET SIZE, using: {self.DEFAULT_MAX_PACKET_SIZE}"
             )
-        return packet_size_property[0]
+        self.max_packet_size = packet_size_property[0]
+        logger.info(f"CMD: Max Packet Size = {self.max_packet_size}")
+        return self.max_packet_size
 
-    def _split_data(self, data: bytes) -> List[bytes]:
+    def _split_data(self, data: bytes) -> list[bytes]:
         """Split data to send if necessary.
 
         :param data: Data to send
@@ -283,7 +298,6 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if not self._interface.need_data_split:
             return [data]
         max_packet_size = self._get_max_packet_size()
-        logger.info(f"CMD: Max Packet Size = {max_packet_size}")
         return [data[i : i + max_packet_size] for i in range(0, len(data), max_packet_size)]
 
     def open(self) -> None:
@@ -296,13 +310,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(f"Closing: {str(self._interface)}")
         self._interface.close()
 
-    def get_property_list(self) -> List[PropertyValueBase]:
+    def get_property_list(self) -> list[PropertyValueBase]:
         """Get a list of available properties.
 
         :return: List of available properties.
         :raises McuBootCommandError: Failure to read properties list
         """
-        property_list: List[PropertyValueBase] = []
+        property_list: list[PropertyValueBase] = []
         for property_tag in PropertyTag:
             try:
                 values = self.get_property(property_tag)
@@ -322,13 +336,38 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         return property_list
 
-    def _get_internal_flash(self) -> List[FlashRegion]:
+    @property
+    def available_commands(self) -> list[CommandTag]:
+        """Get a list of supported commands.
+
+        :return: List of supported commands
+        """
+        if self.available_commands_lst:
+            return self.available_commands_lst
+
+        values = None
+        props = None
+
+        try:
+            values = self.get_property(PropertyTag.AVAILABLE_COMMANDS)
+        except McuBootCommandError:
+            pass
+
+        if values:
+            props = parse_property_value(PropertyTag.AVAILABLE_COMMANDS.tag, values)
+
+        if isinstance(props, AvailableCommandsValue):
+            self.available_commands_lst = [CommandTag.from_tag(tag) for tag in props.tags]
+
+        return self.available_commands_lst
+
+    def _get_internal_flash(self) -> list[FlashRegion]:
         """Get information about the internal flash.
 
         :return: list of FlashRegion objects
         """
         index = 0
-        mdata: List[FlashRegion] = []
+        mdata: list[FlashRegion] = []
         start_address = 0
         while True:
             try:
@@ -362,13 +401,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         return mdata
 
-    def _get_internal_ram(self) -> List[RamRegion]:
+    def _get_internal_ram(self) -> list[RamRegion]:
         """Get information about the internal RAM.
 
         :return: list of RamRegion objects
         """
         index = 0
-        mdata: List[RamRegion] = []
+        mdata: list[RamRegion] = []
         start_address = 0
         while True:
             try:
@@ -391,14 +430,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         return mdata
 
-    def _get_ext_memories(self) -> List[ExtMemRegion]:
+    def _get_ext_memories(self) -> list[ExtMemRegion]:
         """Get information about the external memories.
 
         :return: list of ExtMemRegion objects supported by the device
         :raises SPSDKError: If no response to get property command
         :raises SPSDKError: Other Error
         """
-        ext_mem_list: List[ExtMemRegion] = []
+        ext_mem_list: list[ExtMemRegion] = []
         # The items of ExtMemId enum may not have unique tags
         ext_mem_ids: Sequence[int] = list(set(ExtMemId.tags()))
         try:
@@ -450,7 +489,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 internal_ram (optional) - list, external_mems (optional) - list
         :raises McuBootCommandError: Error reading the memory list
         """
-        memory_list: Dict[str, Sequence[MemoryRegion]] = {}
+        memory_list: dict[str, Sequence[MemoryRegion]] = {}
 
         # Internal FLASH
         mdata = self._get_internal_flash()
@@ -628,7 +667,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def get_property(self, prop_tag: PropertyTag, index: int = 0) -> Optional[List[int]]:
+    def get_property(
+        self, prop_tag: Union[PropertyTag, int], index: int = 0
+    ) -> Optional[list[int]]:
         """Get specified property value.
 
         :param prop_tag: Property TAG (see Properties Enum)
@@ -636,8 +677,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: list integers representing the property; None in case no response from device
         :raises McuBootError: If received invalid get-property response
         """
-        logger.info(f"CMD: GetProperty({prop_tag.label}, index={index!r})")
-        cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, CommandFlag.NONE.tag, prop_tag.tag, index)
+        property_id, label = get_property_tag_label(prop_tag)
+        logger.info(f"CMD: GetProperty({label}, index={index!r})")
+        cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, CommandFlag.NONE.tag, property_id, index)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             if isinstance(cmd_response, GetPropertyResponse):
@@ -645,15 +687,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             raise McuBootError(f"Received invalid get-property response: {str(cmd_response)}")
         return None
 
-    def set_property(self, prop_tag: PropertyTag, value: int) -> bool:
+    def set_property(self, prop_tag: Union[PropertyTag, int], value: int) -> bool:
         """Set value of specified property.
 
         :param  prop_tag: Property TAG (see Property enumerator)
         :param  value: The value of selected property
         :return: False in case of any problem; True otherwise
         """
-        logger.info(f"CMD: SetProperty({prop_tag.label}, value=0x{value:08X})")
-        cmd_packet = CmdPacket(CommandTag.SET_PROPERTY, CommandFlag.NONE.tag, prop_tag.tag, value)
+        property_id, label = get_property_tag_label(prop_tag)
+        logger.info(f"CMD: SetProperty({label}, value=0x{value:08X})")
+        cmd_packet = CmdPacket(CommandTag.SET_PROPERTY, CommandFlag.NONE.tag, property_id, value)
         cmd_response = self._process_cmd(cmd_packet)
         return cmd_response.status == StatusCode.SUCCESS
 
@@ -1202,7 +1245,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         key_blob_output_size: int,
         ecdsa_puk_output_addr: int,
         ecdsa_puk_output_size: int,
-    ) -> Optional[List[int]]:
+    ) -> Optional[list[int]]:
         """Trust provisioning: OEM generate common keys.
 
         :param key_type: Key to generate (MFW_ISK, MFW_ENCK, GEN_SIGNK, GET_CUST_MK_SK)
@@ -1241,7 +1284,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_enc_master_share_output_size: int,
         oem_cust_cert_puk_output_addr: int,
         oem_cust_cert_puk_output_size: int,
-    ) -> Optional[List[int]]:
+    ) -> Optional[list[int]]:
         """Takes the entropy seed provided by the OEM as input.
 
         :param oem_share_input_addr: The input buffer address
@@ -1316,7 +1359,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_cust_cert_dice_puk_output_addr: int,
         oem_cust_cert_dice_puk_output_size: int,
     ) -> Optional[int]:
-        """Creates the initial trust provisioning keys.
+        """Creates the initial DICE CA keys.
 
         :param oem_rkth_input_addr: The input buffer address where the OEM RKTH locates at
         :param oem_rkth_input_size: The byte count of the OEM RKTH
@@ -1325,7 +1368,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param oem_cust_cert_dice_puk_output_size: The output buffer size in byte
         :return: The byte count of the OEM Customer Certificate Public Key for DICE
         """
-        logger.info("CMD: [TrustProvisioning] Creates the initial trust provisioning keys")
+        logger.info("CMD: [TrustProvisioning] Creates the initial DICE CA keys")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
             CommandFlag.NONE.tag,
@@ -1340,6 +1383,36 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return cmd_response.values[0]
         return None
 
+    def tp_oem_get_cust_dice_response(
+        self,
+        challenge_addr: int,
+        challenge_size: int,
+        response_addr: int,
+        response_size: int,
+    ) -> Optional[int]:
+        """Creates DICE response for given challenge.
+
+        :param challenge_addr: The input buffer address where the challenge is located
+        :param challenge_size: The byte count of the challenge
+        :param response_addr: The output buffer address where ROM/FW writes the response
+        :param response_size: The byte count of the response
+        :return: The byte count of the DICE response
+        """
+        logger.info("CMD: [TrustProvisioning] Creates DICE response for given challenge")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.OEM_GET_CUST_DICE_RESPONSE.tag,
+            challenge_addr,
+            challenge_size,
+            response_addr,
+            response_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
     def tp_hsm_store_key(
         self,
         key_type: int,
@@ -1348,8 +1421,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         key_input_size: int,
         key_blob_output_addr: int,
         key_blob_output_size: int,
-    ) -> Optional[List[int]]:
-        """Trust provisioning: OEM generate common keys.
+    ) -> Optional[list[int]]:
+        """Trust provisioning: Store OEM common keys.
 
         :param key_type: Key to generate (CKDFK, HKDFK, HMACK, CMACK, AESK, KUOK)
         :param key_property: Bit 0: Key Size, 0 for 128bit, 1 for 256bit.
@@ -1661,7 +1734,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return cmd_response.values[0]
         return None
 
-    def el2go_get_version(self) -> Optional[List[int]]:
+    def el2go_get_version(self) -> Optional[list[int]]:
         """Get version of the EL2GO Provisioning FW."""
         logger.info("CMD: Getting FW version")
         cmd_packet = CmdPacket(
@@ -1693,7 +1766,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 ####################
 
 
-def _tp_sentinel_frame(command: int, args: List[int], tag: int = 0x17, version: int = 0) -> bytes:
+def _tp_sentinel_frame(command: int, args: list[int], tag: int = 0x17, version: int = 0) -> bytes:
     """Prepare frame used by sentinel."""
     data = struct.pack("<4B", command, len(args), version, tag)
     for item in args:

@@ -8,7 +8,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import List, Literal, Optional, Set, Union, overload
+from typing import Literal, Optional, Union, overload
 
 from spsdk.crypto.certificate import X509NameConfig
 from spsdk.mboot.interfaces.usb import MbootUSBInterface
@@ -36,7 +36,7 @@ def sanitize_common_name(name_config: X509NameConfig) -> None:
 
     if isinstance(name_config, list):
 
-        def find_item_index(config: List, item_key: str) -> int:
+        def find_item_index(config: list, item_key: str) -> int:
             for i, item in enumerate(config):
                 assert isinstance(item, dict)
                 if item_key in item:
@@ -55,7 +55,7 @@ def sanitize_common_name(name_config: X509NameConfig) -> None:
             name_config[subject_cn_idx] = {"COMMON_NAME": subject_cn}
 
 
-def get_current_usb_paths() -> Set[bytes]:
+def get_current_usb_paths() -> set[bytes]:
     """Get paths to all NXP USB devices."""
     interfaces = MbootUSBInterface.scan()
     paths = set()
@@ -66,7 +66,7 @@ def get_current_usb_paths() -> Set[bytes]:
 
 
 def detect_new_usb_path(
-    initial_set: Optional[Set[bytes]] = None, timeout: int = 1000
+    initial_set: Optional[set[bytes]] = None, timeout: int = 1000
 ) -> Optional[bytes]:
     """Return USB path to newly found NXP USB device.
 
@@ -253,7 +253,7 @@ class OEMCertInfo:
     """Information regarding generated OEM certificates."""
 
     oem_cert_count: int
-    oem_cert_addresses: List[int]
+    oem_cert_addresses: list[int]
     ca_cert_address: Optional[int]
     rtf_cert_address: Optional[int]
     key_flags_version: int

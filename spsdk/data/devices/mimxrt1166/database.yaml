@@ -1,0 +1,273 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  purpose: i.MX RT Crossover MCUs
+  spsdk_predecessor_name: rt116x
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1160-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m4:i.MX-RT1160
+  memory_map:
+    itcm:
+      start_int: 0x0
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    cm4_itcm:
+      start_int: 0x1FFE0000
+      size_int: 0x20000
+      external: false
+      non_xip_type: int_ram
+    dtcm:
+      start_int: 0x20000000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    cm4_ocram:
+      start_int: 0x20200000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    ocram1:
+      start_int: 0x20240000
+      size_int: 0x10000
+      external: false
+      non_xip_type: int_ram
+    ocram2:
+      start_int: 0x202C0000
+      size_int: 0x8000
+      external: false
+      non_xip_type: int_ram
+    flexspi1:
+      start_int: 0x30000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+    flexspi2:
+      start_int: 0x60000000
+      size_int: 0x1F800000
+      external: true
+      non_xip_type: ext_ram_flexspi
+    sdram:
+      start_int: 0x80000000
+      size_int: 0x4000000
+      external: true
+      non_xip_type: ext_ram_semc
+
+  isp:
+    rom:
+      protocol: sdp
+      usb:
+        vid: 0x1FC9
+        pid: 0x013D
+    flashloader:
+      protocol: mboot
+      usb:
+        vid: 0x15A2
+        pid: 0x0073
+
+features:
+  # ======== Fuses description section ========
+  fuses:
+    grouped_registers:
+      - uid: iee_user_key1
+        name: USER_KEY1
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description: USER KEY 1 (IBKEK).
+        sub_regs:
+          [fuse96, fuse97, fuse98, fuse99, fuse100, fuse101, fuse102, fuse103]
+      - uid: iee_user_key2
+        name: USER_KEY2
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description: USER KEY 2 (IBKEK).
+        sub_regs:
+          [
+            fuse104,
+            fuse105,
+            fuse106,
+            fuse107,
+            fuse108,
+            fuse109,
+            fuse110,
+            fuse111,
+          ]
+      - uid: otfad_key
+        name: OTFAD_KEY
+        width: 128
+        reverse_subregs_order: True
+        reversed: True
+        config_as_hexstring: true
+        description: OTFAD Key known as KEK.
+        sub_regs: [fuse128, fuse129, fuse130, fuse131]
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x0000_2000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_srk]
+    rot_type: "srk_table_hab"
+
+  # ======== HABv4 section ========
+  hab:
+    mem_types:
+      flexspi_nor:
+        initial_load_size: 0x2000
+      flexspi_nand:
+        initial_load_size: 0x1000
+      semc_nand:
+        initial_load_size: 0x1000
+      sd:
+        initial_load_size: 0x1000
+      mmc:
+        initial_load_size: 0x1000
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+
+  # ======== XMCD section ========
+  xmcd:
+    mem_types:
+      flexspi_ram:
+        simplified:
+          reg_spec: ../../common/xmcd/flexspi_ram_simplified.json
+        full:
+          reg_spec: ../../common/xmcd/flexspi_ram_full.json
+      semc_sdram:
+        simplified:
+          reg_spec: ../../common/xmcd/semc_sdram_simplified.json
+        full:
+          reg_spec: ../../common/xmcd/semc_sdram_full.json
+    fuses:
+      _name: "XMCD CRC"
+      fuse23:
+        fuse23-bit-14: 1 # XMC_CRC32_CHECK_EN
+      fuse73: "__crc" # XMC_CRC32_CHECK_SUM
+
+
+  # ======== IEE section ========
+  iee:
+    has_kek_fuses: True
+    additional_template: ["ibkek", "key_blobs"]
+    additional_template_text: |
+      Refer to the Security Reference Manual for RT117x and Application Note 13250 for more information.
+      In case blank string is used, the output is not generated. If the filename contains directory,
+      the output folder will be ignored and the full path from filename will be used.
+
+    fuses:
+      _name: Configuration of fuses for IEE
+      _desc: WARNING!! Check SRM and set all desired bitfields for boot configuration
+      _no_verify: True
+      iee_user_key1: __ibkek1 # USER KEY 1 (IEE KEK)
+      iee_user_key2: __ibkek2 # USER KEY 2 (IEE KEK)
+      fuse14:
+        fuse14-bit-8: 1 # Load IEE Key bitfield
+      fuse23:
+        fuse23-bit-12: 1 # Encrypt XIP engine
+      fuse9:
+        fuse9-bit-2: 1
+        fuse9-bit-3: 1
+      fuse20: 0x0000_0002 # BOOT CFG fuse!
+
+  # ======== OTFAD section ========
+  otfad:
+    sb_21_supported: False
+    has_kek_fuses: True
+    supports_key_scrambling: True
+
+    fuses_1: # Fuses for OTFAD1
+      _name: Configuration of fuses for OTFAD1
+      _no_verify: True
+      fuse71: # OTFAD CFG Fuse
+        fuse71-bit-1: 1 # OTFAD Enable
+        fuse71-bit-0: __scramble_enabled # OTFAD enable scrambling
+      fuse133: __key_scramble_align # OTFAD scramble align
+      fuse132: __key_scramble_mask # OTFAD Scramble Key
+      otfad_key: __kek # OTFAD Key
+
+    fuses_2: # Fuses for OTFAD2
+      _name: Configuration of fuses for OTFAD2
+      _no_verify: True
+      fuse71: # OTFAD CFG Fuse
+        fuse71-bit-5: 1 # OTFAD Enable
+        fuse71-bit-4: __scramble_enabled # OTFAD enable scrambling
+      fuse135: __key_scramble_align # OTFAD scramble align
+      fuse134: __key_scramble_mask # OTFAD Scramble Key
+      otfad_key: __kek # OTFAD Key
+
+    additional_template: ["otfad_scramble"]
+    additional_template_text: |
+      Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
+
+      The fuse word 0x47 on address 0xC70 uses error-correcting codes.
+      The fuse word can only be written one time, so you must set all of the desired bits within the word at the same time.
+      Refer to the SRM to get familiar with the functionality of all bitfields.
+      The ENCRYPT_XIP_EN fuse is part of the BOOT_CFG1 fuse. If this bit is set, all BOOT_CFG fuses must be configured accordingly.
+      The encrypted XiP can be also enabled by the BOOT_CFG pin
+
+      It is recommended to set the USER_KEY5_RLOCK and OTFAD1/2_KEY_SEL_LOCK fuses for production to protect sensitive data stored in the USER_KEY5 fuse (if used) and to prevent a modification of the OTFAD key selection by malicious software.
+
+      In case blank string is used, the output is not generated. If the filename contains directory,
+      the output folder will be ignored and the full path from filename will be used.
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      serial_downloader:
+        segments:
+          hab_container: 0x0
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          keystore: 0x0800
+          hab_container: 0x1000
+      flexspi_nand:
+        segments:
+          hab_container: 0x400
+      semc_nand:
+        segments:
+          hab_container: 0x400
+      sd:
+        segments:
+          hab_container: 0x400
+      mmc:
+        segments:
+          hab_container: 0x400
+      emmc:
+        segments:
+          hab_container: 0x400
+      recovery_spi_hab:
+        segments:
+          hab_container: 0x400
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [1, 2]
+      flexspi_nand:
+        instances: [1, 2]
+      semc_nor:
+        instances: [0] # probably not supported in latest version of Flashloader
+      semc_nand:
+        instances: [0] # probably not supported in latest version of Flashloader
+      sd:
+        instances: [1, 2]
+      mmc:
+        instances: [1, 2]
+      spi_nor:
+        instances: [1, 2, 3, 4]

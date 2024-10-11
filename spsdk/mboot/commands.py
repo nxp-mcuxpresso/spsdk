@@ -9,7 +9,7 @@
 """Commands and responses used by MBOOT module."""
 
 from struct import pack, unpack, unpack_from
-from typing import Dict, List, Optional, Type
+from typing import Optional, Type
 
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootError
@@ -130,12 +130,12 @@ class TrustProvOperation(SpsdkEnum):
 
     OEM_GEN_MASTER_SHARE        = (0, "OemGenMasterShare", "Enroll Operation")
     OEM_SET_MASTER_SHARE        = (1, "SetUserKey", "Set User Key Operation")
-    OEM_GET_CUST_CERT_DICE_PUK  = (2, "SetIntrinsicKey", "Set Intrinsic Key Operation")
+    OEM_GET_CUST_CERT_DICE_PUK  = (2, "GetDiceCaPuk", "Get DICE CA public key")
     HSM_GEN_KEY                 = (3, "HsmGenKey", "HSM gen key")
     HSM_STORE_KEY               = (4, "HsmStoreKey", "HSM store key")
     HSM_ENC_BLOCK               = (5, "HsmEncBlock", "HSM Enc block")
     HSM_ENC_SIGN                = (6, "HsnEncSign", "HSM enc sign")
-
+    OEM_GET_CUST_DICE_RESPONSE  = (7, "GetDiceResponse", "Get DICE response")
 
 class TrustProvOemKeyType(SpsdkEnum):
     """Type of oem key type definition."""
@@ -380,7 +380,7 @@ class GetPropertyResponse(CmdResponse):
         """
         super().__init__(header, raw_data)
         _, *values = unpack_from(f"<{self.header.params_count}I", raw_data)
-        self.values: List[int] = list(values)
+        self.values: list[int] = list(values)
 
     def __str__(self) -> str:
         """Get object info."""
@@ -423,7 +423,7 @@ class FlashReadOnceResponse(CmdResponse):
         super().__init__(header, raw_data)
         _, length, *values = unpack_from(f"<{self.header.params_count}I", raw_data)
         self.length: int = length
-        self.values: List[int] = list(values)
+        self.values: list[int] = list(values)
         self.data = raw_data[8 : 8 + self.length] if self.length > 0 else b""
 
     def __str__(self) -> str:
@@ -484,7 +484,7 @@ class TrustProvisioningResponse(CmdResponse):
         """
         super().__init__(header, raw_data)
         _, *values = unpack(f"<{self.header.params_count}I", raw_data)
-        self.values: List[int] = list(values)
+        self.values: list[int] = list(values)
 
     def __str__(self) -> str:
         """Get object info."""
@@ -513,7 +513,7 @@ def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:
     :param offset: The offset of input data
     :return: De-serialized object from data
     """
-    known_response: Dict[int, Type[CmdResponse]] = {
+    known_response: dict[int, Type[CmdResponse]] = {
         ResponseTag.GENERIC.tag: GenericResponse,
         ResponseTag.GET_PROPERTY.tag: GetPropertyResponse,
         ResponseTag.READ_MEMORY.tag: ReadMemoryResponse,

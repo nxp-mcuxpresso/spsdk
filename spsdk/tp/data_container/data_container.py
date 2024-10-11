@@ -8,7 +8,7 @@
 
 import struct
 from abc import abstractmethod
-from typing import Any, List, Mapping, Type
+from typing import Any, Mapping, Type
 
 import hexdump
 from typing_extensions import Self
@@ -347,7 +347,7 @@ class Container(BaseElement):
         """Initialize the container."""
         self.header = ContainerHeader(major=major, minor=minor, patch=patch)
         #: list containing individual entries (shall not be modified directly)
-        self._entries: List[DataEntry] = []
+        self._entries: list[DataEntry] = []
 
     def __str__(self) -> str:
         info = (
@@ -392,7 +392,7 @@ class Container(BaseElement):
                 return entry
         raise SPSDKTpError(f"Container doesn't have an entry with type {payload_type.label}")
 
-    def get_entries(self, payload_type: PayloadType) -> List[DataEntry]:
+    def get_entries(self, payload_type: PayloadType) -> list[DataEntry]:
         """Get all entries for given payload type."""
         return [entry for entry in self._entries if entry.header.payload_type == payload_type]
 
@@ -456,6 +456,12 @@ class Container(BaseElement):
             auth_type=auth_entry.get_auth_type(),
             key=key,
         )
+
+    def get_auth_type(self) -> AuthenticationType:
+        """Get the authentication type of the container."""
+        if not isinstance(self._entries[-1], DataAuthenticationEntry):
+            return AuthenticationType.NONE
+        return self._entries[-1].get_auth_type()
 
     @classmethod
     def parse(cls, data: bytes) -> Self:

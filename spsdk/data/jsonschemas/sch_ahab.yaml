@@ -2,27 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-family:
-  type: object
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description:
-        Family identifier including the chip revision. If revision is not
-        present, latest revision is used as default.
-      # enum: [] Just placeholder to fill up in runtime
-      template_value: rt118x
-    revision:
-      type: string
-      title: MCU revision
-      description: Revision of silicon
-      template_value: latest
-
 whole_ahab_image:
   type: object
   required:
-    - family
     - containers
     - output
   properties:
@@ -48,6 +30,17 @@ whole_ahab_image:
       description: Output AHAB file name
       format: file_name
       template_value: generated_ahab.bin
+    container_version:
+      type: number
+      title: Container version
+      description:
+        Force container version, if not specified the default version is used.
+        This configuration option is valid only for chips that supports both AHAB container versions. Possible options <2, 1>
+      minimal: 1
+      maximal: 2
+      template_value: 2
+      skip_in_template: True
+
     containers:
       title: List of containers present in AHAB
       description: The order of containers in the list defines the order in AHAB.
@@ -102,7 +95,7 @@ whole_ahab_image:
                     type: [number, string]
                     title: SRK revoke mask
                     description:
-                      Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke
+                      Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke
                       key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
                       Example of revocation SRK_0 and SRK_1 - the value should be 0x03
                     format: number
@@ -117,6 +110,26 @@ whole_ahab_image:
                       - enabled:        Leave GDET enabled"
                     enum: [disabled, enabled_eleapi, enabled]
                     template_value: disabled
+                  check_all_signatures:
+                    type: string
+                    title: Check all signatures
+                    description:
+                      "This option overrides a fuse to select verification mode.\n
+                      - default: Apply default fuse policy.\n
+                      - check_all_signatures: Force verification of all present signatures."
+                    enum: [default, check_all_signatures]
+                    template_value: default
+                    skip_in_template: True
+                  fast_boot:
+                    type: string
+                    title: Fast boot
+                    description: "This option enables fast boot mode.\n
+                      - enabled: Fast boot enabled.\n
+                      - slice_hash: Slice and hash mode.\n
+                      - on_fly: On the fly hash."
+                    enum: [enabled, slice_hash, on_fly]
+                    template_value: enabled
+                    skip_in_template: True
                   fuse_version:
                     type: [number, string]
                     title: Fuse version
@@ -144,8 +157,23 @@ whole_ahab_image:
                   signature_provider:
                     type: string
                     title: Signature Provider
-                    description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+                    description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
                     template_value: type=file;file_path=my_prv_key.pem
+                  signing_key_#2:
+                    type: string
+                    title: AHAB container signing key for second signature (PQC only)
+                    description:
+                      Private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
+                      The referenced SRK must not have been revoked.
+                    format: file
+                    template_value: my_signing_key.pem
+                    skip_in_template: True
+                  signature_provider_#2:
+                    type: string
+                    title: Signature Provider for second signature (PQC)
+                    description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+                    template_value: type=file;file_path=my_prv_key.pem
+                    skip_in_template: True
                   images:
                     type: array
                     title: Image array
@@ -205,38 +233,31 @@ whole_ahab_image:
                           image_identifier: oei_ddr
                           skip_in_template: True
                           description: OEI with DDR PHY tunning images
-                          required:
-                            [
-                              oei_ddr,
-                              lpddr_imem_1d,
-                              lpddr_imem_2d,
-                              lpddr_dmem_1d,
-                              lpddr_dmem_2d,
-                            ]
+                          required: [oei_ddr, lpddr_imem, lpddr_dmem]
                           properties:
-                            lpddr_imem_1d:
+                            lpddr_imem:
                               type: string
-                              title: LPDDR memory FW in 1D mode
-                              description: Firmware for LPDDR4/5 memory in 1D mode.
-                              template_value: lpddr_imem_1d.bin
+                              title: LPDDR memory FW
+                              description: Firmware for LPDDR4/5 memory.
+                              template_value: lpddr_imem.bin
                               format: file
-                            lpddr_imem_2d:
+                            lpddr_imem_qb:
                               type: string
-                              title: LPDDR memory FW in 2D mode
-                              description: Firmware for LPDDR4/5 memory in 2D mode.
-                              template_value: lpddr_imem_2d.bin
+                              title: LPDDR memory FW for quick boot
+                              description: Firmware for LPDDR4/5 for quick boot.
+                              template_value: lpddr_imem_qb.bin
                               format: file
-                            lpddr_dmem_1d:
+                            lpddr_dmem:
                               type: string
-                              title: LPDDR memory data in 1D mode
-                              description: Data for LPDDR4/5 memory in 1D mode.
-                              template_value: lpddr_dmem_1d.bin
+                              title: LPDDR memory data
+                              description: Data for LPDDR4/5 memory.
+                              template_value: lpddr_dmem.bin
                               format: file
-                            lpddr_dmem_2d:
+                            lpddr_dmem_qb:
                               type: string
-                              title: LPDDR memory data in 2D mode
-                              description: Data for LPDDR4/5 memory in 2D mode.
-                              template_value: lpddr_dmem_2d.bin
+                              title: LPDDR memory data for quick boot
+                              description: Data for LPDDR4/5 memory in quick boot.
+                              template_value: lpddr_dmem_qb.bin
                               format: file
                             oei_ddr:
                               type: string
@@ -257,6 +278,20 @@ whole_ahab_image:
                               title: OEI TCM FW
                               description: OEI(Optional Executable Image) TCM settings binary file.
                               template_value: oei_tcm.bin
+                              format: file
+
+                        - type: object
+                          template_title: Double Authentication of NXP Firmwares
+                          image_identifier: double_authentication
+                          skip_in_template: True
+                          description: Double Authentication of NXP firmwares
+                          required: [double_authentication]
+                          properties:
+                            double_authentication:
+                              type: string
+                              title: NXP ELE FW
+                              description: NXP ELE firmware, that should be also signed by OEM keys binary file.
+                              template_value: nxp_ele.bin
                               format: file
 
                         - type: object
@@ -375,8 +410,16 @@ whole_ahab_image:
                               type: string
                               title: Image path
                               description: Path to image binary (absolute/relative). In case that only Image Array entry without any data image is needed, Just do not use the image path.
+                                In case that the image size in container should be aligned differently then SPSDK do (4 bytes for ELE images, 1 byte otherwise), there is hidden option
+                                'image_size_alignment' where could be override image size by any custom value.
                               format: file
                               template_value: my_image.bin
+                            image_size_alignment:
+                              type: number
+                              title: Image size alignment.
+                              description: As a standard is use 1 byte in general and for ELE image 4 bytes.
+                              template_value: 1
+                              skip_in_template: True
                             image_offset:
                               type: [number, string]
                               title: Image offset in AHAB container
@@ -448,14 +491,16 @@ whole_ahab_image:
                               type: string
                               title: Images HASH type
                               description:
-                                HASH type of image. All images in the container must have the same
-                                HASH type.
-                              enum:
-                                - sha256
-                                - sha384
-                                - sha512
-                                - sm3
+                                HASH type of image.
+                              enum: []
                               template_value: sha512
+                            gap_after_image:
+                              type: number
+                              title: Size of gap
+                              description: Size of empty gap just behind the image in AHAB container
+                              template_value: 0
+                              default: 0
+                              skip_in_template: True
                   srk_table:
                     type: object
                     title: SRK Table
@@ -473,9 +518,10 @@ whole_ahab_image:
                         title: Super Root Key (SRK) table
                         description:
                           "Table containing the used SRK records. All SRKs must be of the same
-                          type. Supported signing algorithms are: RSASSA-PSS, ECDSA or SM2. Supported hash algorithms:
-                          sha256, sha384, sha512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
-                          rsa2048, rsa4096, sm2. Certificate may be of Certificate Authority."
+                          type. Supported signing algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms:
+                          sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+                          rsa2048, rsa4096, dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just
+                          in new type of AHAB container"
                         minItems: 4
                         maxItems: 4
                         items:
@@ -488,6 +534,37 @@ whole_ahab_image:
                             - my_srk_public_key1.pub
                             - my_srk_public_key2.pub
                             - my_srk_public_key3.pub
+                      srk_table_#2:
+                        type: object
+                        title: Second SRK Table
+                        template_title: Configuration of AHAB SRK table in case that the double signing (ECC + PQC)
+                        required: [srk_array]
+                        skip_in_template: True
+                        properties:
+                          flag_ca:
+                            type: boolean
+                            title: CA Flag
+                            description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+                            template_value: false
+                          srk_array:
+                            type: array
+                            title: Super Root Key (SRK) table
+                            description:
+                              "Table containing the used SRK Dilithium records. All SRKs must be of the same
+                              type. Supported signing algorithms are: Dilithium level 3. Supported hash algorithms:
+                              sha3_256, sha3_384, sha3_512. Certificate may be of Certificate Authority."
+                            minItems: 4
+                            maxItems: 4
+                            items:
+                              type: string
+                              title: SRK key
+                              description: Path to SRK Key file.
+                              format: file
+                              template_value:
+                                - my_srk_public_key0.pub
+                                - my_srk_public_key1.pub
+                                - my_srk_public_key2.pub
+                                - my_srk_public_key3.pub
                   certificate:
                     type: string
                     title: The AHAB certificate
@@ -532,11 +609,11 @@ whole_ahab_image:
 ahab_certificate:
   type: object
   title: Configuration of AHAB Container Certificate
-  description: Optional certificate container definition."
-  required: [family, public_key, permissions]
+  description: Certificate container definition."
+  required: [public_key_0, permissions]
   oneOf:
-    - required: [signing_key]
-    - required: [signature_provider]
+    - required: [signing_key_0]
+    - required: [signature_provider_0]
   properties:
     permissions:
       type: array
@@ -546,44 +623,64 @@ ahab_certificate:
         type: string
         enum:
           - container
-          - secure_enclave_debug
-          - phbc_debug
-          - hdmi_debug
-          - soc_debug_domain_1
-          - soc_debug_domain_2
-          - life_cycle
-          - hdcp_fuses
-          - monotonic_counter
+          - debug
+          - secure_fuse
+          - return_life_cycle
+          - patch_fuses
         template_value:
           - container
-          - secure_enclave_debug
-          - phbc_debug
-          - hdmi_debug
-          - soc_debug_domain_1
-          - soc_debug_domain_2
-          - life_cycle
-          - hdcp_fuses
-          - monotonic_counter
+          - debug
+    permission_data:
+      type: [number, string]
+      title: Permission data
+      description: (Optional) Complementary information for debug auth feature 96-bits
+      format: number
+      template_value: "0x00001111aaaabbbb22223333"
     uuid:
       type: [number, string]
       title: UUID
       description: (Optional) 128-bit unique identifier
       format: number
-      template_value: 0x00001111aaaabbbb22223333ccccdddd
-    public_key:
+      template_value: "0x00001111aaaabbbb22223333ccccdddd"
+    fuse_version:
+      type: [number, string]
+      title: Fuse version
+      description:
+        The value must be equal or greater than the version stored in fuses
+        to allow loading this container.
+      format: number
+      template_value: 0
+    public_key_0:
       type: string
-      title: Certificate public key
-      description: Path to Public key file ECDSA.
+      title: Certificate public key 0
+      description: Path to Public key 0 file.
       format: file
-      template_value: my_cert_public_key.pem
-    signing_key:
+      template_value: my_cert_public_key0.pem
+    signing_key_0:
       type: string
-      title: SRK container signing key
-      description: Private key used for sign the certificate container.
+      title: SRK container signing key 0
+      description: Private key 0 used for sign the certificate container.
       format: file
-      template_value: my_srk_signing_key.pem
-    signature_provider:
+      template_value: my_srk_signing_key0.pem
+    signature_provider_0:
       type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
-      template_value: type=file;file_path=my_prv_key.pem
+      title: Signature Provider 0
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+      template_value: type=file;file_path=my_prv_key0.pem
+    public_key_1:
+      type: string
+      title: Certificate public key 1
+      description: Path to Public key 1 file.
+      format: file
+      template_value: my_cert_public_key1.pem
+    signing_key_1:
+      type: string
+      title: SRK container signing key 1
+      description: Private key 1 used for sign the certificate container.
+      format: file
+      template_value: my_srk_signing_key1.pem
+    signature_provider_1:
+      type: string
+      title: Signature Provider 1
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+      template_value: type=file;file_path=my_prv_key1.pem

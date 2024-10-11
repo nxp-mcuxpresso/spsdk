@@ -11,7 +11,7 @@ import logging
 from abc import ABC
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Iterator, Optional, Sequence, Union
 
 from typing_extensions import Self
 
@@ -621,7 +621,7 @@ class SegBEE(BaseSegment):
         return result
 
     @classmethod
-    def parse(cls, data: bytes, decrypt_keys: Optional[List[bytes]] = None) -> Self:
+    def parse(cls, data: bytes, decrypt_keys: Optional[list[bytes]] = None) -> Self:
         """De-serialization.
 
         :param data: binary data to be parsed
@@ -629,7 +629,7 @@ class SegBEE(BaseSegment):
                 The number of keys must match number of regions to be parsed
         :return: instance created from binary data
         """
-        regions: List[BeeRegionHeader] = []
+        regions: list[BeeRegionHeader] = []
         offset = 0
         if decrypt_keys:
             for sw_gp_key in decrypt_keys:
@@ -921,7 +921,7 @@ class SegDCD(BaseSegment):
     """
 
     # list of supported DCD commands
-    _COMMANDS: Tuple[CmdTag, ...] = (
+    _COMMANDS: tuple[CmdTag, ...] = (
         CmdTag.WRT_DAT,
         CmdTag.CHK_DAT,
         CmdTag.NOP,
@@ -934,7 +934,7 @@ class SegDCD(BaseSegment):
         return self._header
 
     @property
-    def commands(self) -> List[CmdBase]:
+    def commands(self) -> list[CmdBase]:
         """Commands of Device configuration data (DCD) segment."""
         return self._commands
 
@@ -954,7 +954,7 @@ class SegDCD(BaseSegment):
         self.enabled = enabled
         self._header = Header(SegTag.DCD.tag, param)
         self._header.length = self._header.size
-        self._commands: List[CmdBase] = []
+        self._commands: list[CmdBase] = []
 
     def __repr__(self) -> str:
         return f"DCD <Commands: {len(self._commands)}>"
@@ -1095,7 +1095,7 @@ class SegDcdBuilder:
             None  # this is cache to merge several write commands of same type
         )
 
-    def _parse_cmd(self, dcd_obj: SegDCD, cmd: List[str]) -> None:
+    def _parse_cmd(self, dcd_obj: SegDCD, cmd: list[str]) -> None:
         """Parse one command.
 
         :param dcd_obj: result of the builder
@@ -1178,7 +1178,7 @@ class SegDcdBuilder:
         """
         dcd_obj = SegDCD(enabled=True)
         cmd_mline = False
-        cmd: List[str] = []
+        cmd: list[str] = []
         for line in text.split("\n"):
             line = line.rstrip("\0")
             line = line.lstrip()
@@ -1217,7 +1217,7 @@ class SegCSF(BaseSegment):
     """
 
     # list of supported CSF commands
-    _COMMANDS: Tuple[CmdTag, ...] = (
+    _COMMANDS: tuple[CmdTag, ...] = (
         CmdTag.WRT_DAT,
         CmdTag.CHK_DAT,
         CmdTag.NOP,
@@ -1242,11 +1242,11 @@ class SegCSF(BaseSegment):
         super().__init__()
         self._header = Header(SegTag.CSF.tag, version)
         self.enabled = enabled
-        self._commands: List[CmdBase] = []
+        self._commands: list[CmdBase] = []
         # additional command data: keys and certificates; these data are stored after the commands
         #   - key is an offset of the data section in segment
         #   - value is an instance of the data section
-        self._cmd_data: Dict[int, BaseSecretClass] = {}
+        self._cmd_data: dict[int, BaseSecretClass] = {}
         # this allows to export segment, that was parsed, but certificate and private keys are not available
         self.no_signature_updates = False
 
@@ -1256,7 +1256,7 @@ class SegCSF(BaseSegment):
         return self._header.param
 
     @property
-    def commands(self) -> List[CmdBase]:
+    def commands(self) -> list[CmdBase]:
         """List of CSF commands in the segment."""
         return self._commands
 
@@ -1342,7 +1342,7 @@ class SegCSF(BaseSegment):
 
         """
         cur_ofs = self._header.length
-        new_cmd_data: Dict[int, BaseSecretClass] = {}
+        new_cmd_data: dict[int, BaseSecretClass] = {}
         for cmd in filter(lambda c: c.needs_cmd_data_reference, self.commands):
             key = cmd.cmd_data_reference
             if key is not None:
@@ -1472,7 +1472,7 @@ class XMCDHeader:
         :param block_type: Type of XMCD data (0 - Simplified, 1 - Full), defaults to 0
         :param block_size: XMCD data block size, defaults to 4
         :raises SPSDKValueError: If the given interface is not supported
-        :raises SPSDKValueError: If the given blovk type is not supported
+        :raises SPSDKValueError: If the given block type is not supported
         """
         self.tag = 0x0C
         self.version = 0

@@ -10,22 +10,31 @@
 import abc
 import logging
 import math
+import os
 from collections import OrderedDict
 from dataclasses import dataclass
-from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional, Type, Union
+from struct import calcsize, pack, unpack, unpack_from
+from typing import Any, Optional, Type, Union
 
 from typing_extensions import Self
 
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.utils import extract_public_key
-from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKTypeError, SPSDKValueError
+from spsdk.exceptions import (
+    SPSDKError,
+    SPSDKKeyError,
+    SPSDKNotImplementedError,
+    SPSDKTypeError,
+    SPSDKValueError,
+)
+from spsdk.image.ahab.ahab_certificate import AhabCertificate
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import Endianness, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +165,7 @@ class DebugCredentialCertificate:
     def __str__(self) -> str:
         """String representation of DebugCredential."""
         msg = f"Version : {self.version}\n"
-        msg += f"SOCC    : {self.get_socc_description()}\n"
+        msg += f"SOCC    : 0x{self.socc:08X}\n"
         msg += f"UUID    : {self.uuid.hex().upper()}\n"
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
@@ -166,6 +175,11 @@ class DebugCredentialCertificate:
 
     def __repr__(self) -> str:
         return f"DC {self.version}, 0x{self.socc:08X}"
+
+    @property
+    def rot_hash_length(self) -> int:
+        """Root of Trust debug credential hash length."""
+        return 32
 
     @abc.abstractmethod
     def calculate_hash(self) -> bytes:
@@ -197,45 +211,26 @@ class DebugCredentialCertificate:
         """Get data to be signed."""
 
     @staticmethod
-    def get_socc_list() -> Dict[int, Dict[str, List[str]]]:
+    def get_socc_list() -> dict[int, dict[str, list[str]]]:
         """Get supported SOCC list."""
-        data: Dict[int, Dict[str, List[str]]] = {}
+        data: dict[int, dict[str, list[str]]] = {}
         # Get the SOCC information from the database
+        DatabaseManager().db.devices.load_devices_from_path(
+            os.path.join(SPSDK_DATA_FOLDER, "devices")
+        )  # TODO This will be removed in SPSDK 2.4 when the family will be mandatory !!!!
         for dev, rev, socc in DatabaseManager().db.devices.feature_items(
             DatabaseManager.DAT, "socc"
         ):
             data.setdefault(value_to_int(socc), {}).setdefault(dev, []).append(rev)
 
         # Sort the all items to be nice list (also nested)
-        ret: Dict[int, Dict[str, List[str]]] = OrderedDict()
+        ret: dict[int, dict[str, list[str]]] = OrderedDict()
         for socc in sorted(data):
             ret[socc] = OrderedDict()
             for dev in sorted(data[socc]):
                 ret[socc][dev] = sorted(data[socc][dev])
 
         return ret
-
-    @staticmethod
-    def _get_socc_text_description(socc: int, socc_list: Dict[int, Dict[str, List[str]]]) -> str:
-        """Get text line with printed out all devices and their revisions for SOCC.
-
-        :param socc: SOCC ID
-        :param socc_list: List of all SOCC.
-        :return: Text readable description of supported MCUs
-        """
-        ret = f"0x{socc:08X}: "
-        empty = True
-        for dev, revs in socc_list[socc].items():
-            ret += f"{'' if empty else ', '}{dev}[{','.join(revs)}]"
-            empty = False
-        return ret
-
-    def get_socc_description(self) -> str:
-        """Get SOCC family name description.
-
-        :return: SOCC string representation
-        """
-        return self._get_socc_text_description(self.socc, self.get_socc_list())
 
     def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""
@@ -247,7 +242,7 @@ class DebugCredentialCertificate:
             raise SPSDKError("Debug Credential Signature provider didn't return any signature")
         self.signature = signature
 
-    def _vars(self) -> Dict[str, Any]:
+    def _vars(self) -> dict[str, Any]:
         v = vars(self).copy()
         del v["signature_provider"]
         return v
@@ -262,44 +257,82 @@ class DebugCredentialCertificate:
         socc = value_to_int(socc)
         socc_list = DebugCredentialCertificate.get_socc_list()
         try:
-            supported_families: Dict[str, List[str]] = socc_list[socc]
+            supported_families: dict[str, list[str]] = socc_list[socc]
         except KeyError as exc:
             raise SPSDKKeyError(f"Unsupported SOCC(0x{socc:08X}) by DAT tool") from exc
         return supported_families.popitem()[0]
 
     @staticmethod
-    def dat_based_on_ele(socc: int) -> bool:
+    def dat_based_on_ele(family: str) -> bool:
         """Get information if the DAT is based on EdgeLock Enclave hardware.
 
-        :param socc: Chip SOCC
+        :param family: The chip family name
         :return: True if the ELE is target HW, False otherwise
         """
-        family_ambassador = DebugCredentialCertificate.get_family_ambassador(socc)
-        return get_db(family_ambassador).get_bool(DatabaseManager.DAT, "based_on_ele", False)
+        return get_db(family).get_bool(DatabaseManager.DAT, "based_on_ele", False)
 
     @staticmethod
-    def _get_class(version: ProtocolVersion, socc: int) -> "Type[DebugCredentialCertificate]":
-        if DebugCredentialCertificate.dat_based_on_ele(socc):
-            return DebugCredentialEdgeLockEnclave
+    def _get_class(
+        family: str, version: Optional[ProtocolVersion] = None, revision: str = "latest"
+    ) -> Type["DebugCredentialCertificate"]:
+        db = get_db(family, revision)
+        if db.get_bool(DatabaseManager.DAT, "based_on_ele", False):
+            # TODO Dirty hack, remove in SPSDK 2.4 when family and revision will be mandatory
+            if version and version == ProtocolVersion("2.0"):
+                return DebugCredentialEdgeLockEnclave
+            cnt_ver = db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1)
+            if cnt_ver == 1:
+                return DebugCredentialEdgeLockEnclave
+            if cnt_ver == 2:
+                return DebugCredentialEdgeLockEnclaveV2
+            raise SPSDKValueError(f"Unsupported ELE container version {cnt_ver} for {family}")
+        if version is None:
+            raise SPSDKValueError(
+                "Cannot determine the Debug Credential class "
+                f"without specified protocol for {family}"
+            )
         if version.is_rsa():
             return DebugCredentialCertificateRsa
         return DebugCredentialCertificateEcc
 
     @staticmethod
-    def _get_rot_meta_class(version: ProtocolVersion, socc: int) -> "Type[RotMeta]":
-        dc_class = DebugCredentialCertificate._get_class(version, socc)
+    def _get_class_from_cfg(
+        config: dict[str, Any],
+        family: str,
+        search_paths: Optional[list[str]],
+        revision: str = "latest",
+    ) -> Type["DebugCredentialCertificate"]:
+        if "rot_meta" in config:
+            cfg_path = config["rot_meta"][0]
+        else:
+            cfg_path = config["public_key_0"]
+
+        rot_pub = extract_public_key(file_path=cfg_path, search_paths=search_paths)
+        version = ProtocolVersion.from_public_key(public_key=rot_pub)
+        return DebugCredentialCertificate._get_class(
+            family=family, version=version, revision=revision
+        )
+
+    @staticmethod
+    def _get_rot_meta_class(
+        version: ProtocolVersion, family: str, revision: str = "latest"
+    ) -> Type["RotMeta"]:
+        dc_class = DebugCredentialCertificate._get_class(
+            family=family, version=version, revision=revision
+        )
         return {
             DebugCredentialCertificateEcc: RotMetaEcc,
             DebugCredentialCertificateRsa: RotMetaRSA,
             DebugCredentialEdgeLockEnclave: RotMetaEdgeLockEnclave,
+            DebugCredentialEdgeLockEnclaveV2: RotMeta,
         }[dc_class]
 
     @classmethod
     def create_from_yaml_config(
         cls,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         version: Optional[ProtocolVersion] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> "DebugCredentialCertificate":
         """Create a debug credential object out of yaml configuration.
 
@@ -333,8 +366,12 @@ class DebugCredentialCertificate:
             logger.info(
                 f"Protocol version not defined. The version {version.version} has been determined from RoT public key"
             )
-        klass = DebugCredentialCertificate._get_class(version=version, socc=socc)
-        rot_meta_class = DebugCredentialCertificate._get_rot_meta_class(version=version, socc=socc)
+        klass = DebugCredentialCertificate._get_class(
+            family=family, version=version, revision=revision
+        )
+        rot_meta_class = DebugCredentialCertificate._get_rot_meta_class(
+            version=version, family=family, revision=revision
+        )
         try:
             pss_padding = get_db(family).get_bool(DatabaseManager.SIGNING, "pss_padding")
         except SPSDKValueError:
@@ -367,13 +404,22 @@ class DebugCredentialCertificate:
         :param data: Raw data as bytes
         :return: DebugCredential object
         """
+        # The  ELE V2 is totally different to standard DC - try it first and if fail let do the standard process
+        try:
+            return DebugCredentialEdgeLockEnclaveV2.parse(data)  # type:ignore
+        except SPSDKError:
+            pass
         ver = unpack_from("<2H", data)
         socc = unpack_from("<L", data, 4)
-        klass = cls._get_class(ProtocolVersion.from_version(ver[0], ver[1]), socc[0])
+
+        klass = cls._get_class(
+            family=cls.get_family_ambassador(socc[0]),
+            version=ProtocolVersion.from_version(ver[0], ver[1]),
+        )
         return klass.parse(data)  # type: ignore
 
-    @staticmethod
-    def get_supported_families() -> List[str]:
+    @classmethod
+    def get_supported_families(cls) -> list[str]:
         """Get all supported families for DAT.
 
         :return: List of supported families.
@@ -397,7 +443,7 @@ class DebugCredentialCertificate:
             ) from exc
 
     @staticmethod
-    def get_validation_schemas(family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+    def get_validation_schemas(family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Get list of validation schemas.
 
         :param family: Family for what will be json schema generated.
@@ -405,16 +451,18 @@ class DebugCredentialCertificate:
         :return: Validation list of schemas.
         """
         schema = get_schema_file(DatabaseManager.DAT)
+        sch_family: dict[str, Any] = get_schema_file("general")["family"]
+        sch_family.pop("required")
         ret = []
         socc = DebugCredentialCertificate.get_socc_by_family(family, revision)
         schema["dc_content"]["properties"]["socc"]["template_value"] = hex(socc)
-        schema["family_rev"]["properties"]["family"]["template_value"] = family
-        schema["family_rev"]["properties"]["family"][
-            "enum"
-        ] = DebugCredentialCertificate.get_supported_families()
-        schema["family_rev"]["properties"]["revision"]["template_value"] = revision
+        update_validation_schema_family(
+            sch_family["properties"],
+            devices=DebugCredentialCertificate.get_supported_families(),
+            family=family,
+        )
 
-        ret.append(schema["family_rev"])
+        ret.append(sch_family)
         ret.append(schema["dc_content"])
         if get_db(family, revision).get_bool(DatabaseManager.DAT, "based_on_ele", False):
             ret.append(schema["dc_srk_ca_flag"])
@@ -581,6 +629,15 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
 
     COORDINATE_SIZE = {0: 32, 1: 48, 2: 66}
 
+    @property
+    def rot_hash_length(self) -> int:
+        """Root of Trust  debug credential hash length."""
+        db = get_db(self.get_family_ambassador(self.socc))
+        if db.get_bool(DatabaseManager.DAT, "dat_is_using_sha256_always", False):
+            return 32
+        assert isinstance(self.rot_pub, PublicKeyEcc)
+        return self.rot_pub.key_size // 8
+
     def __str__(self) -> str:
         msg = super().__str__()
         msg += f"CTRK hash   : {self.calculate_hash().hex()}\n"
@@ -737,6 +794,11 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
 class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
     """EdgeLock Class."""
 
+    @property
+    def rot_hash_length(self) -> int:
+        """Root of Trust  debug credential hash length."""
+        return 32
+
     def calculate_hash(self) -> bytes:
         """Get Root Of Trust Keys Hash.
 
@@ -857,13 +919,199 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         )
 
 
+class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
+    """Debug Credential file for ELE version 2 (with PQC support)."""
+
+    def __init__(self, certificate: AhabCertificate) -> None:
+        """Constructor for EdgeLock Enclave version 2 debug credential class."""
+        self.certificate = certificate
+        assert certificate.public_key_0
+        super().__init__(
+            version=ProtocolVersion("2.0"),  # Dummy version - is not used in DC data
+            socc=0,
+            uuid=certificate._uuid or b"",
+            rot_meta=RotMetaDummy(),
+            dck_pub=certificate.public_key_0.get_public_key(),
+            cc_socu=0,
+            cc_vu=0,
+            cc_beacon=0,
+            # just there is a needs to put any public key it won't be used :-)
+            rot_pub=certificate.public_key_0.get_public_key(),
+            signature=None,
+            signature_provider=None,
+        )
+
+    def __eq__(self, value: object) -> bool:
+
+        if not isinstance(value, DebugCredentialEdgeLockEnclaveV2):
+            return False
+        return self.certificate == value.certificate
+
+    def __str__(self) -> str:
+        """String representation of DebugCredential."""
+        msg = "Debug Credential for ELE v2 :\n"
+        msg += f" SOCC    : {hex(self.socc)}\n"
+        msg += f" CC_SOCU : {hex(self.socu)}\n"
+        # msg += f" BEACON  : {self.cc_beacon}\n "
+        msg += str(self.certificate)
+        return msg
+
+    def __repr__(self) -> str:
+        return f"DC ELE v2, 0x{self.socc:08X}"
+
+    @property
+    def socu(self) -> int:
+        """DC SOCU field."""
+        _, socu, _ = unpack("<LLL", self.certificate.permission_data[:12])
+        return socu
+
+    @socu.setter
+    def socu(self, value: int) -> None:
+        """DC SOCU field set."""
+        self.certificate.permission_data = pack("<LLL", self.socc, value, self.beacon)
+
+    @property
+    def socc(self) -> int:
+        """DC SOCC field."""
+        socc, _, _ = unpack("<LLL", self.certificate.permission_data[:12])
+        return socc
+
+    @socc.setter
+    def socc(self, value: int) -> None:
+        """DC SOCC field set."""
+        self.certificate.permission_data = pack("<LLL", value, self.socu, self.beacon)
+
+    @property
+    def beacon(self) -> int:
+        """DC SOCU field."""
+        _, _, beacon = unpack("<LLL", self.certificate.permission_data[:12])
+        return beacon
+
+    @beacon.setter
+    def beacon(self, value: int) -> None:
+        """DC Beacon field set."""
+        self.certificate.permission_data = pack("<LLL", self.socc, self.socu, value)
+
+    @classmethod
+    def get_supported_families(cls) -> list[str]:
+        """Get all supported families for DAT.
+
+        :return: List of supported families.
+        """
+        return get_families(DatabaseManager.DAT, "ele_pqc")
+
+    @staticmethod
+    def get_validation_schemas(family: str, revision: str = "latest") -> list[dict[str, Any]]:
+        """Get list of validation schemas.
+
+        :param family: Family for what will be json schema generated.
+        :param revision: For a closer specify MCU family.
+        :return: Validation list of schemas.
+        """
+        ret = AhabCertificate.get_validation_schemas(family, revision)
+        schema = get_schema_file(DatabaseManager.DAT)
+        ret[0]["properties"]["family"][
+            "enum"
+        ] = DebugCredentialEdgeLockEnclaveV2.get_supported_families()
+
+        ret[1]["properties"].pop("permissions")
+        ret[1]["required"].remove("permissions")
+        ret[1]["properties"].pop("permission_data")
+        ret.insert(1, schema["ele_socu"])
+        return ret
+
+    @staticmethod
+    def generate_config_template(family: str, revision: str = "latest") -> str:
+        """Generate DC configuration template.
+
+        :param family: Family for what will be template generated.
+        :param revision: For a closer specify MCU family.
+        :return: DC file template.
+        """
+        val_schemas = DebugCredentialEdgeLockEnclaveV2.get_validation_schemas(family, revision)
+        # schema = get_schema_file(DatabaseManager.DAT)
+
+        # note = schema["main_note"]
+
+        return CommentedConfig(
+            main_title=f"Debug Credential file template for {family} family.",
+            schemas=val_schemas,
+            # note=note,
+        ).get_template()
+
+    @classmethod
+    def create_from_yaml_config(
+        cls,
+        config: dict[str, Any],
+        version: Optional[ProtocolVersion] = None,
+        search_paths: Optional[list[str]] = None,
+    ) -> "DebugCredentialCertificate":
+        """Create a debug credential object out of yaml configuration.
+
+        :param version: Debug Authentication protocol version.
+        :param config: Debug credential file configuration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+
+        :return: DebugCredential object
+        """
+        family = config["family"]
+        revision = config.get("revision", "latest")
+        socc = cls.get_socc_by_family(family=family, revision=revision)
+        socu = value_to_int(config.pop("cc_socu", 0))
+        config["permissions"] = ["debug"]
+        permission_data = pack("<LLL", socc, socu, 0)
+        config["permission_data"] = permission_data
+        dc = AhabCertificate.load_from_config(config=config, search_paths=search_paths)
+        return DebugCredentialEdgeLockEnclaveV2(certificate=dc)
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse the debug credential.
+
+        :param data: Raw data as bytes
+        :return: DebugCredential object
+        :raises SPSDKError: When flag is invalid
+        """
+        return cls(AhabCertificate.parse(data))
+
+    def sign(self) -> None:
+        """Sign the DC data using SignatureProvider."""
+        self.certificate.update_fields()
+
+    def export(self) -> bytes:
+        """Export to binary form (serialization)."""
+        return self.certificate.export()
+
+    def calculate_hash(self) -> bytes:
+        """Calculate the RoT hash."""
+        return b""
+
+    def export_rot_pub(self) -> bytes:
+        """Export RoT public key as bytes.
+
+        :return: binary representing the RoT key
+        """
+        return b""
+
+    def export_dck_pub(self) -> bytes:
+        """Export Debugger public key (DCK) as bytes.
+
+        :return: binary representing the DCK key
+        """
+        return b""
+
+    def _get_data_to_sign(self) -> bytes:
+        """Get data to be signed."""
+        return b""
+
+
 class RotMeta:
     """RoT meta base class."""
 
     @classmethod
     @abc.abstractmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> Self:
         """Creates the RoT meta from configuration.
 
@@ -905,7 +1153,7 @@ class RotMeta:
 class RotMetaRSA(RotMeta):
     """RSA RoT meta object."""
 
-    def __init__(self, rot_items: List[bytes]) -> None:
+    def __init__(self, rot_items: list[bytes]) -> None:
         """Class object initializer.
 
         :param rot_items: List of public key hashes
@@ -927,7 +1175,7 @@ class RotMetaRSA(RotMeta):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> Self:
         """Creates the RoT meta from configuration.
 
@@ -1055,7 +1303,7 @@ class RotMetaEcc(RotMeta):
     HASH_SIZES = {32: 256, 48: 384, 66: 512}
     HASH_SIZE = 0  # to be overridden by derived class
 
-    def __init__(self, flags: RotMetaFlags, rot_items: List[bytes]) -> None:
+    def __init__(self, flags: RotMetaFlags, rot_items: list[bytes]) -> None:
         """Class object initializer.
 
         :param flags: RotMetaFlags object
@@ -1091,7 +1339,7 @@ class RotMetaEcc(RotMeta):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "RotMetaEcc":
         """Creates the RoT meta from configuration.
 
@@ -1100,7 +1348,7 @@ class RotMetaEcc(RotMeta):
         rot_pub_keys = cls._load_public_keys(config, search_paths=search_paths)
         hash_size = cls._get_hash_size(config, search_paths=search_paths)
         klass = cls._get_subclass(hash_size)
-        rot_items: List[bytes] = []
+        rot_items: list[bytes] = []
         if len(rot_pub_keys) > 1:
             for pub_key in rot_pub_keys:
                 data = pub_key.export()
@@ -1163,13 +1411,13 @@ class RotMetaEcc(RotMeta):
 
     @classmethod
     def _load_public_keys(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
-    ) -> List[PublicKeyEcc]:
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
+    ) -> list[PublicKeyEcc]:
         """Load public keys from configuration."""
         pub_key_paths = config["rot_meta"]
         if len(pub_key_paths) < 1:
             raise SPSDKValueError("At least one public key must be specified.")
-        pub_keys: List[PublicKeyEcc] = []
+        pub_keys: list[PublicKeyEcc] = []
         for pub_key_path in pub_key_paths:
             pub_key = extract_public_key(
                 file_path=pub_key_path, password=None, search_paths=search_paths
@@ -1181,7 +1429,7 @@ class RotMetaEcc(RotMeta):
 
     @classmethod
     def _get_hash_size(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> int:
         hash_size = None
         pub_key_paths = config["rot_meta"]
@@ -1201,14 +1449,14 @@ class RotMetaEcc(RotMeta):
     @classmethod
     def _get_subclass(cls, hash_size: int) -> Type["RotMetaEcc"]:
         """Get the subclass with given hash algorithm."""
-        subclasses: List[Type[RotMetaEcc]] = cls._build_subclasses()
+        subclasses: list[Type[RotMetaEcc]] = cls._build_subclasses()
         for subclass in subclasses:
             if subclass.HASH_SIZE == hash_size:
                 return subclass
         raise SPSDKValueError(f"The subclass with hash length {hash_size} does not exist.")
 
     @classmethod
-    def _build_subclasses(cls) -> List[Type["RotMetaEcc"]]:
+    def _build_subclasses(cls) -> list[Type["RotMetaEcc"]]:
         """Dynamically build list of classes based on hash algorithm."""
         rot_meta_types = []
         for hash_size, hash_algo in cls.HASH_SIZES.items():
@@ -1258,13 +1506,12 @@ class RotMetaEdgeLockEnclave(RotMeta):
         """
         flags = RotMetaFlags.parse(data[:4])
         srk_table = SRKTable.parse(data[4:])
-        srk_table.update_fields()
         srk_table.verify().validate()
         return cls(flags, srk_table)
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> Self:
         """Creates the RoT meta from configuration.
 
@@ -1305,3 +1552,35 @@ class RotMetaEdgeLockEnclave(RotMeta):
         """
         self.srk_table.update_fields()
         return self.srk_table.compute_srk_hash()
+
+
+class RotMetaDummy(RotMeta):
+    """RoT meta dummy class."""
+
+    @classmethod
+    def load_from_config(
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
+    ) -> Self:
+        """Creates the RoT meta from configuration."""
+        raise SPSDKNotImplementedError()
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse the object from binary data."""
+        raise SPSDKNotImplementedError()
+
+    def export(self) -> bytes:
+        """Export to binary form."""
+        raise SPSDKNotImplementedError()
+
+    def calculate_hash(self) -> bytes:
+        """Get Root Of Trust Keys Hash."""
+        raise SPSDKNotImplementedError()
+
+    def __str__(self) -> str:
+        """Object description in string format."""
+        return "Dummy RoT Meta class"
+
+    def __len__(self) -> int:
+        """Length of exported data."""
+        return 0

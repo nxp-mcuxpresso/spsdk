@@ -30,11 +30,11 @@ def test_app_help(cli_runner: CliRunner):
         (
             None,
             None,
-            ["lpc55s3x", "rw61x", "Opt0: 0xC1020026, Opt1: 0x000000A1", "Opt0: 0xD0000003"],
+            ["lpc55s36", "rw612", "Opt0: 0xC1020026, Opt1: 0x000000A1", "Opt0: 0xD0000003"],
             ["invalid"],
         ),
-        ("rt118x", None, ["rt118x", "flexspi_nand"], ["lpc55s3x"]),
-        ("rt118x", "flexspi_nor", ["rt118x"], ["lpc55s3x", "flexspi_nand"]),
+        ("mimxrt1189", None, ["mimxrt1189", "flexspi_nand"], ["lpc55s3x"]),
+        ("mimxrt1189", "flexspi_nor", ["mimxrt1189"], ["lpc55s3x", "flexspi_nand"]),
     ],
 )
 def test_app_family_info(cli_runner: CliRunner, family, peripheral, checks_output, not_in_output):
@@ -56,10 +56,10 @@ def test_app_family_info(cli_runner: CliRunner, family, peripheral, checks_outpu
 @pytest.mark.parametrize(
     "family,peripheral,ow",
     [
-        ("rt118x", "flexspi_nor", [0xC000_0001]),
-        ("rt118x", "flexspi_nor", [0xC100_0007, 0x0000_0001]),
-        ("rt118x", "flexspi_nand", [0xC1020026, 0x000000C2]),
-        ("rt118x", "sd", [0xD0000002]),
+        ("mimxrt1189", "flexspi_nor", [0xC000_0001]),
+        ("mimxrt1189", "flexspi_nor", [0xC100_0007, 0x0000_0001]),
+        ("mimxrt1189", "flexspi_nand", [0xC1020026, 0x000000C2]),
+        ("mimxrt1189", "sd", [0xD0000002]),
         ("lpc55s3x", "flexspi_nor", [0xC100_0007, 0x0000_0001]),
     ],
 )
@@ -82,26 +82,23 @@ def test_app_parse_export(cli_runner: CliRunner, tmpdir, family, peripheral, ow)
 
 def test_app_parse_export_all(cli_runner: CliRunner, tmpdir):
     """Test of family info command."""
-    all_known = MemoryConfig.get_all_known_option_words()
-    for peripheral, p_db in all_known.items():
-        for manufacturer, man_db in p_db.items():
-            for chip_name, chip_db in man_db.items():
-                for interface, ow in chip_db.items():
-                    cmd = f"parse -f rt118x -p {peripheral} "
-                    for x in ow:
-                        cmd += f"-w {str(x)} "
-                    cfg_file = os.path.join(
-                        tmpdir, f"{manufacturer}_{chip_name}_{interface}.yaml"
-                    ).replace("\\", "/")
-                    cmd += f"-o {cfg_file}"
-                    ret = cli_runner.invoke(nxpmemcfg.main, cmd)
-                    assert ret.exit_code == 0
+    memories = MemoryConfig.get_all_known_memories()
+    for memory in memories:
+        cmd = f"parse -f mimxrt1189 -p {memory.peripheral} "
+        for ow in memory.option_words:
+            cmd += f"-w {str(ow)} "
+        cfg_file = os.path.join(
+            tmpdir, f"{memory.manufacturer}_{memory.name}_{memory.interface}.yaml"
+        ).replace("\\", "/")
+        cmd += f"-o {cfg_file}"
+        ret = cli_runner.invoke(nxpmemcfg.main, cmd)
+        assert ret.exit_code == 0
 
-                    ret = cli_runner.invoke(nxpmemcfg.main, f"export -c {cfg_file}")
+        ret = cli_runner.invoke(nxpmemcfg.main, f"export -c {cfg_file}")
 
-                    assert ret.exit_code == 0
-                    for x in ow:
-                        assert f"0x{x:08X}" in ret.output
+        assert ret.exit_code == 0
+        for ow in memory.option_words:
+            assert f"0x{ow:08X}" in ret.output
 
 
 @pytest.mark.parametrize("family", MemoryConfig.get_supported_families())
@@ -113,29 +110,42 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
 
 
 @pytest.mark.parametrize(
-    "family,instance,interface,chip_name,fcb,output_checks",
+    "family,instance,interface,chip_name,fcb,secure_address,output_checks",
     [
         (
-            "rt118x",
+            "mimxrt1189",
             1,
             "quad_spi",
             "W25QxxxJV",
             True,
+            False,
             [
                 "fill-memory 0x1FFE0000 4 0xCF900001",
                 "fill-memory 0x1FFE0000 4 0xCF900001",
                 "fill-memory 0x1FFE0000 4 0xC0000207",
                 "configure-memory 9 0x1FFE0000",
                 "fill-memory 0x1FFE0000 4 0xF000000F",
-                "read-memory",
+                "read-memory 0x28000400 0x200",
             ],
         ),
         (
             "rt118x",
+            1,
+            "quad_spi",
+            "W25QxxxJV",
+            True,
+            True,
+            [
+                "read-memory 0x38000400 0x200",
+            ],
+        ),
+        (
+            "mimxrt1189",
             2,
             "quad_spi",
             "W25N01G",
             True,
+            False,
             [
                 "fill-memory 0x1FFE0000 4 0xCF900002",
                 "fill-memory 0x1FFE0000 4 0xC1010026",
@@ -150,6 +160,7 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
             "quad_spi",
             "W25QxxxJV",
             True,
+            False,
             [
                 "fill-memory 0x0010C000 4 0xCF900000",
                 "fill-memory 0x0010C000 4 0xC0000207",
@@ -167,6 +178,7 @@ def test_blhost_script(
     interface: str,
     chip_name: str,
     fcb: bool,
+    secure_address: bool,
     output_checks: str,
     tmpdir: str,
 ):
@@ -180,7 +192,7 @@ def test_blhost_script(
     assert ret.exit_code == 0
     ret = cli_runner.invoke(
         nxpmemcfg.main,
-        f"blhost-script -c {output_cfg}{f' -ix {str(instance)}' if instance is not None else ''} {f' --fcb {output_fcb}' if fcb else ''}",
+        f"blhost-script -c {output_cfg}{f' -ix {str(instance)}' if instance is not None else ''} {f' --fcb {output_fcb}' if fcb else ''}{' --secure-addresses' if secure_address else ''}",
     )
     assert ret.exit_code == 0
     for x in output_checks:

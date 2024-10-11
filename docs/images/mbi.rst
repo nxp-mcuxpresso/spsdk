@@ -43,7 +43,7 @@ Implementation details
 
 To handle the small differences between the MBI types. Mixin classes were used to define the common parts of the MBI.
 This definition of required mixins is stored in database for each family of devices. When you click on the supported MBI type in the table above, you will be pointed to the documentation of the specific MBI type.
-Naming convention for each MBI type is used here just for documentation purposes. For example: "MBI-A-IV-I-TZM-LA-EATZ-ECS" contains first letters of mixins used in the MBI, like App, ImageVersion, IVT, TrustZoneMandatory and ohters...
+Naming convention for each MBI type is used here just for documentation purposes. For example: "MBI-A-IV-I-TZM-LA-EATZ-ECS" contains first letters of mixins used in the MBI, like App, ImageVersion, IVT, TrustZoneMandatory and others...
 
 If you want to create MBI class directly you might use *create_mbi_class* function. The function takes two arguments, the first one is the MBI type and the second one is the device family. The method returns the class that can be used to create MBI image.
 

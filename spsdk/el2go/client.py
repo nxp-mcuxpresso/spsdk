@@ -10,12 +10,14 @@
 import json
 import logging
 import uuid
-from typing import List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
-from spsdk.utils.http_client import HTTPClientBase, HTTPClientError
-from spsdk.utils.misc import load_secret
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.http_client import HTTPClientBase, SPSDKHTTPClientError
+from spsdk.utils.misc import find_file, load_secret
+from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,7 @@ class EL2GOClient(HTTPClientBase):
                 "EL2G-API-Key": api_key,
             }
         )
+        self.correlation_id = ""
 
     def _handle_el2go_request(
         self,
@@ -74,9 +77,9 @@ class EL2GOClient(HTTPClientBase):
         param_data: Optional[dict] = None,
         json_data: Optional[dict] = None,
     ) -> EL2GOApiResponse:
-        correlation_id = str(uuid.uuid4())
-        logger.info(f"EL2G-Correlation-ID: {correlation_id}")
-        self.headers["EL2G-Correlation-ID"] = correlation_id
+        self.correlation_id = str(uuid.uuid4())
+        logger.info(f"EL2G-Correlation-ID: {self.correlation_id}")
+        self.headers["EL2G-Correlation-ID"] = self.correlation_id
         api_response = super()._handle_request(
             method=method, url=url, param_data=param_data, json_data=json_data
         )
@@ -88,7 +91,7 @@ class EL2GOClient(HTTPClientBase):
                     extra_data = api_response.json()
                 except json.JSONDecodeError as json_decode_error:
                     extra_data = {}
-                    raise HTTPClientError(
+                    raise SPSDKHTTPClientError(
                         api_response.status_code,
                         extra_data,
                         f"Error {api_response.status_code} ({api_response.reason}) occurred when calling {url}\n"
@@ -109,7 +112,7 @@ class EL2GOClient(HTTPClientBase):
         return response
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> Self:
+    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.
@@ -121,4 +124,16 @@ class EL2GOClient(HTTPClientBase):
         cls.validate_config(config_data=config_data, search_paths=search_paths)
         api_key = config_data.pop("api_key")
         api_key = load_secret(api_key, search_paths=search_paths)
-        return cls(api_key=api_key, **config_data)
+        prov_fw_path = config_data.pop("prov_fw_path")
+        prov_fw_path = find_file(file_path=prov_fw_path, search_paths=search_paths)
+        return cls(api_key=api_key, prov_fw_path=prov_fw_path, **config_data)
+
+    @classmethod
+    def validate_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> None:
+        """Customized configuration data validation."""
+        family = config_data.get("family")
+        if not family:
+            raise SPSDKError("Family is not defined in the configuration")
+        # the upper layer is responsible for family-specific validation schema
+        schema = cls.get_validation_schema(family=family)  # type: ignore   # pylint: disable=unexpected-keyword-arg
+        check_config(config=config_data, schemas=[schema], search_paths=search_paths)

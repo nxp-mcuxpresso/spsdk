@@ -378,12 +378,12 @@ def test_nxpimage_relative_path_sb21(
 @pytest.mark.parametrize(
     "family",
     [
-        "lpc55s0x",
-        "lpc55s1x",
-        "lpc55s2x",
-        "lpc55s6x",
-        "rt5xx",
-        "rt6xx",
+        "lpc55s06",
+        "lpc55s16",
+        "lpc55s26",
+        "lpc55s69",
+        "mimxrt595s",
+        "mimxrt685s",
     ],
 )
 def test_nxpimage_sb21_get_template(cli_runner: CliRunner, tmpdir, family):

@@ -8,7 +8,7 @@
 
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from spsdk.crypto.certificate import Certificate, SPSDKNameOID, generate_name
 from spsdk.crypto.crypto_types import SPSDKEncoding
@@ -52,7 +52,7 @@ class TpSCardDescription(TpIntfDescription):
         serial_number: int,
         sealed: bool,
         is_usable: bool = False,
-        settings: Optional[Dict] = None,
+        settings: Optional[dict] = None,
         card_connection: Optional[CardConnection] = None,
     ) -> None:
         """Smart Card interface description."""
@@ -70,7 +70,7 @@ class TpSCardDescription(TpIntfDescription):
         """Return the ID hash of the interface. (hash of the reader's name)."""
         return get_hash(self.name)
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Returns whole record as dictionary suitable for printing."""
         data = super().as_dict()
         # don't display card_connection object in list
@@ -94,13 +94,13 @@ class TpDevSmartCard(TpDevInterface):
         READER = "reader"
 
     @classmethod
-    def get_connected_devices(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
+    def get_connected_devices(cls, settings: Optional[dict] = None) -> list[TpIntfDescription]:
         """Get all connected TP devices of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
         :return: List of all founded TP devices.
         """
-        ret: List[TpIntfDescription] = []
+        ret: list[TpIntfDescription] = []
         filter_id = None if settings is None else settings.get("id")
         reader = None if settings is None else settings.get("reader")
         cards = get_applet_infos(
@@ -212,7 +212,7 @@ class TpDevSmartCard(TpDevInterface):
         )
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Return all additional validation schemas for interface.
 
         return: List of all additional validation schemas.
@@ -478,7 +478,7 @@ class TpDevSmartCard(TpDevInterface):
 
     @staticmethod
     def _serialize_private_key(
-        prk_file_path: str, search_dirs: Optional[List[str]] = None
+        prk_file_path: str, search_dirs: Optional[list[str]] = None
     ) -> bytes:
         prk_file = find_file(prk_file_path, search_paths=search_dirs)
         prk = PrivateKeyEcc.load(prk_file)
@@ -488,7 +488,7 @@ class TpDevSmartCard(TpDevInterface):
 
     @staticmethod
     def _serialize_cert(
-        cert_file_path: str, search_dirs: Optional[List[str]] = None, destination: int = 0
+        cert_file_path: str, search_dirs: Optional[list[str]] = None, destination: int = 0
     ) -> bytes:
         cert_file = find_file(cert_file_path, search_paths=search_dirs)
         cert_data = load_binary(cert_file)

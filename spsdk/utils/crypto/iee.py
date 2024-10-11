@@ -10,14 +10,13 @@
 import logging
 from copy import deepcopy
 from struct import pack
-from typing import Any, Dict, List, Optional, Union
-
-from crcmod.predefined import mkPredefinedCrcFun
+from typing import Any, Optional, Union
 
 from spsdk.apps.utils.utils import filepath_from_config
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_xts_encrypt
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.fuses import FuseScript
 from spsdk.utils.images import BinaryImage
@@ -30,7 +29,7 @@ from spsdk.utils.misc import (
     value_to_bytes,
     value_to_int,
 )
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
@@ -251,7 +250,11 @@ class IeeKeyBlob:
         result += align_block(self.key1, 32)
         result += align_block(self.key2, 32)
         result += pack("<III", self.start_addr, self.end_addr, 0)
-        crc: bytes = mkPredefinedCrcFun("crc-32-mpeg")(result).to_bytes(4, Endianness.LITTLE.value)
+        crc = (
+            from_crc_algorithm(CrcAlg.CRC32_MPEG)
+            .calculate(result)
+            .to_bytes(4, Endianness.LITTLE.value)
+        )
         result += crc
 
         return result
@@ -369,7 +372,7 @@ class Iee:
 
     def __init__(self) -> None:
         """Constructor."""
-        self._key_blobs: List[IeeKeyBlob] = []
+        self._key_blobs: list[IeeKeyBlob] = []
 
     def __getitem__(self, index: int) -> IeeKeyBlob:
         return self._key_blobs[index]
@@ -457,7 +460,7 @@ class IeeNxp(Iee):
         keyblob_address: int,
         ibkek1: Union[bytes, str],
         ibkek2: Union[bytes, str],
-        key_blobs: Optional[List[IeeKeyBlob]] = None,
+        key_blobs: Optional[list[IeeKeyBlob]] = None,
         binaries: Optional[BinaryImage] = None,
     ) -> None:
         """Constructor.
@@ -470,17 +473,14 @@ class IeeNxp(Iee):
         """
         super().__init__()
 
-        if family not in self.get_supported_families():
-            raise SPSDKValueError(f"Unsupported family{family} by IEE")
-
+        self.db = get_db(family, "latest")
         self.family = family
-        self.revision = "latest"
+        self.revision = self.db.name
         self.ibkek1 = bytes.fromhex(ibkek1) if isinstance(ibkek1, str) else ibkek1
         self.ibkek2 = bytes.fromhex(ibkek2) if isinstance(ibkek2, str) else ibkek2
         self.keyblob_address = keyblob_address
         self.binaries = binaries
 
-        self.db = get_db(family, self.revision)
         self.blobs_min_cnt = self.db.get_int(DatabaseManager.IEE, "key_blob_min_cnt")
         self.blobs_max_cnt = self.db.get_int(DatabaseManager.IEE, "key_blob_max_cnt")
         self.generate_keyblob = self.db.get_bool(DatabaseManager.IEE, "generate_keyblob")
@@ -571,7 +571,7 @@ class IeeNxp(Iee):
         return iee
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get all supported families for AHAB container.
 
         :return: List of supported families.
@@ -579,21 +579,19 @@ class IeeNxp(Iee):
         return get_families(DatabaseManager.IEE)
 
     @staticmethod
-    def get_validation_schemas(family: str) -> List[Dict[str, Any]]:
+    def get_validation_schemas(family: str) -> list[dict[str, Any]]:
         """Get list of validation schemas.
 
         :param family: Family for which the template should be generated.
         :return: Validation list of schemas.
         """
-        if family not in IeeNxp.get_supported_families():
-            return []
-
         database = get_db(family, "latest")
         schemas = get_schema_file(DatabaseManager.IEE)
-        family_sch = schemas["iee_family"]
-        family_sch["properties"]["family"]["enum"] = IeeNxp.get_supported_families()
-        family_sch["properties"]["family"]["template_value"] = family
-        ret = [family_sch, schemas["iee_output"], schemas["iee"]]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_schema["properties"], IeeNxp.get_supported_families(), family
+        )
+        ret = [family_schema, schemas["iee_output"], schemas["iee"]]
         additional_schemes = database.get_list(
             DatabaseManager.IEE, "additional_template", default=[]
         )
@@ -601,18 +599,19 @@ class IeeNxp(Iee):
         return ret
 
     @staticmethod
-    def get_validation_schemas_family() -> List[Dict[str, Any]]:
+    def get_validation_schemas_family() -> list[dict[str, Any]]:
         """Get list of validation schemas for family key.
 
         :return: Validation list of schemas.
         """
-        schemas = get_schema_file(DatabaseManager.IEE)
-        family_sch = schemas["iee_family"]
-        family_sch["properties"]["family"]["enum"] = IeeNxp.get_supported_families()
-        return [family_sch]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_schema["properties"], IeeNxp.get_supported_families()
+        )
+        return [family_schema]
 
     @staticmethod
-    def generate_config_template(family: str) -> Dict[str, Any]:
+    def generate_config_template(family: str) -> dict[str, Any]:
         """Generate IEE configuration template.
 
         :param family: Family for which the template should be generated.
@@ -635,7 +634,7 @@ class IeeNxp(Iee):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], config_dir: str, search_paths: Optional[List[str]] = None
+        config: dict[str, Any], config_dir: str, search_paths: Optional[list[str]] = None
     ) -> "IeeNxp":
         """Converts the configuration option into an IEE image object.
 
@@ -646,7 +645,7 @@ class IeeNxp(Iee):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: initialized IEE object.
         """
-        iee_config: List[Dict[str, Any]] = config.get("key_blobs", [config.get("key_blob")])
+        iee_config: list[dict[str, Any]] = config.get("key_blobs", [config.get("key_blob")])
         family = config["family"]
         ibkek1 = load_hex_string(
             config.get(
@@ -671,7 +670,7 @@ class IeeNxp(Iee):
             [value_to_int(addr.get("start_address", 0xFFFFFFFF)) for addr in iee_config]
         )
 
-        data_blobs: Optional[List[Dict]] = config.get("data_blobs")
+        data_blobs: Optional[list[dict]] = config.get("data_blobs")
         binaries = None
         if data_blobs:
             # start address to calculate offset from keyblob, min from keyblob or data blob address

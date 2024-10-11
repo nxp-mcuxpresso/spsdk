@@ -8,7 +8,7 @@
 
 import logging
 import os
-from typing import List, Optional, Tuple, Type, cast
+from typing import Optional, Type, cast
 
 import yaml
 
@@ -73,7 +73,7 @@ class ModelConfig(TpIntfDescription):
             return file
         return f"{self.workspace}/{file}"
 
-    def generate_edh_keys(self) -> Tuple[PrivateKeyEcc, PublicKeyEcc]:
+    def generate_edh_keys(self) -> tuple[PrivateKeyEcc, PublicKeyEcc]:
         """Generate Ephemeral Diffie-Hellman key pair."""
         logger.info("Generating Ephemeral Diffie-Hellman keys")
         if self.reuse_edh_keys:
@@ -92,7 +92,7 @@ class ModelConfig(TpIntfDescription):
         self,
         remote_puk_data: bytes,
         edh_private: PrivateKeyEcc,
-    ) -> Tuple[bytes, bytes, bytes]:
+    ) -> tuple[bytes, bytes, bytes]:
         """Generate Key-Wrapping-Key and Encryption key.
 
         :param remote_puk_data: X and Y coordinates of remote ephemeral public key
@@ -149,7 +149,7 @@ class ModelConfig(TpIntfDescription):
         key: bytes,
         mac_key: Optional[bytes] = None,
         counter: Optional[int] = None,
-    ) -> Tuple[bytes, bytes, bytes]:
+    ) -> tuple[bytes, bytes, bytes]:
         """Encrypt data using AES in mode set by model configuration.
 
         :param data: Data to encrypt
@@ -224,7 +224,7 @@ class ModelConfig(TpIntfDescription):
 
 def get_models_configs(
     config_file: str, model_id: str, config_class: Type[ModelConfig]
-) -> List[TpIntfDescription]:
+) -> list[TpIntfDescription]:
     """Return configuration files for SW Model derivatives.
 
     :param config_file: Root configuration file

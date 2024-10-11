@@ -439,7 +439,7 @@
       "name": "deepmerge",
       "package": {
         "name": "deepmerge",
-        "license": "MIT License"
+        "license": ""
       },
       "github": {
         "project_name": "toumorokoshi/deepmerge",
@@ -635,7 +635,7 @@
       "name": "importlib-metadata",
       "package": {
         "name": "importlib-metadata",
-        "license": ""
+        "license": "Apache Software License"
       },
       "github": {
         "project_name": "python/importlib_metadata",
@@ -647,7 +647,7 @@
       "name": "importlib-resources",
       "package": {
         "name": "importlib-resources",
-        "license": ""
+        "license": "Apache Software License"
       },
       "github": {
         "project_name": "python/importlib_resources",
@@ -975,6 +975,18 @@
       "name": "libusbsio",
       "package": {
         "name": "libusbsio",
+        "license": "BSD-3-Clause"
+      }
+    },
+    {
+      "home_page": "https://github.com/nxp-imx/mfgtools",
+      "name": "libuuu",
+      "package": {
+        "name": "libuuu",
+        "license": "BSD-3-Clause"
+      },
+      "github": {
+        "project_name": "nxp-imx/mfgtools",
         "license": "BSD-3-Clause"
       }
     },
@@ -1307,7 +1319,7 @@
       "name": "pycparser",
       "package": {
         "name": "pycparser",
-        "license": "BSD-3-Clause"
+        "license": "BSD"
       },
       "github": {
         "project_name": "eliben/pycparser",

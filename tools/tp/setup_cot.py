@@ -12,6 +12,7 @@ import sys
 
 import click
 
+from spsdk.apps.utils.common_cli_options import spsdk_family_option
 from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
@@ -105,7 +106,7 @@ def gen_pc_cert(glob_key: str, output_folder: str) -> None:
     "--ecid",
     help="32 char ECID (spaces are allowed). If omitted a random ECID will be generated.",
 )
-@click.option("-f", "--family", type=click.Choice(get_supported_devices()), required=True)
+@spsdk_family_option(get_supported_devices())
 @click.option(
     "-p",
     "--prod-key",

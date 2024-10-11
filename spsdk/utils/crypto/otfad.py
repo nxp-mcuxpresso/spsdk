@@ -12,11 +12,10 @@ import os
 from copy import deepcopy
 from dataclasses import dataclass
 from struct import pack
-from typing import Any, Dict, List, Optional, Union
-
-from crcmod.predefined import mkPredefinedCrcFun
+from typing import Any, Optional, Union
 
 from spsdk.apps.utils.utils import filepath_from_config
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_key_wrap
 from spsdk.exceptions import SPSDKError, SPSDKValueError
@@ -33,7 +32,7 @@ from spsdk.utils.misc import (
     value_to_bytes,
     value_to_int,
 )
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -170,8 +169,10 @@ class KeyBlob:
         else:
             end_addr_with_flags = 0
         result += pack("<I", end_addr_with_flags)
-        header_crc: bytes = mkPredefinedCrcFun("crc-32-mpeg")(result).to_bytes(
-            4, Endianness.LITTLE.value
+        header_crc = (
+            from_crc_algorithm(CrcAlg.CRC32_MPEG)
+            .calculate(result)
+            .to_bytes(4, Endianness.LITTLE.value)
         )
         # zero fill
         if self.zero_fill:
@@ -355,7 +356,7 @@ class Otfad:
 
     def __init__(self) -> None:
         """Constructor."""
-        self._key_blobs: List[KeyBlob] = []
+        self._key_blobs: list[KeyBlob] = []
 
     def __getitem__(self, index: int) -> KeyBlob:
         return self._key_blobs[index]
@@ -480,7 +481,7 @@ class OtfadNxp(Otfad):
         family: str,
         kek: Union[bytes, str],
         table_address: int = 0,
-        key_blobs: Optional[List[KeyBlob]] = None,
+        key_blobs: Optional[list[KeyBlob]] = None,
         key_scramble_mask: Optional[int] = None,
         key_scramble_align: Optional[int] = None,
         binaries: Optional[BinaryImage] = None,
@@ -499,21 +500,19 @@ class OtfadNxp(Otfad):
         """
         super().__init__()
 
-        if family not in self.get_supported_families():
-            raise SPSDKValueError(f"Unsupported family{family} by OTFAD")
-
         if (key_scramble_align is None and key_scramble_mask) or (
             key_scramble_align and key_scramble_mask is None
         ):
             raise SPSDKValueError("Key Scrambling is not fully defined")
 
         self.family = family
-        self.revision = "latest"
+        self.db = get_db(family, "latest")
+        self.revision = self.db.name
         self.kek = bytes.fromhex(kek) if isinstance(kek, str) else kek
         self.key_scramble_mask = key_scramble_mask
         self.key_scramble_align = key_scramble_align
         self.table_address = table_address
-        self.db = get_db(family, self.revision)
+
         self.blobs_min_cnt = self.db.get_int(DatabaseManager.OTFAD, "key_blob_min_cnt")
         self.blobs_max_cnt = self.db.get_int(DatabaseManager.OTFAD, "key_blob_max_cnt")
         self.byte_swap = self.db.get_bool(DatabaseManager.OTFAD, "byte_swap")
@@ -675,7 +674,7 @@ class OtfadNxp(Otfad):
         return otfad
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get all supported families for AHAB container.
 
         :return: List of supported families.
@@ -683,21 +682,19 @@ class OtfadNxp(Otfad):
         return get_families(DatabaseManager.OTFAD)
 
     @staticmethod
-    def get_validation_schemas(family: str) -> List[Dict[str, Any]]:
+    def get_validation_schemas(family: str) -> list[dict[str, Any]]:
         """Get list of validation schemas.
 
         :param family: Family for which the template should be generated.
         :return: Validation list of schemas.
         """
-        if family not in OtfadNxp.get_supported_families():
-            return []
-
         database = get_db(family, "latest")
         schemas = get_schema_file(DatabaseManager.OTFAD)
-        family_sch = schemas["otfad_family"]
-        family_sch["properties"]["family"]["enum"] = OtfadNxp.get_supported_families()
-        family_sch["properties"]["family"]["template_value"] = family
-        ret = [family_sch, schemas["otfad_output"], schemas["otfad"]]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_schema["properties"], OtfadNxp.get_supported_families(), family
+        )
+        ret = [family_schema, schemas["otfad_output"], schemas["otfad"]]
         additional_schemes = database.get_list(
             DatabaseManager.OTFAD, "additional_template", default=[]
         )
@@ -705,18 +702,19 @@ class OtfadNxp(Otfad):
         return ret
 
     @staticmethod
-    def get_validation_schemas_family() -> List[Dict[str, Any]]:
+    def get_validation_schemas_family() -> list[dict[str, Any]]:
         """Get list of validation schemas for family key.
 
         :return: Validation list of schemas.
         """
-        schemas = get_schema_file(DatabaseManager.OTFAD)
-        family_sch = schemas["otfad_family"]
-        family_sch["properties"]["family"]["enum"] = OtfadNxp.get_supported_families()
-        return [family_sch]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_schema["properties"], OtfadNxp.get_supported_families()
+        )
+        return [family_schema]
 
     @staticmethod
-    def generate_config_template(family: str) -> Dict[str, Any]:
+    def generate_config_template(family: str) -> dict[str, Any]:
         """Generate OTFAD configuration template.
 
         :param family: Family for which the template should be generated.
@@ -739,7 +737,7 @@ class OtfadNxp(Otfad):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], config_dir: str, search_paths: Optional[List[str]] = None
+        config: dict[str, Any], config_dir: str, search_paths: Optional[list[str]] = None
     ) -> "OtfadNxp":
         """Converts the configuration option into an OTFAD image object.
 
@@ -750,7 +748,7 @@ class OtfadNxp(Otfad):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: initialized OTFAD object.
         """
-        otfad_config: List[Dict[str, Any]] = config["key_blobs"]
+        otfad_config: list[dict[str, Any]] = config["key_blobs"]
         family = config["family"]
         database = get_db(family, "latest")
         kek = load_hex_string(config["kek"], expected_size=16, search_paths=search_paths)
@@ -766,7 +764,7 @@ class OtfadNxp(Otfad):
                 key_scramble_mask = value_to_int(key_scramble["key_scramble_mask"])
                 key_scramble_align = value_to_int(key_scramble["key_scramble_align"])
 
-        data_blobs: Optional[List[Dict]] = config.get("data_blobs")
+        data_blobs: Optional[list[dict]] = config.get("data_blobs")
         binaries = None
         if data_blobs:
             # pylint: disable-next=nested-min-max

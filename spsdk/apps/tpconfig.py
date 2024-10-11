@@ -8,7 +8,6 @@
 """Console script for Trust provisioning config application."""
 import os
 import sys
-from typing import List
 
 import click
 
@@ -69,7 +68,7 @@ def main(log_level: int) -> int:
 )
 def load(
     tp_device: str,
-    tp_device_parameter: List[str],
+    tp_device_parameter: list[str],
     timeout: int,
     config: str,
     seal_flag: bool,
@@ -106,7 +105,7 @@ def load(
 )
 def seal(
     tp_device: str,
-    tp_device_parameter: List[str],
+    tp_device_parameter: list[str],
     timeout: int,
     config: str,
 ) -> None:
@@ -159,7 +158,7 @@ def get_template(family: str, output: str) -> None:
     template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 
-    click.echo(f"The configuration template created. {os.path.abspath(output)}")
+    click.echo(f"The TPConfig template for {family} has been saved into {output} YAML file")
 
 
 main.add_command(device_help)

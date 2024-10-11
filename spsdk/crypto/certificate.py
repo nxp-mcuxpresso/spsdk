@@ -7,7 +7,7 @@
 """Module for certificate management (generating certificate, validating certificate, chains)."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -54,7 +54,7 @@ class Certificate(BaseClass):
         issuer_private_key: PrivateKey,
         serial_number: Optional[int] = None,
         duration: Optional[int] = None,
-        extensions: Optional[List[x509.ExtensionType]] = None,
+        extensions: Optional[list[x509.ExtensionType]] = None,
         pss_padding: Optional[bool] = None,
     ) -> "Certificate":
         """Generate certificate.
@@ -335,7 +335,7 @@ class Certificate(BaseClass):
             raise SPSDKError(f"Cannot load certificate: ({str(exc)})") from exc
 
 
-def validate_certificate_chain(chain_list: List[Certificate]) -> List[bool]:
+def validate_certificate_chain(chain_list: list[Certificate]) -> list[bool]:
     """Validate chain of certificates.
 
     :param chain_list: list of certificates in chain
@@ -350,7 +350,7 @@ def validate_certificate_chain(chain_list: List[Certificate]) -> List[bool]:
     return result
 
 
-def validate_ca_flag_in_cert_chain(chain_list: List[Certificate]) -> bool:
+def validate_ca_flag_in_cert_chain(chain_list: list[Certificate]) -> bool:
     """Validate CA flag in certification chain.
 
     :param chain_list: list of certificates in the chain
@@ -359,7 +359,7 @@ def validate_ca_flag_in_cert_chain(chain_list: List[Certificate]) -> bool:
     return chain_list[0].ca
 
 
-X509NameConfig = Union[List[Dict[str, str]], Dict[str, Union[str, List[str]]]]
+X509NameConfig = Union[list[dict[str, str]], dict[str, Union[str, list[str]]]]
 
 
 def generate_name(config: X509NameConfig) -> x509.Name:
@@ -368,7 +368,7 @@ def generate_name(config: X509NameConfig) -> x509.Name:
     :param config: subject/issuer description
     :return: x509.Name
     """
-    attributes: List[x509.NameAttribute] = []
+    attributes: list[x509.NameAttribute] = []
 
     def _get_name_oid(name: str) -> x509.ObjectIdentifier:
         try:
@@ -394,9 +394,9 @@ def generate_name(config: X509NameConfig) -> x509.Name:
     return x509.Name(attributes)
 
 
-def generate_extensions(config: dict) -> List[x509.ExtensionType]:
+def generate_extensions(config: dict) -> list[x509.ExtensionType]:
     """Get x509 extensions out of config data."""
-    extensions: List[x509.ExtensionType] = []
+    extensions: list[x509.ExtensionType] = []
 
     for key, val in config.items():
         if key == "BASIC_CONSTRAINTS":

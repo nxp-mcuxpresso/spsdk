@@ -12,6 +12,7 @@ import os
 import pytest
 import yaml
 
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge as DAC
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
 from spsdk.dat.debug_credential import DebugCredentialCertificate as DC
@@ -27,14 +28,14 @@ from spsdk.utils.misc import load_binary, use_working_directory
             "new_dck_rsa2048.yml",
             "sample_dac.bin",
             ProtocolVersion.from_version(1, 0),
-            "new_dck_2048.pem",
+            "../../_data/keys/rsa2048/dck_rsa2048.pem",
             1200,
         ),
         (
             "new_dck_secp256.yml",
             "sample_dac_ecc.bin",
             ProtocolVersion.from_version(2, 0),
-            "new_dck_secp256r1.pem",
+            "../../_data/keys/ecc256/dck_ecc256.pem",
             316,
         ),
     ],
@@ -50,6 +51,7 @@ def test_dar_packet_rsa_ecc(
         dc.sign()
         assert dc.version == DAC.parse(dac_bytes).version, "Version of DC and DAC are different."
         dar = DebugAuthenticateResponse.create(
+            family=None,
             version=version,
             dc=dc,
             auth_beacon=0,
@@ -65,8 +67,18 @@ def test_dar_packet_rsa_ecc(
 @pytest.mark.parametrize(
     "yml_file_name, version, file_key, expected_length",
     [
-        ("new_dck_secp256_lpc55s3x.yml", ProtocolVersion("2.0"), "new_dck_secp256r1.pem", 316),
-        ("new_dck_secp384_lpc55s3x.yml", ProtocolVersion("2.1"), "new_dck_secp384r1.pem", 444),
+        (
+            "new_dck_secp256_lpc55s3x.yml",
+            ProtocolVersion("2.0"),
+            "../../_data/keys/ecc256/dck_ecc256.pem",
+            316,
+        ),
+        (
+            "new_dck_secp384_lpc55s3x.yml",
+            ProtocolVersion("2.1"),
+            "../../_data/keys/ecc384/dck_ecc384.pem",
+            444,
+        ),
     ],
 )
 def test_dar_packet_lpc55s3x_256(data_dir, yml_file_name, version, file_key, expected_length):
@@ -78,6 +90,7 @@ def test_dar_packet_lpc55s3x_256(data_dir, yml_file_name, version, file_key, exp
         dc.sign()
 
         dar = DebugAuthenticateResponse.create(
+            family=None,
             version=version,
             dc=dc,
             auth_beacon=0,
@@ -101,11 +114,14 @@ def test_dar_packet_no_signature_provider(data_dir):
         dc = DC.create_from_yaml_config(version=version, config=yaml_config)
         dc.sign()
         dar = DebugAuthenticateResponse(
+            family="lpc55s6x",
             debug_credential=dc,
             auth_beacon=0,
             dac=DAC.parse(dac_bytes),
-            path_dck_private=os.path.join(data_dir, "new_dck_2048.pem"),
+            sign_provider=get_signature_provider(
+                local_file_key=os.path.join(data_dir, "../../_data/keys/rsa2048/dck_rsa2048.pem")
+            ),
         )
-        dar.sig_provider = None
+        dar.sign_provider = None
         with pytest.raises(SPSDKError, match="Signature provider is not set"):
             dar.export()

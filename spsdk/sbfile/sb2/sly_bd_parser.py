@@ -9,7 +9,7 @@
 
 import logging
 from numbers import Number
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from sly import Parser
 from sly.lex import Token
@@ -47,14 +47,14 @@ class BDParser(Parser):
     def __init__(self) -> None:
         """Initialization method."""
         super().__init__()
-        self._variables: List[bd_lexer.Variable] = []
-        self._sources: List[bd_lexer.Variable] = []
-        self._keyblobs: List[Dict] = []
-        self._sections: List[bd_lexer.Variable] = []
+        self._variables: list[bd_lexer.Variable] = []
+        self._sources: list[bd_lexer.Variable] = []
+        self._keyblobs: list[dict] = []
+        self._sections: list[bd_lexer.Variable] = []
         self._input: Any = None
-        self._bd_file: Dict = {}
+        self._bd_file: dict = {}
         self._parse_error: bool = False
-        self._extern: List[str] = []
+        self._extern: list[str] = []
         self._lexer = bd_lexer.BDLexer()
 
     def _cleanup(self) -> None:
@@ -69,8 +69,8 @@ class BDParser(Parser):
         self._lexer.cleanup()
 
     def parse(
-        self, text: str, extern: Optional[List] = None
-    ) -> Optional[Dict]:  # pylint: disable=arguments-differ
+        self, text: str, extern: Optional[list] = None
+    ) -> Optional[dict]:  # pylint: disable=arguments-differ
         """Parse the `input_text` and returns a dictionary of the file content.
 
         :param text: command file to be parsed in string format
@@ -127,7 +127,7 @@ class BDParser(Parser):
         self._bd_file.update(token.pre_section_block)
 
     @_("pre_section_block options_block")  # type: ignore
-    def pre_section_block(self, token: YaccProduction) -> Dict:
+    def pre_section_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -139,7 +139,7 @@ class BDParser(Parser):
         return token.pre_section_block
 
     @_("pre_section_block constants_block", "pre_section_block sources_block")  # type: ignore
-    def pre_section_block(self, token: YaccProduction) -> Dict:
+    def pre_section_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -149,7 +149,7 @@ class BDParser(Parser):
         return token.pre_section_block
 
     @_("pre_section_block keyblob_block")  # type: ignore
-    def pre_section_block(self, token: YaccProduction) -> Dict:
+    def pre_section_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -161,7 +161,7 @@ class BDParser(Parser):
         return token.pre_section_block
 
     @_("empty")  # type: ignore
-    def pre_section_block(self, token: YaccProduction) -> Dict:
+    def pre_section_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -170,7 +170,7 @@ class BDParser(Parser):
         return token.empty
 
     @_("OPTIONS LBRACE option_def RBRACE")  # type: ignore
-    def options_block(self, token: YaccProduction) -> Dict:
+    def options_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -179,7 +179,7 @@ class BDParser(Parser):
         return token.option_def
 
     @_("option_def IDENT ASSIGN const_expr SEMI")  # type: ignore
-    def option_def(self, token: YaccProduction) -> Dict:
+    def option_def(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -202,7 +202,7 @@ class BDParser(Parser):
         return token.option_def
 
     @_("empty")  # type: ignore
-    def option_def(self, token: YaccProduction) -> Dict:
+    def option_def(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -211,7 +211,7 @@ class BDParser(Parser):
         return {"options": {}}
 
     @_("CONSTANTS LBRACE constant_def RBRACE")  # type: ignore
-    def constants_block(self, token: YaccProduction) -> Dict:
+    def constants_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         For now, we don't store the constants in the final bd file.
@@ -219,7 +219,7 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of constants block.
         """
-        dictionary: Dict = {}
+        dictionary: dict = {}
         return dictionary
 
     @_("constant_def IDENT ASSIGN bool_expr SEMI")  # type: ignore
@@ -231,7 +231,7 @@ class BDParser(Parser):
         self._variables.append(bd_lexer.Variable(token.IDENT, "constant", token.bool_expr))
 
     @_("empty")  # type: ignore
-    def constant_def(self, token: YaccProduction) -> Dict:
+    def constant_def(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -240,7 +240,7 @@ class BDParser(Parser):
         return token.empty
 
     @_("SOURCES LBRACE source_def RBRACE")  # type: ignore
-    def sources_block(self, token: YaccProduction) -> Dict:
+    def sources_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't store the sources in the final BD file for now.
@@ -275,7 +275,7 @@ class BDParser(Parser):
         self.error(error_token, ": attribute list is not supported")
 
     @_("empty")  # type: ignore
-    def source_def(self, token: YaccProduction) -> Dict:
+    def source_def(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -308,7 +308,7 @@ class BDParser(Parser):
         return self._extern[token.int_const_expr]
 
     @_("source_attr COMMA source_attr_list")  # type: ignore
-    def source_attr_list(self, token: YaccProduction) -> Dict:
+    def source_attr_list(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -318,7 +318,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("source_attr")  # type: ignore
-    def source_attr_list(self, token: YaccProduction) -> Dict:
+    def source_attr_list(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -327,7 +327,7 @@ class BDParser(Parser):
         return token.source_attr
 
     @_("empty")  # type: ignore
-    def source_attr_list(self, token: YaccProduction) -> Dict:
+    def source_attr_list(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -336,7 +336,7 @@ class BDParser(Parser):
         return {}
 
     @_("IDENT ASSIGN const_expr")  # type: ignore
-    def source_attr(self, token: YaccProduction) -> Dict:
+    def source_attr(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -345,7 +345,7 @@ class BDParser(Parser):
         return {token.IDENT: token.const_expr}
 
     @_("KEYBLOB LPAREN int_const_expr RPAREN LBRACE keyblob_contents RBRACE")  # type: ignore
-    def keyblob_block(self, token: YaccProduction) -> Dict:
+    def keyblob_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -401,7 +401,7 @@ class BDParser(Parser):
 
     # New keyblob grammar!
     @_("LPAREN keyblob_options RPAREN")  # type: ignore
-    def keyblob_contents(self, token: YaccProduction) -> List:
+    def keyblob_contents(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -412,7 +412,7 @@ class BDParser(Parser):
         return list_
 
     @_("IDENT ASSIGN const_expr COMMA keyblob_options")  # type: ignore
-    def keyblob_options(self, token: YaccProduction) -> Dict:
+    def keyblob_options(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -424,7 +424,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("IDENT ASSIGN const_expr")  # type: ignore
-    def keyblob_options(self, token: YaccProduction) -> Dict:
+    def keyblob_options(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -435,7 +435,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("section_block SECTION LPAREN int_const_expr section_options RPAREN section_contents")  # type: ignore
-    def section_block(self, token: YaccProduction) -> Dict:
+    def section_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -458,7 +458,7 @@ class BDParser(Parser):
         return token.section_block
 
     @_("empty")  # type: ignore
-    def section_block(self, token: YaccProduction) -> Dict:
+    def section_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -468,7 +468,7 @@ class BDParser(Parser):
         return token.empty
 
     @_("SEMI section_option_list")  # type: ignore
-    def section_options(self, token: YaccProduction) -> Dict:
+    def section_options(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -477,7 +477,7 @@ class BDParser(Parser):
         return token.section_option_list
 
     @_("SEMI")  # type: ignore
-    def section_options(self, token: YaccProduction) -> Dict:
+    def section_options(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -487,7 +487,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("empty")  # type: ignore
-    def section_options(self, token: YaccProduction) -> Dict:
+    def section_options(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -496,7 +496,7 @@ class BDParser(Parser):
         return token.empty
 
     @_("section_option_list COMMA section_option")  # type: ignore
-    def section_option_list(self, token: YaccProduction) -> Dict:
+    def section_option_list(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -509,7 +509,7 @@ class BDParser(Parser):
         return token.section_option_list
 
     @_("section_option")  # type: ignore
-    def section_option_list(self, token: YaccProduction) -> List:
+    def section_option_list(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -518,7 +518,7 @@ class BDParser(Parser):
         return [token.section_option]
 
     @_("IDENT ASSIGN const_expr")  # type: ignore
-    def section_option(self, token: YaccProduction) -> Dict:
+    def section_option(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -527,7 +527,7 @@ class BDParser(Parser):
         return {token.IDENT: token.const_expr}
 
     @_("LBRACE statement RBRACE")  # type: ignore
-    def section_contents(self, token: YaccProduction) -> List:
+    def section_contents(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -544,7 +544,7 @@ class BDParser(Parser):
         self.error(token, ": <= <source_name> syntax is not supported right now.")
 
     @_("statement basic_stmt SEMI")  # type: ignore
-    def statement(self, token: YaccProduction) -> List:
+    def statement(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -555,7 +555,7 @@ class BDParser(Parser):
         return list_
 
     @_("statement from_stmt")  # type: ignore
-    def statement(self, token: YaccProduction) -> Dict:
+    def statement(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support from_stmt for now.
@@ -577,7 +577,7 @@ class BDParser(Parser):
         # return token.statement + token.if_stmt
 
     @_("statement encrypt_block")  # type: ignore
-    def statement(self, token: YaccProduction) -> List:
+    def statement(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -588,7 +588,7 @@ class BDParser(Parser):
         return list_
 
     @_("statement keywrap_block")  # type: ignore
-    def statement(self, token: YaccProduction) -> List:
+    def statement(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -599,7 +599,7 @@ class BDParser(Parser):
         return list_
 
     @_("empty")  # type: ignore
-    def statement(self, token: YaccProduction) -> List:
+    def statement(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -609,7 +609,7 @@ class BDParser(Parser):
         return []
 
     @_("KEYWRAP LPAREN int_const_expr RPAREN LBRACE LOAD BINARY_BLOB GT int_const_expr SEMI RBRACE")  # type: ignore
-    def keywrap_block(self, token: YaccProduction) -> Dict:
+    def keywrap_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -621,7 +621,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("ENCRYPT LPAREN int_const_expr RPAREN LBRACE load_stmt SEMI RBRACE")  # type: ignore
-    def encrypt_block(self, token: YaccProduction) -> Dict:
+    def encrypt_block(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -643,7 +643,7 @@ class BDParser(Parser):
         "keystore_stmt",
         "version_stmt",
     )
-    def basic_stmt(self, token: YaccProduction) -> Dict:
+    def basic_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -652,7 +652,7 @@ class BDParser(Parser):
         return token[0]
 
     @_("LOAD load_opt load_data load_target")  # type: ignore
-    def load_stmt(self, token: YaccProduction) -> Dict:
+    def load_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -663,14 +663,14 @@ class BDParser(Parser):
             cmd = "fill"
         else:
             cmd = "load"
-        dictionary: Dict = {cmd: {}}
+        dictionary: dict = {cmd: {}}
         dictionary[cmd].update(token.load_opt)
         dictionary[cmd].update(token.load_data)
         dictionary[cmd].update(token.load_target)
         return dictionary
 
     @_("empty")  # type: ignore
-    def load_opt(self, token: YaccProduction) -> Dict:
+    def load_opt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -679,7 +679,7 @@ class BDParser(Parser):
         return token.empty
 
     @_("'@' int_const_expr")  # type: ignore
-    def load_opt(self, token: YaccProduction) -> Dict:
+    def load_opt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -688,7 +688,7 @@ class BDParser(Parser):
         return {"load_opt": token.int_const_expr}
 
     @_("IDENT")  # type: ignore
-    def load_opt(self, token: YaccProduction) -> Dict:
+    def load_opt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -697,7 +697,7 @@ class BDParser(Parser):
         return {"load_opt": token.IDENT}
 
     @_("int_const_expr")  # type: ignore
-    def load_data(self, token: YaccProduction) -> Dict:
+    def load_data(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -712,7 +712,7 @@ class BDParser(Parser):
         return retval
 
     @_("STRING_LITERAL")  # type: ignore
-    def load_data(self, token: YaccProduction) -> Dict:
+    def load_data(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -721,7 +721,7 @@ class BDParser(Parser):
         return {"file": token.STRING_LITERAL[1:-1]}
 
     @_("SOURCE_NAME")  # type: ignore
-    def load_data(self, token: YaccProduction) -> Dict:
+    def load_data(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -743,7 +743,7 @@ class BDParser(Parser):
         return {"file": "N/A"}
 
     @_("section_list")  # type: ignore
-    def load_data(self, token: YaccProduction) -> Dict:
+    def load_data(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -754,7 +754,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("section_list FROM SOURCE_NAME")  # type: ignore
-    def load_data(self, token: YaccProduction) -> Dict:
+    def load_data(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -765,7 +765,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("BINARY_BLOB")  # type: ignore
-    def load_data(self, token: YaccProduction) -> Dict:
+    def load_data(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -776,7 +776,7 @@ class BDParser(Parser):
         return {"values": token.BINARY_BLOB}
 
     @_("GT PERIOD")  # type: ignore
-    def load_target(self, token: YaccProduction) -> Dict:
+    def load_target(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -789,7 +789,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("GT address_or_range")  # type: ignore
-    def load_target(self, token: YaccProduction) -> Dict:
+    def load_target(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -798,7 +798,7 @@ class BDParser(Parser):
         return token.address_or_range
 
     @_("empty")  # type: ignore
-    def load_target(self, token: YaccProduction) -> Dict:
+    def load_target(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -810,30 +810,30 @@ class BDParser(Parser):
         return token.empty
 
     @_("ERASE mem_opt address_or_range")  # type: ignore
-    def erase_stmt(self, token: YaccProduction) -> Dict:
+    def erase_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of erase statement.
         """
-        dictionary: Dict = {token.ERASE: {}}
+        dictionary: dict = {token.ERASE: {}}
         dictionary[token.ERASE].update(token.address_or_range)
         dictionary[token.ERASE].update(token.mem_opt)
         return dictionary
 
     @_("ERASE mem_opt ALL")  # type: ignore
-    def erase_stmt(self, token: YaccProduction) -> Dict:
+    def erase_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of erase statement.
         """
-        dictionary: Dict = {token.ERASE: {"address": 0x00, "flags": 0x01}}
+        dictionary: dict = {token.ERASE: {"address": 0x00, "flags": 0x01}}
         dictionary[token.ERASE].update(token.mem_opt)
         return dictionary
 
     @_("ERASE UNSECURE ALL")  # type: ignore
-    def erase_stmt(self, token: YaccProduction) -> Dict:
+    def erase_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -842,19 +842,19 @@ class BDParser(Parser):
         return {"erase": {"address": 0x00, "flags": 0x02}}
 
     @_("ENABLE mem_opt int_const_expr")  # type: ignore
-    def enable_stmt(self, token: YaccProduction) -> Dict:
+    def enable_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of enable statement.
         """
-        dictionary: Dict = {token.ENABLE: {}}
+        dictionary: dict = {token.ENABLE: {}}
         dictionary[token.ENABLE].update(token.mem_opt)
         dictionary[token.ENABLE]["address"] = token.int_const_expr
         return dictionary
 
     @_("section_list COMMA section_ref")  # type: ignore
-    def section_list(self, token: YaccProduction) -> Dict:
+    def section_list(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule now.
@@ -866,7 +866,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("section_ref")  # type: ignore
-    def section_list(self, token: YaccProduction) -> Dict:
+    def section_list(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -875,7 +875,7 @@ class BDParser(Parser):
         return token.section_ref
 
     @_("NOT SECTION_NAME")  # type: ignore
-    def section_ref(self, token: YaccProduction) -> Dict:
+    def section_ref(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -886,7 +886,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("SECTION_NAME")  # type: ignore
-    def section_ref(self, token: YaccProduction) -> Dict:
+    def section_ref(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -896,7 +896,7 @@ class BDParser(Parser):
         return {token.SECTION_NAME}
 
     @_("int_const_expr")  # type: ignore
-    def address_or_range(self, token: YaccProduction) -> Dict:
+    def address_or_range(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -906,7 +906,7 @@ class BDParser(Parser):
         return {"address": address_start}
 
     @_("int_const_expr RANGE int_const_expr")  # type: ignore
-    def address_or_range(self, token: YaccProduction) -> Dict:
+    def address_or_range(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -927,13 +927,13 @@ class BDParser(Parser):
         self.error(token, ": symbol reference is not supported.")
 
     @_("call_type call_target call_arg")  # type: ignore
-    def call_stmt(self, token: YaccProduction) -> Dict:
+    def call_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of a call statement.
         """
-        dictionary: Dict = {token.call_type: {}}
+        dictionary: dict = {token.call_type: {}}
         dictionary[token.call_type].update(token.call_target)
         dictionary[token.call_type].update(token.call_arg)
         return dictionary
@@ -948,7 +948,7 @@ class BDParser(Parser):
         return token[0]
 
     @_("int_const_expr")  # type: ignore
-    def call_target(self, token: YaccProduction) -> Dict:
+    def call_target(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -957,7 +957,7 @@ class BDParser(Parser):
         return {"address": token.int_const_expr}
 
     @_("SOURCE_NAME")  # type: ignore
-    def call_target(self, token: YaccProduction) -> Dict:
+    def call_target(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -970,7 +970,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("symbol_ref")  # type: ignore
-    def call_target(self, token: YaccProduction) -> Dict:
+    def call_target(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -983,7 +983,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("LPAREN RPAREN")  # type: ignore
-    def call_arg(self, token: YaccProduction) -> Dict:
+    def call_arg(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -993,7 +993,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("LPAREN int_const_expr RPAREN")  # type: ignore
-    def call_arg(self, token: YaccProduction) -> Dict:
+    def call_arg(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1002,7 +1002,7 @@ class BDParser(Parser):
         return {"argument": token.int_const_expr}
 
     @_("empty")  # type: ignore
-    def call_arg(self, token: YaccProduction) -> Dict:
+    def call_arg(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1011,20 +1011,20 @@ class BDParser(Parser):
         return token.empty
 
     @_("JUMP_SP int_const_expr call_target call_arg")  # type: ignore
-    def jump_sp_stmt(self, token: YaccProduction) -> Dict:
+    def jump_sp_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content jump statement.
         """
-        dictionary: Dict = {"jump": {}}
+        dictionary: dict = {"jump": {}}
         dictionary["jump"]["spreg"] = token.int_const_expr
         dictionary["jump"].update(token.call_target)
         dictionary["jump"].update(token.call_arg)
         return dictionary
 
     @_("RESET")  # type: ignore
-    def reset_stmt(self, token: YaccProduction) -> Dict:
+    def reset_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1043,7 +1043,7 @@ class BDParser(Parser):
         self.error(token, ": from statement not supported.")
 
     @_("basic_stmt SEMI")  # type: ignore
-    def in_from_stmt(self, token: YaccProduction) -> List:
+    def in_from_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1052,7 +1052,7 @@ class BDParser(Parser):
         return token.basic_stmt
 
     @_("if_stmt")  # type: ignore
-    def in_from_stmt(self, token: YaccProduction) -> List:
+    def in_from_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1061,7 +1061,7 @@ class BDParser(Parser):
         return token.if_stmt
 
     @_("empty")  # type: ignore
-    def in_from_stmt(self, token: YaccProduction) -> List:
+    def in_from_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1070,7 +1070,7 @@ class BDParser(Parser):
         return []
 
     @_("MODE int_const_expr")  # type: ignore
-    def mode_stmt(self, token: YaccProduction) -> Dict:
+    def mode_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -1079,11 +1079,11 @@ class BDParser(Parser):
         :return:
         """
         self.error(token, ": mode statement is not supported")
-        dictionary: Dict = {}
+        dictionary: dict = {}
         return dictionary
 
     @_("message_type STRING_LITERAL")  # type: ignore
-    def message_stmt(self, token: YaccProduction) -> Dict:
+    def message_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -1091,11 +1091,11 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the message statement.
         """
-        dictionary: Dict = {}
+        dictionary: dict = {}
         return dictionary
 
     @_("INFO", "WARNING", "ERROR")  # type: ignore
-    def message_type(self, token: YaccProduction) -> Dict:
+    def message_type(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         We don't support this rule for now.
@@ -1104,11 +1104,11 @@ class BDParser(Parser):
         :return: empty dictionary.
         """
         self.error(token, ": info/warning/error messages are not supported.")
-        dictionary: Dict = {}
+        dictionary: dict = {}
         return dictionary
 
     @_("KEYSTORE_TO_NV mem_opt address_or_range")  # type: ignore
-    def keystore_stmt(self, token: YaccProduction) -> Dict:
+    def keystore_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1120,7 +1120,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("KEYSTORE_FROM_NV mem_opt address_or_range")  # type: ignore
-    def keystore_stmt(self, token: YaccProduction) -> Dict:
+    def keystore_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1143,7 +1143,7 @@ class BDParser(Parser):
         return {"mem_opt": token.IDENT}
 
     @_("'@' int_const_expr")  # type: ignore
-    def mem_opt(self, token: YaccProduction) -> Dict:
+    def mem_opt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1163,19 +1163,19 @@ class BDParser(Parser):
         return token.empty
 
     @_("VERSION_CHECK sec_or_nsec fw_version")  # type: ignore
-    def version_stmt(self, token: YaccProduction) -> Dict:
+    def version_stmt(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of version check statement.
         """
-        dictionary: Dict = {token.VERSION_CHECK: {}}
+        dictionary: dict = {token.VERSION_CHECK: {}}
         dictionary[token.VERSION_CHECK].update(token.sec_or_nsec)
         dictionary[token.VERSION_CHECK].update(token.fw_version)
         return dictionary
 
     @_("SEC")  # type: ignore
-    def sec_or_nsec(self, token: YaccProduction) -> Dict:
+    def sec_or_nsec(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1185,7 +1185,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("NSEC")  # type: ignore
-    def sec_or_nsec(self, token: YaccProduction) -> Dict:
+    def sec_or_nsec(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1195,7 +1195,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("int_const_expr")  # type: ignore
-    def fw_version(self, token: YaccProduction) -> Dict:
+    def fw_version(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1205,7 +1205,7 @@ class BDParser(Parser):
         return dictionary
 
     @_("IF bool_expr LBRACE statement RBRACE else_stmt")  # type: ignore
-    def if_stmt(self, token: YaccProduction) -> List:
+    def if_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         We don't support this rule for now.
@@ -1220,7 +1220,7 @@ class BDParser(Parser):
         return token.else_stmt
 
     @_("ELSE LBRACE statement RBRACE")  # type: ignore
-    def else_stmt(self, token: YaccProduction) -> List:
+    def else_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1229,7 +1229,7 @@ class BDParser(Parser):
         return token.statement
 
     @_("ELSE if_stmt")  # type: ignore
-    def else_stmt(self, token: YaccProduction) -> List:
+    def else_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1238,7 +1238,7 @@ class BDParser(Parser):
         return token.if_stmt
 
     @_("empty")  # type: ignore
-    def else_stmt(self, token: YaccProduction) -> List:
+    def else_stmt(self, token: YaccProduction) -> list:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
@@ -1481,13 +1481,13 @@ class BDParser(Parser):
         return number
 
     @_("")  # type: ignore
-    def empty(self, token: YaccProduction) -> Dict:
+    def empty(self, token: YaccProduction) -> dict:
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: empty dictionary.
         """
-        dictionary: Dict = {}
+        dictionary: dict = {}
         return dictionary
 
     @staticmethod

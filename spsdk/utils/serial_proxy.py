@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@
 import logging
 
 # pylint: disable=unused-import  # Type is necessary for Mypy
-from typing import Dict, Optional, Type
+from typing import Optional, Type
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +22,11 @@ class SerialProxy:
     @patch(<your.package>.Serial, SerialProxy.init_proxy(pre_recorded_responses))
     """
 
-    responses: Dict[bytes, bytes] = {}
+    responses: dict[bytes, bytes] = {}
     ignore_ack: bool = False
 
     @classmethod
-    def init_proxy(cls, data: Dict[bytes, bytes], ignore_ack: bool = False) -> "Type[SerialProxy]":
+    def init_proxy(cls, data: dict[bytes, bytes], ignore_ack: bool = False) -> "Type[SerialProxy]":
         """Initialized response dictionary of write and read bytes.
 
         :param data: Dictionary of write and read bytes

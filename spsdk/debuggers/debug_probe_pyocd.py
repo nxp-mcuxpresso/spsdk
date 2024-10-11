@@ -8,7 +8,7 @@
 
 import logging
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Optional
 
 import pyocd
 from pyocd.core.exceptions import Error as PyOCDError
@@ -37,19 +37,35 @@ class DebugProbePyOCD(DebugProbeCoreSightOnly):
 
     NAME = "pyocd"
 
-    def __init__(self, hardware_id: str, options: Optional[Dict] = None) -> None:
+    def __init__(self, hardware_id: str, options: Optional[dict] = None) -> None:
         """The PyOCD class initialization.
 
         The PyOCD initialization function for SPSDK library to support various DEBUG PROBES.
         """
         super().__init__(hardware_id, options)
         self.probe: PyOCDDebugProbe = None
-
+        self.configure_logger()
         logger.debug("The SPSDK PyOCD Interface has been initialized")
+
+    def configure_logger(self, logging_level: int = logging.ERROR) -> None:
+        """Configure PyOCD logger."""
+        logging.getLogger("pyocd").setLevel(logging_level)
+        trace_loggers = {
+            name: logger
+            for name, logger in logging.root.manager.loggerDict.items()  # pylint: disable=E1101
+            if name.startswith("pyocd") and name.endswith(".trace")
+        }
+        disable_trace = False
+        if logging_level > logging.DEBUG:
+            disable_trace = True
+        # Update all PyOCD trace loggers
+        for trace_logger in trace_loggers.values():
+            if isinstance(trace_logger, logging.Logger):
+                trace_logger.disabled = disable_trace
 
     @classmethod
     def get_connected_probes(
-        cls, hardware_id: Optional[str] = None, options: Optional[Dict] = None
+        cls, hardware_id: Optional[str] = None, options: Optional[dict] = None
     ) -> DebugProbes:
         """Get all connected probes over PyOCD.
 
@@ -62,7 +78,7 @@ class DebugProbePyOCD(DebugProbeCoreSightOnly):
         """
         probes = DebugProbes()
         try:
-            connected_probes: List[PyOCDDebugProbe] = ConnectHelper.get_all_connected_probes(
+            connected_probes: list[PyOCDDebugProbe] = ConnectHelper.get_all_connected_probes(
                 blocking=False, unique_id=hardware_id
             )
         except ProbeError as exc:

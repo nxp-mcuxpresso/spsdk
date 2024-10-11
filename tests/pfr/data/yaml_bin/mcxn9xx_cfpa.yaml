@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # NXP mcxn9xx PFR CFPA configuration
@@ -12,7 +12,7 @@ settings: # The CFPA registers configuration.
     bitfields:  # The register bitfields
       CFPA_LC_STATE: USE_LC_STATE_OTP  # Offset: 0b, Width: 8b, Description: Life cycle state.
       #
-      # This field can be used to advance life cycle state to 0x7, 0xF or 0xCF during development (OTP_LC_STATE = 0x3) for testing deployed states without programing OTP fuse.
+      # This field can be used to advance life cycle state to 0x7, 0xF or 0xCF during development (OTP_LC_STATE = 0x3) for testing deployed states without programming OTP fuse.
       #
       # When CFPA is used to advance LC state, then application code should implement hooks, to revert CFPA_LC_STATE field to 0x3 to bring the device back to OEM_DEVELOP state (0x03).  One such example is a GPIO interrupt handler invoked on a button press which modified the CFPA_LC_STATE to 0x3.
       #

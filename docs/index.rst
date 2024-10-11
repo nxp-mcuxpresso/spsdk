@@ -125,7 +125,7 @@ All products, including those with advanced security features, may be subject to
 
     apps/blhost
     apps/dk6prog
-    apps/el2go
+    apps/el2go-host
     apps/ifr
     apps/nxpcrypto
     apps/nxpdebugmbox
@@ -140,6 +140,8 @@ All products, including those with advanced security features, may be subject to
     apps/shadowregs
     apps/trust_provisioning
     apps/nxpwpc
+    apps/nxpdice
+    apps/nxpuuu
 
 
 .. toctree::
@@ -153,6 +155,7 @@ All products, including those with advanced security features, may be subject to
     api/dk6
     api/ele_msg
     api/image
+    api/lpcprog
     api/mboot
     api/memcfg
     api/pfr
@@ -203,9 +206,17 @@ All products, including those with advanced security features, may be subject to
     examples/mcxn9xx_debug_auth/mcxn9xx_debug_auth
     examples/imx93/imx93_ahab_uboot
     examples/imx93/imx93_signed_ahab_uboot
+    examples/imx95/imx95_ahab_uboot
     examples/rt118x/rt118x_debug_authentication
     examples/rt118x/rt118x_secure_boot
-
+    examples/rt118x/rt118x_external_memory_config
+    examples/lpcprog/lpcprog
+    examples/lpc55s3x/dice/lpc55s3x_dice
+    examples/signature_provider/mcxn946/mcxn946_mbimg
+    examples/signature_provider/mimxrt595s/mimxrt595s_mbimg
+    examples/signature_provider/mimxrt595s/mimxrt595s_dat
+    examples/signature_provider/common/signature_provider
+    examples/signature_provider/common/sahsm
 
 .. Indices and tables
 .. ==================

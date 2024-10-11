@@ -8,7 +8,7 @@
 # ======================================================================================================================
 # ---------------------------------------===== MCU family name. [Required] =====----------------------------------------
 # Description: MCU family name.
-family: mcxn9xx
+family: mcxn946
 # ------------------------------===== Use ISK for signature certification [Required] =====------------------------------
 # Description: Enable ISK type of signature certification.
 useIsk: true

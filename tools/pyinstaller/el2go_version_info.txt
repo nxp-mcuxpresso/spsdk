@@ -32,9 +32,9 @@ VSVersionInfo(
         [StringStruct(u'CompanyName', u'NXP Semiconductors'),
         StringStruct(u'FileDescription', u'MCUXpresso SPSDK Apps'),
         StringStruct(u'FileVersion', u'1.0.0.0'),
-        StringStruct(u'InternalName', u'el2go.exe'),
+        StringStruct(u'InternalName', u'el2go-host.exe'),
         StringStruct(u'LegalCopyright', u'Copyright (C) 2020-2024 NXP Semiconductors'),
-        StringStruct(u'OriginalFileName', u'el2go.exe'),
+        StringStruct(u'OriginalFileName', u'el2go-host.exe'),
         StringStruct(u'ProductName', u'MCUXpresso SPSDK Apps'),
         StringStruct(u'ProductVersion', u'1.0.0.0')])
       ]),

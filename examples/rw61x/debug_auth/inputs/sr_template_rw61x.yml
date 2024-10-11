@@ -4,290 +4,121 @@
 # ======================================  Shadow register configuration template  ======================================
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
-# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
-# Description: MCU family name.
-# Possible options: <rt5xx, rt6xx, rw61x>
-family: rw61x
-# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
-# Description: If needed this could be used to specify silicon revision of device.
+# -------------------------------------===== The chip family name [Optional] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s, mimxrt798s, rw610, rw612>
+family: rw612
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a1, a2, latest>
 revision: latest
 # -----------------------------------===== Shadow registers Settings [Required] =====-----------------------------------
 registers:
   # ------------------------------------------===== BOOT_CFG0 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A03C, Width: 32b; Boot Configuration 0.
+  # Description: Offset: 0x4000A03C, Width: 32b; Boot configuration fuse word 0.
   BOOT_CFG0:
     # ------------------------------------===== PRIMARY_BOOT_SOURCE [Optional] =====------------------------------------
     # Description: Offset: 0b, Width: 4b, Primary boot source. (a.k.a. Master boot source)
-    PRIMARY_BOOT_SOURCE: 0
-    # -------------------------------------===== DEFAULT_ISP_MODE [Optional] =====--------------------------------------
-    # Description: Offset: 4b, Width: 3b, ISP boot mode
-    DEFAULT_ISP_MODE: 0
-    # --------------------------------------===== BOOT_CLK_SPEED [Optional] =====---------------------------------------
-    # Description: Offset: 7b, Width: 1b, Defines cclock speeds during boot.
-    BOOT_CLK_SPEED: 0
-    # --------------------------------------===== STOP_ON_FAILURE [Optional] =====--------------------------------------
-    # Description: Offset: 10b, Width: 1b, If set, then enables GPIO Port and PIN information upon failure
-    STOP_ON_FAILURE: 0
-    # --------------------------------------===== TZM_IMAGE_TYPE [Optional] =====---------------------------------------
-    # Description: Offset: 12b, Width: 2b, TrustZone-M mode
-    # - Ignored, (0): Ignored
-    # - EnforcePreset, (1): Enforce preset TZM data in image manifest
-    # - EnforcePreset, (2): Enforce preset TZM data in image manifest
-    # - EnforcePreset, (3): Enforce preset TZM data in image manifest
-    # Possible options: <Ignored, EnforcePreset, EnforcePreset, EnforcePreset>
-    TZM_IMAGE_TYPE: Ignored
-    # ------------------------------------===== REDUNDANT_SPI_PORT [Optional] =====-------------------------------------
-    # Description: Offset: 16b, Width: 3b, FlexComm port to use for redundant SPI flash boot.
-    REDUNDANT_SPI_PORT: 0
+    # - ISP_PIN_BOOT, (0): ISP pins will determine boot source.
+    # - FLEXSPI_BOOT, (1): Boot from FlexSPI flash device using FlexSPI interface pins.
+    # - SDIO_BOOT, (3): Boot from SDIO (Serial) port.
+    # - SPI_BOOT, (4): Boot using SPI slave interface using master boot mode.
+    # - I2C_BOOT, (5): I2C boot mode.
+    # - UART_BOOT, (6): Boot using UART interface using master boot mode.
+    # - Reserved, (7): Reserved.
+    # - USBHID_BOOT, (8): USB-HID boot mode.
+    # - ISP_MODE, (9): Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface.
+    # - Test_MODE, (10): Reserved
+    # - QSPI_FALLBACK_SPINOR_BOOT, (12): Boot from Octal/Quad SPI flash device using FlexSPI channel A interface pins.
+    # If image is not found check recovery boot using SPI flash device through FlexComm.
+    # Possible options: <ISP_PIN_BOOT, FLEXSPI_BOOT, SDIO_BOOT, SPI_BOOT, I2C_BOOT, UART_BOOT, Reserved, USBHID_BOOT,
+    # ISP_MODE, Test_MODE, QSPI_FALLBACK_SPINOR_BOOT>
+    PRIMARY_BOOT_SOURCE: FLEXSPI_BOOT
+    
     # --------------------------------------===== SECURE_BOOT_EN [Optional] =====---------------------------------------
     # Description: Offset: 19b, Width: 2b, Secure boot enable config
-    SECURE_BOOT_EN: 0
-    # ---------------------------------------===== DICE_INC_OTP [Optional] =====----------------------------------------
-    # Description: Offset: 22b, Width: 1b, Include OTP fuses area in DICE computation
-    DICE_INC_OTP: 0
+    # - DISABLED, (0): Allow non-secure images with and without CRC. Used during development.
+    # - DISABLED, (1): RFU
+    # - ENABLED, (2): Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)
+    # - ENABLED, (3): Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)
+    # Possible options: <DISABLED, DISABLED, ENABLED, ENABLED>
+    SECURE_BOOT_EN: ENABLED
+    
     # -----------------------------------------===== DICE_SKIP [Optional] =====-----------------------------------------
     # Description: Offset: 23b, Width: 1b, Skip DICE computation
-    DICE_SKIP: 0
-    # --------------------------------------===== BOOT_FAIL_PORT [Optional] =====---------------------------------------
-    # Description: Offset: 24b, Width: 3b, GPIO port number to use for indicating boot failure. Defines GPIO port number
-    BOOT_FAIL_PORT: 0
-    # ---------------------------------------===== BOOT_FAIL_PIN [Optional] =====---------------------------------------
-    # Description: Offset: 27b, Width: 5b, Defines GPIO pin number.
-    BOOT_FAIL_PIN: 0
-  # ------------------------------------------===== BOOT_CFG1 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A040, Width: 32b; Boot Configuration 1.
-  BOOT_CFG1:
-    # ------------------------------------===== FLEXSPI_AUTO_PROBE [Optional] =====-------------------------------------
-    # Description: Offset: 0b, Width: 1b, Flash auto probe feature enable. Auto probing is enabled if the bit is 1.
-    FLEXSPI_AUTO_PROBE: 0
-    # ------------------------------------===== FLEXSPI_PROBE_TYPE [Optional] =====-------------------------------------
-    # Description: Offset: 1b, Width: 3b, Flash probe type
-    FLEXSPI_PROBE_TYPE: 0
-    # ------------------------------------===== FLEXSPI_FLASH_TYPE [Optional] =====-------------------------------------
-    # Description: Offset: 4b, Width: 3b, Flash type. This field affects the default configuration of the Boot ROM Flash
-    # driver (before any input from Flash itself is available)
-    FLEXSPI_FLASH_TYPE: 0
-    # -----------------------------------===== FLEXSPI_DUMMY_CYCLES [Optional] =====------------------------------------
-    # Description: Offset: 7b, Width: 4b, Dummy cycles for read command
-    FLEXSPI_DUMMY_CYCLES: 0
-    # -------------------------------------===== FLEXSPI_FREQUENCY [Optional] =====-------------------------------------
-    # Description: Offset: 11b, Width: 3b, Flash SPI clock frequency to use for auto probing.
-    FLEXSPI_FREQUENCY: 0
-    # --------------------------------------===== FLEXSPI_RST_SEQ [Optional] =====--------------------------------------
-    # Description: Offset: 14b, Width: 2b, Select the Flash reset sequence to use for regular boot.
-    FLEXSPI_RST_SEQ: 0
-    # -----------------------------------===== FLEXSPI_RST_HOLD_TIME [Optional] =====-----------------------------------
-    # Description: Offset: 16b, Width: 4b, Set the time to wait after reset sequence for regular boot.
-    FLEXSPI_RST_HOLD_TIME: 0
-    # --------------------------------------===== FLEXSPI_WUP_SEQ [Optional] =====--------------------------------------
-    # Description: Offset: 20b, Width: 2b, Select the Flash reset sequence to use for boot from low power mode.
-    FLEXSPI_WUP_SEQ: 0
-    # -----------------------------------===== FLEXSPI_WUP_HOLD_TIME [Optional] =====-----------------------------------
-    # Description: Offset: 22b, Width: 4b, Set the time to wait after reset sequence for boot from low power mode.
-    FLEXSPI_WUP_HOLD_TIME: 0
-    # -------------------------------------===== FLEXSPI_HOLD_TIME [Optional] =====-------------------------------------
-    # Description: Offset: 26b, Width: 2b, Wait time before access to Serial Flash.
-    FLEXSPI_HOLD_TIME: 0
-    # -----------------------------------===== FLEXSPI_PWR_HOLD_TIME [Optional] =====-----------------------------------
-    # Description: Offset: 28b, Width: 4b, Delay after POR before accessing Quad/Octal-SPI flash devices in addition to
-    # delay defined by QSPI_HOLD TIME field.
-    FLEXSPI_PWR_HOLD_TIME: 0
-  # ------------------------------------------===== BOOT_CFG2 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A044, Width: 32b; Boot Configuration 2.
-  BOOT_CFG2:
-    # ------------------------------------===== FLEXSPI_IMAGE_SIZE [Optional] =====-------------------------------------
-    # Description: Offset: 0b, Width: 4b, The size of the Flash memory to use for a boot image
-    FLEXSPI_IMAGE_SIZE: 0
-    # ----------------------------------===== FLEXSPI_DELAY_CELL_NUM [Optional] =====-----------------------------------
-    # Description: Offset: 4b, Width: 7b, Delay cell numbers for Flash read sampling via DQS (either internal loopback
-    # or external DQS)
-    FLEXSPI_DELAY_CELL_NUM: 0
-    # -----------------------------------===== FLEXSPI_IMAGE_OFFSET [Optional] =====------------------------------------
-    # Description: Offset: 11b, Width: 10b, The offset in Flash memory where the second boot image starts. The offset to
-    # the second image is X * 256 KiB.
-    FLEXSPI_IMAGE_OFFSET: 0
+    # - NO_SKIP, (0): Enable DICE
+    # - SKIP, (1): Disable DICE
+    # Possible options: <NO_SKIP, SKIP>
+    DICE_SKIP: SKIP
+    
   # ------------------------------------------===== BOOT_CFG3 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A048, Width: 32b; Boot Configuration 3.
+  # Description: Offset: 0x4000A048, Width: 32b; Boot configuration fuse word 3.
   BOOT_CFG3:
     # ----------------------------------------===== ROTK0_USAGE [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 3b, RoT key 0 usage properties.
-    # - 0b000, (0): Usable as debug CA, image CA, FW CA, image and FW key
-    # - 0b001, (1): Usable as debug CA only
-    # - 0b010, (2): Usable as image (boot & FW) CA only
-    # - 0b011, (3): Usable as debug, boot & FW image CA
-    # - 0b100, (4): Usable as image key & FW update key only
-    # - 0b101, (5): Usable as boot image key only
-    # - 0b110, (6): Usable as FW update image key only
-    # - 0b111, (7): Key slot is not used
-    # Possible options: <0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111>
-    ROTK0_USAGE: '0b000'
+    # - All_usage_key, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DebugCA, (1): Usable as debug CA only.
+    # - ImageCA_FwCA, (2): Usable as image (boot and FW) CA only.
+    # - DebugCA_ImageCA_FwCA, (3): Usable as debug, boot and FW image CA.
+    # - ImageKey_FwKey, (4): Usable as image key and FW update key only.
+    # - ImageKey, (5): Usable as boot image key only.
+    # - FwKey, (6): Usable as FW update image key only.
+    # - Unused, (7): Key slot is not used.
+    # Possible options: <All_usage_key, DebugCA, ImageCA_FwCA, DebugCA_ImageCA_FwCA, ImageKey_FwKey, ImageKey, FwKey,
+    # Unused>
+    ROTK0_USAGE: All_usage_key
     # ----------------------------------------===== ROTK1_USAGE [Optional] =====----------------------------------------
     # Description: Offset: 3b, Width: 3b, RoT key 1 usage properties.
-    # - 0b000, (0): Usable as debug CA, image CA, FW CA, image and FW key
-    # - 0b001, (1): Usable as debug CA only
-    # - 0b010, (2): Usable as image (boot & FW) CA only
-    # - 0b011, (3): Usable as debug, boot & FW image CA
-    # - 0b100, (4): Usable as image key & FW update key only
-    # - 0b101, (5): Usable as boot image key only
-    # - 0b110, (6): Usable as FW update image key only
-    # - 0b111, (7): Key slot is not used
-    # Possible options: <0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111>
-    ROTK1_USAGE: '0b111'
+    # - All_usage_key, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DebugCA, (1): Usable as debug CA only.
+    # - ImageCA_FwCA, (2): Usable as image (boot and FW) CA only.
+    # - DebugCA_ImageCA_FwCA, (3): Usable as debug, boot and FW image CA.
+    # - ImageKey_FwKey, (4): Usable as image key and FW update key only.
+    # - ImageKey, (5): Usable as boot image key only.
+    # - FwKey, (6): Usable as FW update image key only.
+    # - Unused, (7): Key slot is not used.
+    # Possible options: <All_usage_key, DebugCA, ImageCA_FwCA, DebugCA_ImageCA_FwCA, ImageKey_FwKey, ImageKey, FwKey,
+    # Unused>
+    ROTK1_USAGE: Unused
     # ----------------------------------------===== ROTK2_USAGE [Optional] =====----------------------------------------
     # Description: Offset: 6b, Width: 3b, RoT key 2 usage properties.
-    # - 0b000, (0): Usable as debug CA, image CA, FW CA, image and FW key
-    # - 0b001, (1): Usable as debug CA only
-    # - 0b010, (2): Usable as image (boot & FW) CA only
-    # - 0b011, (3): Usable as debug, boot & FW image CA
-    # - 0b100, (4): Usable as image key & FW update key only
-    # - 0b101, (5): Usable as boot image key only
-    # - 0b110, (6): Usable as FW update image key only
-    # - 0b111, (7): Key slot is not used
-    # Possible options: <0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111>
-    ROTK2_USAGE: '0b111'
+    # - All_usage_key, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DebugCA, (1): Usable as debug CA only.
+    # - ImageCA_FwCA, (2): Usable as image (boot and FW) CA only.
+    # - DebugCA_ImageCA_FwCA, (3): Usable as debug, boot and FW image CA.
+    # - ImageKey_FwKey, (4): Usable as image key and FW update key only.
+    # - ImageKey, (5): Usable as boot image key only.
+    # - FwKey, (6): Usable as FW update image key only.
+    # - Unused, (7): Key slot is not used.
+    # Possible options: <All_usage_key, DebugCA, ImageCA_FwCA, DebugCA_ImageCA_FwCA, ImageKey_FwKey, ImageKey, FwKey,
+    # Unused>
+    ROTK2_USAGE: Unused
     # ----------------------------------------===== ROTK3_USAGE [Optional] =====----------------------------------------
     # Description: Offset: 9b, Width: 3b, RoT key 3 usage properties.
-    # - 0b000, (0): Usable as debug CA, image CA, FW CA, image and FW key
-    # - 0b001, (1): Usable as debug CA only
-    # - 0b010, (2): Usable as image (boot & FW) CA only
-    # - 0b011, (3): Usable as debug, boot & FW image CA
-    # - 0b100, (4): Usable as image key & FW update key only
-    # - 0b101, (5): Usable as boot image key only
-    # - 0b110, (6): Usable as FW update image key only
-    # - 0b111, (7): Key slot is not used
-    # Possible options: <0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111>
-    ROTK3_USAGE: '0b111'
+    # - All_usage_key, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DebugCA, (1): Usable as debug CA only.
+    # - ImageCA_FwCA, (2): Usable as image (boot and FW) CA only.
+    # - DebugCA_ImageCA_FwCA, (3): Usable as debug, boot and FW image CA.
+    # - ImageKey_FwKey, (4): Usable as image key and FW update key only.
+    # - ImageKey, (5): Usable as boot image key only.
+    # - FwKey, (6): Usable as FW update image key only.
+    # - Unused, (7): Key slot is not used.
+    # Possible options: <All_usage_key, DebugCA, ImageCA_FwCA, DebugCA_ImageCA_FwCA, ImageKey_FwKey, ImageKey, FwKey,
+    # Unused>
+    ROTK3_USAGE: Unused
     # -----------------------------------------===== ENF_CNSA [Optional] =====------------------------------------------
-    # Description: Offset: 12b, Width: 2b, Enforce CNSA (Commercial National Security Algorithm) suite keys
-    # - 0b00, (0): ECC P-256 keys
-    # - 0b01, (1): ECC P384 keys, SHA384 & AAES256
-    # - 0b10, (2): ECC P-384 keys, SHA382 & AES256
-    # - 0b11, (3): ECC P-384 keys, SHA384 & AES256
-    # Possible options: <0b00, 0b01, 0b10, 0b11>
-    ENF_CNSA: '0b00'
+    # Description: Offset: 12b, Width: 2b, Enforce CNSA (Commercial National Security Algorithm) suite keys.
+    # - P-256_KEY, (0): ECC P-256 keys.
+    # - P-384_KEY, (1): ECC P-384 keys.
+    # - P-384_KEY, (2): ECC P-384 keys.
+    # - P-384_KEY, (3): ECC P-384 keys.
+    # Possible options: <P-256_KEY, P-384_KEY, P-384_KEY, P-384_KEY>
+    ENF_CNSA: P-256_KEY
     # -------------------------------------===== ENABLE_CRC_CHECK [Optional] =====--------------------------------------
-    # Description: Offset: 14b, Width: 2b, Enable CRC checks over OTP words
-    ENABLE_CRC_CHECK: 0
-    # ---------------------------------------===== FIPS_KDF_STEN [Optional] =====---------------------------------------
-    # Description: Offset: 16b, Width: 2b, Enable self-test for CKDF block on power-up. Needed for FIPS certification.
-    # If this field is non-zero run self-test and log result in BOOT_STATE register.
-    # - 0b00, (0): not included
-    # - 0b01, (1): On failure continue to boot
-    # Possible options: <0b00, 0b01>
-    FIPS_KDF_STEN: '0b00'
-    # --------------------------------------===== FIPS_CMAC_STEN [Optional] =====---------------------------------------
-    # Description: Offset: 18b, Width: 2b, Enable self-test for CMAC block on power-up. Needed for FIPS certification.
-    # If this field is non-zero run self-test and log result in BOOT_STATE register.
-    # - 0b00, (0): not included
-    # - 0b01, (1): On failure continue to boot
-    # Possible options: <0b00, 0b01>
-    FIPS_CMAC_STEN: '0b00'
-    # --------------------------------------===== FIPS_DRBG_STEN [Optional] =====---------------------------------------
-    # Description: Offset: 20b, Width: 2b, Enable self-test for DRBG block on power-up. Needed for FIPS certification.
-    # If this field is non-zero run self-test and log result in BOOT_STATE register.
-    # - 0b00, (0): not included
-    # - 0b01, (1): On failure continue to boot
-    # Possible options: <0b00, 0b01>
-    FIPS_DRBG_STEN: '0b00'
-    # --------------------------------------===== FIPS_ECDSA_STEN [Optional] =====--------------------------------------
-    # Description: Offset: 22b, Width: 2b, Enable self-test for ECDSA block on power-up. Needed for FIPS certification.
-    # If this field is non-zero run self-test and log result in BOOT_STATE register.
-    # - 0b00, (0): not included
-    # - 0b01, (1): On failure continue to boot
-    # Possible options: <0b00, 0b01>
-    FIPS_ECDSA_STEN: '0b00'
-    # ---------------------------------------===== FIPS_AES_STEN [Optional] =====---------------------------------------
-    # Description: Offset: 24b, Width: 2b, Enable self-test for AES block on power-up. Needed for FIPS certification. If
-    # this field is non-zero run self-test and log result in BOOT_STATE register.
-    # - 0b00, (0): not included
-    # - 0b01, (1): On failure continue to boot
-    # Possible options: <0b00, 0b01>
-    FIPS_AES_STEN: '0b00'
-    # ---------------------------------------===== FIPS_SHA_STEN [Optional] =====---------------------------------------
-    # Description: Offset: 26b, Width: 2b, Enable self-test for SHA2 block on power-up. Needed for FIPS certification.
-    # If this field is non-zero run self-test and log result in BOOT_STATE register.
-    # - 0b00, (0): not included
-    # - 0b01, (1): On failure continue to boot
-    # Possible options: <0b00, 0b01>
-    FIPS_SHA_STEN: '0b00'
-    # ---------------------------------===== SKIP_PM_SIGN_VERIFICATION [Optional] =====---------------------------------
-    # Description: Offset: 28b, Width: 2b, On boot-up from PM3/PM4, do not run through ECDSA signature verification of
-    # the image
-    SKIP_PM_SIGN_VERIFICATION: 0
-  # ------------------------------------------===== BOOT_CFG5 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A050, Width: 32b; Boot Configuration 5.
-  BOOT_CFG5:
-    # ------------------------------------------===== USB_VID [Optional] =====------------------------------------------
-    # Description: Offset: 0b, Width: 16b, USB VID
-    USB_VID: 0
-    # ------------------------------------------===== USB_PID [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, USB PID
-    USB_PID: 0
-  # ------------------------------------------===== BOOT_CFG6 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A054, Width: 32b; Boot Configuration 6.
-  BOOT_CFG6:
-    # -----------------------------------------===== SDIO_VID [Optional] =====------------------------------------------
-    # Description: Offset: 0b, Width: 16b, SDIO VID
-    SDIO_VID: 0
-    # -----------------------------------------===== SDIO_PID [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, SDIO PID
-    SDIO_PID: 0
-  # ----------------------------------------===== SEC_BOOT_CFG0 [Optional] =====----------------------------------------
-  # Description: Offset: 0x4000A058, Width: 16b; Secure Boot Configuration 0.
-  SEC_BOOT_CFG0:
-    # -----------------------------------------===== RoTK0_EN [Optional] =====------------------------------------------
-    # Description: Offset: 0b, Width: 2b, RoT Key 0 enable
-    # - Enabled, (0): RoT Key 0 is enabled
-    # - Enabled, (1): RoT Key 0 is enabled
-    # - Revoked, (2): RoT Key 0 is revoked
-    # - Revoked, (3): RoT Key 0 is revoked
-    # Possible options: <Enabled, Enabled, Revoked, Revoked>
-    RoTK0_EN: Enabled
-    # -----------------------------------------===== RoTK1_EN [Optional] =====------------------------------------------
-    # Description: Offset: 2b, Width: 2b, RoT Key 1 enable
-    # - Enabled, (0): RoT Key 1 is enabled
-    # - Enabled, (1): RoT Key 1 is enabled
-    # - Revoked, (2): RoT Key 1 is revoked
-    # - Revoked, (3): RoT Key 1 is revoked
-    # Possible options: <Enabled, Enabled, Revoked, Revoked>
-    RoTK1_EN: Enabled
-    # -----------------------------------------===== RoTK2_EN [Optional] =====------------------------------------------
-    # Description: Offset: 4b, Width: 2b, RoT Key 2 enable
-    # - Enabled, (0): RoT Key 2 is enabled
-    # - Enabled, (1): RoT Key 2 is enabled
-    # - Revoked, (2): RoT Key 2 is revoked
-    # - Revoked, (3): RoT Key 2 is revoked
-    # Possible options: <Enabled, Enabled, Revoked, Revoked>
-    RoTK2_EN: Enabled
-    # -----------------------------------------===== RoTK3_EN [Optional] =====------------------------------------------
-    # Description: Offset: 6b, Width: 2b, RoT Key 3 enable
-    # - Enabled, (0): RoT Key 3 is enabled
-    # - Enabled, (1): RoT Key 3 is enabled
-    # - Revoked, (2): RoT Key 3 is revoked
-    # - Revoked, (3): RoT Key 3 is revoked
-    # Possible options: <Enabled, Enabled, Revoked, Revoked>
-    RoTK3_EN: Enabled
-  # ----------------------------------------===== SEC_BOOT_CFG1 [Optional] =====----------------------------------------
-  # Description: Offset: 0x4000A05C, Width: 16b; Secure Boot Configuration 1.
-  SEC_BOOT_CFG1:
-    # -------------------------------------===== DAP_VENDOR_USAGE [Optional] =====--------------------------------------
-    # Description: Offset: 0b, Width: 16b, Lower 16-bits of Vendor Usage field in Debug Credentials defined in NXP's
-    # Debug Authentication Protocol specifications Version 1.0.
-    DAP_VENDOR_USAGE: 0
-  # ----------------------------------------===== SEC_BOOT_CFG2 [Optional] =====----------------------------------------
-  # Description: Offset: 0x4000A060, Width: 16b; Secure Boot Configuration 2.
-  SEC_BOOT_CFG2:
-    # -----------------------------------===== REVOKE_IMG_KEY[15:0] [Optional] =====------------------------------------
-    # Description: Offset: 0b, Width: 16b, Image key revocation id
-    REVOKE_IMG_KEY[15:0]: 0
-  # ----------------------------------------===== SEC_BOOT_CFG3 [Optional] =====----------------------------------------
-  # Description: Offset: 0x4000A064, Width: 16b; Secure Boot Configuration 3.
-  SEC_BOOT_CFG3:
-    # -----------------------------------===== REVOKE_IMG_KEY[31:16] [Optional] =====-----------------------------------
-    # Description: Offset: 0b, Width: 16b, Higher 16-bits of revoke Image key configuration fuse word
-    REVOKE_IMG_KEY[31:16]: 0
+    # Description: Offset: 14b, Width: 2b, Enable CRC checks over OTP words.
+
   # ---------------------------------------===== DCFG_CC_SOCU_NS [Optional] =====---------------------------------------
   # Description: Offset: 0x4000A07C, Width: 32b; The DCFG_CC_SOCU_NS configuration fields can be used to increase the
   # restriction level specified in DCFG_CC_SOCU. With TZ-M, the part can be sold by level 1 customers (secure code
@@ -308,156 +139,14 @@ registers:
   # 4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be
   # reversed. This setting offers the highest level of restriction.
   DCFG_CC_SOCU_NS:
-    # ---------------------------------------===== DFLT_NIDEN_NS [Optional] =====---------------------------------------
-    # Description: Offset: 8b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure
-    # domain of CPU0.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_NIDEN_NS: DISABLED
-    # ---------------------------------------===== DFLT_DBGEN_NS [Optional] =====---------------------------------------
-    # Description: Offset: 9b, Width: 1b, Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain
-    # of CPU0.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_DBGEN_NS: DISABLED
-    # --------------------------------------===== DFLT_SPNIDEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 10b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain
-    # of CPU0
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_SPNIDEN_NS: DISABLED
-    # --------------------------------------===== DFLT_SPIDEN_NS [Optional] =====---------------------------------------
-    # Description: Offset: 11b, Width: 1b, Controls invasive debugging of TrustZone for Arm8-M defined secure domain of
-    # CPU0.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_SPIDEN_NS: DISABLED
-    # ---------------------------------------===== DFLT_TAPEN_NS [Optional] =====---------------------------------------
-    # Description: Offset: 12b, Width: 1b, Controls TAP (Test Access Point) controller used for structural integrity
-    # testing of silicon by NXP as part of Return Material Analysis (RMA)
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_TAPEN_NS: DISABLED
-    # -------------------------------------===== DFLT_CPU1NIDEN_NS [Optional] =====-------------------------------------
-    # Description: Offset: 13b, Width: 1b, Controls non-Invasive debugging of CPU1.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU1NIDEN_NS: DISABLED
-    # -------------------------------------===== DFLT_CPU1DBGEN_NS [Optional] =====-------------------------------------
-    # Description: Offset: 14b, Width: 1b, Controls invasive debugging of CPU1.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU1DBGEN_NS: DISABLED
-    # -------------------------------------===== DFLT_CPU2NIDEN_NS [Optional] =====-------------------------------------
-    # Description: Offset: 15b, Width: 1b, Controls non-Invasive debugging of CPU2.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU2NIDEN_NS: DISABLED
-    # -------------------------------------===== DFLT_CPU2DBGEN_NS [Optional] =====-------------------------------------
-    # Description: Offset: 16b, Width: 1b, Controls invasive debugging of CPU2.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU2DBGEN_NS: DISABLED
-    # -------------------------------------===== DFLT_ISPCMDEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 17b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
-    # issued after authentication.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_ISPCMDEN_NS: DISABLED
-    # --------------------------------------===== DFLT_FACMDEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 18b, Width: 1b, Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued
-    # after authentication
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_FACMDEN_NS: DISABLED
-    # --------------------------------------===== PINNED_NIDEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 19b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure
-    # domain of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_NIDEN_NS: DAR_CC
-    # --------------------------------------===== PINNED_DBGEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 20b, Width: 1b, Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain
-    # of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_DBGEN_NS: DAR_CC
-    # -------------------------------------===== PINNED_SPNIDEN_NS [Optional] =====-------------------------------------
-    # Description: Offset: 21b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain
-    # of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_SPNIDEN_NS: DAR_CC
-    # -------------------------------------===== PINNED_SPIDEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 22b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain
-    # of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_SPIDEN_NS: DAR_CC
-    # --------------------------------------===== PINNED_TAPEN_NS [Optional] =====--------------------------------------
-    # Description: Offset: 23b, Width: 1b, Controls TAP (Test Access Point) controller used for structural integrity
-    # testing of silicon by NXP as part of Return Material Analysis (RMA)
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_TAPEN_NS: DAR_CC
-    # ------------------------------------===== PINNED_CPU1NIDEN_NS [Optional] =====------------------------------------
-    # Description: Offset: 24b, Width: 1b, Controls non-Invasive debugging of CPU1
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU1NIDEN_NS: DAR_CC
-    # ------------------------------------===== PINNED_CPU1DBGEN_NS [Optional] =====------------------------------------
-    # Description: Offset: 25b, Width: 1b, Controls non-Invasive debugging of CPU1
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU1DBGEN_NS: DAR_CC
-    # ------------------------------------===== PINNED_CPU2NIDEN_NS [Optional] =====------------------------------------
-    # Description: Offset: 26b, Width: 1b, Controls non-Invasive debugging of CPU2.
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU2NIDEN_NS: DAR_CC
-    # ------------------------------------===== PINNED_CPU2DBGEN_NS [Optional] =====------------------------------------
-    # Description: Offset: 27b, Width: 1b, Controls invasive debugging of CPU2.
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU2DBGEN_NS: DAR_CC
+
     # ------------------------------------===== PINNED_ISPCMDEN_NS [Optional] =====-------------------------------------
     # Description: Offset: 28b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
     # issued after authentication.
-    # - DAR_CC, (0): Debug Authentication Response determines the state
+    # - DAR_CC, (0): Debug Authentication Response determines the state.
     # - FIXED, (1): Enabled
     # Possible options: <DAR_CC, FIXED>
-    PINNED_ISPCMDEN_NS: DAR_CC
-    # -------------------------------------===== PINNED_FACMDEN_NS [Optional] =====-------------------------------------
-    # Description: Offset: 29b, Width: 1b, Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued
-    # after authentication
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_FACMDEN_NS: DAR_CC
-    # ------------------------------------===== FORCE_UUID_MATCH_NS [Optional] =====------------------------------------
-    # Description: Offset: 30b, Width: 1b, When set, debug authentication protocol only accepts &quot;Debug
-    # Credential&quot; certificates (DC) with matching UUID.
-    FORCE_UUID_MATCH_NS: 0
+    PINNED_ISPCMDEN_NS: FIXED
   # ----------------------------------------===== DCFG_CC_SOCU [Optional] =====-----------------------------------------
   # Description: Offset: 0x4000A084, Width: 32b; The DCFG_CC_SOCU configuration field specifies the debug access
   # restrictions per debug domain. The DCFG_CC_SOCU_NS fields can be used to increase the restriction level specified in
@@ -474,190 +163,50 @@ registers:
   #  4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be
   # reversed. This setting offers the highest level of restriction.
   DCFG_CC_SOCU:
-    # ----------------------------------------===== DFLT_NIDEN [Optional] =====-----------------------------------------
-    # Description: Offset: 8b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure
-    # domain of CPU0.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_NIDEN: DISABLED
-    # ----------------------------------------===== DFLT_DBGEN [Optional] =====-----------------------------------------
-    # Description: Offset: 9b, Width: 1b, Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain
-    # of CPU0.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_DBGEN: DISABLED
-    # ---------------------------------------===== DFLT_SPNIDEN [Optional] =====----------------------------------------
-    # Description: Offset: 10b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain
-    # of CPU0
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_SPNIDEN: DISABLED
-    # ----------------------------------------===== DFLT_SPIDEN [Optional] =====----------------------------------------
-    # Description: Offset: 11b, Width: 1b, Controls invasive debugging of TrustZone for Arm8-M defined secure domain of
-    # CPU0.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_SPIDEN: DISABLED
-    # ----------------------------------------===== DFLT_TAPEN [Optional] =====-----------------------------------------
-    # Description: Offset: 12b, Width: 1b, Controls TAP (Test Access Point) controller used for structural integrity
-    # testing of silicon by NXP as part of Return Material Analysis (RMA)
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_TAPEN: DISABLED
-    # --------------------------------------===== DFLT_CPU1NIDEN [Optional] =====---------------------------------------
-    # Description: Offset: 13b, Width: 1b, Controls non-Invasive debugging of CPU1.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU1NIDEN: DISABLED
-    # --------------------------------------===== DFLT_CPU1DBGEN [Optional] =====---------------------------------------
-    # Description: Offset: 14b, Width: 1b, Controls invasive debugging of CPU1.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU1DBGEN: DISABLED
-    # --------------------------------------===== DFLT_CPU2NIDEN [Optional] =====---------------------------------------
-    # Description: Offset: 15b, Width: 1b, Controls non-Invasive debugging of CPU2.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU2NIDEN: DISABLED
-    # --------------------------------------===== DFLT_CPU2DBGEN [Optional] =====---------------------------------------
-    # Description: Offset: 16b, Width: 1b, Controls invasive debugging of CPU2.
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_CPU2DBGEN: DISABLED
     # ---------------------------------------===== DFLT_ISPCMDEN [Optional] =====---------------------------------------
     # Description: Offset: 17b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
     # issued after authentication.
     # - DISABLED, (0): Disabled
     # - ENABLED, (1): Enabled
     # Possible options: <DISABLED, ENABLED>
-    DFLT_ISPCMDEN: DISABLED
-    # ---------------------------------------===== DFLT_FACMDEN [Optional] =====----------------------------------------
-    # Description: Offset: 18b, Width: 1b, Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued
-    # after authentication
-    # - DISABLED, (0): Disabled
-    # - ENABLED, (1): Enabled
-    # Possible options: <DISABLED, ENABLED>
-    DFLT_FACMDEN: DISABLED
-    # ---------------------------------------===== PINNED_NIDEN [Optional] =====----------------------------------------
-    # Description: Offset: 19b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure
-    # domain of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_NIDEN: DAR_CC
-    # ---------------------------------------===== PINNED_DBGEN [Optional] =====----------------------------------------
-    # Description: Offset: 20b, Width: 1b, Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain
-    # of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_DBGEN: DAR_CC
-    # --------------------------------------===== PINNED_SPNIDEN [Optional] =====---------------------------------------
-    # Description: Offset: 21b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain
-    # of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_SPNIDEN: DAR_CC
-    # ---------------------------------------===== PINNED_SPIDEN [Optional] =====---------------------------------------
-    # Description: Offset: 22b, Width: 1b, Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain
-    # of CPU0
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_SPIDEN: DAR_CC
-    # ---------------------------------------===== PINNED_TAPEN [Optional] =====----------------------------------------
-    # Description: Offset: 23b, Width: 1b, Controls TAP (Test Access Point) controller used for structural integrity
-    # testing of silicon by NXP as part of Return Material Analysis (RMA)
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_TAPEN: DAR_CC
-    # -------------------------------------===== PINNED_CPU1NIDEN [Optional] =====--------------------------------------
-    # Description: Offset: 24b, Width: 1b, Controls non-Invasive debugging of CPU1
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU1NIDEN: DAR_CC
-    # -------------------------------------===== PINNED_CPU1DBGEN [Optional] =====--------------------------------------
-    # Description: Offset: 25b, Width: 1b, Controls non-Invasive debugging of CPU1
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU1DBGEN: DAR_CC
-    # -------------------------------------===== PINNED_CPU2NIDEN [Optional] =====--------------------------------------
-    # Description: Offset: 26b, Width: 1b, Controls non-Invasive debugging of CPU2.
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU2NIDEN: DAR_CC
-    # -------------------------------------===== PINNED_CPU2DBGEN [Optional] =====--------------------------------------
-    # Description: Offset: 27b, Width: 1b, Controls invasive debugging of CPU2.
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_CPU2DBGEN: DAR_CC
+    DFLT_ISPCMDEN: ENABLED
     # --------------------------------------===== PINNED_ISPCMDEN [Optional] =====--------------------------------------
     # Description: Offset: 28b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
     # issued after authentication.
-    # - DAR_CC, (0): Debug Authentication Response determines the state
+    # - DAR_CC, (0): Debug Authentication Response determines the state.
     # - FIXED, (1): Enabled
     # Possible options: <DAR_CC, FIXED>
-    PINNED_ISPCMDEN: DAR_CC
-    # --------------------------------------===== PINNED_FACMDEN [Optional] =====---------------------------------------
-    # Description: Offset: 29b, Width: 1b, Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued
-    # after authentication
-    # - DAR_CC, (0): Debug Authentication Response determines the state
-    # - FIXED, (1): Enabled
-    # Possible options: <DAR_CC, FIXED>
-    PINNED_FACMDEN: DAR_CC
-    # -------------------------------------===== FORCE_UUID_MATCH [Optional] =====--------------------------------------
-    # Description: Offset: 30b, Width: 1b, When set, debug authentication protocol only accepts &quot;Debug
-    # Credential&quot; certificates (DC) with matching UUID.
-    FORCE_UUID_MATCH: 0
+    PINNED_ISPCMDEN: FIXED
   # --------------------------------------===== LIFE_CYCLE_STATE [Optional] =====---------------------------------------
-  # Description: Offset: 0x4000A0B4, Width: 16b; Life-Cycle state.
+  # Description: Offset: 0x4000A0B4, Width: 16b; Life cycle state of rw61x platform.
   LIFE_CYCLE_STATE:
-    # -----------------------------------------===== LCS[7:0] [Optional] =====------------------------------------------
+    # --------------------------------------------===== LCS [Optional] =====--------------------------------------------
     # Description: Offset: 0b, Width: 8b, Possible values of rw61x lifecycle states
-    # - BLANK, (0): Blank
-    # - PROVISIONED, (1): Provisioned
-    # - DEVELOP, (3): OEM Open
-    # - DEVELOP2, (7): OEM Secure
-    # - IN_FIELD, (15): OEM Closed
-    # - FIELD_RETURN, (31): OEM Field Return
-    # - FIELD_RETURN_FA, (63): NXP Field Return
-    # - IN_FIELD_LOCKED, (207): OEM Field Locked
-    # - SHREDDED, (255): Bricked state to prevent device use
-    # Possible options: <BLANK, PROVISIONED, DEVELOP, DEVELOP2, IN_FIELD, FIELD_RETURN, FIELD_RETURN_FA,
-    # IN_FIELD_LOCKED, SHREDDED>
-    LCS[7:0]: IN_FIELD
-    # ------------------------------------===== LCS_REDUNDANT[7:0] [Optional] =====-------------------------------------
+    # - Blank, (0): Initial state in NXP factory.
+    # - Provisioned, (1): NXP provisioned state.
+    # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
+    # - Develop2, (7): Optional customer development state. Used for development of NS world code.
+    # - In-Field, (15): In-field application state for end-customer use.
+    # - Field Return OEM, (31): Field return state.
+    # - Failure Analysis (FA), (63): NXP field return state (CQC).
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - Shredded, (255): Bricked state to prevent device use.
+    # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
+    # Field Locked, Shredded>
+    LCS: In-Field
+    # ---------------------------------------===== LCS_REDUNDANT [Optional] =====---------------------------------------
     # Description: Offset: 8b, Width: 8b, Repeat values of lifecycle state due to a security
-    # - BLANK, (0): Blank
-    # - PROVISIONED, (1): Provisioned
-    # - DEVELOP, (3): OEM Open
-    # - DEVELOP2, (7): OEM Secure
-    # - IN_FIELD, (15): OEM Closed
-    # - FIELD_RETURN, (31): OEM Field Return
-    # - FIELD_RETURN_FA, (63): NXP Field Return
-    # - IN_FIELD_LOCKED, (207): OEM Field Locked
-    # - SHREDDED, (255): Bricked state to prevent device use
-    # Possible options: <BLANK, PROVISIONED, DEVELOP, DEVELOP2, IN_FIELD, FIELD_RETURN, FIELD_RETURN_FA,
-    # IN_FIELD_LOCKED, SHREDDED>
-    LCS_REDUNDANT[7:0]: IN_FIELD
-  # --------------------------------------------===== RKTH [Optional] =====---------------------------------------------
-  # Description: Offset: 0x4000A1A0, Width: 384b; ROTKH field is compounded by 12 32-bit fields and contains Root key
-  # table hash. For ECC P-256 keys RKTH is a 32-byte SHA-256 digest of four SHA-256 digests computed over four OEM
-  # public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case
-  # that ECC P-384 keys are used, RKTH is 48-byte SHA-384 digest.
-  RKTH: '0000000000000000000000000000000000000000000000000000000000000000'
+    # - Blank, (0): Initial state in NXP factory.
+    # - Provisioned, (1): NXP provisioned state.
+    # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
+    # - Develop2, (7): Optional customer development state. Used for development of NS world code.
+    # - In-Field, (15): In-field application state for end-customer use.
+    # - Field Return OEM, (31): Field return state.
+    # - Failure Analysis (FA), (63): NXP field return state (CQC).
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - Shredded, (255): Bricked state to prevent device use.
+    # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
+    # Field Locked, Shredded>
+    LCS_REDUNDANT: In-Field

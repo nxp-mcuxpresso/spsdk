@@ -1,0 +1,193 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0:
+    features:
+      tz:
+        reg_spec: tz_a0.yaml
+  a1: {}
+latest: a1
+
+# General MCU information
+info:
+  purpose: LPC5500 Series
+  spsdk_predecessor_name: lpc55s6x
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/high-efficiency-arm-cortex-m33-based-microcontroller-family:LPC55S6x
+  memory_map: # Memory map basic info
+    internal-flash_ns:
+      start_int: "0x0"
+      size_int: "0x40000"
+      external: false
+    internal-flash_s:
+      start_int: "0x10000000"
+      size_int: "0x40000"
+      external: false
+      mirror_of: internal-flash_ns
+    sram:
+      start_int: "0x20000000"
+      size_int: "0x18000"
+      external: false
+    sramx:
+      start_int: "0x4000000"
+      size_int: "0x8000"
+      external: false
+    usb-ram:
+      start_int: "0x40100000"
+      size_int: "0x4000"
+      external: false
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0021
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_8000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_cert1]
+    rot_type: "cert_block_1"
+
+  # ======== DAT section ========
+  dat:
+    socc: 1 # SOCC identification
+    dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinTrustZone
+          - Mbi_ExportMixinAppTrustZone
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      signed_ram:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinCertBlockV1
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+    images:
+      xip:
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+      load_to_ram:
+        crc: crc_ram
+        signed: signed_ram
+
+  # ======== PFR section ========
+  pfr:
+    cfpa: # CFPA description
+      address: 0x9_DE00
+      size: 512
+      reg_spec: pfr_cfpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
+      seal_count: 8
+      computed_fields:
+        field01C: # VENDOR_USAGE
+          field01C-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field020: # DCFG_CC_SOCU_NS_PIN
+          field020-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field024: # DCFG_CC_SOCU_NS_DFLT
+          field024-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+    cmpa: # CMPA description
+      address: 0x9_E400
+      size: 512
+      reg_spec: pfr_cmpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
+      seal_count: 8
+      grouped_registers:
+        - uid: cmpa_rotkh
+          name: ROTKH
+          width: 256
+          config_as_hexstring: true
+          reversed: true
+          description:
+            ROTKH field is compounded by 8 32-bit fields and contains Root key
+            table hash
+          sub_regs:
+            - field050
+            - field054
+            - field058
+            - field05C
+            - field060
+            - field064
+            - field068
+            - field06C
+      computed_fields:
+        field010: # DCFG_CC_SOCU_PIN
+          field010-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field014: # DCFG_CC_SOCU_DFLT
+          field014-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+    rules:
+      - ../../common/pfrc_rules.yaml
+      - pfrc_rules.yaml
+
+  # ======== Secure binary v2.1 section ========
+  sb21:
+    supported_commands: [erase, load, enable, fill, jump, version_check]
+    keyblobs: false
+
+  # ======== Trust provisioning section ========
+  tp: {}
+
+  # ======== TrustZone section ========
+  tz:
+    reg_spec: tz_a1.yaml
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      spi_nor:
+        instances: [3]
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      recovery_spi:
+        segments:
+          sb21: 0x00
+      internal:
+        segments:
+          mbi: 0x00

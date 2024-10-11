@@ -7,13 +7,13 @@
 
 """Low level serial device."""
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKConnectionError
+from spsdk.exceptions import SPSDKConnectionError, SPSDKPermissionError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase
 
@@ -34,10 +34,11 @@ class SerialDevice(DeviceBase):
     ):
         """Initialize the UART interface.
 
-        :param port: name of the serial port, defaults to None
-        :param baudrate: speed of the UART interface, defaults to 115200
-        :param timeout: read/write timeout in milliseconds, defaults to 1000
-        :raises SPSDKConnectionError: when there is no port available
+        :param port: Name of the serial port, defaults to None
+        :param baudrate: Speed of the UART interface, defaults to 115200
+        :param timeout: Read/write timeout in milliseconds, defaults to 1000
+        :raises SPSDKConnectionError: When there is no port available
+        :raises SPSDKPermissionError: When the permission is denied
         """
         super().__init__()
         self._timeout = timeout or self.DEFAULT_TIMEOUT
@@ -50,6 +51,8 @@ class SerialDevice(DeviceBase):
                 baudrate=baudrate or self.DEFAULT_BAUDRATE,
             )
         except Exception as e:
+            if "PermissionError" in str(e):
+                raise SPSDKPermissionError(f"Could not open port '{port}'. Access denied.") from e
             raise SPSDKConnectionError(str(e)) from e
 
     @property
@@ -75,13 +78,16 @@ class SerialDevice(DeviceBase):
     def open(self) -> None:
         """Open the UART interface.
 
-        :raises SPSDKConnectionError: when opening device fails
+        :raises SPSDKPermissionError: When the permission is denied
+        :raises SPSDKConnectionError: When opening device fails
         """
         if not self.is_opened:
             try:
                 self._device.open()
             except Exception as e:
                 self.close()
+                if "PermissionError" in str(e):
+                    raise SPSDKPermissionError(str(e)) from e
                 raise SPSDKConnectionError(str(e)) from e
 
     def close(self) -> None:
@@ -126,7 +132,7 @@ class SerialDevice(DeviceBase):
         :raises SPSDKConnectionError: when send data to device fails
         """
         if not self.is_opened:
-            raise SPSDKConnectionError("Device is not opened for reading")
+            raise SPSDKConnectionError("Device is not opened for writing")
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
             self._device.reset_input_buffer()
@@ -157,7 +163,7 @@ class SerialDevice(DeviceBase):
         port: Optional[str] = None,
         baudrate: Optional[int] = None,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected serial ports.
 
         Returns list of serial ports with devices that respond to PING command.
@@ -197,6 +203,9 @@ class SerialDevice(DeviceBase):
             device.open()
             device.close()
             return device
+        except SPSDKPermissionError as e:
+            logger.warning(f"{type(e).__name__}: {e}")
+            return None
         except Exception as e:  # pylint: disable=broad-except
             logger.info(f"{type(e).__name__}: {e}")
             return None

@@ -8,7 +8,7 @@
 """Protocol base."""
 from abc import ABC, abstractmethod
 from types import ModuleType, TracebackType
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Optional, Sequence, Type, Union
 
 from typing_extensions import Self
 
@@ -161,7 +161,7 @@ class ProtocolBase(ABC):
         """
 
     @classmethod
-    def _get_interface_classes(cls) -> List[Type[Self]]:
+    def _get_interface_classes(cls) -> list[Type[Self]]:
         """Get list of all available interfaces."""
         cls._load_plugins()
         return [
@@ -182,7 +182,7 @@ class ProtocolBase(ABC):
         return interface
 
     @staticmethod
-    def _load_plugins() -> Dict[str, ModuleType]:
+    def _load_plugins() -> dict[str, ModuleType]:
         """Load all installed interface plugins."""
         plugins_manager = PluginsManager()
         plugins_manager.load_from_entrypoints(PluginType.DEVICE_INTERFACE.label)
@@ -192,7 +192,7 @@ class ProtocolBase(ABC):
     def _get_subclasses(
         cls,
         base_class: Type,
-    ) -> List[Type[Self]]:
+    ) -> list[Type[Self]]:
         """Recursively find all subclasses."""
         subclasses = []
         for subclass in base_class.__subclasses__():

@@ -13,7 +13,7 @@ import os
 import re
 from abc import abstractmethod
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Iterable, Optional, Sequence, Type, Union
 
 from typing_extensions import Self
 
@@ -56,12 +56,12 @@ class CertBlock(BaseClass):
 
     @classmethod
     @abstractmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get supported families for certification block."""
 
     @classmethod
     @abstractmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :return: List of validation schemas.
@@ -76,8 +76,8 @@ class CertBlock(BaseClass):
     @abstractmethod
     def from_config(
         cls,
-        config: Dict[str, Any],
-        search_paths: Optional[List[str]] = None,
+        config: dict[str, Any],
+        search_paths: Optional[list[str]] = None,
     ) -> Self:
         """Creates an instance of cert block from configuration."""
 
@@ -93,23 +93,23 @@ class CertBlock(BaseClass):
         :raises SPSDKError: No certification block class found for given family
         """
         for cert_block_class in cls.get_cert_block_classes():
-            if family in cert_block_class.get_supported_families():
+            devices = cert_block_class.get_supported_families()
+            devices += DatabaseManager().quick_info.devices.get_predecessors(devices)
+            if family in devices:
                 return cert_block_class
         raise SPSDKError(f"Family '{family}' is not supported in any certification block.")
 
     @classmethod
-    def get_all_supported_families(cls) -> List[str]:
-        """Get supported families for all certification blocks except for SRK."""
-        families = get_families(DatabaseManager.CERT_BLOCK)
-
-        return [
-            family
-            for family in families
-            if "srk" not in get_db(family, "latest").get_str(DatabaseManager.CERT_BLOCK, "rot_type")
-        ]
+    def get_all_supported_families(cls) -> list[str]:
+        """Get supported families for all certification blocks."""
+        return (
+            CertBlockV1.get_supported_families()
+            + CertBlockV21.get_supported_families()
+            + CertBlockVx.get_supported_families()
+        )
 
     @classmethod
-    def get_cert_block_classes(cls) -> List[Type["CertBlock"]]:
+    def get_cert_block_classes(cls) -> list[Type["CertBlock"]]:
         """Get list of all cert block classes."""
         return CertBlock.__subclasses__()
 
@@ -119,23 +119,7 @@ class CertBlock(BaseClass):
         return bytes()
 
     @classmethod
-    def _get_supported_families(cls, cert_block_type: str) -> List[str]:
-        """Get list of supported families.
-
-        :param cert_block_type: Type of certification block to look for
-        :return: List of devices that supports this cert block
-        """
-        families = cls.get_all_supported_families()
-
-        return [
-            family
-            for family in families
-            if get_db(family, "latest").get_str(DatabaseManager.CERT_BLOCK, "rot_type")
-            == cert_block_type
-        ]
-
-    @classmethod
-    def get_root_private_key_file(cls, config: Dict[str, Any]) -> Optional[str]:
+    def get_root_private_key_file(cls, config: dict[str, Any]) -> Optional[str]:
         """Get main root private key file from config.
 
         :param config: Configuration to be searched.
@@ -148,7 +132,7 @@ class CertBlock(BaseClass):
 
     @classmethod
     def find_main_cert_index(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> Optional[int]:
         """Go through all certificates and find the index matching to private key.
 
@@ -182,7 +166,7 @@ class CertBlock(BaseClass):
 
     @classmethod
     def get_main_cert_index(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> int:
         """Gets main certificate index from configuration.
 
@@ -328,7 +312,7 @@ class CertBlockV1(CertBlock):
         return self._header
 
     @property
-    def rkh(self) -> List[bytes]:
+    def rkh(self) -> list[bytes]:
         """List of root keys hashes (SHA-256), each hash as 32 bytes."""
         return self._rkht.rkh_list
 
@@ -338,7 +322,7 @@ class CertBlockV1(CertBlock):
         return self._rkht.rkth()
 
     @property
-    def rkth_fuses(self) -> List[int]:
+    def rkth_fuses(self) -> list[int]:
         """List of RKHT fuses, ordered from highest bit to lowest.
 
         Note: Returned values are in format that should be passed for blhost
@@ -352,7 +336,7 @@ class CertBlockV1(CertBlock):
         return result
 
     @property
-    def certificates(self) -> List[Certificate]:
+    def certificates(self) -> list[Certificate]:
         """List of certificates in header.
 
         First certificate is root certificate and followed by optional chain certificates
@@ -430,7 +414,7 @@ class CertBlockV1(CertBlock):
         """
         self._header = CertBlockHeader(version, flags, build_number)
         self._rkht: RKHTv1 = RKHTv1([])
-        self._cert: List[Certificate] = []
+        self._cert: list[Certificate] = []
         self._alignment = self.DEFAULT_ALIGNMENT
 
     def __len__(self) -> int:
@@ -572,7 +556,7 @@ class CertBlockV1(CertBlock):
         return obj
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :return: List of validation schemas.
@@ -604,7 +588,7 @@ class CertBlockV1(CertBlock):
         ).get_config(cfg)
 
     @classmethod
-    def get_root_private_key_file(cls, config: Dict[str, Any]) -> Optional[str]:
+    def get_root_private_key_file(cls, config: dict[str, Any]) -> Optional[str]:
         """Get main root private key file from config.
 
         :param config: Configuration to be searched.
@@ -618,8 +602,8 @@ class CertBlockV1(CertBlock):
     @classmethod
     def from_config(
         cls,
-        config: Dict[str, Any],
-        search_paths: Optional[List[str]] = None,
+        config: dict[str, Any],
+        search_paths: Optional[list[str]] = None,
     ) -> "CertBlockV1":
         """Creates an instance of CertBlockV1 from configuration.
 
@@ -628,7 +612,7 @@ class CertBlockV1(CertBlock):
         :return: Instance of CertBlockV1
         :raises SPSDKError: Invalid certificates detected, Invalid configuration.
         """
-        if not isinstance(config, Dict):
+        if not isinstance(config, dict):
             raise SPSDKError("Configuration cannot be parsed")
         cert_block = config.get("certBlock")
         if cert_block:
@@ -642,7 +626,7 @@ class CertBlockV1(CertBlock):
                 return cls.from_config(load_configuration(cert_block, search_paths), search_paths)
 
         image_build_number = value_to_int(config.get("imageBuildNumber", 0))
-        root_certificates: List[List[str]] = [[] for _ in range(4)]
+        root_certificates: list[list[str]] = [[] for _ in range(4)]
         # TODO we need to read the whole chain from the dict for a given
         # selection based on mainCertPrivateKeyFile!!!
         root_certificates[0].append(config.get("rootCertificate0File", None))
@@ -684,7 +668,7 @@ class CertBlockV1(CertBlock):
 
         return cert_block
 
-    def get_config(self, output_folder: str) -> Dict[str, Any]:
+    def get_config(self, output_folder: str) -> dict[str, Any]:
         """Create configuration of Certificate V2 from object.
 
         :param output_folder: Output folder to store possible files.
@@ -699,7 +683,7 @@ class CertBlockV1(CertBlock):
             self._cert[chain_id].save(os.path.join(output_folder, file_name))
             return file_name
 
-        cfg: Dict[str, Optional[Union[str, int]]] = {}
+        cfg: dict[str, Optional[Union[str, int]]] = {}
         cfg["imageBuildNumber"] = self.header.build_number
         used_cert_id = self.rkh_index
         assert used_cert_id is not None
@@ -714,9 +698,9 @@ class CertBlockV1(CertBlock):
         return cfg
 
     @classmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get list of supported families."""
-        return super()._get_supported_families("cert_block_1")
+        return get_families(DatabaseManager.CERT_BLOCK, "based_on_cert1")
 
 
 ########################################################################################################################
@@ -826,7 +810,7 @@ class RootKeyRecord(BaseClass):
         """
         self.ca_flag = ca_flag
         self.root_certs_input = root_certs
-        self.root_certs: List[PublicKeyEcc] = []
+        self.root_certs: list[PublicKeyEcc] = []
         self.used_root_cert = used_root_cert
         self.flags = 0
         self._rkht = RKHTv21([])
@@ -1344,7 +1328,7 @@ class CertBlockV21(CertBlock):
         return cert_block
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :return: List of validation schemas.
@@ -1354,7 +1338,7 @@ class CertBlockV21(CertBlock):
 
     @classmethod
     def from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CertBlockV21":
         """Creates an instance of CertBlockV21 from configuration.
 
@@ -1363,7 +1347,7 @@ class CertBlockV21(CertBlock):
         :return: Instance of CertBlockV21
         :raises SPSDKError: If found gap in certificates from config file. Invalid configuration.
         """
-        if not isinstance(config, Dict):
+        if not isinstance(config, dict):
             raise SPSDKError("Configuration cannot be parsed")
         cert_block = config.get("certBlock")
         if cert_block:
@@ -1455,13 +1439,13 @@ class CertBlockV21(CertBlock):
                     break
         return CommentedConfig("Certification Block V21 template", val_schemas).get_template()
 
-    def get_config(self, output_folder: str) -> Dict[str, Any]:
+    def get_config(self, output_folder: str) -> dict[str, Any]:
         """Create configuration dictionary of the Certification block Image.
 
         :param output_folder: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        cfg: Dict[str, Optional[Union[str, int]]] = {}
+        cfg: dict[str, Optional[Union[str, int]]] = {}
         cfg["mainRootCertPrivateKeyFile"] = "N/A"
         cfg["signingCertificatePrivateKeyFile"] = "N/A"
         for i in range(self.root_key_record.number_of_certificates):
@@ -1517,9 +1501,9 @@ class CertBlockV21(CertBlock):
         ).get_config(cfg)
 
     @classmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get list of supported families."""
-        return super()._get_supported_families("cert_block_21")
+        return get_families(DatabaseManager.CERT_BLOCK, "based_on_cert21")
 
 
 ########################################################################################################################
@@ -1598,7 +1582,7 @@ class CertBlockVx(CertBlock):
         return cert_block
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :return: List of validation schemas.
@@ -1612,7 +1596,7 @@ class CertBlockVx(CertBlock):
 
     @classmethod
     def from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CertBlockVx":
         """Creates an instance of CertBlockVx from configuration.
 
@@ -1621,7 +1605,7 @@ class CertBlockVx(CertBlock):
         :return: CertBlockVx
         :raises SPSDKError: If found gap in certificates from config file. Invalid configuration.
         """
-        if not isinstance(config, Dict):
+        if not isinstance(config, dict):
             raise SPSDKError("Configuration cannot be parsed")
         cert_block = config.get("certBlock")
         if cert_block:
@@ -1666,9 +1650,9 @@ class CertBlockVx(CertBlock):
         return CommentedConfig("Certification Block Vx template", val_schemas).get_template()
 
     @classmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get list of supported families."""
-        return super()._get_supported_families("cert_block_x")
+        return get_families(DatabaseManager.CERT_BLOCK, "based_on_certx")
 
     def get_otp_script(self) -> str:
         """Return script for writing certificate hash to OTP.
@@ -1690,14 +1674,14 @@ class CertBlockVx(CertBlock):
         return ret
 
 
-def find_root_certificates(config: Dict[str, Any]) -> List[str]:
+def find_root_certificates(config: dict[str, Any]) -> list[str]:
     """Find all root certificates in configuration.
 
     :param config: Configuration to be searched.
     :raises SPSDKError: If invalid configuration is provided.
     :return: List of root certificates.
     """
-    root_certificates_loaded: List[Optional[str]] = [
+    root_certificates_loaded: list[Optional[str]] = [
         config.get(f"rootCertificate{idx}File") for idx in range(4)
     ]
     # filter out None and empty values
@@ -1710,7 +1694,7 @@ def find_root_certificates(config: Dict[str, Any]) -> List[str]:
 
 def get_keys_or_rotkh_from_certblock_config(
     rot: Optional[str], family: Optional[str]
-) -> Tuple[Optional[Iterable[str]], Optional[bytes]]:
+) -> tuple[Optional[Iterable[str]], Optional[bytes]]:
     """Get keys or ROTKH value from ROT config.
 
     ROT config might be cert block config or MBI config.

@@ -98,7 +98,7 @@
                                 {
                                     "name": "SDRWithDefaultTiming",
                                     "value": 0,
-                                    "description": "Single data rate with backward compatiable timings"
+                                    "description": "Single data rate with backward compatible timings"
                                 },
                                 {
                                     "name": "SDRWithHighSpeedTiming",

@@ -6,16 +6,12 @@ alias: mcxa156
 
 # General MCU information
 info:
-  use_in_doc: True # Include this MCU in generated documentation
-  purpose: General Purpose Processor
-  # Web page of MCU representative
-  web: https://www.nxp.com
   memory_map: # Memory map basic info
-    internal_flash:
-      base_addr: 0x0
-      size: 0x10_0000
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x10_0000
       external: false
     sram:
-      base_addr: 0x2000_0000
-      size: 0x2_0000
+      start_int: 0x2000_0000
+      size_int: 0x2_0000
       external: false

@@ -10,7 +10,7 @@ import functools
 import logging
 from abc import ABC, abstractmethod
 from time import sleep
-from typing import Any, Dict, List, Optional, Type, no_type_check
+from typing import Any, Optional, Type, no_type_check
 
 import colorama
 import prettytable
@@ -77,7 +77,7 @@ class DebugProbe(ABC):
     RESET_TIME = 0.1
     AFTER_RESET_TIME = 0.05
 
-    def __init__(self, hardware_id: str, options: Optional[Dict] = None) -> None:
+    def __init__(self, hardware_id: str, options: Optional[dict] = None) -> None:
         """This is general initialization function for SPSDK library to support various DEBUG PROBES.
 
         :param hardware_id: Open probe with selected hardware ID
@@ -90,7 +90,7 @@ class DebugProbe(ABC):
     @classmethod
     @abstractmethod
     def get_connected_probes(
-        cls, hardware_id: Optional[str] = None, options: Optional[Dict] = None
+        cls, hardware_id: Optional[str] = None, options: Optional[dict] = None
     ) -> "DebugProbes":
         """Functions returns the list of all connected probes in system.
 
@@ -102,8 +102,8 @@ class DebugProbe(ABC):
         :return: List of ProbeDescription
         """
 
-    @staticmethod
-    def get_options_help() -> Dict[str, str]:
+    @classmethod
+    def get_options_help(cls) -> dict[str, str]:
         """Get full list of options of debug probe.
 
         :return: Dictionary with individual options. Key is parameter name and value the help text.
@@ -216,7 +216,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     NAME = "local_help"
 
-    def __init__(self, hardware_id: str, options: Optional[Dict[str, str]] = None) -> None:
+    def __init__(self, hardware_id: str, options: Optional[dict[str, str]] = None) -> None:
         """This is general initialization function for SPSDK library to support various DEBUG PROBES.
 
         :param hardware_id: Open probe with selected hardware ID
@@ -282,7 +282,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                         data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_DEBUGEN),
                                     )
                                     self._mem_reg_write(
-                                        mem_ap_ix=i, addr=self.DHCSR_REG, data=self.DHCSR_DEBUGKEY
+                                        mem_ap_ix=i,
+                                        addr=self.DHCSR_REG,
+                                        data=self.DHCSR_DEBUGKEY,
                                     )
                                 if not status:
                                     continue
@@ -297,7 +299,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
                 if self.mem_ap_ix < 0:
                     raise SPSDKDebugProbeError("The memory access port is not found!")
-
             return func(self, *args, **kwargs)  # pylint: disable=not-callable
 
         return wrapper
@@ -541,7 +542,7 @@ class ProbeDescription:
         self.description = description
         self.probe = probe
 
-    def get_probe(self, options: Optional[Dict] = None) -> DebugProbe:
+    def get_probe(self, options: Optional[dict] = None) -> DebugProbe:
         """Get instance of probe.
 
         :param options: The dictionary with options
@@ -554,7 +555,7 @@ class ProbeDescription:
         return f"Debug probe: {self.interface}; {self.description}. S/N:{self.hardware_id}"
 
 
-class DebugProbes(List[ProbeDescription]):
+class DebugProbes(list[ProbeDescription]):
     """Helper class for debug probe selection. This class accepts only ProbeDescription object."""
 
     def __str__(self) -> str:

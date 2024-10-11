@@ -1,0 +1,17 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: k32w148
+
+# General MCU information
+info:
+  # Web page of MCU representative
+  spsdk_predecessor_name: mcxw71xx
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-w-series-microcontrollers/mcx-w71x-secure-and-ultra-low-power-mcus-for-matter-thread-zigbee-and-bluetooth-le:MCX-W71X
+
+features:
+  # ======== IFR section ========
+  ifr:
+    romcfg:
+      reg_spec: ifr_romcfg_a2.json

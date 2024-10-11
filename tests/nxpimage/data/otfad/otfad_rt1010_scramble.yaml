@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt1010 # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x', 'rt5xx', 'rt6xx']
+family: rt1010 # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189', 'rt5xx', 'rt6xx']
 output_folder: otfad_rt10_scramble_outputs # [Required], OTFAD output folder; Path to directory where the OTFAD output will be generated
 # ----------------------------------------------------------------------------------------------------
 #                                         == OTFAD Settings ==

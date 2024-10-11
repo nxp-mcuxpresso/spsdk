@@ -9,8 +9,7 @@ import logging
 import struct
 from typing import Any, Union
 
-from crcmod.predefined import mkPredefinedCrcFun
-
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.dk6.commands import CmdPacket, CommandTag, parse_cmd_response
 from spsdk.dk6.serial_device import SerialDevice
 from spsdk.exceptions import SPSDKError
@@ -25,8 +24,8 @@ def calc_crc(data: bytes) -> int:
     :param data: data to calculate CRC from
     :return: calculated CRC
     """
-    crc_function = mkPredefinedCrcFun("crc-32")
-    return crc_function(data)
+    crc_obj = from_crc_algorithm(CrcAlg.CRC32)
+    return crc_obj.calculate(data)
 
 
 def to_int(data: bytes, little_endian: bool = False) -> int:

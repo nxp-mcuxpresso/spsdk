@@ -93,7 +93,7 @@ def test_nxpimage_iee(cli_runner: CliRunner, tmpdir, data_dir, case, config, ref
     [
         ("rt116x"),
         ("rt117x"),
-        ("rt118x"),
+        ("mimxrt1189"),
     ],
 )
 def test_nxpimage_iee_template_cli(cli_runner: CliRunner, tmpdir, family):

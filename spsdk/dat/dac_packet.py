@@ -70,15 +70,14 @@ class DebugAuthenticationChallenge:
         msg += f"Challenge              : {self.challenge.hex()}\n"
         return msg
 
-    def validate_against_dc(self, dc: DebugCredentialCertificate) -> None:
+    def validate_against_dc(self, family: str, dc: DebugCredentialCertificate) -> None:
         """Validate against Debug Credential file.
 
+        :param family: Chip family name
         :param dc: Debug Credential class to be validated by DAC
         :raises SPSDKValueError: In case of invalid configuration detected.
         """
-        if self.version != dc.version and not DebugCredentialCertificate.dat_based_on_ele(
-            self.socc
-        ):
+        if self.version != dc.version and not DebugCredentialCertificate.dat_based_on_ele(family):
             raise SPSDKValueError(
                 f"DAC Verification failed: Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.version}"
             )
@@ -94,8 +93,7 @@ class DebugAuthenticationChallenge:
         if dc_rotkh and not all(
             self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
         ):
-            family_ambassador = DebugCredentialCertificate.get_family_ambassador(dc.socc)
-            db = get_db(family_ambassador)
+            db = get_db(family)
             rot_not_part_of_dac = db.get_bool(DatabaseManager.DAT, "rot_not_part_of_dac", False)
             rot_could_be_invalid = db.get_bool(DatabaseManager.DAT, "rot_could_be_invalid", False)
 
@@ -129,17 +127,16 @@ class DebugAuthenticationChallenge:
         return data
 
     @staticmethod
-    def get_rot_hash_length(socc: int, major_ver: int, minor_ver: int) -> int:
+    def get_rot_hash_length(family: str, major_ver: int, minor_ver: int) -> int:
         """Returns length of Root Of Trust hash length.
 
-        :param socc: SOCC index
+        :param family: The chip family name
         :param major_ver: Major version
         :param minor_ver: Minor version
         :return: Length of Root Of Trust hash in bytes
         """
-        family_ambassador = DebugCredentialCertificate.get_family_ambassador(socc)
-        db = get_db(family_ambassador)
-        based_on_ele = DebugCredentialCertificate.dat_based_on_ele(socc)
+        db = get_db(family)
+        based_on_ele = DebugCredentialCertificate.dat_based_on_ele(family)
 
         # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
         if based_on_ele:
@@ -167,8 +164,14 @@ class DebugAuthenticationChallenge:
         version_major, version_minor, socc, uuid, rotid_rkh_revocation = unpack_from(
             format_head, data
         )
+        family_ambassador = DebugCredentialCertificate.get_family_ambassador(socc)
+        hash_length = cls.get_rot_hash_length(family_ambassador, version_major, version_minor)
 
-        hash_length = cls.get_rot_hash_length(socc, version_major, version_minor)
+        # Some soc handles version differently in DAC
+        db = get_db(family_ambassador)
+        swapped_version = db.get_bool(DatabaseManager.DAT, "dac_version_is_swapped", False)
+        if swapped_version:
+            version_major, version_minor = version_minor, version_major
 
         format_tail = f"<{hash_length}s3L32s"
         (

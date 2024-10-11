@@ -6,11 +6,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import platform
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import libusbsio
 import pytest
-from serial import Serial
+from serial import Serial, SerialException
 from serial.tools.list_ports_common import ListPortInfo
 
 import spsdk.utils.devicedescription as devicedescription
@@ -160,23 +161,49 @@ def mock_sdp_uart_init(self, port: str = None, timeout: int = 5000, baudrate: in
     self.expect_status = True
 
 
+def mock_uboot_init(
+    self,
+    port: str,
+    timeout: int = 1,
+    baudrate: int = 115200,
+    crc: bool = True,
+    retries: int = 10,
+    interrupt_autoboot: bool = True,
+):
+    self.port = port
+    self._device = Serial(port=None, timeout=timeout, baudrate=baudrate)
+
+
+def mock_uboot_is_serial_console_open(self):
+    if self.port == "COM9":
+        return True
+    return False
+
+
 list_port_info_mock = [
     ListPortInfo(device="COM1"),
     ListPortInfo(device="COM5"),
     ListPortInfo(device="COM28"),
+    ListPortInfo(device="COM9"),
 ]
 
 
 @patch("spsdk.utils.nxpdevscan.MbootUARTInterface.scan", mock_mb_scan_uart)
 @patch("spsdk.utils.nxpdevscan.SDP.read_status", mock_sdp_read_status)
-@patch("spsdk.utils.interfaces.device.serial_device.SerialDevice.__init__", mock_sdp_uart_init)
+@patch(
+    "spsdk.utils.interfaces.device.serial_device.SerialDevice.__init__",
+    mock_sdp_uart_init,
+)
 @patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))
+@patch("spsdk.uboot.uboot.UbootSerial.__init__", mock_uboot_init)
+@patch("spsdk.uboot.uboot.UbootSerial.is_serial_console_open", mock_uboot_is_serial_console_open)
 def test_uart_device_search():
     """Test, that search method returns all NXP Uart devices."""
 
     result = [
         devicedescription.UartDeviceDescription(name="COM1", dev_type="mboot device"),
         devicedescription.UartDeviceDescription(name="COM5", dev_type="SDP device"),
+        devicedescription.UartDeviceDescription(name="COM9", dev_type="U-Boot console"),
     ]
 
     devices = nds.search_nxp_uart_devices()
@@ -185,6 +212,13 @@ def test_uart_device_search():
 
     for dev, res in zip(devices, result):
         assert str(dev) == str(res)
+
+
+@patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))
+def test_uart_device_search_no_scan():
+    """Test, that search method returns all NXP Uart devices without scanning."""
+    devices = nds.search_nxp_uart_devices(scan=False)
+    assert len(devices) == 4
 
 
 # following mock functions are only for `test_sdio_device_search usage`
@@ -199,7 +233,7 @@ class mockSdio:
         class SdioDevice:
             def __init__(self, _path) -> None:
                 self._opened = False
-                # Temporarily use hard code until there is a way to retrive VID/PID
+                # Temporarily use hard code until there is a way to retrieve VID/PID
                 self.vid = 0x0471
                 self.pid = 0x0209
                 self.timeout = 2000
@@ -246,19 +280,33 @@ def test_sdio_device_search_no_device_found():
             0x15A2,
             0x0073,
             [
-                "rt1010",
-                "rt1015",
-                "rt102x",
-                "rt104x",
-                "rt105x",
-                "rt106x",
-                "rt116x",
-                "rt117x",
-                "rt118x",
-                "mwct2xxxs",
+                "mimxrt1010",
+                "mimxrt1015",
+                "mimxrt1020",
+                "mimxrt1024",
+                "mimxrt1040",
+                "mimxrt1050",
+                "mimxrt1060",
+                "mimxrt1064",
+                "mimxrt1165",
+                "mimxrt1166",
+                "mimxrt1171",
+                "mimxrt1172",
+                "mimxrt1173",
+                "mimxrt1175",
+                "mimxrt1176",
+                "mimxrt1181",
+                "mimxrt1182",
+                "mimxrt1187",
+                "mimxrt1189",
+                "mwct2014s",
+                "mwct2015s",
+                "mwct2016s",
+                "mwct2d16s",
+                "mwct2d17s",
             ],
         ),
-        (0x1FC9, 0x0135, ["rt104x", "rt106x"]),
+        (0x1FC9, 0x0135, ["mimxrt1040", "mimxrt1060", "mimxrt1064"]),
     ],
 )
 def test_get_device_name(vid, pid, expected_result):
@@ -292,12 +340,12 @@ def test_path_conversion():
 
 
 PATH_BY_SYSTEM = {
-    "Windows": (b"some_path", "SOME_PATH", "0a595daf"),
-    "Linux": (b"000A:000B:00", "10#11", "6359be0f"),
+    "Windows": (b"some_path", "SOME_PATH", "0e3ac799"),
+    "Linux": (b"000A:000B:00", "10#11", "87c906f3"),
     "Darwin": (
         b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
         "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
-        "cafe5e92",
+        "80157ec4",
     ),
 }
 
@@ -352,3 +400,54 @@ def test_sio_device_search_fail():
     """Test, that search method returns all NXP SIO devices and its fails."""
     with pytest.raises(SPSDKError):
         nds.search_libusbsio_devices()
+
+
+# def mock_uart_init_permission_error(
+#     self,
+#     port: Optional[str] = None,
+#     timeout: Optional[int] = None,
+#     baudrate: Optional[int] = None,
+# ):
+#     if port == "COM1":
+#         raise SPSDKPermissionError()
+#     self._device = Serial(port=None, timeout=timeout / 1000, baudrate=baudrate)
+
+
+class PermissionTestMockSerial:
+
+    def __init__(self, port: Optional[str] = None, baudrate=9600, timeout=None, write_timeout=None):
+        if port == "COM1":
+            raise SerialException("PermissionError")
+        self.is_open = False
+
+    def open(self):
+        self.is_open = True
+
+    def close(self):
+        self.is_open = False
+
+    def reset_input_buffer(self):
+        pass
+
+    def reset_output_buffer(self):
+        pass
+
+
+def mock_ping(self):
+    pass
+
+
+@patch("spsdk.utils.interfaces.device.serial_device.Serial", PermissionTestMockSerial)
+@patch("spsdk.mboot.interfaces.uart.MbootUARTInterface._ping", mock_ping)
+@patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))
+def test_serial_device_permission_error():
+    devices = nds.search_nxp_uart_devices(scan_uboot=False)
+    result = [
+        devicedescription.UartDeviceDescription(name="COM5", dev_type="mboot device"),
+        devicedescription.UartDeviceDescription(name="COM28", dev_type="mboot device"),
+        devicedescription.UartDeviceDescription(name="COM9", dev_type="mboot device"),
+    ]
+    assert len(devices) == len(result)
+
+    for dev, res in zip(devices, result):
+        assert str(dev) == str(res)

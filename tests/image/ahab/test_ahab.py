@@ -84,7 +84,7 @@ def signature_block(request):
     blob = request.getfixturevalue("blob")
 
     return SignatureBlock(
-        srk_table=srk_table,
+        srk_assets=srk_table,
         container_signature=container_signature,
         certificate=certificate,
         blob=blob,
@@ -129,7 +129,7 @@ def ahab_container(request):
 
 @pytest.fixture(scope="function")
 def ahab_image(request):
-    return AHABImage(family="rt118x", ahab_containers=[request.getfixturevalue("ahab_container")])
+    return AHABImage(family="mimxrt1189", ahab_containers=[request.getfixturevalue("ahab_container")])
 
 
 def test_container_head_compare(container_head):

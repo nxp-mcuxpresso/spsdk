@@ -11,11 +11,11 @@ import logging
 import struct
 import time
 from contextlib import contextmanager
-from typing import Generator, NamedTuple, Optional, Tuple, Union
+from typing import Generator, NamedTuple, Optional, Union
 
-from crcmod.predefined import mkPredefinedCrcFun
 from typing_extensions import Self
 
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import CmdResponse, parse_cmd_response
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
@@ -104,7 +104,7 @@ class MbootSerialProtocol(MbootProtocolBase):
                 logger.debug(f"Opening interface failed with: {repr(e)}")
             except Exception as exc:
                 self.close()
-                raise McuBootConnectionError("UART Interface open operation fails.") from exc
+                raise McuBootConnectionError("Interface open operation fails.") from exc
         raise McuBootConnectionError(
             f"Cannot open UART interface after {self.MAX_UART_OPEN_ATTEMPTS} attempts."
         )
@@ -161,7 +161,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         return data
 
     def _read(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Internal read, done mainly due BUSPAL, where this is overriden."""
+        """Internal read, done mainly due BUSPAL, where this is overridden."""
         return self.device.read(length, timeout)
 
     def _send_ack(self) -> None:
@@ -210,10 +210,20 @@ class MbootSerialProtocol(MbootProtocolBase):
         :param data: data to calculate CRC from
         :return: calculated CRC
         """
-        crc_function = mkPredefinedCrcFun("xmodem")
-        return crc_function(data)
+        crc_ob = from_crc_algorithm(CrcAlg.CRC16_XMODEM)
+        return crc_ob.calculate(data)
 
-    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> Tuple[int, int]:
+    def _wait_for_data(self) -> int:
+        """Wait for the first "not ready" frame."""
+        assert isinstance(self.device.timeout, int)
+        timeout = Timeout(self.device.timeout, "ms")
+        while not timeout.overflow():
+            header = to_int(self._read(1))
+            if header not in self.FRAME_START_NOT_READY_LIST:
+                return header
+        raise McuBootConnectionError(f"No data received in {self.device.timeout} ms")
+
+    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected
@@ -222,12 +232,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         :raises McuBootConnectionError: Unexpected frame header or frame type (if specified)
         :raises McuBootConnectionError: When received invalid ACK
         """
-        assert isinstance(self.device.timeout, int)
-        timeout = Timeout(self.device.timeout, "ms")
-        while not timeout.overflow():
-            header = to_int(self._read(1))
-            if header not in self.FRAME_START_NOT_READY_LIST:
-                break
+        header = self._wait_for_data()
         # This is workaround addressing SPI ISP issue on RT5/6xx when sometimes
         # ACK frames and START BYTE frames are swapped, see SPSDK-1824 for more details
         if header not in [self.FRAME_START_BYTE, FPType.ACK]:

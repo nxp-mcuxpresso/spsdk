@@ -8,7 +8,7 @@
 
 """UART Mboot interface implementation."""
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -39,7 +39,7 @@ class MbootUARTInterface(MbootSerialProtocol):
         port: Optional[str] = None,
         baudrate: Optional[int] = None,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected UART devices.
 
         Returns list of serial ports with devices that respond to PING command.

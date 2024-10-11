@@ -1,0 +1,22 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mc56f81868
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: Wireless Power
+  spsdk_predecessor_name: mwct2xd2
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/power-management/wireless-power:WIRCHA_ICS
+
+features:
+  wpc:
+    id_type: rsid
+    id_length: 96
+    insert_puc_only: true
+    need_reset: true
+    need_address_adjust: true
+    check_lifecycle: 3

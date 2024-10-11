@@ -10,11 +10,11 @@
 import logging
 import os
 import struct
-from typing import Any, Dict, List, Type
+from typing import Any, Type
 
 import platformdirs
 
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.mbi.mbi import MasterBootImage, create_mbi_class
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import write_file
@@ -31,12 +31,12 @@ FAMODE_DATA_SIZE = 64
 FAMODE_DATA_FORMAT = "<LL56s"
 
 
-def get_supported_families() -> List[str]:
+def get_supported_families() -> list[str]:
     """Get list of supported families."""
-    return get_families(DatabaseManager.DAT, ["famode_cert"])
+    return get_families(DatabaseManager.DAT, "famode_cert")
 
 
-def get_mbi_classes(family: str) -> Dict[str, Type["MasterBootImage"]]:
+def get_mbi_classes(family: str) -> dict[str, Type["MasterBootImage"]]:
     """Get all Master Boot Image supported classes for chip family.
 
     :param family: Chip family.
@@ -45,9 +45,9 @@ def get_mbi_classes(family: str) -> Dict[str, Type["MasterBootImage"]]:
         and target and authentication type.
     """
     db = get_db(family)
-    ret: Dict[str, Type["MasterBootImage"]] = {}
+    ret: dict[str, Type["MasterBootImage"]] = {}
 
-    images: List[str] = db.get_list(DatabaseManager.DAT, "famode_cert")
+    images: list[str] = db.get_list(DatabaseManager.DAT, "famode_cert")
 
     for cls_name in images:
         ret[f"{cls_name}"] = create_mbi_class(cls_name, family)
@@ -55,39 +55,37 @@ def get_mbi_classes(family: str) -> Dict[str, Type["MasterBootImage"]]:
     return ret
 
 
-def generate_config_templates(family: str) -> Dict[str, str]:
+def generate_config_templates(family: str) -> dict[str, str]:
     """Generate all possible configuration for selected family.
 
     :param family: Family description.
     :return: Dictionary of individual templates (key is name of template, value is template itself).
     """
 
-    def find_schema(key: str, schemas: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def find_schema(key: str, schemas: list[dict[str, Any]]) -> dict[str, Any]:
         for schema in schemas:
-            p: Dict[str, Any] = schema["properties"]
+            p: dict[str, Any] = schema["properties"]
             if key in p:
                 return schema
         raise SPSDKError("Non existing schema")
 
-    ret: Dict[str, str] = {}
+    ret: dict[str, str] = {}
     # 1: Generate all configuration for FAMode Image
-    if family not in get_supported_families():
-        raise SPSDKValueError(f"Invalid family: {family}")
-
     mbi_classes = get_mbi_classes(family)
     db = get_db(family)
-    famode_cfg_defaults: Dict[str, Any] = {}
+    famode_cfg_defaults: dict[str, Any] = {}
     if db.check_key(DatabaseManager.DAT, "famode_cfg_defaults"):
         famode_cfg_defaults = db.get_dict(DatabaseManager.DAT, "famode_cfg_defaults")
 
     for key, mbi in mbi_classes.items():
-        schemas = mbi.get_validation_schemas()
-        find_schema("family", schemas)["properties"]["family"]["template_value"] = family
+        schemas = mbi.get_validation_schemas(family)
+
         find_schema("outputImageAuthenticationType", schemas)["properties"][
             "outputImageAuthenticationType"
         ]["enum"] = [
             "signed",
             "signed-nxp",
+            "nxp_signed",
         ]
         find_schema("outputImageAuthenticationType", schemas)["properties"][
             "outputImageAuthenticationType"
@@ -101,11 +99,11 @@ def generate_config_templates(family: str) -> Dict[str, str]:
                 sch = find_schema(cfg_to_remove, schemas)
             except SPSDKError:
                 continue
-            properties: Dict[str, Any] = sch["properties"]
+            properties: dict[str, Any] = sch["properties"]
             if cfg_to_remove in properties:
                 properties.pop(cfg_to_remove)
             if "required" in sch:
-                required: List[str] = sch["required"]
+                required: list[str] = sch["required"]
                 if cfg_to_remove in required:
                     required.remove(cfg_to_remove)
 
@@ -119,7 +117,7 @@ def generate_config_templates(family: str) -> Dict[str, str]:
     return ret
 
 
-def modify_input_config(config: Dict[str, Any]) -> Dict[str, Any]:
+def modify_input_config(config: dict[str, Any]) -> dict[str, Any]:
     """Modify the input config to fit for FA MOde Image simplification against MBI.
 
     :param config: Input configuration.
@@ -168,7 +166,7 @@ def check_famode_data(mbi: MasterBootImage) -> None:
         raise SPSDKError("Invalid fill in FA mode data, should be all zeros!")
 
 
-def create_config(mbi: MasterBootImage, output_folder: str) -> Dict[str, Any]:
+def create_config(mbi: MasterBootImage, output_folder: str) -> dict[str, Any]:
     """Create configuration file and its data files from the MBI class.
 
     The result will be modified to fit Fault Analysis mode image

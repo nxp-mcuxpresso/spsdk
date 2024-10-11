@@ -1,0 +1,43 @@
+uuu_version 1.2.39
+
+# @_flexspi.bin            | bootloader
+# @_image   [_flexspi.bin] | image burn to flexspi, default is the same as bootloader
+
+# This command will be run when i.MX6/7 i.MX8MM, i.MX8MQ
+SDP: boot -f _flexspi.bin
+
+# This command will be run when ROM support stream mode
+# i.MX8QXP, i.MX8QM, skip QSPI header
+SDPS: boot -f _flexspi.bin -skipfhdr
+
+# These commands will be run when use SPL and will be skipped if no spl
+# SDPU will be deprecated. please use SDPV instead of SDPU
+# {
+SDPU: delay 1000
+SDPU: write -f _flexspi.bin -offset 0x10000 -skipfhdr
+SDPU: jump
+# }
+
+# These commands will be run when use SPL and will be skipped if no spl
+# if (SPL support SDPV)
+# {
+SDPV: delay 1000
+SDPV: write -f _flexspi.bin -skipspl -skipfhdr
+SDPV: jump
+# }
+
+FB: ucmd setenv fastboot_buffer ${loadaddr}
+FB: download -f _image
+
+FB: ucmd if test ! -n "$fastboot_bytes"; then setenv fastboot_bytes $filesize; else true; fi
+
+# Check Image if include flexspi header
+FB: ucmd if qspihdr dump ${fastboot_buffer}; then setenv qspihdr_exist yes; else setenv qspihdr_exist no; fi;
+
+FB[-t 60000]: ucmd if test ${qspihdr_exist} = yes; then qspihdr init ${fastboot_buffer} ${fastboot_bytes} safe; else true; fi;
+
+#if uboot can't support qspihdr command, use uboot image to write qspi image, which require image include qspi flash header
+FB: ucmd if test ${qspihdr_exist} = no; then sf probe; else true; fi;
+FB[-t 40000]: ucmd if test ${qspihdr_exist} = no; then sf erase 0 +${fastboot_bytes}; else true; fi;
+FB[-t 20000]: ucmd if test ${qspihdr_exist} = no; then sf write ${fastboot_buffer} 0 ${fastboot_bytes}; else true; fi;
+FB: done

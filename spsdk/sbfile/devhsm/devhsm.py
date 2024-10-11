@@ -9,15 +9,14 @@
 
 import abc
 import os
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
-from spsdk.crypto.rng import random_bytes
-from spsdk.exceptions import SPSDKNotImplementedError, SPSDKValueError
+from spsdk.exceptions import SPSDKNotImplementedError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import DatabaseManager, get_families
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import load_hex_string, write_file
 
 
 class DevHsm(BaseClass):
@@ -57,7 +56,7 @@ class DevHsm(BaseClass):
 
     @abc.abstractmethod
     def __repr__(self) -> str:
-        """String represenation."""
+        """String representation."""
 
     @abc.abstractmethod
     def __str__(self) -> str:
@@ -77,16 +76,22 @@ class DevHsm(BaseClass):
         raise SPSDKNotImplementedError("Not implemented")
 
     @abc.abstractmethod
-    def oem_generate_master_share(self, oem_share_input: bytes) -> Any:
+    def oem_generate_master_share(self, oem_share_input: bytes) -> tuple[bytes, bytes, bytes]:
         """Generate on device Encrypted OEM master share outputs."""
+
+    @abc.abstractmethod
+    def oem_set_master_share(
+        self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
+    ) -> bytes:
+        """Set OEM Master share on the device."""
 
     @classmethod
     @abc.abstractmethod
-    def generate_config_template(cls, family: str) -> Dict[str, str]:
+    def generate_config_template(cls, family: str) -> str:
         """Generate configuration for selected family."""
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get the list of supported families by Device HSM.
 
         :return: List of supported families.
@@ -127,38 +132,46 @@ class DevHsm(BaseClass):
         return self.database.get_int(self.F_DEVHSM, "key_blob_command_position")
 
     @staticmethod
-    def get_cust_mk_sk(key: str) -> bytes:
+    def get_cust_mk_sk(key: str, search_paths: Optional[list[str]] = None) -> bytes:
         """Get binary from text or binary file.
 
         :param key: Binary customer master key symmetric key file.
+        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Binary array loaded from file.
         :raises SPSDKValueError: When invalid input value is recognized.
         """
-        cust_mk_sk = load_binary(key)
-
-        if len(cust_mk_sk) != 32:
-            raise SPSDKValueError(
-                f"Invalid length of CUST_MK_SK INPUT ({len(cust_mk_sk )} not equal to 32)."
-            )
-
-        return cust_mk_sk
+        return load_hex_string(
+            source=key, expected_size=32, search_paths=search_paths, name="CUST_MK_SK INPUT"
+        )
 
     @staticmethod
-    def get_oem_share_input(binary: Optional[str] = None) -> bytes:
+    def get_oem_share_input(
+        binary: Optional[str] = None, search_paths: Optional[list[str]] = None
+    ) -> bytes:
         """Get binary from text or binary file.
 
         :param binary: Path to binary file.
+        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Binary array loaded from file.
         :raises SPSDKValueError: When invalid input value is recognized.
         """
-        if binary:
-            oem_share_input = load_binary(binary)
-        else:
-            oem_share_input = random_bytes(16)
+        return load_hex_string(
+            source=binary, expected_size=16, search_paths=search_paths, name="OEM SHARE INPUT"
+        )
 
-        if len(oem_share_input) != 16:
-            raise SPSDKValueError(
-                f"Invalid length of OEM SHARE INPUT ({len(oem_share_input)} not equal to 16)."
-            )
+    @staticmethod
+    def get_oem_master_share(
+        binary: Optional[str], search_paths: Optional[list[str]] = None
+    ) -> Optional[bytes]:
+        """Get binary from text or binary file.
 
-        return oem_share_input
+        :param binary: Path to binary file.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Binary array loaded from file.
+        :raises SPSDKValueError: When invalid input value is recognized.
+        """
+        if not binary:
+            return None
+        return load_hex_string(
+            source=binary, expected_size=64, search_paths=search_paths, name="OEM ENC MASTER SHARE"
+        )

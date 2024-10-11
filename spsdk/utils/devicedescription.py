@@ -9,7 +9,7 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 from libusbsio.libusbsio import LIBUSBSIO
 
@@ -128,6 +128,58 @@ class USBDeviceDescription(DeviceDescription):
         )
 
 
+class UUUDeviceDescription:
+    """Simple container holding information about UUU device.
+
+    This container should be used instead of any UUU API related objects, as
+    this container will be the same all the time compared to specific UUU API
+    implementations.
+    """
+
+    def __init__(
+        self,
+        path: str,
+        chip: str,
+        pro: str,
+        vid: int,
+        pid: int,
+        bcd: int,
+        serial_no: str,
+    ) -> None:
+        """Constructor.
+
+        :param path: The path to the USB device.
+        :param chip: The chip of the USB device.
+        :param pro: The product of the USB device.
+        :param vid: The vendor ID of the USB device.
+        :param pid: The product ID of the USB device.
+        :param bcd: The device release number in binary-coded decimal.
+        :param serial_no: The serial number of the USB device.
+        """
+        self.path = path
+        self.chip = chip
+        self.pro = pro
+        self.vid = vid
+        self.pid = pid
+        self.bcd = bcd
+        self.serial_no = serial_no
+
+    def __str__(self) -> str:
+        """Returns a formatted device description string.
+
+        :return: Text information of UUU device.
+        """
+        return (
+            f"Path: {self.path}\n"
+            f"Chip: {self.chip}\n"
+            f"Product: {self.pro}\n"
+            f"Vendor ID: 0x{self.vid:04x}\n"
+            f"Product ID: 0x{self.pid:04x}\n"
+            f"BCD: {self.bcd}\n"
+            f"Serial Number: {self.serial_no}"
+        )
+
+
 class SDIODeviceDescription(DeviceDescription):
     """Simple container holding information about SDIO device.
 
@@ -207,8 +259,8 @@ class SIODeviceDescription(DeviceDescription):
 
 
 def get_usb_device_name(
-    vid: int, pid: int, device_names: Optional[Dict[str, List[UsbId]]] = None
-) -> List[str]:
+    vid: int, pid: int, device_names: Optional[dict[str, list[UsbId]]] = None
+) -> list[str]:
     """Returns 'name' device identifier based on VID/PID, from dicts.
 
     Searches provided dictionary for device name based on VID/PID. If the dict
@@ -227,7 +279,7 @@ def get_usb_device_name(
     """
     nxp_device_names = set()
 
-    def find_device_names(device_names: Dict[str, List[UsbId]]) -> set:
+    def find_device_names(device_names: dict[str, list[UsbId]]) -> set:
         dnames = set()
         for dname, usb_configs in device_names.items():
             for cfg in usb_configs:

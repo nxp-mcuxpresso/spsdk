@@ -33,7 +33,7 @@ from spsdk.tp.data_container import (
 )
 from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface, TpTargetInterface
-from spsdk.utils.database import DatabaseManager, Features, get_db, get_families
+from spsdk.utils.database import DatabaseManager, Features, get_db
 from spsdk.utils.misc import Timeout, write_file
 
 logger = logging.getLogger(__name__)
@@ -195,12 +195,6 @@ class TrustProvisioningHost:
         """
         try:
             loc_timeout = Timeout(timeout, "s")
-
-            logger.debug("Looking up device in database")
-
-            if family not in get_families(DatabaseManager.TP):
-                raise SPSDKTpError(f"Database info missing for '{family}'")
-
             logger.debug("Opening TP DEVICE interface")
             self.tpdev.open()
             audit_log_dirname = os.path.dirname(os.path.abspath(audit_log))

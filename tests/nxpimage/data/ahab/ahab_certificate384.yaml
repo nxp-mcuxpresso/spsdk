@@ -10,8 +10,8 @@
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
 # default.
-# Possible options: <mx8ulp, mx93, mx95, rt118x>
-family: rt118x
+# Possible options: <mx8ulp, mx93, mx95, mimxrt1189>
+family: mx95
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: latest
@@ -21,13 +21,13 @@ permissions:
   - container
 # ---------------------------------------------===== UUID [Optional] =====----------------------------------------------
 # Description: (Optional) 128-bit unique identifier
-# uuid: 346200660880414387117887842999773
+uuid: 346200660880414387117887842999773
 # ------------------------------------===== Certificate public key [Required] =====-------------------------------------
 # Description: Path to Public key file ECDSA.
-public_key: ahab/keys/ecc384/imgkey_ecc384.pub
+public_key_0: ../../_data/keys/ecc384/imgkey_ecc384.pub
 # ----------------------------===== SRK container signing key [Conditionally required] =====----------------------------
 # Description: Private key used for sign the certificate container.
-signing_key: ahab/keys/ecc384/srk0_ecc384.pem
+signing_key_0: ../../_data/keys/ecc384/srk0_ecc384.pem
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". The
 # signature provider could be used instead of definition of 'signing_key'.

@@ -69,7 +69,6 @@ def test_nxpimage_bee_overlap(cli_runner: CliRunner, tmpdir, data_dir, case, con
 @pytest.mark.parametrize(
     "family",
     [
-        ("rt1010"),
         ("rt1015"),
         ("rt102x"),
         ("rt105x"),

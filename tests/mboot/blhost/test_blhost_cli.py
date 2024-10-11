@@ -202,8 +202,8 @@ def run_blhost_proxy(
 ):
     # There's a problem with logging under CliRunner
     # https://github.com/pytest-dev/pytest/issues/3344
-    # caplog is set to disable all loging output
-    # Comment the folowing line to see logging info, however there will be an failure
+    # caplog is set to disable all logging output
+    # Comment the following line to see logging info, however there will be an failure
     caplog.set_level(100_000)
     with patch(
         "spsdk.utils.interfaces.device.serial_device.Serial",

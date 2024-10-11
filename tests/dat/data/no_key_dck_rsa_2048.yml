@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -7,4 +7,4 @@ uuid: "E004090E6BDD2155BBCE9E0665805BE3"
 cc_socu: 0x03FF
 cc_vu: 0x5678
 cc_beacon: 0
-dck: ./dck.pub
+dck: ../../_data/keys/rsa2048/dck_rsa2048.pub

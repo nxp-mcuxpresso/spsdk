@@ -7,7 +7,7 @@
 
 import logging
 from struct import pack
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -406,7 +406,7 @@ class VirtualMbootInterface:
         params: str,
         timeout: int,
         extra_params: Optional[str] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan method."""
         pass  # not used
 

@@ -11,15 +11,15 @@ info:
   use_in_doc: True # Include this MCU in generated documentation
   purpose: General Purpose Processor
   # Web page of MCU representative
-  web: https://www.nxp.com
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X
   memory_map: # Memory map basic info
-    internal_flash:
-      base_addr: 0x0
-      size: 0x10_0000
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x10_0000
       external: false
     sram:
-      base_addr: 0x2000_0000
-      size: 0x2_0000
+      start_int: 0x2000_0000
+      size_int: 0x2_0000
       external: false
   isp:
     rom:
@@ -29,6 +29,15 @@ info:
         pid: 0x015e
 
 features:
+  # ======== DAT section ========
+  dat:
+    non_standard_statuses: # dictionary of non standard return statuses from various commands
+      2:  # Command get_crp_level
+        0xFFFF_FFFF: ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state
+        0xEEBA_04C3: ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available
+        0x4939_8D8B: ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available
+        0xB0AB_B703: ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available
+
   # ======== MBI section ========
   mbi:
     mbi_classes:
@@ -54,7 +63,16 @@ features:
 
   # ======== PFR section ========
   pfr:
+    sub_features: [cmpa]
     cmpa: # CMPA description
+      erase_method: flash_erase
       address: 0x100_0000
       size: 512
       reg_spec: pfr_cmpa.json
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      internal:
+        segments:
+          mbi: 0x00

@@ -10,7 +10,7 @@
 import logging
 import math
 from abc import abstractmethod
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 from typing_extensions import Self
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class RKHT:
     """Root Key Hash Table class."""
 
-    def __init__(self, rkh_list: List[bytes]) -> None:
+    def __init__(self, rkh_list: list[bytes]) -> None:
         """Initialization of Root Key Hash Table class.
 
         :param rkh_list: List of Root Key Hashes
@@ -41,7 +41,7 @@ class RKHT:
         cls,
         keys: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> Self:
         """Create RKHT from list of keys.
 
@@ -91,7 +91,7 @@ class RKHT:
     def hash_algorithm(self) -> EnumHashAlgorithm:
         """Used hash algorithm name."""
         if not len(self.rkh_list) > 0:
-            raise SPSDKError("Unknown hash algorighm name. No root key hashes.")
+            raise SPSDKError("Unknown hash algorithm name. No root key hashes.")
         return EnumHashAlgorithm.from_label(f"sha{self.hash_algorithm_size}")
 
     @property
@@ -137,7 +137,7 @@ class RKHT:
     def convert_key(
         key: Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> PublicKey:
         """Convert practically whole input that could hold Public key into public key.
 
@@ -174,7 +174,7 @@ class RKHTv1(RKHT):
 
     def __init__(
         self,
-        rkh_list: List[bytes],
+        rkh_list: list[bytes],
     ) -> None:
         """Initialization of Root Key Hash Table class.
 

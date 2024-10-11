@@ -15,7 +15,7 @@ import re
 import subprocess
 import sys
 from getpass import getpass
-from typing import List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from cachier import cachier
 from cryptography.hazmat.primitives import hashes
@@ -67,19 +67,18 @@ class TicketRecord(NamedTuple):
         )
 
 
-# pylint: disable=not-an-iterable, no-member
-class RecordsList(List[TicketRecord]):
+class RecordsList(list[TicketRecord]):
     """JIRA records list."""
 
-    def get_components(self) -> List[str]:
+    def get_components(self) -> list[str]:
         """Get component names from data."""
         return self.get_attributes("component")
 
-    def get_types(self) -> List[str]:
+    def get_types(self) -> list[str]:
         """Get issue type names from data."""
         return self.get_attributes("issue_type")
 
-    def get_attributes(self, attribute_name: str) -> List[str]:
+    def get_attributes(self, attribute_name: str) -> list[str]:
         """Get all attributes with `attribute_name` from data."""
         group = [getattr(item, attribute_name) for item in self]
         return sorted(list(set(group)))
@@ -102,7 +101,7 @@ class RecordsList(List[TicketRecord]):
         return cls(data)
 
 
-def parse_inputs(input_args: Optional[List[str]] = None) -> RNParams:
+def parse_inputs(input_args: Optional[list[str]] = None) -> RNParams:
     """Parse user inputs."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -186,7 +185,7 @@ def get_commit_messages(since: str, till: str) -> str:
     return output
 
 
-def get_jira_ids(git_output: str) -> List[str]:
+def get_jira_ids(git_output: str) -> list[str]:
     """Parse text for JIRA ids. see: `TICKET_REGEX`."""
     logging.info("Extracting JIRA ticket ids from commit messages")
     ids = re.findall(TICKET_REGEX, git_output)

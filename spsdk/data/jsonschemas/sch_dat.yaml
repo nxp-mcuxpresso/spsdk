@@ -2,22 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-family_rev:
-  type: object
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      # enum: []
-      template_value: lpc55s3x
-
-    revision:
-      type: string
-      title: Chip silicon revision
-      description: If needed this could be used to specify silicon revision of device.
-      template_value: latest
-
 dc_content:
   allOf:
     - oneOf:
@@ -136,7 +120,7 @@ dc_content:
     sign_provider:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;key_number=<value>'.
+      description: Signature provider configuration in format 'type=<identifier>;key_number=<value>'.
       template_value: type=sasp;key_number=0
 
 dc_srk_ca_flag:
@@ -198,3 +182,91 @@ main_note: "\nDebug credential file has following binary structure:\n
   Those options are exclusive, so only one option could be used to sign the DC.\n
   \n
   "
+
+
+ele_socu:
+  required:
+    - cc_socu
+
+  type: object
+  title: Debug Credential Content
+  properties:
+    cc_socu:
+      type: [string, integer]
+      title: SoC Usage
+      description:
+        A CC (constraint) value that is a bit mask, and whose bits are used in an
+        SoCC-specific manner. These bits are typically used for controlling which debug
+        domains are accessed via the authentication protocol, but device-specific debug
+        options can be managed in this way also.
+      format: number
+      template_value: "0x0FFF"
+    # cc_beacon:
+    #   type: [string, integer]
+    #   title: Credential Beacon
+    #   description:
+    #     A value that is passed through the authentication protocol, which is not interpreted
+    #     by the protocol but is instead made visible to the application being debugged. A
+    #     credential beacon is associated with a DC and is therefore vendor/RoT-signed. An
+    #     authentication beacon is provided and signed by the debugger during the
+    #     authentication process.
+    #   format: number
+    #   template_value: 0
+
+
+dat_classic:
+  allOf:
+    - oneOf:
+        - required: [sign_provider]
+        - required: [dck_private_key]
+  required:
+    - certificate
+    - beacon
+
+  type: object
+  title: Debug Authentication Content
+  properties:
+    certificate:
+      type: string
+      title: Debug Credential Certificate file
+      description:
+        A debug credential binary file provided by owner of Root Keys. The file could be created by 'dc' group of commands.
+      format: file
+      template_value: dc.bin
+    beacon:
+      type: [string, integer]
+      title: Authentication beacon
+      description:
+        Debug authentication process can be extended with beacons. DEBUG_AUTH_BEACON (this field) contain
+        information from debug authentication after debugger is successfully authenticated. This register contain
+        data from Authentication beacon [31:16] which is defined during authentication session and
+        Credential beacon [15:0] which is defined on RoT keys owner side during debug credential file
+        generation and signing.
+        When credential beacon non-zero value is used in this field, ROM defers opening debug access to user
+        application. The result of the authentication process is written to DBG_FEATURES register while the
+        user application after doing its extended processing, such as clean-up of critical keys and secrets, should
+        copy the value to DBG_FEATURES_DP register to enable the debug access.
+      format: number
+      template_value: 0
+    srk_set:
+      type: string
+      title: Keys set
+      description: Selection of keys origin.
+      enum: [oem, nxp]
+      default: oem
+      template_value: oem
+
+
+    dck_private_key:
+      type: string
+      title: DCK signature private key
+      description: Private key that match the public key in debug credential file, to sign Debug Authentication response.
+      format: file
+      template_value: dck.pem
+
+    sign_provider:
+      type: string
+      title: Signature Provider
+      description: Signature provider configuration in format 'type=<identifier>;key_number=<value>'.
+      template_value: type=sasp;key_number=0
+

@@ -1,0 +1,39 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mcxn236
+
+# General MCU information
+info:
+  memory_map: # Memory map basic info
+    internal-flash_ns:
+      start_int: "0x0"
+      size_int: "0x80000"
+      external: false
+    internal-flash_s:
+      start_int: "0x10000000"
+      size_int: "0x80000"
+      external: false
+      mirror_of: internal-flash_ns
+    sram:
+      start_int: "0x20000000"
+      size_int: "0x28000"
+      external: false
+      warning_ranges:
+        - start_int: "0x20020000"
+          size_int: "0x8000"
+          warning_msg: RAM above 0x20020000 is not available if SRAM ECC is enabled
+    sramx:
+      start_int: "0x4000000"
+      size_int: "0x8000"
+      external: false
+      __comment: Does not work as target `onchip RAM` memory
+    ifr0-bank1_ns:
+      start_int: "0x1008000"
+      size_int: "0x8000"
+      external: false
+    ifr0-bank1_s:
+      start_int: "0x11008000"
+      size_int: "0x8000"
+      external: false

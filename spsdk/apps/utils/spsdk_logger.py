@@ -132,8 +132,3 @@ def install(
     # Install the stream handler
     logger.addHandler(handler)
     logger.propagate = False
-
-
-def configure_pyocd_logger() -> None:
-    """Set pyocd logger level to Error."""
-    logging.getLogger("pyocd").setLevel(logging.ERROR)

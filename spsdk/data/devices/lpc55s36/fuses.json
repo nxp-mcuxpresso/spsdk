@@ -1,0 +1,241 @@
+{
+    "cpu": "LPC55S36",
+    "groups": [
+        {
+            "group": {
+                "name": "LC_STATE",
+                "description": "Device life cycle state, only the lowest 8 bits are valid."
+            },
+            "registers": [
+                {
+                    "id": "fuse0",
+                    "name": "LC_STATE[7:0]",
+                    "description": "Device life cycle state.\nLife-cycle state provided to SYSCON block to distribute it to CSS and PUF ports to implement implicit security on the device.",
+                    "index_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse0-bits-0-7",
+                            "name": "LC_STATE[7:0]",
+                            "description": "OTP life cycle state LC_STATE[7:0].",
+                            "advanced": true,
+                            "values": [
+                                {
+                                    "name": "BLANK",
+                                    "value": 0,
+                                    "description": "Blank = State of the device before doing any wafer or package testing."
+                                },
+                                {
+                                    "name": "FAB",
+                                    "value": 1,
+                                    "description": "Fab = Initial state in NXP factory."
+                                },
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Develop = Initial customer development state after leaving NXP manufacturing."
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Develop2 = Optional customer development state. Used for development of NS world code."
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field = In-field application state for end-customer use."
+                                },
+                                {
+                                    "name": "FIELD_RETURN",
+                                    "value": 31,
+                                    "description": "Field Return OEM = Field return state."
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "Failure analysis (FA) = NXP field return state (CQC)."
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "In-field Locked = Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state."
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked = Bricked state to prevent device use."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CMPA_CRC",
+                "description": "CMPA CRC check value."
+            },
+            "registers": [
+                {
+                    "id": "fuse1",
+                    "name": "CMPA_CRC[31:0]",
+                    "description": "CRC32 of CMPA fields.\n- Used by non-secure part during boot.\n- For secure parts used during deep power-down wake before using the fields in CMPA area.",
+                    "index_int": "1",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CMPA_CMAC",
+                "description": "CMAC of CMPA pages.\nUsed by secure parts during cold & warm boots.\nWake up from deep-power down mode CMPA_CRC is used."
+            },
+            "registers": [
+                {
+                    "id": "fuse2",
+                    "name": "CMPA_CMAC_WORD0",
+                    "description": "CMPA CMA check value word 0.",
+                    "index_int": "2",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse3",
+                    "name": "CMPA_CMAC_WORD1",
+                    "description": "CMPA CMA check value word 1.",
+                    "index_int": "3",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse4",
+                    "name": "CMPA_CMAC_WORD2",
+                    "description": "CMPA CMA check value word 2.",
+                    "index_int": "4",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse5",
+                    "name": "CMPA_CMAC_WORD3",
+                    "description": "CMPA CMA check value word 3.",
+                    "index_int": "5",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SECBOOT_CFG",
+                "description": "Secure boot configure, only the lowest 8 bits are valid."
+            },
+            "registers": [
+                {
+                    "id": "fuse6",
+                    "name": "SECBOOT_CFG[7:0]",
+                    "description": "Secure boot configuration.",
+                    "index_int": "6",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-0",
+                            "name": "RoTK0_dis",
+                            "description": "Revoke RoTK0 key."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-1",
+                            "name": "RoTK1_dis",
+                            "description": "Revoke RoTK1 key."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-2",
+                            "name": "RoTK2_dis",
+                            "description": "Revoke RoTK2 key."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-3",
+                            "name": "RoTK3_dis",
+                            "description": "Revoke RoTK3 key."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-5",
+                            "name": "EN_CNSA",
+                            "description": "Enforce CNSA suite for secure boot, FW update and debug authentication."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-6",
+                            "name": "EN_ECDSA",
+                            "description": "Enforce ECDSA signature verify on every boot."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-7",
+                            "name": "EN_CMAC",
+                            "description": "Enforce CMPA CMAC checking on low-power wake."
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CUSTOMER_WORDS",
+                "description": "Customer words area."
+            },
+            "registers": [
+                {
+                    "id": "fuse7",
+                    "name": "CUSTOMER_WORD0",
+                    "description": "Customer use word 0.",
+                    "index_int": "7"
+                },
+                {
+                    "id": "fuse8",
+                    "name": "CUSTOMER_WORD1",
+                    "description": "Customer use word 1, only the lowest 8 bits are valid.",
+                    "index_int": "8",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse7-bits-0-7",
+                            "name": "CUSTOMER_WORD1[7:0]",
+                            "description": "Customer use word 1."
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse9",
+                    "name": "CUSTOMER_WORD2",
+                    "description": "Customer use word 2, only the lowest 8 bits are valid.",
+                    "index_int": "9",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse9-bits-0-7",
+                            "name": "CUSTOMER_WORD2[7:0]",
+                            "description": "Customer use word 2."
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

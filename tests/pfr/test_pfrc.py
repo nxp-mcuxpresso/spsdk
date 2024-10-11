@@ -190,7 +190,7 @@ def test_rule_1_2(tmp_path, data_dir, nr_of_failed, cmpa_dflt_bitfields, cfpa_df
     cfpa = CFPA.load_from_config(cfpa_config)
     pfrc = Pfrc(cmpa=cmpa, cfpa=cfpa)
     _, failed, _ = pfrc.validate_brick_conditions()
-    # Some other rules may be brokem with this config
+    # Some other rules may be broken with this config
     failed = [fail for fail in failed if fail.req_id == "1.2"]
     assert len(failed) == nr_of_failed
     for fail in failed:
@@ -306,10 +306,10 @@ def test_cfpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, pin_bitfields
         (False, 1, 1, "NIDEN", "DBGEN"),
     ],
 )
-def test_cmpa_invalid_pin_dflt_confguration_rules(
+def test_cmpa_invalid_pin_dflt_configuration_rules(
     tmp_path, data_dir, test_pass, pin_value, dflt_value, pin_bitfield, dflt_bitfield
 ):
-    """Test the CMPA rules regarding invalid pin/dflt confgiration: 1.7"""
+    """Test the CMPA rules regarding invalid pin/dflt configuration: 1.7"""
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cmpa_config_template))
     config["settings"]["DCFG_CC_SOCU_PIN"]["bitfields"][pin_bitfield] = pin_value
@@ -340,10 +340,10 @@ def test_cmpa_invalid_pin_dflt_confguration_rules(
         (False, 1, 1, "NIDEN", "DBGEN"),
     ],
 )
-def test_cfpa_invalid_pin_dflt_confguration_rules(
+def test_cfpa_invalid_pin_dflt_configuration_rules(
     tmp_path, data_dir, test_pass, pin_value, dflt_value, pin_bitfield, dflt_bitfield
 ):
-    """Test the CFPA rules regarding invalid pin/dflt confgiration: 1.8"""
+    """Test the CFPA rules regarding invalid pin/dflt configuration: 1.8"""
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
     config["settings"]["DCFG_CC_SOCU_NS_PIN"]["bitfields"][pin_bitfield] = pin_value

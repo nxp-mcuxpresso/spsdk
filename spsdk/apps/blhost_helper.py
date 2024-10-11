@@ -24,6 +24,7 @@ from spsdk.mboot.commands import (
 )
 from spsdk.mboot.error_codes import stringify_status_code
 from spsdk.mboot.properties import PropertyTag
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -104,26 +105,35 @@ MCXA1XX = {
     17: "life-cycle",
 }
 
-PROPERTIES_OVERRIDE = {"kw45xx": KW45XX, "k32w1xx": KW45XX, "mcxa1xx": MCXA1XX}
+PROPERTIES_OVERRIDE = {
+    "kw45_series": KW45XX,
+    "mcxa1_series": MCXA1XX,
+}
 
 
-def parse_property_tag(property_tag: str, family: Optional[str] = None) -> PropertyTag:
+def parse_property_tag(property_tag: str, family: Optional[str] = None) -> int:
     """Convert the property as name or stringified number into integer.
 
     :param property_tag: Name or number of the property tag
     :param family: supported family
     :return: Property integer tag
     """
-    properties_dict = deepcopy(PROPERTIES_NAMES)
-    if family and family in PROPERTIES_OVERRIDE:
-        properties_dict.update(PROPERTIES_OVERRIDE[family])
     try:
-        return PropertyTag.from_tag(value_to_int(property_tag))
+        return value_to_int(property_tag)
     except SPSDKError:
-        for key, value in properties_dict.items():
-            if value == property_tag:
-                return PropertyTag.from_tag(key)
-        return PropertyTag.UNKNOWN
+        pass
+
+    properties_dict = deepcopy(PROPERTIES_NAMES)
+    if family:
+        db = get_db(family)
+        overridden_series = db.get_str(DatabaseManager().BLHOST, "overridden_properties", "")
+        if overridden_series:
+            properties_dict.update(PROPERTIES_OVERRIDE[overridden_series])
+    for key, value in properties_dict.items():
+        if value == property_tag:
+            return key
+
+    return PropertyTag.UNKNOWN.tag
 
 
 def parse_key_prov_key_type(key_type: str) -> int:

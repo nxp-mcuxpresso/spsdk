@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for generation of project structure table
@@ -23,7 +23,7 @@ def write_table(header: List[str], values: List[List[str]]):
     """Write RST table to file using pytablewriter
 
     :param header: table header
-    :param values: values to be writter
+    :param values: values to be written
     """
     writer = RstGridTableWriter(
         table_name="List of SPSDK modules",

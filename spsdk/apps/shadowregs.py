@@ -10,7 +10,7 @@ import contextlib
 import logging
 import sys
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, Optional
+from typing import Iterator, Optional
 
 import click
 
@@ -31,7 +31,7 @@ from spsdk.debuggers.utils import PROBES, DebugProbe, load_all_probe_types, open
 from spsdk.exceptions import SPSDKError
 from spsdk.shadowregs.shadowregs import ShadowRegisters, enable_debug
 from spsdk.utils.database import DatabaseManager, get_db, get_families
-from spsdk.utils.misc import load_configuration, write_file
+from spsdk.utils.misc import get_printable_path, load_configuration, write_file
 from spsdk.utils.plugins import load_plugin_from_source
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
@@ -44,7 +44,7 @@ class DebugProbeCfg:
 
     interface: Optional[str] = None
     serial_no: Optional[str] = None
-    debug_probe_params: Optional[Dict] = None
+    debug_probe_params: Optional[dict] = None
 
 
 @contextlib.contextmanager
@@ -87,7 +87,7 @@ def _open_shadow_registers(
         yield ShadowRegisters(family=family, revision=revision, debug_probe=None)
     else:
         with _open_debug_probe(debug_probe_cfg) as debug_probe:
-            if not enable_debug(debug_probe):
+            if not enable_debug(debug_probe, family):
                 raise SPSDKError("Cannot enable debug interface")
 
             yield ShadowRegisters(family=family, revision=revision, debug_probe=debug_probe)
@@ -124,14 +124,13 @@ def main(
     interface: str,
     log_level: int,
     serial_no: str,
-    debug_probe_option: List[str],
+    debug_probe_option: list[str],
     family: str,
     revision: str,
     plugin: str,
 ) -> int:
     """NXP Shadow Registers control Tool."""
     spsdk_logger.install(level=log_level)
-    spsdk_logger.configure_pyocd_logger()
 
     if plugin:
         load_plugin_from_source(plugin)
@@ -234,7 +233,8 @@ def get_template(pass_obj: dict, output: str) -> None:
     ).get_template()
     write_file(ret, output, encoding="utf-8")
     click.echo(
-        f"The Shadow registers template for {pass_obj['family']} has been saved into {output} YAML file"
+        f"The Shadow registers template for {pass_obj['family']} has been saved into "
+        f"{get_printable_path(output)} YAML file"
     )
 
 

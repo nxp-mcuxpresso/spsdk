@@ -12,13 +12,14 @@ from http import HTTPStatus
 from typing import Optional
 
 from flask import Flask, Response, jsonify, request
+from markupsafe import escape
 
 from spsdk.crypto.keys import (
     PrivateKey,
     PublicKey,
     PublicKeyEcc,
     PublicKeyRsa,
-    SPSDKUnsupportedEccCurve,
+    SPSDKInvalidKeyType,
 )
 
 APP = Flask(__name__)
@@ -34,6 +35,7 @@ def signer(key_type: str, num: int) -> Response:
     :param num: Index of the key to use (rot_id)
     :return: Signature wrapped in json, encoded in base64
     """
+    key_type = escape(key_type)
     if key_type not in SUPPORTED_KEY_TYPES:
         return Response(
             response=f"Unsupported key_type {key_type}.",
@@ -61,6 +63,7 @@ def verifier(key_type: str, num: int) -> Response:
     :param num: Index of the key to use (rot_id)
     :return: Verification status(true/false) wrapped in json
     """
+    key_type = escape(key_type)
     if key_type not in SUPPORTED_KEY_TYPES:
         return Response(
             response=f"Unsupported key_type {key_type}.",
@@ -75,7 +78,7 @@ def verifier(key_type: str, num: int) -> Response:
     public_key_bytes = base64.b64decode(request.args["public_key"])
     try:
         request_public_key: PublicKey = PublicKeyEcc.parse(public_key_bytes)
-    except SPSDKUnsupportedEccCurve:
+    except SPSDKInvalidKeyType:
         request_public_key = PublicKeyRsa.parse(public_key_bytes)
     is_matching = private_key.verify_public_key(request_public_key)
     return jsonify({"is_matching": is_matching})

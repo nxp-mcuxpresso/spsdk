@@ -17,19 +17,7 @@ import time
 from enum import Enum
 from math import ceil
 from struct import pack, unpack
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Type, TypeVar, Union
 
 from packaging.version import Version, parse
 
@@ -50,7 +38,7 @@ class Endianness(str, Enum):
     LITTLE = "little"
 
     @classmethod
-    def values(cls) -> List[str]:
+    def values(cls) -> list[str]:
         """Get enumeration values."""
         return [mem.value for mem in Endianness.__members__.values()]
 
@@ -190,6 +178,19 @@ def extend_block(data: bytes, length: int, padding: int = 0) -> bytes:
     return data + bytes([padding]) * num_padding
 
 
+def clean_up_file_name(original_name: str) -> str:
+    """Clean up the file name.
+
+    :param original_name: Input file name
+    :return: Sanitized name.
+    """
+    invalid_characters = '<>:"|?*\\'
+    for ch in invalid_characters:
+        original_name = original_name.replace(ch, "")
+
+    return original_name
+
+
 def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optional[T]:
     """Find first element from the list, that matches the condition.
 
@@ -200,7 +201,7 @@ def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optiona
     return next((a for a in iterable if predicate(a)), None)
 
 
-def load_binary(path: str, search_paths: Optional[List[str]] = None) -> bytes:
+def load_binary(path: str, search_paths: Optional[list[str]] = None) -> bytes:
     """Loads binary file into bytes.
 
     :param path: Path to the file.
@@ -212,7 +213,7 @@ def load_binary(path: str, search_paths: Optional[List[str]] = None) -> bytes:
     return data
 
 
-def load_text(path: str, search_paths: Optional[List[str]] = None) -> str:
+def load_text(path: str, search_paths: Optional[list[str]] = None) -> str:
     """Loads text file into string.
 
     :param path: Path to the file.
@@ -225,7 +226,7 @@ def load_text(path: str, search_paths: Optional[List[str]] = None) -> str:
 
 
 def load_file(
-    path: str, mode: str = "r", search_paths: Optional[List[str]] = None
+    path: str, mode: str = "r", search_paths: Optional[list[str]] = None
 ) -> Union[str, bytes]:
     """Loads a file into bytes.
 
@@ -236,7 +237,8 @@ def load_file(
     """
     path = find_file(path, search_paths=search_paths)
     logger.debug(f"Loading {'binary' if 'b' in mode else 'text'} file from {path}")
-    with open(path, mode) as f:
+    encoding = None if "b" in mode else "utf-8"
+    with open(path, mode, encoding=encoding) as f:
         return f.read()
 
 
@@ -275,7 +277,7 @@ def _find_path(
     path: str,
     check_func: Callable[[str], bool],
     use_cwd: bool = True,
-    search_paths: Optional[List[str]] = None,
+    search_paths: Optional[list[str]] = None,
     raise_exc: bool = True,
 ) -> str:
     """Return a full path to the file.
@@ -306,7 +308,7 @@ def _find_path(
     if use_cwd and check_func(path):
         return get_abs_path(path)
     # list all directories in error message
-    searched_in: List[str] = []
+    searched_in: list[str] = []
     if use_cwd:
         searched_in.append(os.path.abspath(os.curdir))
     if search_paths:
@@ -322,7 +324,7 @@ def _find_path(
 def find_dir(
     dir_path: str,
     use_cwd: bool = True,
-    search_paths: Optional[List[str]] = None,
+    search_paths: Optional[list[str]] = None,
     raise_exc: bool = True,
 ) -> str:
     """Return a full path to the directory.
@@ -348,7 +350,7 @@ def find_dir(
 def find_file(
     file_path: str,
     use_cwd: bool = True,
-    search_paths: Optional[List[str]] = None,
+    search_paths: Optional[list[str]] = None,
     raise_exc: bool = True,
 ) -> str:
     """Return a full path to the file.
@@ -495,35 +497,31 @@ def value_to_bytes(
     )
 
 
-def value_to_bool(value: Union[bool, int, str]) -> bool:
+def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
     """Function decode bool value from various formats.
 
     :param value: Input value.
     :return: Boolean value.
     :raises SPSDKError: Unsupported input type.
     """
-    if isinstance(value, bool):
-        return value
-
-    if isinstance(value, int):
-        return bool(value)
-
     if isinstance(value, str):
-        return value in ("True", "T", "1")
+        return value in ("True", "true", "T", "1")
 
-    raise SPSDKError(f"Invalid input Boolean type({type(value)}) with value ({value})")
+    return bool(value)
 
 
 def load_hex_string(
     source: Optional[Union[str, int, bytes]],
     expected_size: int,
-    search_paths: Optional[List[str]] = None,
+    search_paths: Optional[list[str]] = None,
+    name: Optional[str] = "key",
 ) -> bytes:
     """Get the HEX string from the command line parameter (Keys, digests, etc).
 
     :param source: File path to key file or hexadecimal value. If not specified random value is used.
     :param expected_size: Expected size of key in bytes.
     :param search_paths: List of paths where to search for the file, defaults to None
+    :param name: Name for the key/data to load
     :raises SPSDKError: Invalid key
     :return: Key in bytes.
     """
@@ -534,7 +532,9 @@ def load_hex_string(
         return random_bytes(expected_size)
 
     key = None
-    assert expected_size > 0, "Invalid expected size of key"
+    if expected_size < 1:
+        raise SPSDKError(f"Expected size of key must be positive. Got: {expected_size}")
+
     if isinstance(source, (bytes, int)):
         return value_to_bytes(source, byte_cnt=expected_size)
 
@@ -547,7 +547,7 @@ def load_hex_string(
                 str_key = "0x" + str_key
             key = value_to_bytes(str_key, byte_cnt=expected_size)
             if len(key) != expected_size:
-                raise SPSDKError("Invalid Key size.")
+                raise SPSDKError(f"Invalid {name} size. Expected: {expected_size}, got: {len(key)}")
         except (SPSDKError, UnicodeDecodeError):
             key = load_binary(file_path)
     except Exception:
@@ -558,8 +558,10 @@ def load_hex_string(
         except SPSDKError:
             pass
 
-    if key is None or len(key) != expected_size:
+    if key is None:
         raise SPSDKError(f"Invalid key input: {source}")
+    if len(key) != expected_size:
+        raise SPSDKError(f"Invalid {name} size. Expected: {expected_size}, got: {len(key)}")
 
     return key
 
@@ -670,7 +672,7 @@ class Timeout:
         return self._convert_to_units(self._get_current_time_us() - self.start_time_us)
 
     def get_consumed_time_ms(self) -> int:
-        """Returns consumed time since start of timeouted operation in milliseconds.
+        """Returns consumed time since start of timed out operation in milliseconds.
 
         :return: Consumed time in milliseconds
         """
@@ -730,6 +732,19 @@ def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
     return f"{int(num)} {i}" if i == "B" else f"{num:3.1f} {i}"
 
 
+def bytes_to_print(data: bytes, max_size: int = 128) -> str:
+    """Prints bytes to hex string and shorten it if needed.
+
+    :param data: Input data in bytes
+    :param max_size: maximal count of bytes to be printed, defaults to 128
+    :return: Hex string of input data
+    """
+    if len(data) <= max_size:
+        return data.hex()
+
+    return data[:max_size].hex() + "..."
+
+
 def numberify_version(version: str, separator: str = ".", valid_numbers: int = 3) -> int:
     """Turn version string into a number.
 
@@ -773,7 +788,7 @@ def sanitize_version(version: str, separator: str = ".", valid_numbers: int = 3)
     return separator.join(version_parts[:valid_numbers])
 
 
-def get_key_by_val(value: str, dictionary: Dict[str, List[str]]) -> str:
+def get_key_by_val(value: str, dictionary: dict[str, list[str]]) -> str:
     """Return key by its value.
 
     :param value: Value to find.
@@ -826,7 +841,7 @@ def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
     return True
 
 
-def load_configuration(path: str, search_paths: Optional[List[str]] = None) -> Dict:
+def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> dict:
     """Load configuration from yml/json file.
 
     :param path: Path to configuration file
@@ -868,10 +883,10 @@ def get_hash(text: Union[str, bytes]) -> str:
     """Returns hash of given text."""
     if isinstance(text, str):
         text = text.encode("utf-8")
-    return hashlib.sha1(text).digest().hex()[:8]
+    return hashlib.sha256(text).digest().hex()[:8]
 
 
-def deep_update(d: Dict, u: Dict) -> Dict:
+def deep_update(d: dict, u: dict) -> dict:
     """Deep update nested dictionaries.
 
     :param d: Dictionary that will be updated
@@ -942,7 +957,7 @@ def get_spsdk_version() -> Version:
     return parse(spsdk_version)
 
 
-def load_secret(value: str, search_paths: Optional[List[str]] = None) -> str:
+def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
     """Load secret text from the configuration value.
 
     :param value: Input string to be used for loading the secret

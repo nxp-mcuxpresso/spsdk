@@ -34,5 +34,9 @@ delay: 5
 # seconds
 timeout: 10
 # ---------------------------------------===== Download Timeout [Optional] =====----------------------------------------
-# Description: Timeout for overall download process including waiting for provisionigs creation
+# Description: Timeout for overall download process including waiting for provisionings creation
 download_timeout: 10
+
+fw_load_address: 0x08001000
+prov_fw_path: test_config.yml # this is just to satisfy the validator
+secure_objects_address: 0x2000_0000

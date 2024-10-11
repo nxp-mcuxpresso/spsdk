@@ -7,7 +7,7 @@
 """Helper module used for processing interface input parameters for SDP/Mboot interfaces."""
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from typing_extensions import Self
 
@@ -30,15 +30,15 @@ class InterfaceConfig:
 
     @classmethod
     @abstractmethod
-    def load(cls, cli_params: Dict) -> Optional[Self]:
+    def load(cls, cli_params: dict) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
 
     @abstractmethod
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
 
     @staticmethod
-    def get_timeout(cli_params: Dict) -> Optional[int]:
+    def get_timeout(cli_params: dict) -> Optional[int]:
         """Get timeout value from command line parameters."""
         if "timeout" in cli_params:
             return int(cli_params["timeout"])
@@ -51,15 +51,15 @@ class UsbInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "usb"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("usb"):
             return None
         return cls(params=cli_params[cls.IDENTIFIER], timeout=cls.get_timeout(cli_params))
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
-        args: Dict[str, Any] = {"device_id": self.params.replace(",", ":")}
+        args: dict[str, Any] = {"device_id": self.params.replace(",", ":")}
         if self.timeout is not None:
             args["timeout"] = self.timeout
         return args
@@ -71,16 +71,16 @@ class UartInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "uart"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("port") or cli_params.get("buspal"):
             return None
         return cls(params=cli_params["port"], timeout=cls.get_timeout(cli_params))
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
         parts = self.params.split(",")
-        args: Dict[str, Any] = {"port": parts.pop(0)}
+        args: dict[str, Any] = {"port": parts.pop(0)}
         if parts:
             args["baudrate"] = int(parts.pop(), 0)
         if self.timeout:
@@ -94,7 +94,7 @@ class BuspalSpiInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "buspal_spi"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if (
             not cli_params.get("port")
@@ -108,7 +108,7 @@ class BuspalSpiInterfaceConfig(InterfaceConfig):
             timeout=cls.get_timeout(cli_params),
         )
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
         props = []
         if self.extra_params:
@@ -117,7 +117,7 @@ class BuspalSpiInterfaceConfig(InterfaceConfig):
         if target != "spi":
             raise SPSDKValueError(f"Invalid target: {target}. Expected 'spi'.")
         port_parts = self.params.split(",")
-        args: Dict[str, Any] = {"port": port_parts.pop(0), "props": props}
+        args: dict[str, Any] = {"port": port_parts.pop(0), "props": props}
         if self.timeout:
             args["timeout"] = self.timeout
         return args
@@ -129,7 +129,7 @@ class BuspalI2cInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "buspal_i2c"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if (
             not cli_params.get("port")
@@ -143,7 +143,7 @@ class BuspalI2cInterfaceConfig(InterfaceConfig):
             timeout=cls.get_timeout(cli_params),
         )
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
         props = []
         if self.extra_params:
@@ -152,7 +152,7 @@ class BuspalI2cInterfaceConfig(InterfaceConfig):
         if target != "i2c":
             raise SPSDKValueError(f"Invalid target: {target}. Expected 'i2c'.")
         port_parts = self.params.split(",")
-        args: Dict[str, Any] = {"port": port_parts.pop(0), "props": props}
+        args: dict[str, Any] = {"port": port_parts.pop(0), "props": props}
         if self.timeout:
             args["timeout"] = self.timeout
         return args
@@ -164,15 +164,15 @@ class UsbsioSpiInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "usbsio_spi"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("lpcusbsio") or "spi" not in cli_params["lpcusbsio"]:
             return None
         return cls(params=cli_params["lpcusbsio"], timeout=cls.get_timeout(cli_params))
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
-        args: Dict[str, Any] = {"config": self.params}
+        args: dict[str, Any] = {"config": self.params}
         if self.timeout:
             args["timeout"] = self.timeout
         return args
@@ -184,15 +184,15 @@ class UsbsioI2cInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "usbsio_i2c"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("lpcusbsio") or "i2c" not in cli_params["lpcusbsio"]:
             return None
         return cls(params=cli_params["lpcusbsio"], timeout=cls.get_timeout(cli_params))
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
-        args: Dict[str, Any] = {"config": self.params}
+        args: dict[str, Any] = {"config": self.params}
         if self.timeout:
             args["timeout"] = self.timeout
         return args
@@ -204,15 +204,15 @@ class UsbSdioInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "sdio"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("sdio"):
             return None
         return cls(params=cli_params["sdio"], timeout=cls.get_timeout(cli_params))
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
-        args: Dict[str, Any] = {"device_path": self.params}
+        args: dict[str, Any] = {"device_path": self.params}
         if self.timeout:
             args["timeout"] = self.timeout
         return args
@@ -224,18 +224,18 @@ class CanInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "can"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("can"):
             return None
         return cls(params=cli_params["can"], timeout=cls.get_timeout(cli_params))
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
         can_parts = self.params.split(",")
         if len(can_parts) < 1:
             raise SPSDKValueError("Invalid number of parameters. Interface is mandatory.")
-        args: Dict[str, Any] = {"interface": can_parts.pop(0)}
+        args: dict[str, Any] = {"interface": can_parts.pop(0)}
         if can_parts:
             args["channel"] = can_parts.pop(0)
         if can_parts:
@@ -255,7 +255,7 @@ class PluginInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "plugin"
 
     @classmethod
-    def load(cls, cli_params: Dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("plugin"):
             return None
@@ -264,21 +264,25 @@ class PluginInterfaceConfig(InterfaceConfig):
         plugin.IDENTIFIER = identifier
         return plugin
 
-    def get_scan_args(self) -> Dict:
+    def get_scan_args(self) -> dict:
         """Get arguments for scan method."""
-        args: Dict[str, Any] = dict([tuple(p.split("=")) for p in self.params.split(",")])  # type: ignore
+        args: dict = {}
+        if self.params:
+            args = dict([tuple(p.split("=")) for p in self.params.split(",")])  # type: ignore
         if self.timeout:
             args["timeout"] = self.timeout
         return args
 
     @staticmethod
-    def parse_plugin_config(plugin_conf: str) -> Tuple:
+    def parse_plugin_config(plugin_conf: str) -> tuple[str, str]:
         """Extract 'identifier' from plugin params and build the params back to original format.
 
         :param plugin_conf: Plugin configuration string as given on command line
         :return: Tuple with identifier and params
         """
-        params_dict: Dict[str] = dict([tuple(p.split("=")) for p in plugin_conf.split(",")])  # type: ignore
+        params_dict: dict[str, str] = {}
+        if plugin_conf:
+            params_dict = dict([tuple(p.split("=")) for p in plugin_conf.split(",")])  # type: ignore
         if "identifier" not in params_dict:
             raise SPSDKKeyError("Plugin parameter must contain 'identifier' key")
         identifier = params_dict.pop("identifier")
@@ -286,9 +290,9 @@ class PluginInterfaceConfig(InterfaceConfig):
         return identifier, params
 
 
-def load_interface_config(cli_params: Dict) -> InterfaceConfig:
+def load_interface_config(cli_params: dict) -> InterfaceConfig:
     """Load interface scan config from dictionary of CLI parameters."""
-    iface_configs: List = []
+    iface_configs: list = []
     for interface_cls in InterfaceConfig.__subclasses__():
         iface_config = interface_cls.load(cli_params)
         if iface_config is not None:

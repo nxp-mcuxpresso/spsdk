@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for general utilities used by TP applications."""
 import itertools
 import os
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import click
 import colorama
@@ -21,6 +21,7 @@ from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface, TpIntfDescription
 from spsdk.tp.tphost import TrustProvisioningHost
 from spsdk.tp.utils import (
+    get_supported_devices,
     get_tp_device_class,
     get_tp_device_types,
     get_tp_target_class,
@@ -32,13 +33,13 @@ from spsdk.tp.utils import (
 )
 from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
 from spsdk.utils.misc import find_file, load_binary, load_configuration
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.schema_validator import check_config, update_validation_schema_family
 
 
 class TPBaseConfig:
     """Base class for TP app configs."""
 
-    SCHEMA_MEMBERS: List[str] = []
+    SCHEMA_MEMBERS: list[str] = []
 
     def __init__(self, config_data: dict, config_dir: Optional[str] = None) -> None:
         """Initialize the basic configuration.
@@ -49,7 +50,7 @@ class TPBaseConfig:
         self.config_data = config_data
         self.config_dir = config_dir
 
-    def _validate(self, schema_members: Optional[List[str]] = None) -> None:
+    def _validate(self, schema_members: Optional[list[str]] = None) -> None:
         """Validate configuration data using appropriate validation schema.
 
         :param schema_members: Explicit schema members to check (default: self.SCHEMA_MEMBERS)
@@ -57,7 +58,18 @@ class TPBaseConfig:
         schema_cfg = get_schema_file(DatabaseManager.TP)
         schema_members_int = schema_members or self.SCHEMA_MEMBERS
         # Get this app type scheme pieces
-        sch_list = [schema_cfg[x] for x in schema_members_int]
+        sch_list = []
+        for sch_name in schema_members_int:
+            assert "properties" in schema_cfg[sch_name]
+            if (
+                "properties" in schema_cfg[sch_name]
+                and "family" in schema_cfg[sch_name]["properties"]
+            ):
+                update_validation_schema_family(
+                    schema_cfg[sch_name]["properties"], devices=get_supported_devices()
+                )
+            sch_list.append(schema_cfg[sch_name])
+
         # First check common settings
         check_config(
             config=self.config_data,
@@ -83,7 +95,7 @@ class TPBaseConfig:
         )
 
     @staticmethod
-    def _get_config_data(config_file_path: Optional[str] = None) -> Dict[str, Any]:
+    def _get_config_data(config_file_path: Optional[str] = None) -> dict[str, Any]:
         """Setup initial configuration data."""
         if config_file_path:
             return load_configuration(config_file_path)
@@ -95,7 +107,7 @@ class TPBaseConfig:
         return self.config_data["tp_device"]
 
     @property
-    def tp_device_parameter(self) -> Dict[str, Any]:
+    def tp_device_parameter(self) -> dict[str, Any]:
         """Trust Provisioning device parameters."""
         return self.config_data["tp_device_parameter"]
 
@@ -126,9 +138,9 @@ class TPHostConfig(TPBaseConfig):
     def __init__(
         self,
         tp_device: Optional[str] = None,
-        tp_device_parameter: Optional[List[str]] = None,
+        tp_device_parameter: Optional[list[str]] = None,
         tp_target: Optional[str] = None,
-        tp_target_parameter: Optional[List[str]] = None,
+        tp_target_parameter: Optional[list[str]] = None,
         family: Optional[str] = None,
         firmware: Optional[str] = None,
         prov_firmware: Optional[str] = None,
@@ -191,7 +203,7 @@ class TPHostConfig(TPBaseConfig):
         return self.config_data["tp_target"]
 
     @property
-    def tp_target_parameter(self) -> Dict[str, Any]:
+    def tp_target_parameter(self) -> dict[str, Any]:
         """Trust Provisioning target parameters."""
         return self.config_data["tp_target_parameter"]
 
@@ -252,7 +264,7 @@ class TPConfigConfig(TPBaseConfig):
         self,
         config_file_path: str,
         tp_device: Optional[str] = None,
-        tp_device_parameter: Optional[List[str]] = None,
+        tp_device_parameter: Optional[list[str]] = None,
         timeout: Optional[int] = None,
     ) -> None:
         """Initialize the TPConfig configuration."""
@@ -279,7 +291,7 @@ class TPConfigConfig(TPBaseConfig):
         self._validate(extra_checks)
 
 
-def multiple_tp_dict(multi: Optional[List[str]]) -> Dict[str, str]:
+def multiple_tp_dict(multi: Optional[list[str]]) -> dict[str, str]:
     """Convert even Multiple option to dict in order.
 
     :param multi: Input List with multiple options.
@@ -295,7 +307,7 @@ def multiple_tp_dict(multi: Optional[List[str]]) -> Dict[str, str]:
 
 
 def sanitize_param_struct(
-    param_name: str, cli_params: Optional[List[str]], config_params: dict, config_dir: Optional[str]
+    param_name: str, cli_params: Optional[list[str]], config_params: dict, config_dir: Optional[str]
 ) -> dict:
     """Sanitize TP Target/Device parameter settings.
 
@@ -316,7 +328,7 @@ def sanitize_param_struct(
     return sanitized_config
 
 
-def print_device_table(intfs: List[TpIntfDescription]) -> str:
+def print_device_table(intfs: list[TpIntfDescription]) -> str:
     """Prints the List of Interfaces to nice colored table."""
     if len(intfs) == 0:
         return (
@@ -354,7 +366,7 @@ def print_device_table(intfs: List[TpIntfDescription]) -> str:
     return table.get_string() + colorama.Style.RESET_ALL
 
 
-def _sanitize_table_header(header: List[str]) -> List[str]:
+def _sanitize_table_header(header: list[str]) -> list[str]:
     """Sanitize header for use as Table header.
 
     Capitalize header items.
@@ -371,8 +383,8 @@ def _sanitize_table_header(header: List[str]) -> List[str]:
 
 def process_tp_inputs(
     tp_type: str,
-    tp_parameters: Union[List[str], Dict],
-    scan_func: Callable[[Optional[str], Optional[dict]], List[TpIntfDescription]],
+    tp_parameters: Union[list[str], dict],
+    scan_func: Callable[[Optional[str], Optional[dict]], list[TpIntfDescription]],
     header: Literal["device", "target"],
     print_func: Callable[[str], None],
 ) -> TpIntfDescription:
@@ -493,7 +505,7 @@ def target_help(tp_target: Optional[str] = None) -> None:
 
 @click.command(name="list-tptargets", no_args_is_help=not single_tp_target_adapter())
 @tp_target_options
-def list_tptargets(tp_target: str, tp_target_parameter: List[str]) -> None:
+def list_tptargets(tp_target: str, tp_target_parameter: list[str]) -> None:
     """Command prints all supported and connected TP targets."""
     tp_targets = scan_tp_targets(tp_target, multiple_tp_dict(tp_target_parameter))
     click.echo(print_device_table(tp_targets))
@@ -501,7 +513,7 @@ def list_tptargets(tp_target: str, tp_target_parameter: List[str]) -> None:
 
 @click.command(name="list-tpdevices", no_args_is_help=not single_tp_device_adapter())
 @tp_device_options
-def list_tpdevices(tp_device: str, tp_device_parameter: List[str]) -> None:
+def list_tpdevices(tp_device: str, tp_device_parameter: list[str]) -> None:
     """Command prints all supported and connected TP devices."""
     tp_devices = scan_tp_devices(tp_device, multiple_tp_dict(tp_device_parameter))
     click.echo(print_device_table(tp_devices))
@@ -520,7 +532,7 @@ def list_tpdevices(tp_device: str, tp_device_parameter: List[str]) -> None:
 )
 def get_counters(
     tp_device: str,
-    tp_device_parameter: List[str],
+    tp_device_parameter: list[str],
     timeout: int,
     config: str,
 ) -> None:

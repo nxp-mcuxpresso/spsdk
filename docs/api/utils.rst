@@ -102,7 +102,7 @@ USB Filter
    :show-inheritance:
 
 
-Registers descriptions with support for XML files
+Registers descriptions
 --------------------------------------------------
 
 .. automodule:: spsdk.utils.registers

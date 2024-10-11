@@ -9,16 +9,17 @@
 
 import logging
 from struct import pack, unpack
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from typing_extensions import Self
 
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_data import RESERVED, UINT32, AHABTags
 from spsdk.image.ahab.ahab_srk import SRKTable
-from spsdk.utils.misc import BinaryPattern
+from spsdk.utils.misc import BinaryPattern, bytes_to_print
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -162,7 +163,9 @@ class ContainerSignature(HeaderContainer):
                     "The signature data are dummy. The container Must be re-signed!",
                 )
             else:
-                ret.add_record("Data", VerifierResult.SUCCEEDED, self._signature_data.hex())
+                ret.add_record(
+                    "Data", VerifierResult.SUCCEEDED, bytes_to_print(self.signature_data)
+                )
 
         ret = Verifier("Container signature", description="")
         ret.add_child(self.verify_parsed_header())
@@ -185,6 +188,7 @@ class ContainerSignature(HeaderContainer):
         signature_data = data[fix_len:container_length]
 
         cnt_signature = cls(signature_data=signature_data)
+        cnt_signature.length = container_length
         cnt_signature._parsed_header = HeaderContainerData.parse(binary=data)
         return cnt_signature
 
@@ -199,8 +203,8 @@ class ContainerSignature(HeaderContainer):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any],
-        search_paths: Optional[List[str]] = None,
+        config: dict[str, Any],
+        search_paths: Optional[list[str]] = None,
         srk_table: Optional[SRKTable] = None,
     ) -> "ContainerSignature":
         """Converts the configuration option into an AHAB image object.
@@ -217,9 +221,18 @@ class ContainerSignature(HeaderContainer):
         pk_cfg = config.get("signing_key")
         signature_provider = None
         signature_data = None
+        hash_alg = (
+            EnumHashAlgorithm.from_label(srk_table.srk_records[0].hash_algorithm.label)
+            if srk_table
+            else None
+        )
         if sp_cfg or pk_cfg:
             signature_provider = get_signature_provider(
-                sp_cfg=sp_cfg, local_file_key=pk_cfg, search_paths=search_paths, pss_padding=True
+                sp_cfg=sp_cfg,
+                local_file_key=pk_cfg,
+                search_paths=search_paths,
+                pss_padding=True,
+                hash_alg=hash_alg,
             )
         else:
             if not srk_table:

@@ -11,7 +11,7 @@ import base64
 import json
 import logging
 import uuid
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import requests
 from typing_extensions import Self
@@ -76,7 +76,7 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
         return schema["el2go"]
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> Self:
+    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.

@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
-family: rt118x # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'rt118x']
+family: mimxrt1189 # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'mimxrt1189']
 revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
 image_type: non_xip # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
 output: config_ctcm_gdet.bin # [Required], Output file name; Output AHAB file name

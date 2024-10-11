@@ -1,7 +1,7 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ==============================  Secure Binary v3.1 Configuration template for kw45xx.  ===============================
+# ==============================  Secure Binary v3.1 Configuration template for kw45b41z8.  ===============================
 
 # ======================================================================================================================
 #                                                  == Basic Settings ==
@@ -12,8 +12,8 @@
 firmwareVersion: 0
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: MCU family name.
-# Possible options: <k32w1xx, kw45xx, lpc55s3x, mcxn23x, mcxn9xx, rw61x>
-family: kw45xx
+# Possible options: <k32w148, kw45b41z8, lpc55s36, mcxn236, mcxn946, rw612>
+family: kw45b41z8
 # -----------------------------------------===== SB3 filename [Required] =====------------------------------------------
 # Description: Generated SB3 container filename.
 containerOutputFile: ../workspace/sb3.sb3
@@ -22,7 +22,7 @@ containerOutputFile: ../workspace/sb3.sb3
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
 # Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ../_data/keys/ecc384/imgkey_ecc384.pem
+signPrivateKey: ../EVK_keys/RoT_key0_secp384r1_kw45xx.pem
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
 # signProvider: type=file;file_path=my_prv_key.pem
@@ -37,7 +37,7 @@ certBlock: ../inputs/cert_block_kw45.yaml
 # ======================================================================================================================
 # ----------------------------------------===== Part Common Key [Optional] =====----------------------------------------
 # Description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
-containerKeyBlobEncryptionKey: ../workspace/sb3kdk.txt
+containerKeyBlobEncryptionKey: ../EVK_keys/sb3kdk.txt
 # ----------------------------------===== Enable NXP Container format [Optional] =====----------------------------------
 # Description: Internal usage only, used for generating SB files with NXP content e.g. provisioning firmware, etc...
 isNxpContainer: false
@@ -63,8 +63,7 @@ commands:
   #                                          == List of possible 9 options. ==
   #   Options [erase, load, execute, programFuses, programIFR, loadCMAC, loadHashLocking, fillMemory, checkFwVersion]
   # ====================================================================================================================
-  -
-  #  ====================================== [Example of possible configuration #0] ======================================
+  - #  ====================================== [Example of possible configuration #0] ======================================
     # -------------------------------------------===== Erase [Required] =====-------------------------------------------
     # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
     erase:
@@ -77,8 +76,7 @@ commands:
       # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
       # Description: ID of memory block to be erased.
       # memoryId: 0
-  -
-  #  ====================================== [Example of possible configuration #1] ======================================
+  - #  ====================================== [Example of possible configuration #1] ======================================
     # -------------------------------------------===== Load [Required] =====--------------------------------------------
     # Description: If set, then the data to write immediately follows the range header. The length field contains the
     # actual data length

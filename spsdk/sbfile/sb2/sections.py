@@ -8,7 +8,7 @@
 """Sections within SBfile."""
 
 from struct import unpack_from
-from typing import Iterator, List, Optional
+from typing import Iterator, Optional
 
 from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_ctr_decrypt, aes_ctr_encrypt
@@ -95,7 +95,7 @@ class BootSectionV2(BaseClass):
         self._header = CmdHeader(
             EnumCmdTag.TAG.tag, EnumSectionFlag.BOOTABLE.tag, zero_filling=zero_filling
         )
-        self._commands: List[CmdBaseClass] = []
+        self._commands: list[CmdBaseClass] = []
         self._hmac_count = hmac_count
         for cmd in commands:
             self.append(cmd)

@@ -1,0 +1,96 @@
+# Copyright 2021-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+common:
+  type: object
+  title: Common DevHSM settings
+  properties:
+    description:
+      type: string
+      title: Description
+      description: Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
+      template_value: DevHSM SB file
+    containerKeyBlobEncryptionKey:
+      type: string
+      title: Part Common Key
+      description: Path to PCK/NPK/CUST_MK_SK/SB_KEK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
+      template_value: cust_mk_sk.bin
+    oemRandomShare:
+      type: string
+      title: OEM Random Share input
+      description: Path to a file containing 16B of random seed data. If not specified, random seed will be generated.
+      template_value: oem_seed.bin
+    oemEncMasterShare:
+      type: string
+      title: OEM Encrypted Master Share
+      description: Path to a file containing encrypted OEM Master Share to restore a secure session
+      template_value: oem_enc_master_share.bin
+    initialReset:
+      type: boolean
+      title: Initial device reset
+      description: Reset the device before starting the DevHSM operation
+      template_value: false
+    finalReset:
+      type: boolean
+      title: Final device reset
+      description: Reset the device after the DevHSM operation
+      template_value: true
+    workspace:
+      type: string
+      title: Development/debug workspace
+      description: Path to a folder where to store intermediate artifacts for development/debugging purposes
+      template_value: wsp
+    bufferAddress:
+      type: [string, number]
+      format: number
+      title: Communication buffer address
+      description: Address to override default communication buffer address
+      template_value:
+    containerOutputFile:
+      type: string
+      title: Output file path
+      description: Path where to store generated DevHSM SB file
+      template_value: devhsm.sb
+
+subTitle: |
+  # ================================= Minimal steps to perform DevHSM Trust Provisioning =================================
+  commands:
+
+programLifeCycleFuse: >2
+    # Advance Life-cycle to Production
+    - programFuses:
+        address: {address}
+        values: {value:#_x}
+
+loadCMPA: >2
+    # Load CMPA
+    - load:
+        address: {address:#_x}
+        file: cmpa.bin
+
+loadCFPA: >2
+    # Load CFPA
+    - load:
+        address: {address:#_x}
+        file: cfpa.bin
+
+loadKeyBlob: >2
+    # In case you have the encryption key in plain (set via containerKeyBlobEncryptionKey)
+    # a default loadKeyBlob command will be injected automatically
+    # However, if you'd like to customize the command, use the following command.
+    # Please note the `plainInput` parameter
+    # - loadKeyBlob:
+    #     offset: {offset:#_x}
+    #     wrappingKeyId: NXP_CUST_KEK_EXT_SK
+    #     file: cust_mk_sk.bin
+    #     plainInput: bin
+    #
+    # if you already have a wrapped encryption key use loadKeyBlob command
+    # you may wrap the key using `nxpdevhsm wrap-cust-mk-sk` command
+    # in such case comment-out the `containerKeyBlobEncryptionKey` field
+    # - loadKeyBlob:
+    #     offset: {offset:#_x}
+    #     wrappingKeyId: NXP_CUST_KEK_EXT_SK
+    #     file: wrapped_key_blob.bin
+    #

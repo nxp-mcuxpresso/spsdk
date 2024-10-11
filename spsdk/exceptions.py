@@ -94,5 +94,9 @@ class SPSDKConnectionError(SPSDKError, ConnectionError):
     """SPSDK standard connection error."""
 
 
+class SPSDKPermissionError(SPSDKError, PermissionError):
+    """SPSDK permission error."""
+
+
 class SPSDKIndexError(SPSDKError, IndexError):
     """SPSDK standard index error."""

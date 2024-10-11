@@ -134,7 +134,7 @@ in_from_stmt ::= in_from_stmt basic_stmt ';'
 
 mode_stmt ::= MODE int_const_expr
 
-messate_stmt ::= message_type STRING_LITERAL
+message_stmt ::= message_type STRING_LITERAL
 
 message_type ::= INFO
 | WARNING

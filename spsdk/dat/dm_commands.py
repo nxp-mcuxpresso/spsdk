@@ -7,7 +7,7 @@
 
 """Commands for Debug Mailbox."""
 import time
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from spsdk.dat.debug_mailbox import DebugMailbox, logger
 from spsdk.exceptions import SPSDKError
@@ -18,15 +18,14 @@ from spsdk.utils.misc import format_value
 class DebugMailboxCommand:
     """Class for DebugMailboxCommand."""
 
-    STATUS_IS_DATA_MASK = 0x00
     # default delay after sending a command, in seconds
     DELAY_DEFAULT = 0.03
+    CMD_ID = 0
+    CMD_NAME = "General"
 
     def __init__(
         self,
         dm: DebugMailbox,
-        id: int,  # pylint: disable=redefined-builtin
-        name: str = "",
         paramlen: int = 0,
         resplen: int = 0,
         delay: float = DELAY_DEFAULT,
@@ -35,11 +34,9 @@ class DebugMailboxCommand:
         self.dm = dm
         self.paramlen = paramlen
         self.resplen = resplen
-        self.id = id
-        self.name = name
         self.delay = delay
 
-    def run(self, params: Optional[List[int]] = None) -> List[Any]:
+    def run(self, params: Optional[list[int]] = None) -> list[Any]:
         """Run DebugMailboxCommand."""
         paramslen = len(params) if params else 0
         if paramslen != self.paramlen:
@@ -47,7 +44,7 @@ class DebugMailboxCommand:
                 "Provided parameters length is not equal to command parameters length!"
             )
 
-        req = self.id | (self.paramlen << 16)
+        req = self.CMD_ID | (self.paramlen << 16)
         logger.debug(f"<- spin_write: {format_value(req, 32)}")
         self.dm.spin_write(self.dm.registers["REQUEST"]["address"], req)
 
@@ -69,6 +66,13 @@ class DebugMailboxCommand:
 
         ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
+
+        # Solve non standard statuses before checking error indication
+        if (
+            self.CMD_ID in self.dm.non_standard_statuses
+            and ret in self.dm.non_standard_statuses[self.CMD_ID]
+        ):
+            return [ret]
 
         # bit 31 is flag in new protocol version
         # new_protocol = bool(ret >> 31)
@@ -106,7 +110,7 @@ class DebugMailboxCommand:
             self.dm.spin_write(self.dm.registers["REQUEST"]["address"], ack)
         return response
 
-    def run_safe(self, raise_if_failure: bool = True, **args: Any) -> Optional[List[Any]]:
+    def run_safe(self, raise_if_failure: bool = True, **args: Any) -> Optional[list[Any]]:
         """Run a command and abort on first failure instead of looping forever."""
         try:
             return self.run(**args)
@@ -120,125 +124,140 @@ class DebugMailboxCommand:
 class StartDebugMailbox(DebugMailboxCommand):
     """Class for StartDebugMailbox."""
 
-    def __init__(self, dm: DebugMailbox) -> None:
-        """Initialize."""
-        super().__init__(dm, id=1, name="START_DBG_MB")
+    CMD_ID = 1
+    CMD_NAME = "START_DBG_MB"
 
 
 class GetCRPLevel(DebugMailboxCommand):
     """Class for Get CRP Level."""
 
-    # Set STATUS_IS_DATA_MASK to range 0-255, because larger life cycle is not expected
-    STATUS_IS_DATA_MASK = 0xFF
-
-    def __init__(self, dm: DebugMailbox) -> None:
-        """Initialize."""
-        super().__init__(dm, id=2, name="GET_CRP_LEVEL")
+    CMD_ID = 2
+    CMD_NAME = "GET_CRP_LEVEL"
 
 
 class EraseFlash(DebugMailboxCommand):
     """Class for Erase Flash."""
 
+    CMD_ID = 3
+    CMD_NAME = "ERASE_FLASH"
+
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super().__init__(dm, id=3, name="ERASE_FLASH", delay=0.5)
+        super().__init__(dm, delay=0.5)
 
 
 class ExitDebugMailbox(DebugMailboxCommand):
     """Class for ExitDebugMailbox."""
 
-    def __init__(self, dm: DebugMailbox) -> None:
-        """Initialize."""
-        super().__init__(dm, id=4, name="EXIT_DBG_MB")
+    CMD_ID = 4
+    CMD_NAME = "EXIT_DBG_MB"
 
 
 class EnterISPMode(DebugMailboxCommand):
     """Class for EnterISPMode."""
 
-    def __init__(self, dm: DebugMailbox) -> None:
-        """Initialize."""
-        super().__init__(dm, id=5, name="ENTER_ISP_MODE", paramlen=1)
-
-
-class EnterBlankDebugAuthentication(DebugMailboxCommand):
-    """Class for EnterBlankDebugAuthentication."""
+    CMD_ID = 5
+    CMD_NAME = "ENTER_ISP_MODE"
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super().__init__(dm, id=0x8, name="ENTER_BLANK_DEBUG_AUTH", paramlen=8)
+        super().__init__(dm, paramlen=1)
 
 
 class SetFaultAnalysisMode(DebugMailboxCommand):
     """Class for SetFaultAnalysisMode."""
 
+    CMD_ID = 6
+    CMD_NAME = "SET_FA_MODE"
+
     def __init__(self, dm: DebugMailbox, paramlen: int = 0) -> None:
         """Initialize."""
-        super().__init__(dm, id=6, name="SET_FA_MODE", paramlen=paramlen)
+        super().__init__(dm, paramlen=paramlen)
 
 
 class StartDebugSession(DebugMailboxCommand):
     """Class for StartDebugSession."""
 
-    def __init__(self, dm: DebugMailbox) -> None:
-        """Initialize."""
-        super().__init__(dm, id=7, name="START_DBG_SESSION")
+    CMD_ID = 7
+    CMD_NAME = "START_DBG_SESSION"
 
 
-class DebugAuthenticationStart(DebugMailboxCommand):
-    """Class for DebugAuthenticationStart."""
+class EnterBlankDebugAuthentication(DebugMailboxCommand):
+    """Class for EnterBlankDebugAuthentication."""
 
-    def __init__(self, dm: DebugMailbox, resplen: int = 26) -> None:
-        """Initialize."""
-        # 26 words == 104 bytes (SHA256 - 32 Bytes)
-        # 30 words == 120 bytes (SHA384 - 48 Bytes)
-        super().__init__(dm, id=16, name="DBG_AUTH_START", resplen=resplen)
-
-
-class DebugAuthenticationResponse(DebugMailboxCommand):
-    """Class for DebugAuthenticationResponse."""
-
-    def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
-        """Initialize."""
-        super().__init__(dm, id=17, name="DBG_AUTH_RESP", paramlen=paramlen)
-
-
-class NxpDebugAuthenticationStart(DebugMailboxCommand):
-    """Class for DebugAuthenticationStart."""
-
-    def __init__(self, dm: DebugMailbox, resplen: int = 26) -> None:
-        """Initialize."""
-        # 26 words == 104 bytes (SHA256 - 32 Bytes)
-        # 30 words == 120 bytes (SHA384 - 48 Bytes)
-        super().__init__(dm, id=18, name="NXP_DBG_AUTH_START", resplen=resplen)
-
-
-class NxpDebugAuthenticationResponse(DebugMailboxCommand):
-    """Class for DebugAuthenticationResponse."""
-
-    def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
-        """Initialize."""
-        super().__init__(dm, id=19, name="NXP_DBG_AUTH_RESP", paramlen=paramlen)
-
-
-class StartDebugSessions(DebugMailboxCommand):
-    """Class for StartDebugSessions."""
+    CMD_ID = 8
+    CMD_NAME = "ENTER_BLANK_DEBUG_AUTH"
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super().__init__(dm, id=7, name="START_DEBUG_SESSION")
-
-
-class EraseOneSector(DebugMailboxCommand):
-    """Class for Erase One Sector."""
-
-    def __init__(self, dm: DebugMailbox) -> None:
-        """Initialize."""
-        super().__init__(dm, id=11, name="ERASE_ONE_SECTOR", paramlen=1)
+        super().__init__(dm, paramlen=8)
 
 
 class WriteToFlash(DebugMailboxCommand):
     """Class for Write To Flash."""
 
+    CMD_ID = 9
+    CMD_NAME = "WRITE_TO_FLASH"
+
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super().__init__(dm, id=9, name="WRITE_TO_FLASH", paramlen=5)
+        super().__init__(dm, paramlen=5)
+
+
+class EraseOneSector(DebugMailboxCommand):
+    """Class for Erase One Sector."""
+
+    CMD_ID = 11
+    CMD_NAME = "ERASE_ONE_SECTOR"
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize."""
+        super().__init__(dm, paramlen=1)
+
+
+class DebugAuthenticationStart(DebugMailboxCommand):
+    """Class for DebugAuthenticationStart."""
+
+    CMD_ID = 16
+    CMD_NAME = "DBG_AUTH_START"
+
+    def __init__(self, dm: DebugMailbox, resplen: int = 26) -> None:
+        """Initialize."""
+        # 26 words == 104 bytes (SHA256 - 32 Bytes)
+        # 30 words == 120 bytes (SHA384 - 48 Bytes)
+        super().__init__(dm, resplen=resplen)
+
+
+class DebugAuthenticationResponse(DebugMailboxCommand):
+    """Class for DebugAuthenticationResponse."""
+
+    CMD_ID = 17
+    CMD_NAME = "DBG_AUTH_RESP"
+
+    def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
+        """Initialize."""
+        super().__init__(dm, paramlen=paramlen)
+
+
+class NxpDebugAuthenticationStart(DebugMailboxCommand):
+    """Class for DebugAuthenticationStart."""
+
+    CMD_ID = 18
+    CMD_NAME = "NXP_DBG_AUTH_START"
+
+    def __init__(self, dm: DebugMailbox, resplen: int = 26) -> None:
+        """Initialize."""
+        # 26 words == 104 bytes (SHA256 - 32 Bytes)
+        # 30 words == 120 bytes (SHA384 - 48 Bytes)
+        super().__init__(dm, resplen=resplen)
+
+
+class NxpDebugAuthenticationResponse(DebugMailboxCommand):
+    """Class for DebugAuthenticationResponse."""
+
+    CMD_ID = 19
+    CMD_NAME = "NXP_DBG_AUTH_RESP"
+
+    def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
+        """Initialize."""
+        super().__init__(dm, paramlen=paramlen)

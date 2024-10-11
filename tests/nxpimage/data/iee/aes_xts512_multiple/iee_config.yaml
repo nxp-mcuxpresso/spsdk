@@ -1,11 +1,11 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  IEE converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x']
+family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189']
 output_folder: iee_output # [Required], IEE output directory; Path to directory where the IEE output will be generated
 output_name: encrypted.bin # [Optional], Output binary image filename; Filename of the output image containing keyblobs and encrypted data blobs without file extension (.bin will be appended)
 keyblob_name: iee_keyblob.bin # [Optional], Keyblob filename; Filename of the keyblob without file extension (.bin will be appended)

@@ -10,7 +10,7 @@
 import os
 import shutil
 import sys
-from typing import List, Sequence, cast
+from typing import Sequence, cast
 
 import ruamel.yaml
 from InquirerPy import inquirer
@@ -187,7 +187,7 @@ def setup_tp_host_file(
         yaml.dump(data, f)
 
 
-def get_cards() -> List[str]:
+def get_cards() -> list[str]:
     """Get all viable cards.
 
     :raises RuntimeError: No viable Smart Cards found
@@ -212,7 +212,7 @@ def get_card_id(info: str) -> str:
     return info.split("@")[0].strip()
 
 
-def get_uart_targets() -> List[str]:
+def get_uart_targets() -> list[str]:
     """Get all UART targets.
 
     :raises RuntimeError: No viable UART MBoot devices found

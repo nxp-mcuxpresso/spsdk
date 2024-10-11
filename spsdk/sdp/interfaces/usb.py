@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """USB SDP interface implementation."""
-from typing import Dict, List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -30,17 +30,17 @@ class SdpUSBInterface(SDPBulkProtocol):
         super().__init__(device=device)
 
     @classmethod
-    def get_devices(cls) -> Dict[str, List[UsbId]]:
+    def get_devices(cls) -> dict[str, list[UsbId]]:
         """Get list of all supported devices from the database.
 
         :return: Dictionary containing device names with their usb configurations
         """
         devices = {}
-        for device in DatabaseManager().db.devices:
-            usb_ids = device.info.isp.get_usb_ids("sdp")
-            usb_ids.extend(device.info.isp.get_usb_ids("sdps"))
+        for device, quick_info in DatabaseManager().quick_info.devices.devices.items():
+            usb_ids = quick_info.info.isp.get_usb_ids("sdp")
+            usb_ids.extend(quick_info.info.isp.get_usb_ids("sdps"))
             if usb_ids:
-                devices[device.name] = usb_ids
+                devices[device] = usb_ids
         return devices
 
     @classmethod
@@ -48,7 +48,7 @@ class SdpUSBInterface(SDPBulkProtocol):
         cls,
         device_id: Optional[str] = None,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected USB devices.
 
         :param device_id: Device identifier <vid>, <vid:pid>, device/instance path, device name are supported

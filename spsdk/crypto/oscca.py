@@ -136,7 +136,7 @@ if IS_OSCCA_SUPPORTED:
             # PEM data may contain EC PARAMS, thus capture trigger should be the word KEY
             if b"KEY" in line:
                 capture_data = not capture_data
-        # in the end the `capture_data` flag should be false singaling propper END * KEY
+        # in the end the `capture_data` flag should be false signaling proper END * KEY
         # and we should have some data
         try:
             if capture_data is False and len(base64_data) > 0:

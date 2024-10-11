@@ -8,7 +8,7 @@
 """This module contains HAB container related code."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from typing_extensions import Self
 
@@ -32,7 +32,11 @@ from spsdk.sbfile.sb2.sly_bd_parser import BDParser
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import BinaryPattern, load_configuration, load_text
-from spsdk.utils.schema_validator import CommentedConfig, check_config
+from spsdk.utils.schema_validator import (
+    CommentedConfig,
+    check_config,
+    update_validation_schema_family,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -131,8 +135,8 @@ class HabContainer:
     @classmethod
     def load_from_config(
         cls,
-        config: Dict[str, Any],
-        search_paths: Optional[List[str]] = None,
+        config: dict[str, Any],
+        search_paths: Optional[list[str]] = None,
     ) -> Self:
         """Load the HAB container object from parsed bd_data configuration.
 
@@ -156,7 +160,7 @@ class HabContainer:
         hab.update_csf()
         return hab
 
-    def _get_signed_blocks(self) -> List[ImageBlock]:
+    def _get_signed_blocks(self) -> list[ImageBlock]:
         blocks = []
 
         def add_block(offset: int, block_size: int) -> None:
@@ -190,7 +194,7 @@ class HabContainer:
             add_block(self.app_segment.offset, self.app_segment.size)
         return blocks
 
-    def _get_encrypted_blocks(self) -> List[ImageBlock]:
+    def _get_encrypted_blocks(self) -> list[ImageBlock]:
         blocks = []
         blocks.append(
             ImageBlock(
@@ -285,21 +289,31 @@ class HabContainer:
         """Export into binary."""
         return self.image_info(padding=False).export()
 
+    def __len__(self) -> int:
+        """Get length of HAB container."""
+        last_offset = 0
+        last_len = 0
+        for seg in self.segments:
+            if seg.offset > last_offset:
+                last_offset = seg.offset
+                last_len = seg.size
+        return last_offset + last_len
+
     @classmethod
-    def get_validation_schemas(cls, family: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: Optional[str] = None) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :return: List of validation schemas.
         """
         hab_schema = get_schema_file(DatabaseManager.HAB)
 
-        schemas: List[Dict[str, Any]] = []
+        schemas: list[dict[str, Any]] = []
         sch_hab = hab_schema["hab"]
-        sch_hab["properties"]["options"]["properties"]["family"][
-            "enum"
-        ] = cls.get_supported_families()
+        update_validation_schema_family(
+            sch_hab["properties"]["options"]["properties"], cls.get_supported_families(), family
+        )
+
         if family:
-            sch_hab["properties"]["options"]["properties"]["family"]["template_value"] = family
             sch_hab["properties"]["options"]["properties"]["bootDevice"]["enum"] = (
                 cls.get_boot_devices(family)
             )
@@ -318,7 +332,7 @@ class HabContainer:
         ).get_template()
 
     @classmethod
-    def transform_configuration(cls, config: Dict[Any, Any]) -> Dict[Any, Any]:
+    def transform_configuration(cls, config: dict[Any, Any]) -> dict[Any, Any]:
         """Transform configuration from BD parser to flat YAML structure.
 
         :param config: Parsed configuration from BD parser
@@ -357,7 +371,7 @@ class HabContainer:
         return config
 
     @classmethod
-    def transform_bd_configuration(cls, config: Dict[Any, Any]) -> Dict[Any, Any]:
+    def transform_bd_configuration(cls, config: dict[Any, Any]) -> dict[Any, Any]:
         """Transform configuration from flat structure to BD structure.
 
         :param config: Parsed configuration from BD parser
@@ -402,9 +416,9 @@ class HabContainer:
     def load_configuration(
         cls,
         config_path: str,
-        external_files: Optional[List[str]] = None,
-        search_paths: Optional[List[str]] = None,
-    ) -> Dict:
+        external_files: Optional[list[str]] = None,
+        search_paths: Optional[list[str]] = None,
+    ) -> dict:
         """Load the BD or YAML Configuration.
 
         :param config_path: Path to configuration file either BD or YAML formatted.
@@ -428,7 +442,7 @@ class HabContainer:
         return config_data
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get all supported families for HAB container.
 
         :return: List of supported families.
@@ -436,7 +450,7 @@ class HabContainer:
         return get_families(DatabaseManager.HAB)
 
     @staticmethod
-    def get_boot_devices(family: str) -> List[str]:
+    def get_boot_devices(family: str) -> list[str]:
         """Get all supported boot devices for given family.
 
         :param family: Target family name.

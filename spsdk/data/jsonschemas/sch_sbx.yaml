@@ -2,18 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-sbx_family:
-  type: object
-  title: Basic Settings
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      enum: [] # Just placeholder to keep this record that will be fulfilled in runtime
-      template_value: mc56f818xx
-  required: [family]
-
 sbx_output:
   type: object
   title: Basic Settings

@@ -1,14 +1,14 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ==================  Master Boot Image Configuration template for mcxn9xx, Plain Signed XIP Image.  ===================
+# ==================  Master Boot Image Configuration template for mcxn946, Plain Signed XIP Image.  ===================
 
 # ======================================================================================================================
 #                                                  == Basic Settings ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: MCU family name.
-family: mcxn9xx
+family: mcxn946
 # --------------------------------------===== Application target [Required] =====---------------------------------------
 # Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
 # Possible options: <xip, load-to-ram>

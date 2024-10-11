@@ -121,7 +121,7 @@ def test_generate_ecc_dc_file(cli_runner: CliRunner, tmpdir, data_dir, protocol)
 def test_generate_dc_template(cli_runner: CliRunner, tmpdir):
     """Test generate dc file with ecc protocol for lpc55s3x"""
     out_file = f"{tmpdir}/dc_template.yaml"
-    cmd = f"get-template -f lpc55s3x -o {out_file}"
+    cmd = f"-f lpc55s3x get-template -o {out_file}"
 
     cli_runner.invoke(main, cmd.split())
     assert os.path.isfile(out_file)
@@ -131,6 +131,15 @@ def test_generate_dc_file_lpc55s3x_256(cli_runner: CliRunner, tmpdir, data_dir):
     """Test generate dc file with ecc protocol for lpc55s3x"""
     out_file = f"{tmpdir}/dc_secp256r1_lpc55s3x.cert"
     cmd = f"-p 2.0 gendc -c new_dck_secp256_lpc55s3x.yml -o {out_file}"
+    with use_working_directory(data_dir):
+        cli_runner.invoke(main, cmd.split())
+        assert os.path.isfile(out_file)
+
+
+def test_generate_dc_file_mx95_a1(cli_runner: CliRunner, tmpdir, data_dir):
+    """Test generate dc file with ecc protocol for mx95 a0/a1"""
+    out_file = f"{tmpdir}/dc_secp256r1_mx95.cert"
+    cmd = f"dat dc export -c dc_mx95_a1.yaml -o {out_file}"
     with use_working_directory(data_dir):
         cli_runner.invoke(main, cmd.split())
         assert os.path.isfile(out_file)
@@ -202,12 +211,48 @@ def test_generate_rsa_with_elf2sb(tmpdir, data_dir, config):
         ("mx93", "latest"),
         ("mx95", "a0"),
         ("mx95", "latest"),
-        ("rt118x", "a0"),
-        ("rt118x", "latest"),
+        ("mimxrt1189", "a0"),
+        ("mimxrt1189", "latest"),
     ],
 )
 def test_nxpdebugmbox_get_template(cli_runner: CliRunner, tmpdir, family, revision):
     """Test nxpdebugmbox CLI - Generation template."""
-    cmd = ["get-template", "-f", family, "-r", revision, "--output", f"{tmpdir}/debugmbox.yml"]
+    cmd = ["-f", family, "-r", revision, "get-template", "--output", f"{tmpdir}/debugmbox.yml"]
     cli_runner.invoke(main, cmd)
     assert os.path.isfile(f"{tmpdir}/debugmbox.yml")
+
+
+@pytest.mark.parametrize(
+    "obsolete,new",
+    [
+        ("erase", ["cmd", "erase"]),
+        ("erase-one-sector", ["cmd", "erase-one-sector"]),
+        ("exit", ["cmd", "exit"]),
+        ("famode", ["cmd", "famode"]),
+        ("get-crp", ["cmd", "get-crp"]),
+        ("ispmode", ["cmd", "ispmode"]),
+        ("start", ["cmd", "start"]),
+        ("start-debug-session", ["cmd", "start-debug-session"]),
+        ("token_auth", ["cmd", "token-auth"]),
+        ("write-to-flash", ["cmd", "write-to-flash"]),
+        ("auth", ["dat", "auth"]),
+        ("gendc", ["dat", "dc", "export"]),
+        ("get-template", ["dat", "dc", "get-template"]),
+        ("read-memory", ["mem-tool", "read-memory"]),
+        ("write-memory", ["mem-tool", "write-memory"]),
+        ("test-connection", ["mem-tool", "test-connection"]),
+        ("get-uuid", ["tool", "get-uuid"]),
+        ("reset", ["tool", "reset"]),
+    ],
+)
+def test_obsolete_cmds(cli_runner: CliRunner, obsolete: str, new: str):
+    """Test generate help for obsolete location command and new one."""
+    cmd = obsolete + " --help"
+    res_obsolete = cli_runner.invoke(main, cmd.split())
+    res_new = cli_runner.invoke(main, new + ["--help"])
+    assert "Deprecated Command" in res_obsolete.output
+    assert obsolete in res_obsolete.output
+    assert " ".join(new) in res_new.output
+    assert res_obsolete.output.splitlines()[-1].replace(" ", "") == res_new.output.splitlines()[
+        -1
+    ].replace(" ", "")

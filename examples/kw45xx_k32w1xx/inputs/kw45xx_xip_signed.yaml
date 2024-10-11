@@ -1,14 +1,14 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ===================  Master Boot Image Configuration template for kw45xx, Plain Signed XIP Image.  ===================
+# ===================  Master Boot Image Configuration template for kw45b41z8, Plain Signed XIP Image.  ===================
 
 # ======================================================================================================================
 #                                                  == Basic Settings ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: MCU family name.
-family: kw45xx
+family: kw45b41z8
 # --------------------------------------===== Application target [Required] =====---------------------------------------
 # Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
 # Possible options: <xip, load-to-ram>
@@ -41,7 +41,7 @@ certBlock: ../inputs/cert_block_kw45_secure.yaml
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
 # Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ../../_data/keys/ecc384/imgkey_ecc384.pem
+signPrivateKey: ../EVK_keys/RoT_key0_secp384r1_kw45xx.pem
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
 # signProvider: type=file;file_path=my_prv_key.pem

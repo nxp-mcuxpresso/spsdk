@@ -2,397 +2,501 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-type: object
-required:
-  - family
-  - output
-  - srk_set
-  - fuse_version
-  - sw_version
-  - srk_table
-  - signing_key
-  - used_srk_id
-  - srk_revoke_mask
-  - message
-properties:
-  family:
-    type: string
-    title: MCU family
-    description:
-      Family identifier including the chip revision. If revision is not
-      present, latest revision is used as default.
-    enum: []
-    template_value: rt118x
-  revision:
-    type: string
-    title: MCU revision
-    description: Revision of silicon
-    template_value: latest
-  output:
-    type: string
-    title: Output file name
-    description: Output Signed Message file name
-    format: file_name
-    template_value: signed_message.bin
+family:
+  type: object
+  required:
+    - family
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description:
+        Family identifier including the chip revision. If revision is not
+        present, latest revision is used as default.
+      template_value: mimxrt1189
+    revision:
+      type: string
+      title: MCU revision
+      description: Revision of silicon
+      template_value: latest
 
-  srk_set:
-    type: string
-    template_title: Settings of Signed Message
-    title: Super Root Key (SRK) set
-    description: Defines which set is used to authenticate the signed message.
-    enum: [none, oem, nxp]
-    template_value: oem
-  used_srk_id:
-    type: [number, string]
-    title: Used SRK
-    description: Which key from SRK set is being used.
-    format: number
-    template_value: 0
-  srk_revoke_mask:
-    type: [number, string]
-    title: SRK revoke mask
-    description:
-      Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke
-      key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
-    format: number
-    template_value: 0x00
-  fuse_version:
-    type: [number, string]
-    title: Fuse version
-    description:
-      The value must be equal or greater than the version stored in fuses
-      to allow loading this container.
-    format: number
-    template_value: 0
-  sw_version:
-    type: [number, string]
-    title: Software version
-    description:
-      Number used by Privileged Host Boot Companion (PHBC) to select between
-      multiple images with same Fuse version field.
-    format: number
-    template_value: 0
-  signing_key:
-    type: string
-    title: Signed Message container signing key
-    description:
-      Private key used for sign the container header. Header can be signed by SRK.
-      The referenced SRK must not have been revoked.
-    format: file
-    template_value: my_signing_key.pem
-  signature_provider:
-    type: string
-    title: Signature Provider
-    description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
-    template_value: type=file;file_path=my_prv_key.pem
+signed_message:
+  type: object
+  required:
+    - output
+    - srk_set
+    - fuse_version
+    - sw_version
+    - srk_table
+    - signing_key
+    - used_srk_id
+    - srk_revoke_mask
+    - message
+  properties:
+    output:
+      type: string
+      title: Output file name
+      description: Output Signed Message file name
+      format: file_name
+      template_value: signed_message.bin
 
-  srk_table:
-    type: object
-    title: SRK Table
-    template_title: Configuration of Signed Message SRK table
-    description: "SRK (Super Root key) table definition."
-    required: [srk_array]
-    properties:
-      flag_ca:
-        type: boolean
-        title: CA Flag
-        description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
-        template_value: false
-      srk_array:
-        type: array
-        title: Super Root Key (SRK) table
-        description:
-          "Table containing the used SRK records. All SRKs must be of the same
-          type. Supported signing algorithms are: RSASSA-PSS, ECDSA or SM2. Supported hash algorithms:
-          sha256, sha384, sha512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
-          rsa2048, rsa4096, sm2. Certificate may be of Certificate Authority."
-        minItems: 4
-        maxItems: 4
-        items:
+    container_version:
+      type: number
+      title: Container version
+      description: Force container version, if not specified the default version is used.
+        This configuration option is valid only for chips that supports both AHAB container versions. Possible options <2, 1>
+      minimal: 1
+      maximal: 2
+      template_value: 2
+      skip_in_template: True
+
+    srk_set:
+      type: string
+      template_title: Settings of Signed Message
+      title: Super Root Key (SRK) set
+      description: Defines which set is used to authenticate the signed message.
+      enum: [none, oem, nxp]
+      template_value: oem
+    used_srk_id:
+      type: [number, string]
+      title: Used SRK
+      description: Which key from SRK set is being used.
+      format: number
+      template_value: 0
+    srk_revoke_mask:
+      type: [number, string]
+      title: SRK revoke mask
+      description:
+        Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke
+        key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
+      format: number
+      template_value: 0x00
+    fuse_version:
+      type: [number, string]
+      title: Fuse version
+      description:
+        The value must be equal or greater than the version stored in fuses
+        to allow loading this container.
+      format: number
+      template_value: 0
+    sw_version:
+      type: [number, string]
+      title: Software version
+      description:
+        Number used by Privileged Host Boot Companion (PHBC) to select between
+        multiple images with same Fuse version field.
+      format: number
+      template_value: 0
+
+    check_all_signatures:
+      type: string
+      title: Check all signatures
+      description:
+        "This option overrides a fuse to select verification mode.\n
+        - default: Apply default fuse policy.\n
+        - check_all_signatures: Force verification of all present signatures."
+      enum: [default, check_all_signatures]
+      template_value: default
+      skip_in_template: True
+
+    signing_key:
+      type: string
+      title: Signed Message container signing key
+      description:
+        Private key used for sign the container header. Header can be signed by SRK.
+        The referenced SRK must not have been revoked.
+      format: file
+      template_value: my_signing_key.pem
+    signature_provider:
+      type: string
+      title: Signature Provider
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+      template_value: type=file;file_path=my_prv_key.pem
+
+    signing_key_#2:
+      type: string
+      title: Signed Message container signing key for second signature (PQC only)
+      description:
+        Private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
+        The referenced SRK must not have been revoked.
+      format: file
+      template_value: my_signing_key.pem
+      skip_in_template: True
+    signature_provider_#2:
+      type: string
+      title: Signature Provider for second signature (PQC)
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+      template_value: type=file;file_path=my_prv_key.pem
+      skip_in_template: True
+
+    srk_table:
+      type: object
+      title: SRK Table
+      template_title: Configuration of Signed Message SRK table
+      description: "SRK (Super Root key) table definition."
+      required: [srk_array]
+      properties:
+        flag_ca:
+          type: boolean
+          title: CA Flag
+          description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+          template_value: false
+        srk_array:
+          type: array
+          title: Super Root Key (SRK) table
+          description:
+            "Table containing the used SRK records. All SRKs must be of the same
+            type. Supported signing algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms:
+            sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+            rsa2048, rsa4096, dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just
+            in new type of AHAB container"
+          minItems: 4
+          maxItems: 4
+          items:
+            type: string
+            title: SRK key
+            description: Path to SRK Key file.
+            format: file
+            template_value:
+              - my_srk_public_key0.pub
+              - my_srk_public_key1.pub
+              - my_srk_public_key2.pub
+              - my_srk_public_key3.pub
+        srk_table_#2:
+          type: object
+          title: Second SRK Table
+          template_title: Configuration of AHAB SRK table in case that the double signing (ECC + PQC)
+          required: [srk_array]
+          skip_in_template: True
+          properties:
+            flag_ca:
+              type: boolean
+              title: CA Flag
+              description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+              template_value: false
+            srk_array:
+              type: array
+              title: Super Root Key (SRK) table
+              description:
+                "Table containing the used SRK Dilithium records. All SRKs must be of the same
+                type. Supported signing algorithms are: Dilithium level 3. Supported hash algorithms:
+                sha3_256, sha3_384, sha3_512. Certificate may be of Certificate Authority."
+              minItems: 4
+              maxItems: 4
+              items:
+                type: string
+                title: SRK key
+                description: Path to SRK Key file.
+                format: file
+                template_value:
+                  - my_srk_public_key0.pub
+                  - my_srk_public_key1.pub
+                  - my_srk_public_key2.pub
+                  - my_srk_public_key3.pub
+    certificate:
+      type: string
+      title: The AHAB certificate
+      template_title: Optional configuration of AHAB Container Certificate (if not used, erase the section)
+      description:
+        The file that contains AHAB certificate. It could be used already prepared binary form signed by SRK, or it is possible to
+        use configuration YAML file of certificate and the AHAB export process it will export it itself.
+      format: file
+      template_value: my_ahab_certificate.bin
+
+    iv_path:
+      type: string
+      title: IV file path
+      description:
+        "Used only for encrypted messages. Fixed size at 256 bits. If defined the encryption is used for this Signed message.
+        The HEX format is accepted."
+      format: file
+      template_value: my_IV.txt
+
+    message:
+      type: object
+      template_title: Settings of Message
+      required: [command]
+      properties:
+        cert_version:
+          type: [number, string]
+          title: Certificate version
+          description: Certificate version
+          format: number
+          template_value: 0x00
+        cert_permission:
+          type: [number, string]
+          title: Certificate permission
+          description: Certificate permission, to be used in future. The stated permission must allow the operation requested by the signed message.
+          format: number
+          template_value: 0x00
+        issue_date:
           type: string
-          title: SRK key
-          description: Path to SRK Key file.
-          format: file
-          template_value:
-            - my_srk_public_key0.pub
-            - my_srk_public_key1.pub
-            - my_srk_public_key2.pub
-            - my_srk_public_key3.pub
+          pattern: ^\d{4}-\d{2}$
+          title: Issue date
+          description: "Optional Issue date of message, if not defined the current date is used. The format must be following: 'YYYY-MM'"
+          template_value: 2022-10
+        uuid:
+          type: string
+          title: Device UUID
+          description:
+            Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug authentication protocol
+            could provide this value. Hex string format (hexadecimal string without '0x'). In case that the restriction on UUID is not needed
+            the field could be omitted.
+          template_value: "0000000000000000"
+        command:
+          oneOf:
+            - type: object
+              required: [RETURN_LIFECYCLE_UPDATE_REQ]
+              properties:
+                RETURN_LIFECYCLE_UPDATE_REQ:
+                  type: [number, string]
+                  title: Life Cycle
+                  description: Value of life cycle to be moved on. The value 16 is used for OEM keys (FIELD_RETURN_OEM) and 32 for NXP keys(FIELD_RETURN_NXP).
+                  template_value: 0x10
 
-  iv_path:
-    type: string
-    title: IV file path
-    description:
-      "Used only for encrypted messages. Fixed size at 256 bits. If defined the encryption is used for this Signed message.
-      The HEX format is accepted."
-    format: file
-    template_value: my_IV.txt
-
-  message:
-    type: object
-    template_title: Settings of Message
-    required: [command]
-    properties:
-      cert_version:
-        type: [number, string]
-        title: Certificate version
-        description: Certificate version
-        format: number
-        template_value: 0x00
-      cert_permission:
-        type: [number, string]
-        title: Certificate permission
-        description: Certificate permission, to be used in future. The stated permission must allow the operation requested by the signed message.
-        format: number
-        template_value: 0x00
-      issue_date:
-        type: string
-        pattern: ^\d{4}-\d{2}$
-        title: Issue date
-        description: "Optional Issue date of message, if not defined the current date is used. The format must be following: 'YYYY-MM'"
-        template_value: 2022-10
-      uuid:
-        type: string
-        title: Device UUID
-        description:
-          Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug authentication protocol
-          could provide this value. Hex string format (hexadecimal string without '0x'). In case that the restriction on UUID is not needed
-          the field could be omitted.
-        template_value: "0000000000000000"
-      command:
-        oneOf:
-          - type: object
-            required: [RETURN_LIFECYCLE_UPDATE_REQ]
-            properties:
-              RETURN_LIFECYCLE_UPDATE_REQ:
-                type: [number, string]
-                title: Life Cycle
-                description: Value of life cycle to be moved on. The value 16 is used for OEM keys (FIELD_RETURN_OEM) and 32 for NXP keys(FIELD_RETURN_NXP).
-                template_value: 0x10
-
-          - type: object
-            template_title: The 'Write secure fuse request' is message for NXP use, not usable for OEM
-            required: [WRITE_SEC_FUSE_REQ]
-            properties:
-              WRITE_SEC_FUSE_REQ:
-                type: object
-                title: Secure Fuse
-                description: Description of secure fuse to write (burn)
-                required: [id, data]
-                properties:
-                  id:
-                    type: [number, string]
-                    title: Fuse ID
-                    description: Fuse ID (address), maximal 16 bit value is allowed.
-                    template_value: 0x0
-                  flags:
-                    type: [number, string]
-                    title: Fuse flags
-                    description: Fuse flags, maximal 8 bit value is allowed.
-                    template_value: 0x0
-                  data:
-                    type: array
-                    title: Fuse data
-                    description: Fuse data, maximal 32 bit value is allowed in each item.
-                    minItems: 1
-                    items:
+            - type: object
+              template_title: The 'Write secure fuse request' is message for NXP use, not usable for OEM
+              required: [WRITE_SEC_FUSE_REQ]
+              properties:
+                WRITE_SEC_FUSE_REQ:
+                  type: object
+                  title: Secure Fuse
+                  description: Description of secure fuse to write (burn)
+                  required: [id, data]
+                  properties:
+                    id:
                       type: [number, string]
+                      title: Fuse ID
+                      description: Fuse ID (address), maximal 16 bit value is allowed.
+                      template_value: 0x0
+                    flags:
+                      type: [number, string]
+                      title: Fuse flags
+                      description: Fuse flags, maximal 8 bit value is allowed.
+                      template_value: 0x0
+                    data:
+                      type: array
+                      title: Fuse data
+                      description: Fuse data, maximal 32 bit value is allowed in each item.
+                      minItems: 1
+                      items:
+                        type: [number, string]
+                        format: number
+                        template_value: ["0xA5A5A5A5", "0x01"]
+
+            - type: object
+              template_title: The 'Key store reprovisioning enable'
+              required: [KEYSTORE_REPROVISIONING_ENABLE_REQ]
+              properties:
+                KEYSTORE_REPROVISIONING_ENABLE_REQ:
+                  type: object
+                  title: Key store reprovisioning enable
+                  description:
+                    This message is sent to enable the re-provisioning of a key store. User must send this signed
+                    message before trying to create a new key store in a chip that has already been provisioned.
+                    Once this command is successfully sent a new key store can be created through the key store
+                    open message.
+                  required: [monotonic_counter, user_sab_id]
+                  properties:
+                    monotonic_counter:
+                      type: [number, string]
+                      title: Monotonic counter value
+                      description: Current monotonic counter value. Can be retrieve with SAB Get Info API
+                      template_value: 0x0
+                    user_sab_id:
+                      type: [number, string]
+                      title: User SAB id
+                      description: User SAB id that will do the re-provisioning. Can be retrieve with SAB Get Info API
+                      template_value: 0x0
+
+            - type: object
+              template_title: The 'Key exchange'
+              required: [KEY_EXCHANGE_REQ]
+              properties:
+                KEY_EXCHANGE_REQ:
+                  type: object
+                  title: Key exchange
+                  description:
+                    This message is used to perform a combined key agreement and key derivation operation. The
+                    derived key will be stored in key storage as a new key. Only symmetric keys can be created with
+                    this operation. Key attributes are set in the command, like others key creation APIs (Generate
+                    key, Import key).
+                  required:
+                    - key_store_id
+                    - key_exchange_algorithm
+                    - salt_flags
+                    - derived_key_grp
+                    - derived_key_size_bits
+                    - derived_key_type
+                    - derived_key_lifetime
+                    - derived_key_usage
+                    - derived_key_permitted_algorithm
+                    - derived_key_lifecycle
+                    - derived_key_id
+                    - private_key_id
+                    - input_peer_public_key_digest
+                  properties:
+                    key_store_id:
+                      type: [number, string]
+                      title: Key store ID
+                      description:
+                        Key store ID where to store the derived key. It must be the key store ID
+                        related to the key management handle set in the command API
                       format: number
-                      template_value: ["0xA5A5A5A5", "0x01"]
-
-          - type: object
-            template_title: The 'Key store reprovisioning enable'
-            required: [KEYSTORE_REPROVISIONING_ENABLE_REQ]
-            properties:
-              KEYSTORE_REPROVISIONING_ENABLE_REQ:
-                type: object
-                title: Key store reprovisioning enable
-                description:
-                  This message is sent to enable the re-provisioning of a key store. User must send this signed
-                  message before trying to create a new key store in a chip that has already been provisioned.
-                  Once this command is successfully sent a new key store can be created through the key store
-                  open message.
-                required: [monotonic_counter, user_sab_id]
-                properties:
-                  monotonic_counter:
-                    type: [number, string]
-                    title: Monotonic counter value
-                    description: Current monotonic counter value. Can be retrieve with SAB Get Info API
-                    template_value: 0x0
-                  user_sab_id:
-                    type: [number, string]
-                    title: User SAB id
-                    description: User SAB id that will do the re-provisioning. Can be retrieve with SAB Get Info API
-                    template_value: 0x0
-
-          - type: object
-            template_title: The 'Key exchange'
-            required: [KEY_EXCHANGE_REQ]
-            properties:
-              KEY_EXCHANGE_REQ:
-                type: object
-                title: Key exchange
-                description:
-                  This message is used to perform a combined key agreement and key derivation operation. The
-                  derived key will be stored in key storage as a new key. Only symmetric keys can be created with
-                  this operation. Key attributes are set in the command, like others key creation APIs (Generate
-                  key, Import key).
-                required:
-                  - key_store_id
-                  - key_exchange_algorithm
-                  - salt_flags
-                  - derived_key_grp
-                  - derived_key_size_bits
-                  - derived_key_type
-                  - derived_key_lifetime
-                  - derived_key_usage
-                  - derived_key_permitted_algorithm
-                  - derived_key_lifecycle
-                  - derived_key_id
-                  - private_key_id
-                  - input_peer_public_key_digest
-                properties:
-                  key_store_id:
-                    type: [number, string]
-                    title: Key store ID
-                    description:
-                      Key store ID where to store the derived key. It must be the key store ID
-                      related to the key management handle set in the command API
-                    format: number
-                    template_value: 0x0
-                  key_exchange_algorithm:
-                    type: string
-                    title: Key exchange algorithm
-                    description: "\n
-                      HKDF SHA256 0x09020109\n
-                      HKDF SHA384 0x0902010A"
-                    enum: [HKDF SHA256, HKDF SHA384]
-                    template_value: HKDF SHA256
-                  salt_flags:
-                    type: [number, string]
-                    title: Salt Flags
-                    description:
-                      "Bit field indicating the requested operations:\n
-                      Bit 0: Salt in step #1 (HKDF-extract) of HMAC based two-step key derivation process:\n
-                      - 0: Use zeros salt\n
-                      - 1:Use peer public key hash as salt\n
-                      Bit 1: In case of ELE import, salt used to derive OEM_IMPORT_WRAP_SK and OEM_IMPORT_CMAC_SK:\n
-                      - 0: Zeros string\n
-                      - 1: Device SRKH.\n
-                      Bit 2 to 15: Reserved"
-                    format: number
-                    template_value: 0x0
-                  derived_key_grp:
-                    type: [number, string]
-                    title: Derived key group
-                    description:
-                      Derived key group. 100 groups are available per key store. It must be a
-                      value in the range [0; 99]. Keys belonging to the same group can be managed through the Manage
-                      key group command
-                    format: number
-                    template_value: 0x0
-                  derived_key_size_bits:
-                    type: number
-                    title: Derived key size bits
-                    description: Derived key size bits
-                    enum: [128, 192, 224, 256, 384, 512]
-                    template_value: 256
-                  derived_key_type:
-                    type: string
-                    title: Derived key type
-                    description: "\n
-                      Key type          Value   Key size in bits\n
-                      AES               0x2400  128/192/256\n
-                      HMAC              0x1100  224/256/384/512\n
-                      OEM_IMPORT_MK_SK  0x9200  128/192/256 "
-                    enum: [AES, HMAC, OEM_IMPORT_MK_SK]
-                    template_value: AES
-                  derived_key_lifetime:
-                    type: string
-                    title: Derived key lifetime
-                    description: "\n
-                      VOLATILE           0x00  Standard volatile key.\n
-                      PERSISTENT         0x01  Standard persistent key.\n
-                      PERMANENT          0xFF  Standard permanent key.\n"
-                    enum: [VOLATILE, PERSISTENT, PERMANENT]
-                    template_value: PERSISTENT
-                  derived_key_usage:
-                    type: array
-                    title: Derived key usage
-                    description:
-                      "Permission usage list. List of possible permissions:\n
-                      Cache           0x00000004  Permission to cache the key in the ELE internal secure memory.
-                      This usage is set by default by ELE FW for all keys generated or imported.\n
-                      Encrypt         0x00000100  Permission to encrypt a message with the key. It could be cipher
-                      encryption, AEAD encryption or asymmetric encryption operation.\n
-                      Decrypt         0x00000200  Permission to decrypt a message with the key. It could be
-                      cipher decryption, AEAD decryption or asymmetric decryption operation.\n
-                      Sign message    0x00000400  Permission to sign a message with the key. It could be
-                      a MAC generation or an asymmetric message signature operation.\n
-                      Verify message  0x00000800  Permission to verify a message signature with the key.
-                      It could be a MAC verification or an asymmetric message signature verification operation.\n
-                      Sign hash       0x00001000  Permission to sign a hashed message with the key
-                      with an asymmetric signature operation. Setting this permission automatically
-                      sets the Sign Message usage.\n
-                      Verify hash     0x00002000  Permission to verify a hashed message signature with
-                      the key with an asymmetric signature verification operation.\n
-                      Setting this permission automatically sets the Verify Message usage.\n
-                      Derive          0x00004000  Permission to derive other keys from this key."
-                    inItems: 0
-                    maxItems: 8
-                    items:
+                      template_value: 0x0
+                    key_exchange_algorithm:
                       type: string
-                      enum:
-                        [
-                          Cache,
-                          Encrypt,
-                          Decrypt,
-                          Sign message,
-                          Verify message,
-                          Sign hash,
-                          Verify hash,
-                          Derive,
-                        ]
-                      template_value: [Cache, Derive]
-                  derived_key_permitted_algorithm:
-                    type: string
-                    title: Derived key permitted algorithm
-                    description: "\n
-                      HKDF SHA256 (HMAC two-step)  0x08000109\n
-                      HKDF SHA384 (HMAC two-step)  0x0800010A"
-                    enum: [HKDF SHA256, HKDF SHA384]
-                    template_value: HKDF SHA256
-                  derived_key_lifecycle:
-                    type: string
-                    title: Derived key lifecycle
-                    description: "\n
-                      CURRENT           0x00  Key is usable in current lifecycle.\n
-                      OPEN              0x01  Key is usable in open lifecycle.\n
-                      CLOSED            0x02  Key is usable in closed lifecycle.\n
-                      CLOSED and LOCKED 0x04  Key is usable in closed and locked lifecycle."
-                    enum: [CURRENT, OPEN, CLOSED, LOCKED]
-                    template_value: CURRENT
-                  derived_key_id:
-                    type: [number, string]
-                    title: Derived key ID
-                    description: "It could be:\n
-                      - Wanted key identifier of the generated key: only supported by persistent and permanent keys\n
-                      - 0x00000000 to let the FW chose the key identifier: supported by all keys (all persistence levels)"
-                    format: number
-                    template_value: 0x0
-                  private_key_id:
-                    type: [number, string]
-                    title: Private key ID
-                    description: Identifier in the ELE key storage of the private key to use with the peer public key during the key agreement process
-                    format: number
-                    template_value: 0x0
-                  input_peer_public_key_digest:
-                    type: [number, string]
-                    title: Input peer public key digest
-                    description: The algorithm used to generate the digest must be SHA256
-                    template_value: "0x0000000000000000000000000000000000000000000000000000000000000000"
-                  input_user_fixed_info_digest:
-                    type: [number, string]
-                    title: Input user fixed info digest
-                    description: The algorithm used to generate the digest must be SHA256
-                    template_value: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      title: Key exchange algorithm
+                      description: "\n
+                        HKDF SHA256 0x09020109\n
+                        HKDF SHA384 0x0902010A"
+                      enum: [HKDF SHA256, HKDF SHA384]
+                      template_value: HKDF SHA256
+                    salt_flags:
+                      type: [number, string]
+                      title: Salt Flags
+                      description:
+                        "Bit field indicating the requested operations:\n
+                        Bit 0: Salt in step #1 (HKDF-extract) of HMAC based two-step key derivation process:\n
+                        - 0: Use zeros salt\n
+                        - 1:Use peer public key hash as salt\n
+                        Bit 1: In case of ELE import, salt used to derive OEM_IMPORT_WRAP_SK and OEM_IMPORT_CMAC_SK:\n
+                        - 0: Zeros string\n
+                        - 1: Device SRKH.\n
+                        Bit 2 to 15: Reserved"
+                      format: number
+                      template_value: 0x0
+                    derived_key_grp:
+                      type: [number, string]
+                      title: Derived key group
+                      description:
+                        Derived key group. 100 groups are available per key store. It must be a
+                        value in the range [0; 99]. Keys belonging to the same group can be managed through the Manage
+                        key group command
+                      format: number
+                      template_value: 0x0
+                    derived_key_size_bits:
+                      type: number
+                      title: Derived key size bits
+                      description: Derived key size bits
+                      enum: [128, 192, 224, 256, 384, 512]
+                      template_value: 256
+                    derived_key_type:
+                      type: string
+                      title: Derived key type
+                      description: "\n
+                        Key type          Value   Key size in bits\n
+                        AES               0x2400  128/192/256\n
+                        HMAC              0x1100  224/256/384/512\n
+                        OEM_IMPORT_MK_SK  0x9200  128/192/256 "
+                      enum: [AES, HMAC, OEM_IMPORT_MK_SK]
+                      template_value: AES
+                    derived_key_lifetime:
+                      type: string
+                      title: Derived key lifetime
+                      description: "\n
+                        VOLATILE           0x00  Standard volatile key.\n
+                        PERSISTENT         0x01  Standard persistent key.\n
+                        PERMANENT          0xFF  Standard permanent key.\n"
+                      enum: [VOLATILE, PERSISTENT, PERMANENT]
+                      template_value: PERSISTENT
+                    derived_key_usage:
+                      type: array
+                      title: Derived key usage
+                      description:
+                        "Permission usage list. List of possible permissions:\n
+                        Cache           0x00000004  Permission to cache the key in the ELE internal secure memory.
+                        This usage is set by default by ELE FW for all keys generated or imported.\n
+                        Encrypt         0x00000100  Permission to encrypt a message with the key. It could be cipher
+                        encryption, AEAD encryption or asymmetric encryption operation.\n
+                        Decrypt         0x00000200  Permission to decrypt a message with the key. It could be
+                        cipher decryption, AEAD decryption or asymmetric decryption operation.\n
+                        Sign message    0x00000400  Permission to sign a message with the key. It could be
+                        a MAC generation or an asymmetric message signature operation.\n
+                        Verify message  0x00000800  Permission to verify a message signature with the key.
+                        It could be a MAC verification or an asymmetric message signature verification operation.\n
+                        Sign hash       0x00001000  Permission to sign a hashed message with the key
+                        with an asymmetric signature operation. Setting this permission automatically
+                        sets the Sign Message usage.\n
+                        Verify hash     0x00002000  Permission to verify a hashed message signature with
+                        the key with an asymmetric signature verification operation.\n
+                        Setting this permission automatically sets the Verify Message usage.\n
+                        Derive          0x00004000  Permission to derive other keys from this key."
+                      inItems: 0
+                      maxItems: 8
+                      items:
+                        type: string
+                        enum:
+                          [
+                            Cache,
+                            Encrypt,
+                            Decrypt,
+                            Sign message,
+                            Verify message,
+                            Sign hash,
+                            Verify hash,
+                            Derive,
+                          ]
+                        template_value: [Cache, Derive]
+                    derived_key_permitted_algorithm:
+                      type: string
+                      title: Derived key permitted algorithm
+                      description: "\n
+                        HKDF SHA256 (HMAC two-step)  0x08000109\n
+                        HKDF SHA384 (HMAC two-step)  0x0800010A"
+                      enum: [HKDF SHA256, HKDF SHA384]
+                      template_value: HKDF SHA256
+                    derived_key_lifecycle:
+                      type: string
+                      title: Derived key lifecycle
+                      description: "\n
+                        CURRENT           0x00  Key is usable in current lifecycle.\n
+                        OPEN              0x01  Key is usable in open lifecycle.\n
+                        CLOSED            0x02  Key is usable in closed lifecycle.\n
+                        CLOSED and LOCKED 0x04  Key is usable in closed and locked lifecycle."
+                      enum: [CURRENT, OPEN, CLOSED, LOCKED]
+                      template_value: CURRENT
+                    derived_key_id:
+                      type: [number, string]
+                      title: Derived key ID
+                      description: "It could be:\n
+                        - Wanted key identifier of the generated key: only supported by persistent and permanent keys\n
+                        - 0x00000000 to let the FW chose the key identifier: supported by all keys (all persistence levels)"
+                      format: number
+                      template_value: 0x0
+                    private_key_id:
+                      type: [number, string]
+                      title: Private key ID
+                      description: Identifier in the ELE key storage of the private key to use with the peer public key during the key agreement process
+                      format: number
+                      template_value: 0x0
+                    input_peer_public_key_digest:
+                      type: [number, string]
+                      title: Input peer public key digest
+                      description: The algorithm used to generate the digest must be SHA256
+                      template_value: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    input_user_fixed_info_digest:
+                      type: [number, string]
+                      title: Input user fixed info digest
+                      description: The algorithm used to generate the digest must be SHA256
+                      template_value: "0x0000000000000000000000000000000000000000000000000000000000000000"
+            - type: object
+              template_title: The 'Debug Authentication request' is message for DAT process, do not use it individually
+              required: [DAT_AUTHENTICATION_REQ]
+              properties:
+                DAT_AUTHENTICATION_REQ:
+                  type: object
+                  title: Debug Authentication response
+                  description: Debug authentication response for DAT procedure
+                  required: [challenge_vector]
+                  properties:
+                    challenge_vector:
+                      type: [number, string]
+                      title: Challenge vector
+                      description: Challenge vector 32 bytes got's from the DAC.
+                      template_value: 0x1234567812345678123456781234567812345678123456781234567812345678
+                    authentication_beacon:
+                      type: [number, string]
+                      title: Authentication beacon
+                      description: Authentication beacon, keep it 0 till it will be implemented on HW.
+                      template_value: 0x0

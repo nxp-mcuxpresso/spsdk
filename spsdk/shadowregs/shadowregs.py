@@ -7,7 +7,7 @@
 """The shadow registers control DAT support file."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from spsdk import __author__, __release__, __version__
 from spsdk.dat.debug_mailbox import DebugMailbox
@@ -18,6 +18,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers, RegsRegister, SPSDKRegsErrorRegisterNotFound
+from spsdk.utils.schema_validator import update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -46,17 +47,17 @@ class ShadowRegisters:
 
         self.fuse_mode = False
         self.registers = self._get_init_registers(self.device, self.revision)
-        self.computed_fields: Dict[str, Dict[str, str]] = self.db.get_dict(
+        self.computed_fields: dict[str, dict[str, str]] = self.db.get_dict(
             DatabaseManager.SHADOW_REGS, "computed_fields", {}
         )
-        self.antipole_regs: Dict[str, str] = self.db.get_dict(
+        self.antipole_regs: dict[str, str] = self.db.get_dict(
             DatabaseManager.SHADOW_REGS, "inverted_regs", {}
         )
         self.possible_verification = self.db.get_bool(
             DatabaseManager.SHADOW_REGS, "possible_verification", True
         )
         # keep the separate, so we can distinguish the loaded registers
-        self._loaded_registers: List[RegsRegister] = []
+        self._loaded_registers: list[RegsRegister] = []
 
     @staticmethod
     def _get_init_registers(family: str, revision: str = "latest") -> Registers:
@@ -67,10 +68,10 @@ class ShadowRegisters:
         :return: Register class with loaded just fuses that supports shadow registers
         """
         db = get_db(family, revision)
-        computed_fields: Dict[str, Dict[str, str]] = db.get_dict(
+        computed_fields: dict[str, dict[str, str]] = db.get_dict(
             DatabaseManager.SHADOW_REGS, "computed_fields", {}
         )
-        antipole_regs: Dict[str, str] = db.get_dict(
+        antipole_regs: dict[str, str] = db.get_dict(
             DatabaseManager.SHADOW_REGS, "inverted_regs", {}
         )
         regs = Registers(
@@ -89,9 +90,9 @@ class ShadowRegisters:
         # Set the computed field handler
         for computed_reg, fields in computed_fields.items():
             reg_obj = regs.get_reg(computed_reg)
-            for bitfiled in fields.keys():
-                reg_obj.get_bitfield(bitfiled).hidden = True
-                logger.debug(f"Hiding bitfield: {bitfiled} in {computed_reg}")
+            for bitfield in fields.keys():
+                reg_obj.get_bitfield(bitfield).hidden = True
+                logger.debug(f"Hiding bitfield: {bitfield} in {computed_reg}")
 
         # Set the antipolize handler
         for antipole_reg in antipole_regs.values():
@@ -232,7 +233,7 @@ class ShadowRegisters:
         except SPSDKError as exc:
             raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
 
-    def create_fuse_blhost_script(self, reg_list: List[str]) -> str:
+    def create_fuse_blhost_script(self, reg_list: list[str]) -> str:
         """The function creates the BLHOST script to burn fuses.
 
         :param reg_list: The list of register to be burned.
@@ -242,7 +243,8 @@ class ShadowRegisters:
 
         def add_reg(reg: RegsRegister) -> str:
             otp_index = reg._otp_index
-            assert otp_index
+            if not isinstance(otp_index, int):
+                raise SPSDKError(f"{otp_index} of {reg} is not a number")
             otp_value = "0x" + reg.get_bytes_value(raw=True).hex()
             burn_fuse = f"# Fuse {reg.name}, index {otp_index} and value: {otp_value}.\n"
             burn_fuse += f"efuse-program-once {hex(otp_index)} {otp_value}\n"
@@ -279,22 +281,23 @@ class ShadowRegisters:
         return ret
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Return list of supported families."""
         return get_families(DatabaseManager.SHADOW_REGS)
 
     @classmethod
-    def get_validation_schemas_family(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for Shadow registers supported families.
         """
         sch_cfg = get_schema_file(DatabaseManager.SHADOW_REGS)
-        sch_cfg["sr_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
-        return [sch_cfg["sr_family_rev"]]
+        sch_family = get_schema_file("general")["family"]
+        update_validation_schema_family(sch_family["properties"], cls.get_supported_families())
+        return [sch_family, sch_cfg["sr_device_back_compatible"]]
 
     @classmethod
-    def get_validation_schemas(cls, family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
@@ -303,24 +306,26 @@ class ShadowRegisters:
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.SHADOW_REGS)
+        sch_family: dict[str, Any] = get_schema_file("general")["family"]
+        sch_family.pop("required")  # Due backward compatibility
         try:
             regs = cls._get_init_registers(family, revision)
-            sch_cfg["sr_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
-            sch_cfg["sr_family_rev"]["properties"]["family"]["template_value"] = family
-            sch_cfg["sr_family_rev"]["properties"]["revision"]["template_value"] = revision
+            update_validation_schema_family(
+                sch_family["properties"], cls.get_supported_families(), family
+            )
             sch_cfg["sr_registers"]["properties"]["registers"][
                 "properties"
             ] = regs.get_validation_schema()["properties"]
-            return [sch_cfg["sr_family_rev"], sch_cfg["sr_registers"]]
+            return [sch_family, sch_cfg["sr_device_back_compatible"], sch_cfg["sr_registers"]]
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} or revision {revision} is not supported") from exc
 
-    def load_config(self, config: Dict[str, Any]) -> None:
+    def load_config(self, config: dict[str, Any]) -> None:
         """The function loads the configuration.
 
         :param config: The configuration of shadow registers.
         """
-        cfg: Dict = config["registers"]
+        cfg: dict = config["registers"]
         self.registers.load_yml_config(cfg)
         self._loaded_registers = [
             self.registers.find_reg(reg_name, include_group_regs=True) for reg_name in cfg.keys()
@@ -356,12 +361,12 @@ class ShadowRegisters:
 
         logger.debug("The shadow registers has been loaded from configuration.")
 
-    def get_config(self, diff: bool = False) -> Dict[str, Any]:
+    def get_config(self, diff: bool = False) -> dict[str, Any]:
         """The function creates the configuration.
 
         :param diff: If set, only changed registers will be placed in configuration.
         """
-        ret: Dict[str, Any] = {"family": self.device, "revision": self.revision}
+        ret: dict[str, Any] = {"family": self.device, "revision": self.revision}
         ret["registers"] = self.registers.get_config(diff)
 
         logger.debug("The shadow registers creates configuration.")
@@ -468,10 +473,11 @@ class ShadowRegisters:
         self.probe.mem_reg_write(addr, value)
 
 
-def enable_debug(probe: DebugProbe, ap_mem: int = 0) -> bool:
+def enable_debug(probe: DebugProbe, family: str, ap_mem: int = 0) -> bool:
     """Function that enables debug access ports on devices with debug mailbox.
 
     :param probe: Initialized debug probe.
+    :param family: Chip family name.
     :param ap_mem: Index of Debug access port for memory interface.
     :return: True if debug port is enabled, False otherwise
     :raises SPSDKError: Unlock method failed.
@@ -484,7 +490,7 @@ def enable_debug(probe: DebugProbe, ap_mem: int = 0) -> bool:
             logger.debug("Locked Device. Launching unlock sequence.")
 
             # Start debug mailbox system
-            StartDebugSession(dm=DebugMailbox(debug_probe=probe)).run()
+            StartDebugSession(dm=DebugMailbox(debug_probe=probe, family=family)).run()
 
             # Recheck the AHB access
             if test_ahb_access(probe, ap_mem):

@@ -10,7 +10,7 @@ import abc
 import getpass
 import math
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Any, Callable, Optional, Union, cast
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
@@ -483,6 +483,28 @@ class PublicKey(BaseClass, abc.ABC):
                 return k(key)
 
         raise SPSDKInvalidKeyType(f"Unsupported key type: {str(key)}")
+
+
+class NonSupportingPublicKey(PublicKey):
+    """Just for non supported keys."""
+
+    def __init__(self) -> None:
+        """Just constructor to inform about not supported key type.
+
+        :raises SPSDKNotImplementedError: Key is not implemented exception.
+        """
+        raise SPSDKNotImplementedError("The key is not supported.")
+
+
+class NonSupportingPrivateKey(PrivateKey):
+    """Just for non supported keys."""
+
+    def __init__(self) -> None:
+        """Just constructor to inform about not supported key type.
+
+        :raises SPSDKNotImplementedError: Key is not implemented exception.
+        """
+        raise SPSDKNotImplementedError("The key is not supported.")
 
 
 # ===================================================================================================
@@ -1144,7 +1166,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :return: ECC public key.
         """
 
-        def get_curve(data_length: int, curve: Optional[EccCurve] = None) -> Tuple[EccCurve, bool]:
+        def get_curve(data_length: int, curve: Optional[EccCurve] = None) -> tuple[EccCurve, bool]:
             curve_list = [curve] if curve else list(EccCurve)
             for cur in curve_list:
                 curve_obj = KeyEccCommon._get_ec_curve_object(EccCurve(cur))
@@ -1287,7 +1309,7 @@ if IS_OSCCA_SUPPORTED:
         ) -> bytes:
             """Convert key into bytes supported by NXP."""
             if encoding != SPSDKEncoding.DER:
-                raise SPSDKNotImplementedError("Only DER enocding is supported for SM2 keys export")
+                raise SPSDKNotImplementedError("Only DER encoding is supported for SM2 keys export")
             keys = SM2KeySet(self.key.private_key, self.key.public_key)
             return SM2Encoder().encode_private_key(keys)
 
@@ -1360,7 +1382,7 @@ if IS_OSCCA_SUPPORTED:
             :return: Byte representation of key
             """
             if encoding != SPSDKEncoding.DER:
-                raise SPSDKNotImplementedError("Only DER enocding is supported for SM2 keys export")
+                raise SPSDKNotImplementedError("Only DER encoding is supported for SM2 keys export")
             keys = SM2PublicKey(self.key.public_key)
             return SM2Encoder().encode_public_key(keys)
 
@@ -1411,8 +1433,8 @@ if IS_OSCCA_SUPPORTED:
 
 else:
     # In case the OSCCA is not installed, do this to avoid import errors
-    PrivateKeySM2 = PrivateKey  # type: ignore
-    PublicKeySM2 = PublicKey  # type: ignore
+    PrivateKeySM2 = NonSupportingPrivateKey  # type: ignore
+    PublicKeySM2 = NonSupportingPublicKey  # type: ignore
 
 
 class ECDSASignature:
@@ -1522,11 +1544,22 @@ if IS_DILITHIUM_SUPPORTED:
             """Public numbers of key."""
             return self.key.public_data
 
+        @property
+        def key_size(self) -> int:
+            """Key size in bytes."""
+            return self.key.key_size
+
+        @property
+        def level(self) -> int:
+            """Get Key level."""
+            return self.key.level
+
         def verify_signature(
             self,
             signature: bytes,
             data: bytes,
             algorithm: Optional[EnumHashAlgorithm] = None,
+            prehashed: bool = False,
             **kwargs: Any,
         ) -> bool:
             """Verify input data.
@@ -1534,10 +1567,15 @@ if IS_DILITHIUM_SUPPORTED:
             :param signature: The signature of input data
             :param data: Input data
             :param algorithm: Used algorithm, defaults, automatic selection - None
+            :param prehashed: Use pre hashed value as input
             :param kwargs: Keyword arguments for specific type of key
             :return: True if signature is valid, False otherwise
             """
-            return self.key.verify(data=data, signature=signature)
+            if prehashed:
+                data_to_sign = data
+            else:
+                data_to_sign = get_hash(data, algorithm or EnumHashAlgorithm.SHA384)
+            return self.key.verify(data=data_to_sign, signature=signature)
 
         def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
             """Export key into bytes to requested format.
@@ -1593,6 +1631,11 @@ if IS_DILITHIUM_SUPPORTED:
             """Key size in bytes."""
             return self.key.key_size
 
+        @property
+        def level(self) -> int:
+            """Get Key level."""
+            return self.key.level
+
         def get_public_key(self) -> PublicKeyDilithium:
             """Generate public key."""
             if self.key.public_data is None:
@@ -1605,14 +1648,26 @@ if IS_DILITHIUM_SUPPORTED:
                 raise SPSDKInvalidKeyType("Public key type is not a Dilithium public key")
             return self.key.public_data == public_key.key.public_data
 
-        def sign(self, data: bytes, **kwargs: Any) -> bytes:
+        def sign(
+            self,
+            data: bytes,
+            algorithm: Optional[EnumHashAlgorithm] = None,
+            prehashed: bool = False,
+            **kwargs: Any,
+        ) -> bytes:
             """Sign input data.
 
             :param data: Input data
+            :param algorithm: Used algorithm
+            :param prehashed: Use pre hashed value as input
             :param kwargs: Keyword arguments for specific type of key
             :return: Signed data
             """
-            return self.key.sign(data=data)
+            if prehashed:
+                data_to_sign = data
+            else:
+                data_to_sign = get_hash(data, algorithm or EnumHashAlgorithm.SHA384)
+            return self.key.sign(data=data_to_sign)
 
         @classmethod
         def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
@@ -1642,8 +1697,8 @@ if IS_DILITHIUM_SUPPORTED:
             return repr(self)
 
 else:
-    PrivateKeyDilithium = PrivateKey  # type: ignore
-    PublicKeyDilithium = PublicKey  # type: ignore
+    PrivateKeyDilithium = NonSupportingPrivateKey  # type: ignore
+    PublicKeyDilithium = NonSupportingPublicKey  # type: ignore
 
 # # ===================================================================================================
 # # ===================================================================================================
@@ -1653,13 +1708,14 @@ else:
 # # ===================================================================================================
 # # ===================================================================================================
 
-GeneratorParams = Dict[str, Union[int, str, bool]]
-KeyGeneratorInfo = Dict[str, Tuple[Callable[..., PrivateKey], GeneratorParams]]
+GeneratorParams = dict[str, Union[int, str, bool]]
+KeyGeneratorInfo = dict[str, tuple[Callable[..., PrivateKey], GeneratorParams]]
 
 
-def get_supported_keys_generators() -> KeyGeneratorInfo:
+def get_supported_keys_generators(basic: bool = False) -> KeyGeneratorInfo:
     """Generate list with list of supported key types.
 
+    :param basic: Return only the RSA and ECC keys generators
     :return: `KeyGeneratorInfo` dictionary of supported key types.
     """
     ret: KeyGeneratorInfo = {
@@ -1672,6 +1728,9 @@ def get_supported_keys_generators() -> KeyGeneratorInfo:
         "secp384r1": (PrivateKeyEcc.generate_key, {"curve_name": "secp384r1"}),
         "secp521r1": (PrivateKeyEcc.generate_key, {"curve_name": "secp521r1"}),
     }
+    if basic:
+        return ret
+
     if IS_OSCCA_SUPPORTED:
         ret["sm2"] = (PrivateKeySM2.generate_key, {})
 

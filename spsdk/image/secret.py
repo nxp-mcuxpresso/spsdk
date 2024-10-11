@@ -10,7 +10,7 @@
 import math
 from hashlib import sha256
 from struct import pack, unpack, unpack_from
-from typing import Any, Iterator, List, Optional, Union
+from typing import Any, Iterator, Optional, Union
 
 from typing_extensions import Self
 
@@ -839,7 +839,7 @@ class SrkTable(BaseSecretClass):
         :param version: format version
         """
         super().__init__(tag=SegTag.CRT, version=version)
-        self._keys: List[SrkItem] = []
+        self._keys: list[SrkItem] = []
 
     def __len__(self) -> int:
         return len(self._keys)

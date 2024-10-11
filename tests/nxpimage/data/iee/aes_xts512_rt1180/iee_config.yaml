@@ -1,11 +1,11 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  IEE converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt118x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x']
+family: mimxrt1189  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189']
 output_folder: iee_output # [Required], IEE output directory; Path to directory where the IEE output will be generated
 output_name: encrypted.bin # [Optional], Output binary image filename; Filename of the output image containing keyblobs and encrypted data blobs without file extension (.bin will be appended)
 keyblob_name: iee_keyblob.bin # [Optional], Keyblob filename; Filename of the keyblob without file extension (.bin will be appended)
@@ -18,7 +18,7 @@ data_blobs: # [Optional], Data blobs list; List of all data blobs that will be e
   - data: blink_fspi2_xip_cm33_ahab.bin  # [Required], Binary data blob; Path to binary file with plain text data to be encrypted
     address: '0x04001000' # [Optional], Data blob address, it doesn't have to be specified for S-REC
 # ----------------------------------------------------------------------------------------------------
-#                                == MIMXRT118x Keyblob Configuration ==
+#                                == MIMXmimxrt1189 Keyblob Configuration ==
 # ----------------------------------------------------------------------------------------------------
 key_blob: # [Optional], Keyblob configuration, keyblob won't be generated.
   aes_mode: AesXTS  # [Required], AES mode, Encryption bypass, AES-XTS, AES-CTR (with or without address binding) or AES-CTR keystream only; Possible options:['Bypass', 'AesXTS', 'AesCTRWAddress', 'AesCTRWOAddress', 'AesCTRkeystream']

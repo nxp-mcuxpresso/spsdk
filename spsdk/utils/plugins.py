@@ -12,7 +12,7 @@ import sys
 from importlib.machinery import ModuleSpec
 from importlib.util import find_spec, module_from_spec, spec_from_file_location
 from types import ModuleType
-from typing import Dict, List, Optional
+from typing import Optional
 
 import importlib_metadata
 
@@ -37,7 +37,7 @@ class PluginsManager(metaclass=SingletonMeta):
 
     def __init__(self) -> None:
         """Plugin manager constructor."""
-        self.plugins: Dict[str, ModuleType] = {}
+        self.plugins: dict[str, ModuleType] = {}
 
     def load_from_entrypoints(self, group_name: Optional[str] = None) -> int:
         """Load modules from given setuptools group.
@@ -54,7 +54,7 @@ class PluginsManager(metaclass=SingletonMeta):
             else [PluginType.get_label(tag) for tag in PluginType.tags()]
         )
 
-        entry_points: List[importlib_metadata.EntryPoint] = []
+        entry_points: list[importlib_metadata.EntryPoint] = []
         for group in group_names:
             eps = importlib_metadata.entry_points(group=group)
             entry_points.extend(eps)

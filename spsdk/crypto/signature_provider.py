@@ -18,7 +18,7 @@ import inspect
 import json
 import logging
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Any, Optional, Type, Union, cast
 
 import requests
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
@@ -49,7 +49,7 @@ class SignatureProvider(abc.ABC):
 
     # Subclasses override the following signature provider type
     identifier = "INVALID"
-    reserved_keys = ["type", "identifier", "search_paths"]
+    reserved_keys = ["type", "identifier", "search_paths", "pss_padding"]
     legacy_identifier_name = "sp_type"
 
     def __init_subclass__(cls) -> None:
@@ -123,7 +123,7 @@ class SignatureProvider(abc.ABC):
         return self.__class__.__name__
 
     @staticmethod
-    def convert_params(params: str) -> Dict[str, str]:
+    def convert_params(params: str) -> dict[str, str]:
         """Coverts creation params from string into dictionary.
 
         e.g.: "type=file;file_path=some_path" -> {'type': 'file', 'file_path': 'some_path'}
@@ -132,7 +132,7 @@ class SignatureProvider(abc.ABC):
         :raises: SPSDKValueError: Parameter must meet the following pattern: type=file;file_path=some_path.
         :return: Converted dictionary of parameters.
         """
-        result: Dict[str, str] = {}
+        result: dict[str, str] = {}
         try:
             for p in params.split(";"):
                 key, value = p.split("=")
@@ -151,12 +151,12 @@ class SignatureProvider(abc.ABC):
         return result
 
     @classmethod
-    def get_types(cls) -> List[str]:
+    def get_types(cls) -> list[str]:
         """Returns a list of all available signature provider types."""
         return [sub_class.identifier for sub_class in cls.__subclasses__()]
 
     @classmethod
-    def filter_params(cls, klass: Any, params: Dict[str, str]) -> Dict[str, str]:
+    def filter_params(cls, klass: Any, params: dict[str, str]) -> dict[str, str]:
         """Remove unused parameters from the given dictionary based on the class constructor.
 
         :param klass: Signature provider class.
@@ -185,12 +185,12 @@ class SignatureProvider(abc.ABC):
         return None
 
     @staticmethod
-    def get_all_signature_providers() -> List[Type["SignatureProvider"]]:
+    def get_all_signature_providers() -> list[Type["SignatureProvider"]]:
         """Get list of all available signature providers."""
 
         def get_subclasses(
             base_class: Type,
-        ) -> List[Type["SignatureProvider"]]:
+        ) -> list[Type["SignatureProvider"]]:
             """Recursively find all subclasses."""
             subclasses = []
             for subclass in base_class.__subclasses__():
@@ -211,7 +211,7 @@ class PlainFileSP(SignatureProvider):
         file_path: str,
         password: Optional[str] = None,
         hash_alg: Optional[EnumHashAlgorithm] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
         **kwargs: Union[str, int, bool, EnumHashAlgorithm],
     ) -> None:
         """Initialize the plain file signature provider.
@@ -224,11 +224,21 @@ class PlainFileSP(SignatureProvider):
         """
         password = load_secret(password, search_paths) if password else None
         self.sign_kwargs = kwargs
-        if hash_alg:
-            self.sign_kwargs["algorithm"] = hash_alg
         self.file_path = find_file(file_path=file_path, search_paths=search_paths)
         self.private_key = PrivateKey.load(self.file_path, password=password)
         self.hash_alg = hash_alg
+
+    @property
+    def hash_alg(self) -> Optional[EnumHashAlgorithm]:
+        """Hash algorithm property."""
+        return self._hash_alg
+
+    @hash_alg.setter
+    def hash_alg(self, hash_alg: Optional[EnumHashAlgorithm]) -> None:
+        """Hash algorithm property setter."""
+        self._hash_alg = hash_alg
+        if hash_alg:
+            self.sign_kwargs["algorithm"] = hash_alg
 
     def _get_hash_algorithm(self, hash_alg: Optional[EnumHashAlgorithm] = None) -> HashAlgorithm:
         if hash_alg:
@@ -289,7 +299,7 @@ class InteractivePlainFileSP(PlainFileSP):
         self,
         file_path: str,
         hash_alg: Optional[EnumHashAlgorithm] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
         **kwargs: Union[str, int, bool],
     ) -> None:
         """Initialize the interactive plain file signature provider.
@@ -349,7 +359,7 @@ class HttpProxySP(SignatureProvider):
         self.prehash = prehash
         self.headers = {"spsdk-version": spsdk_version, "spsdk-api-version": self.api_version}
 
-    def _handle_request(self, url: str, data: Optional[Dict] = None) -> Dict:
+    def _handle_request(self, url: str, data: Optional[dict] = None) -> dict:
         """Handle REST API request.
 
         :param url: REST API endpoint URL
@@ -380,7 +390,7 @@ class HttpProxySP(SignatureProvider):
         except json.JSONDecodeError as e:
             raise SPSDKError("Response is not a valid JSON object") from e
 
-    def _check_response(self, response: Dict, names_types: List[Tuple[str, Type]]) -> None:
+    def _check_response(self, response: dict, names_types: list[tuple[str, Type]]) -> None:
         """Check if the response contains required data.
 
         :param response: Response to check
@@ -442,7 +452,7 @@ def get_signature_provider(
     :raises SPSDKError: Invalid input configuration.
     """
     if sp_cfg:
-        params: Dict[str, Union[str, List[str]]] = {}
+        params: dict[str, Union[str, list[str]]] = {}
         params.update(SignatureProvider.convert_params(sp_cfg))
         for k, v in kwargs.items():
             if not k in params:
@@ -463,7 +473,7 @@ def get_signature_provider(
     return signature_provider
 
 
-def load_plugins() -> Dict[str, ModuleType]:
+def load_plugins() -> dict[str, ModuleType]:
     """Load all installed signature provider plugins."""
     plugins_manager = PluginsManager()
     plugins_manager.load_from_entrypoints(PluginType.SIGNATURE_PROVIDER.label)

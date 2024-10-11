@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,8 +14,6 @@ from tests.cli_runner import CliRunner
 def test_nxpkeygen_plugin(cli_runner: CliRunner, tmpdir, data_dir):
     out_dc = f"{tmpdir}/file.dc"
     cmd = [
-        "-p",
-        "1.0",
         "gendc",
         "-c",
         "plugin_dck_rsa_2048.yml",

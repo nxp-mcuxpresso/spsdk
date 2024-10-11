@@ -1,0 +1,32 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  AHAB converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: mimxrt1189  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'mimxrt1189']
+revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
+image_type: non_xip # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
+output: ahab_container.bin # [Required], Output file name; Output AHAB file name
+containers: # [Required], List of containers present in AHAB; The order of containers in the list defines the order in AHAB.
+  -
+      # ----------------------------------------------------------------------------------------------------
+      #                  == Optional Configuration Container format to add to AHAB image ==
+      # ----------------------------------------------------------------------------------------------------
+    container:  # [Required], AHAB Container
+      srk_set: none  # [Required], Super Root Key (SRK) set; Defines which set is used to authenticate the container; Possible options:['none', 'oem', 'nxp']
+      fuse_version: 0 # [Required], Fuse version; The value must be equal or greater than the version stored in fuses to allow loading this container.
+      sw_version: 0 # [Required], Software version; Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
+        # ----------------------------------------------------------------------------------------------------
+        #               == Configuration of AHAB Container images (array of multiple images) ==
+        # ----------------------------------------------------------------------------------------------------
+      images: # [Required], Image array; Array of image entries.
+        - image_path: executable.bin  # [Required], Image path; Path to image binary (absolute/relative).
+          image_offset: '0x2000' # [Required], Image offset in AHAB container; Relative address for start of AHAB image (can contain multiple AHAB containers). In case of XiP type of AHAB image, the load_address and entry_point must correspond to this values. Example of setting of load_address - AHAB_IMAGE_ADDRESS+IMAGE_OFFSET=LOAD_ADDRESS
+          load_address: '0x1FFE0000' # [Required], Image destination address; Address the image is written to in memory (absolute address in system memory).
+          entry_point: '0x1FFE0000' # [Required], Image entry point (absolute address). Valid only for executable image types.
+          image_type: executable # [Required], Image type; Kind of image; Possible options:['executable', 'data', 'dcd_image', 'seco', 'provisioning_image', 'provisioning_data']
+          core_id: cortex-m33 # [Required], Core ID; Defines the core the image is dedicated for; Possible options:['cortex-a55', 'cortex-m33', 'cortex-m7']
+          is_encrypted: false # [Required], Image encryption; Determines, whether image is encrypted or not.
+          hash_type: sha512 # [Optional], Images HASH type; HASH type of image. All images in the container must have the same HASH type; Possible options:['sha256', 'sha384', 'sha512']

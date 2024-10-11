@@ -6,18 +6,18 @@
 # ======================================================================================================================
 #                                                 == General Options ==
 # ======================================================================================================================
-# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
-# Description: MCU family name.
-# Possible options: <rt5xx, rt6xx, rw61x>
-family: rw61x
-# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
-# Description: If needed this could be used to specify silicon revision of device.
+# -------------------------------------===== The chip family name [Optional] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s, mimxrt798s, rw610, rw612>
+family: rw612
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a1, a2, latest>
 revision: latest
 # -----------------------------------===== Shadow registers Settings [Required] =====-----------------------------------
 registers:
   # ------------------------------------------===== BOOT_CFG0 [Optional] =====------------------------------------------
-  # Description: Offset: 0x4000A03C, Width: 32b; Boot configuration fuse word0. Shadow register is present for this word
-  # thus SW could access the register directly to read contents.
+  # Description: Offset: 0x4000A03C, Width: 32b; Boot configuration fuse word 0.
   BOOT_CFG0:
     # ------------------------------------===== PRIMARY_BOOT_SOURCE [Optional] =====------------------------------------
     # Description: Offset: 0b, Width: 4b, Primary boot source. (a.k.a. Master boot source)
@@ -25,16 +25,15 @@ registers:
     # - FLEXSPI_BOOT, (1): Boot from FlexSPI flash device using FlexSPI interface pins.
     # - SDIO_BOOT, (3): Boot from SDIO (Serial) port.
     # - SPI_BOOT, (4): Boot using SPI slave interface using master boot mode.
-    # - I2C_BOOT, (5): I2C boot mode
+    # - I2C_BOOT, (5): I2C boot mode.
     # - UART_BOOT, (6): Boot using UART interface using master boot mode.
-    # - SPI_FC_BOOT, (7): Boot from 1-bit SPI flash device from FlexCom interface pins selected by REDUNDANT_SPI_PORT
-    # field. Only load-to-RAM images are supported in this mode.
-    # - USBHID_BOOT, (8): USB-HID boot mode
+    # - Reserved, (7): Reserved.
+    # - USBHID_BOOT, (8): USB-HID boot mode.
     # - ISP_MODE, (9): Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface.
     # - Test_MODE, (10): Reserved
     # - QSPI_FALLBACK_SPINOR_BOOT, (12): Boot from Octal/Quad SPI flash device using FlexSPI channel A interface pins.
-    # If image is not found check recovery boot using SPI-flash device through FlexComm.
-    # Possible options: <ISP_PIN_BOOT, FLEXSPI_BOOT, SDIO_BOOT, SPI_BOOT, I2C_BOOT, UART_BOOT, SPI_FC_BOOT, USBHID_BOOT,
+    # If image is not found check recovery boot using SPI flash device through FlexComm.
+    # Possible options: <ISP_PIN_BOOT, FLEXSPI_BOOT, SDIO_BOOT, SPI_BOOT, I2C_BOOT, UART_BOOT, Reserved, USBHID_BOOT,
     # ISP_MODE, Test_MODE, QSPI_FALLBACK_SPINOR_BOOT>
     PRIMARY_BOOT_SOURCE: FLEXSPI_BOOT
     # --------------------------------------===== SECURE_BOOT_EN [Optional] =====---------------------------------------
@@ -46,36 +45,35 @@ registers:
     # Possible options: <DISABLED, DISABLED, ENABLED, ENABLED>
     SECURE_BOOT_EN: DISABLED
   # --------------------------------------===== LIFE_CYCLE_STATE [Optional] =====---------------------------------------
-  # Description: Offset: 0x4000A0B4, Width: 16b; Life-Cycle state of RW61x platform. Shadow register is present for this
-  # word thus SW could access the register directly to read contents.
+  # Description: Offset: 0x4000A0B4, Width: 16b; Life cycle state of rw61x platform.
   LIFE_CYCLE_STATE:
-    # -----------------------------------------===== LCS[7:0] [Optional] =====------------------------------------------
-    # Description: Offset: 0b, Width: 8b, Possible values of RW61x lifecycle states
+    # --------------------------------------------===== LCS [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Possible values of rw61x lifecycle states
     # - Blank, (0): Initial state in NXP factory.
-    # - Provisioned, (1): NXP provisioned state
+    # - Provisioned, (1): NXP provisioned state.
     # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
     # - Develop2, (7): Optional customer development state. Used for development of NS world code.
     # - In-Field, (15): In-field application state for end-customer use.
-    # - Field Return OEM, (31): Field return state
+    # - Field Return OEM, (31): Field return state.
     # - Failure Analysis (FA), (63): NXP field return state (CQC).
-    # - In-Field Locked, (207): Alternative in-field application state that prevents use of field return/failure
-    # analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
     # - Shredded, (255): Bricked state to prevent device use.
     # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
     # Field Locked, Shredded>
-    LCS[7:0]: In-Field
-    # ------------------------------------===== LCS_REDUNDANT[7:0] [Optional] =====-------------------------------------
+    LCS: In-Field
+    # ---------------------------------------===== LCS_REDUNDANT [Optional] =====---------------------------------------
     # Description: Offset: 8b, Width: 8b, Repeat values of lifecycle state due to a security
     # - Blank, (0): Initial state in NXP factory.
-    # - Provisioned, (1): NXP provisioned state
+    # - Provisioned, (1): NXP provisioned state.
     # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
     # - Develop2, (7): Optional customer development state. Used for development of NS world code.
     # - In-Field, (15): In-field application state for end-customer use.
-    # - Field Return OEM, (31): Field return state
+    # - Field Return OEM, (31): Field return state.
     # - Failure Analysis (FA), (63): NXP field return state (CQC).
-    # - In-Field Locked, (207): Alternative in-field application state that prevents use of field return/failure
-    # analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
     # - Shredded, (255): Bricked state to prevent device use.
     # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
     # Field Locked, Shredded>
-    LCS_REDUNDANT[7:0]: In-Field
+    LCS_REDUNDANT: In-Field

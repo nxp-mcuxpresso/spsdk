@@ -37,16 +37,39 @@ el2go:
 
 mboot:
   type: object
+  description: Select one of the communication interfaces. For specification details please see 'blhost --help'
   properties:
     port:
       type: string
-      title: "Target COM port"
-      description: "COM port connecting to the target"
+      title: Serial line interface
       template_value: com1
-    family:
+    usb:
       type: string
-      skip_in_template: true
-  required: [port, family]
+      title: USB interface
+      template_value: 0x1fc9:0x014f
+    sdio:
+      type: string
+      title: SDIO Interface
+      template_value: /dev/mcu-sdio
+    lpcusbsio:
+      type: string
+      title: USBSIO Interface
+      template_value: spi0
+    can:
+      type: string
+      title: CAN Interface
+      template_value: can1
+    plugin:
+      type: string
+      title: Plugin Interface
+      template_value: identifier=<name>,param1=value1,param2=value2
+  oneOf:
+    - required: [port]
+    - required: [usb]
+    - required: [sdio]
+    - required: [lpcusbsio]
+    - required: [can]
+    - required: [plugin]
 
 model:
   type: object

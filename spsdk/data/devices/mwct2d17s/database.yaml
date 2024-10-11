@@ -1,0 +1,32 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: Wireless Power
+  spsdk_predecessor_name: mwct2xxxs
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/power-management/wireless-power/mwct2xxxs-microcontroller-for-wireless-charging-transmitter-ics:MWCT2xxxS
+  memory_map: {} # Memory map basic info
+  isp:
+    rom: {}
+    flashloader:
+      protocol: mboot
+      interfaces: ["uart", "usb"]
+      usb:
+        vid: 0x15A2
+        pid: 0x0073
+
+features:
+  comm_buffer:
+    address: 0x2000_0000
+  wpc:
+    id_type: computed_csr
+    id_length: 136

@@ -9,7 +9,7 @@ import logging
 import os
 import shutil
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from spsdk.crypto.certificate import Certificate, generate_name
 from spsdk.crypto.crypto_types import SPSDKEncoding, SPSDKNameOID
@@ -48,7 +48,7 @@ class TpDevSwModelConfig(ModelConfig):
         self.intf = TpDevSwModel
         self.family = self.data["family"]
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Returns whole record as dictionary.
 
         :return: All variables of class in dictionary.
@@ -77,7 +77,7 @@ class TpDevSwModel(TpDevInterface):
         ID = "id"
 
     @classmethod
-    def get_connected_devices(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
+    def get_connected_devices(cls, settings: Optional[dict] = None) -> list[TpIntfDescription]:
         """Get all connected TP devices of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
@@ -104,7 +104,7 @@ class TpDevSwModel(TpDevInterface):
             raise SPSDKTpError("Device Model descriptor doesn't contain settings")
         self.config = TpDevSwModelConfig(descriptor.settings["config_file"])
         self.challenge = bytes()
-        self.oem_certificates: Optional[List[Tuple[bytes, int]]] = None
+        self.oem_certificates: Optional[list[tuple[bytes, int]]] = None
         self.edh_private: Optional[PrivateKeyEcc] = None
         self.edh_public: Optional[PublicKeyEcc] = None
         self.tp_ses_kwk: Optional[bytes] = None
@@ -237,7 +237,7 @@ class TpDevSwModel(TpDevInterface):
             counter=self.production_quota,
         )
 
-        new_running_hash = self._update_runing_hash()
+        new_running_hash = self._update_running_hash()
         log_signature = self._sign_log_hash(new_running_hash)
 
         prov_data_container = Container()
@@ -308,7 +308,7 @@ class TpDevSwModel(TpDevInterface):
 
         return prov_data_container.export()
 
-    def _update_runing_hash(self) -> bytes:
+    def _update_running_hash(self) -> bytes:
         data_to_hash = self.nxp_die_id_data
         if self.oem_certificates:
             for cert_data, _ in self.oem_certificates:
@@ -332,8 +332,8 @@ class TpDevSwModel(TpDevInterface):
         return key
 
     def _generate_oem_certificates(
-        self, oem_die_id_puks: List[DataEntry]
-    ) -> List[Tuple[bytes, int]]:
+        self, oem_die_id_puks: list[DataEntry]
+    ) -> list[tuple[bytes, int]]:
         logger.info("Generating OEM certificates")
         oem_certificates = []
         new_uuid = random_bytes(16)
@@ -459,7 +459,7 @@ class TpDevSwModel(TpDevInterface):
         - id - used if multiple models are provided via `config_file`"""
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Return all additional validation schemas for interface.
 
         return: List of all additional validation schemas.
@@ -531,7 +531,7 @@ class TpDevSwModel(TpDevInterface):
 
     def _create_oem_id_template(self) -> None:
         logger.info("Creating OEM ID template")
-        cert_config: Dict = self.config.data["oem_id_config"]
+        cert_config: dict = self.config.data["oem_id_config"]
         sanitize_common_name(cert_config["subject"])
         issuer = generate_name(cert_config["issuer"])
         subject = generate_name(cert_config["subject"])
@@ -623,7 +623,7 @@ class TpDevSwModel(TpDevInterface):
         for file_key in ["nxp_prod_card_prk_path"]:
             self.upload_file(file_key, config_data, config_dir)  # type: ignore
 
-    def _reverse_kek_files(self, kek_file_keys: List[str]) -> None:
+    def _reverse_kek_files(self, kek_file_keys: list[str]) -> None:
         """Reverse data in kek files."""
         for file_key in kek_file_keys:
             file_path = self.config.get_abspath(self.config.data[file_key])

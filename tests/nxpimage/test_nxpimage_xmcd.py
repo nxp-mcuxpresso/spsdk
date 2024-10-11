@@ -15,23 +15,30 @@ import yaml
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.xmcd.xmcd import XMCD, MemoryType
-from spsdk.utils.misc import load_configuration, use_working_directory
+from spsdk.utils.misc import (
+    Endianness,
+    load_binary,
+    load_configuration,
+    load_file,
+    use_working_directory,
+    write_file,
+)
 from tests.cli_runner import CliRunner
 
 
 @pytest.mark.parametrize(
     "family,mem_type,config_type,option",
     [
-        ("rt117x", "semc_sdram", "simplified", None),
-        ("rt117x", "semc_sdram", "full", None),
-        ("rt117x", "flexspi_ram", "simplified", 0),
-        ("rt117x", "flexspi_ram", "simplified", 1),
-        ("rt117x", "flexspi_ram", "full", None),
-        ("rt116x", "semc_sdram", "simplified", None),
-        ("rt116x", "semc_sdram", "full", None),
-        ("rt116x", "flexspi_ram", "simplified", 0),
-        ("rt116x", "flexspi_ram", "simplified", 1),
-        ("rt116x", "flexspi_ram", "full", None),
+        ("mimxrt1176", "semc_sdram", "simplified", None),
+        ("mimxrt1176", "semc_sdram", "full", None),
+        ("mimxrt1176", "flexspi_ram", "simplified", 0),
+        ("mimxrt1176", "flexspi_ram", "simplified", 1),
+        ("mimxrt1176", "flexspi_ram", "full", None),
+        ("mimxrt1166", "semc_sdram", "simplified", None),
+        ("mimxrt1166", "semc_sdram", "full", None),
+        ("mimxrt1166", "flexspi_ram", "simplified", 0),
+        ("mimxrt1166", "flexspi_ram", "simplified", 1),
+        ("mimxrt1166", "flexspi_ram", "full", None),
     ],
 )
 def test_nxpimage_xmcd_export(
@@ -56,16 +63,16 @@ def test_nxpimage_xmcd_export(
 @pytest.mark.parametrize(
     "family,mem_type,config_type,option",
     [
-        ("rt117x", "semc_sdram", "simplified", None),
-        ("rt117x", "semc_sdram", "full", None),
-        ("rt117x", "flexspi_ram", "simplified", 0),
-        ("rt117x", "flexspi_ram", "simplified", 1),
-        ("rt117x", "flexspi_ram", "full", None),
-        ("rt116x", "semc_sdram", "simplified", None),
-        ("rt116x", "semc_sdram", "full", None),
-        ("rt116x", "flexspi_ram", "simplified", 0),
-        ("rt116x", "flexspi_ram", "simplified", 1),
-        ("rt116x", "flexspi_ram", "full", None),
+        ("mimxrt1176", "semc_sdram", "simplified", None),
+        ("mimxrt1176", "semc_sdram", "full", None),
+        ("mimxrt1176", "flexspi_ram", "simplified", 0),
+        ("mimxrt1176", "flexspi_ram", "simplified", 1),
+        ("mimxrt1176", "flexspi_ram", "full", None),
+        ("mimxrt1166", "semc_sdram", "simplified", None),
+        ("mimxrt1166", "semc_sdram", "full", None),
+        ("mimxrt1166", "flexspi_ram", "simplified", 0),
+        ("mimxrt1166", "flexspi_ram", "simplified", 1),
+        ("mimxrt1166", "flexspi_ram", "full", None),
     ],
 )
 def test_nxpimage_xmcd_parse_cli(
@@ -96,7 +103,7 @@ def test_nxpimage_xmcd_parse_cli(
 
 @pytest.mark.parametrize(
     "family",
-    ["rt117x", "rt116x", "rt118x"],
+    ["mimxrt1176", "mimxrt1166", "mimxrt1189"],
 )
 def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, family):
     templates_folder = os.path.join(data_dir, "xmcd", family, "templates")
@@ -107,7 +114,7 @@ def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
     for mem_type in mem_types:
         config_types = XMCD.get_supported_configuration_types(family, mem_type)
         for config_type in config_types:
-            template_name = f"xmcd_{family}_{mem_type.label}_{config_type}.yaml"
+            template_name = f"xmcd_{family}_{mem_type.label}_{config_type.label}.yaml"
             new_template_path = os.path.join(tmpdir, template_name)
             assert os.path.isfile(new_template_path)
             with open(new_template_path) as f:
@@ -132,7 +139,7 @@ def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
     file_base_name = f"{mem_type}_{config_type}"
     if option is not None:
         file_base_name += f"_{option}"
-    config = os.path.join(data_dir, "xmcd", "rt116x", f"{file_base_name}.yaml")
+    config = os.path.join(data_dir, "xmcd", "mimxrt1166", f"{file_base_name}.yaml")
     mandatory_fields = ["family", "mem_type", "config_type", "xmcd_settings"]
     # Check mandatory fields
     for mandatory_field in mandatory_fields:
@@ -162,3 +169,83 @@ def test_nxpimage_supported_mem_types():
     assert len(mem_types) == 2
     mem_types[0] == MemoryType.FLEXSPI_RAM
     mem_types[0] == MemoryType.SEMC_SDRAM
+
+
+def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir):
+    family = "mimxrt1166"
+    caplog.set_level(100_000)
+    with use_working_directory(data_dir):
+        config_file = os.path.join(data_dir, "xmcd", family, "semc_sdram_simplified.yaml")
+        # Test Valid
+        config = load_configuration(config_file)
+        xmcd = XMCD.load_from_config(config)
+        bin_path = os.path.join(tmpdir, f"xmcd.bin")
+        write_file(xmcd.export(), bin_path, mode="wb")
+
+        cmd = [
+            "bootable-image",
+            "xmcd",
+            "verify",
+            "-f",
+            family,
+            "-b",
+            bin_path,
+        ]
+        result = cli_runner.invoke(nxpimage.main, cmd)
+        assert "XMCD(Succeeded)" in result.output
+        # Test Invalid
+        config = load_configuration(config_file)
+        config["xmcd_settings"]["header"]["bitfields"]["tag"] = 14
+        xmcd = XMCD.load_from_config(config)
+        write_file(xmcd.export(), bin_path, mode="wb")
+        result = cli_runner.invoke(nxpimage.main, cmd)
+        assert "XMCD(Error)" in result.output
+        assert "Tag(Error): Does not match the tag 12" in result.output
+
+
+@pytest.mark.parametrize(
+    "mem_type,config_type,expected_crc",
+    [
+        ("semc_sdram", "simplified", "bc333806"),
+        ("semc_sdram", "full", "762a8d08"),
+        ("flexspi_ram", "full", "fb45c9eb"),
+        ("flexspi_ram", "simplified_0", "ee57b489"),
+        ("flexspi_ram", "simplified_1", "20fa163a"),
+    ],
+)
+def test_nxpimage_xmcd_crc(data_dir, mem_type, config_type, expected_crc):
+    family = "mimxrt1176"
+    data_folder = os.path.join(data_dir, "xmcd", family)
+    bin_path = os.path.join(data_folder, f"{mem_type}_{config_type}.bin")
+    xmcd = XMCD.parse(load_binary(bin_path), family=family)
+    assert xmcd.crc == bytes.fromhex(expected_crc)
+
+
+@pytest.mark.parametrize(
+    "family,crc_sum_fuse_id",
+    [("mimxrt1166", 73), ("mimxrt1176", 73), ("mimxrt1189", 32)],
+)
+def test_nxpimage_xmcd_crc_fuses_script(
+    cli_runner: CliRunner, tmpdir, data_dir, family: str, crc_sum_fuse_id
+):
+    # we take any XMCD binary as there are no differences between families
+    binary_path = os.path.join(data_dir, "xmcd", "mimxrt1176", "semc_sdram_simplified.bin")
+    fuses_script = os.path.join(tmpdir, "fuses.txt")
+    cmd = [
+        "bootable-image",
+        "xmcd",
+        "crc-fuses-script",
+        "-b",
+        binary_path,
+        "-f",
+        family,
+        "-o",
+        fuses_script,
+    ]
+    result = cli_runner.invoke(nxpimage.main, cmd)
+    assert "Created fuses script" in result.output
+    content = load_file(fuses_script, mode="r")
+    assert "blhost XMCD CRC fuses programming script" in content
+    assert f"Family: {family} Revision: latest" in content
+    assert f"WARNING! Partially set register, check all bitfields before writing" in content
+    assert f"efuse-program-once {crc_sum_fuse_id} 0xBC333806" in content

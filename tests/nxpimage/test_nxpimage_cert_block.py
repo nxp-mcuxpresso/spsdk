@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Test Certification block part of nxpimage app."""
 import json
 import os
-from typing import Tuple
 
 from spsdk.apps import nxpimage
 from spsdk.utils.misc import load_configuration
@@ -17,7 +16,7 @@ from tests.cli_runner import CliRunner
 
 def process_config_file(
     config_path: str, destination: str, config_member: str
-) -> Tuple[str, str, str]:
+) -> tuple[str, str, str]:
     config_data = load_configuration(config_path)
     for key in config_data:
         if isinstance(config_data[key], str):

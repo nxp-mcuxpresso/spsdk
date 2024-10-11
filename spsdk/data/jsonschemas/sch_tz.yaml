@@ -1,23 +1,6 @@
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-tz_family_rev:
-  type: object
-  required: [family]
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      enum: []
-      template_value: lpc55s6x
-
-    revision:
-      type: string
-      title: Chip silicon revision
-      description: If needed this could be used to specify silicon revision of device.
-      template_value: a1
 
 tz:
   type: object

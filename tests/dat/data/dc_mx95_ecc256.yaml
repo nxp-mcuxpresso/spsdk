@@ -1,0 +1,41 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =================================  Debug Credential file template for mx95 family.  ==================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
+# default.
+# Possible options: <mx95>
+family: mx95
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon
+revision: latest
+# ======================================================================================================================
+#                                             == Debug Credential Content ==
+# ======================================================================================================================
+# -------------------------------------------===== SoC Usage [Required] =====-------------------------------------------
+# Description: A CC (constraint) value that is a bit mask, and whose bits are used in an SoCC-specific manner. These
+# bits are typically used for controlling which debug domains are accessed via the authentication protocol, but device-
+# specific debug options can be managed in this way also.
+cc_socu: '0x0FFF'
+# ======================================================================================================================
+#                                   == Configuration of AHAB Container Certificate ==
+#                                           Certificate container definition."
+# ======================================================================================================================
+# ---------------------------------------------===== UUID [Optional] =====----------------------------------------------
+# Description: (Optional) 128-bit unique identifier
+uuid: '0x00001111aaaabbbb22223333ccccdddd'
+# -----------------------------------------===== Fuse version [Optional] =====------------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this container.
+fuse_version: 0
+# -----------------------------------===== Certificate public key 0 [Required] =====------------------------------------
+# Description: Path to Public key 0 file.
+public_key_0: ../../_data/keys/ecc256/dck_ecc256.pub
+# ---------------------------===== SRK container signing key 0 [Conditionally required] =====---------------------------
+# Description: Private key 0 used for sign the certificate container.
+signing_key_0: ../../_data/keys/ecc256/srk0_ecc256.pem
+

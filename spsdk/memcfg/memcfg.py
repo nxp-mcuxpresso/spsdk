@@ -10,11 +10,12 @@
 
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import (
     DatabaseManager,
@@ -26,16 +27,38 @@ from spsdk.utils.database import (
 )
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Memory:
+    """Memory dataclass."""
+
+    name: str
+    interface: str
+    manufacturer: str
+    peripheral: str
+    option_words: list = field(default_factory=list)
+    tested: bool = False
+
+    def get_option_words_string(self) -> str:
+        """Get option words in string format.
+
+        :return: Option words in string
+        """
+        option_words_str = f"Opt0: 0x{self.option_words[0]:08X}"
+        for ow_i, ow in enumerate(self.option_words[1:]):
+            option_words_str += f", Opt{ow_i+1}: 0x{ow:08X}"
+        return option_words_str
 
 
 class MemoryConfig(BaseClass):
     """General memory configuration class."""
 
     # Supported peripherals and their region numbers
-    PERIPHERALS: List[str] = list(
+    PERIPHERALS: list[str] = list(
         DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"].keys()
     )
     SUPPORTS_FCB_CREATION = [9]
@@ -93,9 +116,9 @@ class MemoryConfig(BaseClass):
         return ret
 
     @property
-    def option_words(self) -> List[int]:
+    def option_words(self) -> list[int]:
         """Get option words."""
-        ret: List[int] = []
+        ret: list[int] = []
         count_to_export = self.option_words_count
         for i, reg in enumerate(self.regs.get_registers()):
             if i >= count_to_export:
@@ -124,7 +147,7 @@ class MemoryConfig(BaseClass):
             return 1
         raise SPSDKValueError("Unsupported rule to determine the count of Option words")
 
-    def peripheral_instances(self, peripheral: Optional[str] = None) -> List[int]:
+    def peripheral_instances(self, peripheral: Optional[str] = None) -> list[int]:
         """Get peripheral instances."""
         return self.db.get_list(
             DatabaseManager.MEMCFG,
@@ -142,24 +165,22 @@ class MemoryConfig(BaseClass):
             )
         )
 
-    def get_validation_schemas(self, peripheral: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_validation_schemas(self, peripheral: Optional[str] = None) -> list[dict[str, Any]]:
         """Create the validation schema for one peripheral.
 
         :param peripheral: External memory peripheral.
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.MEMCFG)
+        sch_family = get_schema_file("general")["family"]
         peripheral_loc = self.get_peripheral(peripheral)
         if peripheral_loc not in self.get_supported_peripherals(self.family):
             raise SPSDKValueError(
                 f"The {peripheral_loc} peripheral is not supported by {self.family}"
             )
-
-        sch_cfg["base"]["properties"]["family"]["template_value"] = self.family
-        sch_cfg["base"]["properties"]["revision"]["template_value"] = self.revision
-        sch_cfg["base"]["properties"]["revision"]["enum"] = get_device(
-            self.family
-        ).revisions.revision_names(True)
+        update_validation_schema_family(
+            sch_family["properties"], self.get_supported_families(), self.family
+        )
         sch_cfg["base"]["properties"]["peripheral"]["template_value"] = peripheral_loc
         sch_cfg["base"]["properties"]["peripheral"]["enum"] = self.get_supported_peripherals(
             self.family
@@ -168,7 +189,7 @@ class MemoryConfig(BaseClass):
         sch_cfg["settings"]["properties"]["settings"][
             "properties"
         ] = self.regs.get_validation_schema()["properties"]
-        return [sch_cfg["base"], sch_cfg["settings"]]
+        return [sch_family, sch_cfg["base"], sch_cfg["settings"]]
 
     @classmethod
     def parse(  # type: ignore# type: ignore # pylint: disable=arguments-differ
@@ -193,7 +214,7 @@ class MemoryConfig(BaseClass):
         return ret
 
     @staticmethod
-    def option_words_to_bytes(option_words: List[int]) -> bytes:
+    def option_words_to_bytes(option_words: list[int]) -> bytes:
         """Convert option words to bytes.
 
         :param option_words: Option words list
@@ -208,12 +229,12 @@ class MemoryConfig(BaseClass):
         """Export option words to bytes."""
         return self.regs.export()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get class configuration.
 
         :return: Dictionary with configuration of the class.
         """
-        ret: Dict[str, Any] = {}
+        ret: dict[str, Any] = {}
         ret["family"] = self.family
         ret["revision"] = self.revision
         ret["peripheral"] = self.peripheral
@@ -230,7 +251,7 @@ class MemoryConfig(BaseClass):
         return ret
 
     @staticmethod
-    def get_supported_peripherals(family: str) -> List[str]:
+    def get_supported_peripherals(family: str) -> list[str]:
         """Get list of supported peripherals by the family."""
         ret = []
         for peripheral, settings in (
@@ -241,7 +262,7 @@ class MemoryConfig(BaseClass):
         return ret
 
     @staticmethod
-    def get_peripheral_instances(family: str, peripheral: str) -> List[int]:
+    def get_peripheral_instances(family: str, peripheral: str) -> list[int]:
         """Get peripheral instances."""
         return get_db(family).get_list(
             DatabaseManager.MEMCFG,
@@ -250,16 +271,20 @@ class MemoryConfig(BaseClass):
         )
 
     @staticmethod
-    def get_validation_schemas_base() -> List[Dict[str, Any]]:
+    def get_validation_schemas_base() -> list[dict[str, Any]]:
         """Create the validation schema for MemCfg class bases.
 
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.MEMCFG)
-        return [sch_cfg["base"]]
+        sch_family = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch_family["properties"], MemoryConfig.get_supported_families()
+        )
+        return [sch_family, sch_cfg["base"]]
 
     @staticmethod
-    def get_option_words_string(option_words: List[int]) -> str:
+    def get_option_words_string(option_words: list[int]) -> str:
         """Get option words in string format.
 
         :param option_words: List of option words.
@@ -286,7 +311,7 @@ class MemoryConfig(BaseClass):
         ).get_config(cfg)
 
     @classmethod
-    def load_config(cls, config: Dict[str, Any]) -> Self:
+    def load_config(cls, config: dict[str, Any]) -> Self:
         """Load Yaml configuration and decode.
 
         :param config: Memory configuration dictionary.
@@ -313,13 +338,15 @@ class MemoryConfig(BaseClass):
         self,
         instance: Optional[int] = None,
         fcb_output_name: Optional[str] = None,
+        secure_addresses: bool = False,
     ) -> str:
         """Create BLHOST script that configure memory.
 
         Optionally the script can force create of FCB on chip and read back it
 
         :param instance: Optional peripheral instance
-        :param fcb_output_name: _description_, defaults to False
+        :param fcb_output_name: The name of generated FCB block file, defaults to False
+        :param secure_addresses: When defined the script will use secure addresses instead of normal.
         :return: BLHOST batch file that configure the external memory
         """
         comm_address = self.db.get_int(DatabaseManager.COMM_BUFFER, "address")
@@ -376,15 +403,19 @@ class MemoryConfig(BaseClass):
                 return ret
             dev = get_device(self.family)
             mem_block = self.peripheral.split("_")[0]
-            if instance is not None:
-                mem_block += str(instance)
-            mem = dev.info.memory_map.get(mem_block)
-            if mem is None:
+            try:
+                mem = dev.info.memory_map.get_memory(
+                    block_name=mem_block,
+                    instance=instance,
+                    secure=secure_addresses if secure_addresses else None,
+                )
+
+            except SPSDKError as exc:
                 raise SPSDKValueError(
                     f"Cannot create BLHOST script with FCB generation because of missing memory block"
                     f" '{mem_block}' description"
-                )
-            base_address = mem["base_addr"]
+                ) from exc
+
             fcb_offset = self.db.get_int(
                 DatabaseManager.BOOTABLE_IMAGE, ["mem_types", self.peripheral, "segments", "fcb"]
             )
@@ -394,10 +425,10 @@ class MemoryConfig(BaseClass):
                 " cumulative write!"
             )
             ret += "\n# Script to erase FCB location, create FCB and read back a FCB block:\n"
-            ret += f"flash-erase-region 0x{base_address:08X} 0x1000\n"
+            ret += f"flash-erase-region 0x{mem.base_address:08X} 0x1000\n"
             ret += f"fill-memory 0x{comm_address:08X} 4 0xF000000F\n"
             ret += f"configure-memory {mem_region} 0x{comm_address:08X}\n"
-            ret += f"read-memory 0x{base_address+fcb_offset:08X} 0x200 {fcb_output_name}\n"
+            ret += f"read-memory 0x{mem.base_address+fcb_offset:08X} 0x200 {fcb_output_name}\n"
 
         return ret
 
@@ -413,57 +444,47 @@ class MemoryConfig(BaseClass):
         )
 
     @staticmethod
-    def get_known_option_words(
-        family: str,
-        peripheral: Optional[str] = None,
-    ) -> Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]]:
-        """Get dictionary with all known supported memory configuration.
-
-        The organization is following:
-
-        | {peripheral}:
-        |     {manufacturer}:
-        |         {chip_name}:
-        |             {interface}:  List of option words (ordered)
+    def get_known_memories(family: str, peripheral: Optional[str] = None) -> list[Memory]:
+        """Get all known supported memory configurations.
 
         :param family: The chip family
         :param peripheral: Restrict results just for this one peripheral if defined
-        :returns: The mentioned dictionary.
+        :returns: List of memories
         """
-        flash_chips = DatabaseManager().db.load_db_cfg_file(
-            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
-        )["flash_chips"]
-        ret: Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]] = {}
-        peripherals = [peripheral] if peripheral else MemoryConfig.PERIPHERALS
-        for p in peripherals:
-            if MemoryConfig.get_peripheral_cnt(family, p) and p in flash_chips:
-                ret[p] = flash_chips[p]
-        return ret
+        memories = MemoryConfig.get_all_known_memories(peripheral)
+        return [
+            memory
+            for memory in memories
+            if MemoryConfig.get_peripheral_cnt(family, memory.peripheral)
+        ]
 
     @staticmethod
-    def get_all_known_option_words(
-        peripheral: Optional[str] = None,
-    ) -> Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]]:
-        """Get dictionary with all known supported memory configuration.
-
-        The organization is following:
-
-        | {peripheral}:
-        |     {manufacturer}:
-        |         {chip_name}:
-        |             {interface}: List of option words (ordered)
+    def get_all_known_memories(peripheral: Optional[str] = None) -> list[Memory]:
+        """Get all known supported memory configurations.
 
         :param peripheral: Restrict results just for this one peripheral if defined
-        :returns: The mentioned dictionary.
+        :returns: List of memories
         """
-        flash_chips = DatabaseManager().db.load_db_cfg_file(
+        flash_chips: dict[str, dict[str, dict[str, dict]]] = DatabaseManager().db.load_db_cfg_file(
             get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
         )["flash_chips"]
-        ret: Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]] = {}
+        ret = []
         peripherals = [peripheral] if peripheral else MemoryConfig.PERIPHERALS
         for p in peripherals:
-            if p in flash_chips:
-                ret[p] = flash_chips[p]
+            if p not in flash_chips:
+                continue
+            for man_name, chip_names in flash_chips[p].items():
+                for chip_name, interfaces in chip_names.items():
+                    for iface_name, iface_cfg in interfaces.items():
+                        memory = Memory(
+                            peripheral=p,
+                            manufacturer=man_name,
+                            interface=iface_name,
+                            name=chip_name,
+                            option_words=iface_cfg.get("option_words"),
+                            tested=iface_cfg.get("tested", False),
+                        )
+                        ret.append(memory)
         return ret
 
     @staticmethod
@@ -473,8 +494,8 @@ class MemoryConfig(BaseClass):
         :param chip_name: Chip name to look for
         :returns: The peripheral name.
         """
-        flash_chips: Dict[
-            str, Dict[str, Dict[str, Dict[str, List[int]]]]
+        flash_chips: dict[
+            str, dict[str, dict[str, dict[str, list[int]]]]
         ] = DatabaseManager().db.load_db_cfg_file(
             get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
         )[
@@ -487,11 +508,11 @@ class MemoryConfig(BaseClass):
         raise SPSDKValueError(f"Unknown flash memory chip name: {chip_name}")
 
     @staticmethod
-    def get_known_chip_option_words(
+    def get_known_chip_memory(
         peripheral: str,
         chip_name: str,
         interface: str,
-    ) -> List[int]:
+    ) -> Memory:
         """Get option words for one chip from database.
 
         :param peripheral: Peripheral used to communicate with chip
@@ -499,21 +520,22 @@ class MemoryConfig(BaseClass):
         :param interface: Chip communication interface
         :returns: The List of option words.
         """
-        flash_chips = DatabaseManager().db.load_db_cfg_file(
-            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
-        )["flash_chips"]
-        man_db: Dict[str, Dict[str, Dict[str, List[int]]]] = flash_chips[peripheral]
-        for _, chips in man_db.items():
-            if chip_name in chips:
-                interfaces: Dict[str, List[int]] = chips[chip_name]
-                if interface in interfaces:
-                    return interfaces[interface]
-        raise SPSDKValueError(
-            f"Unknown flash memory chip name: {chip_name} or interface {interface}"
-        )
+        all_memories = MemoryConfig.get_all_known_memories(peripheral)
+        try:
+            return next(
+                (
+                    memory
+                    for memory in all_memories
+                    if memory.name == chip_name and memory.interface == interface
+                )
+            )
+        except StopIteration as e:
+            raise SPSDKValueError(
+                f"Unknown flash memory chip name: {chip_name} or interface {interface}"
+            ) from e
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get the list of supported families.
 
         :return: List of family names that support memory configuration.

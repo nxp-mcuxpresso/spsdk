@@ -9,7 +9,7 @@ from spsdk.crypto.signature_provider import SignatureProvider
 
 
 class TestSignatureProvider(SignatureProvider):
-    sp_type = "test"
+    identifier = "test"
 
     def __init__(self, param: str, **kwargs) -> None:
         self.param = int(param)

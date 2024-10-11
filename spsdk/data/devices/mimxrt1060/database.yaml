@@ -1,0 +1,58 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mimxrt1064
+
+# General MCU information
+info:
+  memory_map:
+    itcm:
+      start_int: 0x0
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+      warning_ranges:
+        - start_int: 0x20000
+          size_int: 0x60000
+          warning_msg: RAM above 0x20000 is not initialized by default
+    dtcm:
+      start_int: 0x20000000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+      warning_ranges:
+        - start_int: 0x20020000
+          size_int: 0x60000
+          warning_msg: RAM above 0x20020000 is not initialized by default
+    ocram:
+      start_int: 0x20200000
+      size_int: 0x100000
+      external: false
+      non_xip_type: int_ram
+      warning_ranges:
+        - start_int: 0x202C0000
+          size_int: 0x40000
+          warning_msg: RAM above 0x202C0000 is not initialized by default
+    flexspi1:
+      start_int: 0x30000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: none
+    flexspi2:
+      start_int: 0x60000000
+      size_int: 0x1f80_0000
+      external: true
+      non_xip_type: none
+    sdram:
+      start_int: 0x80000000
+      size_int: 0x60000000
+      external: true
+      non_xip_type: ext_ram_semc
+
+features:
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [1, 2]

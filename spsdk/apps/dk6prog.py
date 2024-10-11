@@ -8,7 +8,6 @@
 import logging
 import os
 import sys
-from typing import Dict, List
 
 import click
 import colorama
@@ -47,7 +46,7 @@ DEFAULT_BAUDRATE = 115200
 logger = logging.getLogger(__name__)
 
 
-def print_memory_table(memories: Dict[int, DK6Memory]) -> str:
+def print_memory_table(memories: dict[int, DK6Memory]) -> str:
     """Prints the List of Interfaces to nice colored table."""
     if len(memories) == 0:
         return (
@@ -101,7 +100,7 @@ def parse_memory_id(memory_id: str) -> MemoryId:
         return MemoryId.from_tag(MEMORY_IDS.get(memory_id.lower(), 0))
 
 
-def _split_string(string: str, length: int) -> List:
+def _split_string(string: str, length: int) -> list:
     """Split the string into chunks of same length."""
     return [string[i : i + length] for i in range(0, len(string), length)]
 
@@ -246,6 +245,7 @@ def isp(ctx: click.Context) -> None:
     if not device_id:
         raise SPSDKError("You have to specify DEVICE ID")
     interface.go_to_isp(device_id)
+    click.echo("Device switched to ISP mode")
 
 
 @main.command()
@@ -394,7 +394,7 @@ def write(
             relative=relative,
         )
 
-    click.echo(f"Writen {length} bytes to memory ID {memory_id} at address {hex(address)}")
+    click.echo(f"Written {length} bytes to memory ID {memory_id} at address {hex(address)}")
 
     dk6.reset()
 

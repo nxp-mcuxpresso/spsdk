@@ -1,5 +1,5 @@
 
-expected_output.bin was generated from elkftosb.exe using:
+expected_output.bin was generated from elftosb.exe using:
 
 elftosb.exe -V -d -f rt5xx -J workspace/image_config/rt5xxMulticoreExample.json
 

@@ -8,7 +8,6 @@
 import os
 from binascii import unhexlify
 from datetime import datetime, timezone
-from typing import List
 
 import pytest
 
@@ -80,7 +79,7 @@ def gen_cert_block(data_dir, sign_bits) -> CertBlockV1:
 
 def get_boot_sections(
     data_dir: str, otfad: bool, sect_cont: SectionsContent, load_addr: int
-) -> List[BootSectionV2]:
+) -> list[BootSectionV2]:
     """Create list of boot sections for SB 2.x file
 
     :param data_dir: absolute path to load boot image

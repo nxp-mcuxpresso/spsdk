@@ -33,7 +33,7 @@ def test_nxpimage_get_template_create_sb31(cli_runner: CliRunner, tmpdir, device
 
 @pytest.mark.parametrize(
     "device",
-    [("rt118x"), ("mx93")],
+    [("mimxrt1189"), ("mx93")],
 )
 def test_nxpimage_get_template_ahab(cli_runner: CliRunner, tmpdir, device):
     file_name = os.path.join(tmpdir, "template.yml")

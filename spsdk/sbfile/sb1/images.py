@@ -8,7 +8,7 @@
 """Secure Boot Image Class."""
 
 from datetime import datetime
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 
 from typing_extensions import Self
 
@@ -67,8 +67,8 @@ class SecureBootV1(BaseClass):
             digest=digest,
             timestamp=timestamp,
         )
-        self._sections_hdr_table: List[SectionHeaderItemV1] = []
-        self._sections: List[BootSectionV1] = []
+        self._sections_hdr_table: list[SectionHeaderItemV1] = []
+        self._sections: list[BootSectionV1] = []
         self._signature = None
 
     @property
@@ -150,7 +150,7 @@ class SecureBootV1(BaseClass):
             + len(self._sections) * SectionHeaderItemV1.SIZE
             + BootSectionHeaderV1.SIZE
         )
-        new_hdr_table: List[SectionHeaderItemV1] = []
+        new_hdr_table: list[SectionHeaderItemV1] = []
         for sect in self._sections:
             sect_blcks = SecBootBlckSize.to_num_blocks(sect.size - BootSectionHeaderV1.SIZE)
             hdr = SectionHeaderItemV1(sect.section_id, ofs_blocks, sect_blcks, sect.flags)

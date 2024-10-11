@@ -32,7 +32,7 @@ def test_nxpimage_convert_hexbin(
 ):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/hexbin/{in_file}"
-        correct_ouput = f"{data_dir}/utils/convert/hexbin/{out_file}"
+        correct_output = f"{data_dir}/utils/convert/hexbin/{out_file}"
         output = f"{tmpdir}/{out_file}"
         cmd = ["utils", "convert", command, "-i", input_file]
         if reverse:
@@ -40,7 +40,7 @@ def test_nxpimage_convert_hexbin(
         cmd.extend(["-o", output])
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(output)
-        assert filecmp.cmp(output, correct_ouput, shallow=False)
+        assert filecmp.cmp(output, correct_output, shallow=False)
 
 
 @pytest.mark.parametrize("in_file", [("inc_16.bin"), ("inc_16_invalid.hex")])

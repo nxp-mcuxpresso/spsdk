@@ -15,7 +15,6 @@ import sys
 import click
 
 from spsdk.apps.blhost_helper import (
-    PROPERTIES_OVERRIDE,
     OemGenMasterShareHelp,
     OemSetMasterShareHelp,
     display_output,
@@ -27,6 +26,7 @@ from spsdk.apps.blhost_helper import (
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    SpsdkClickGroup,
     spsdk_apps_common_options,
     spsdk_family_option,
     spsdk_mboot_interface,
@@ -44,6 +44,7 @@ from spsdk.apps.utils.utils import (
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
 from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.utils.database import DatabaseManager, get_families
 from spsdk.utils.misc import Endianness, load_hex_string
 
 
@@ -608,7 +609,9 @@ def load_image(ctx: click.Context, boot_file: click.File) -> None:
 @main.command(no_args_is_help=True)
 @click.argument("property_tag", type=str, required=True)
 @click.argument("index", type=INT(), default="0")
-@spsdk_family_option(families=list(PROPERTIES_OVERRIDE.keys()), required=False)
+@spsdk_family_option(
+    families=get_families(DatabaseManager.BLHOST, "overridden_properties"), required=False
+)
 @click.pass_context
 def get_property(
     ctx: click.Context,
@@ -669,11 +672,11 @@ def get_property(
     \b
     Note: Not all the properties are available for all devices.
     """
-    property_tag_enum = parse_property_tag(property_tag, family)
+    property_tag_int = parse_property_tag(property_tag, family)
     with McuBoot(ctx.obj["interface"]) as mboot:
-        response = mboot.get_property(property_tag_enum, index=index)
+        response = mboot.get_property(property_tag_int, index=index)
         property_text = (
-            str(parse_property_value(property_tag_enum.tag, response, None, family))
+            str(parse_property_value(property_tag_int, response, None, family))
             if response
             else None
         )
@@ -685,7 +688,9 @@ def get_property(
 @main.command(no_args_is_help=True)
 @click.argument("property_tag", type=str, required=True)
 @click.argument("value", type=INT(), required=True)
-@spsdk_family_option(families=list(PROPERTIES_OVERRIDE.keys()), required=False)
+@spsdk_family_option(
+    families=get_families(DatabaseManager.BLHOST, "overridden_properties"), required=False
+)
 @click.pass_context
 def set_property(
     ctx: click.Context,
@@ -923,7 +928,7 @@ def generate_key_blob(
         )
 
 
-@main.group()
+@main.group(cls=SpsdkClickGroup)
 @click.pass_context
 def key_provisioning(ctx: click.Context) -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to key provisioning."""
@@ -1123,7 +1128,7 @@ def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
         )
 
 
-@main.group()
+@main.group(cls=SpsdkClickGroup)
 @click.pass_context
 def trust_provisioning(ctx: click.Context) -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to trust provisioning."""
@@ -1704,7 +1709,7 @@ def dsc_hsm_enc_sign(
     \b
     BLOCK_DATA_INPUT_ADDR - Address of data buffer to be signed
     BLOCK_DATA_INPUT_SIZE - Size of data buffer in bytes
-    SIGNATURE_OUTPUT_ADDR - Addres to output signature data
+    SIGNATURE_OUTPUT_ADDR - Address to output signature data
     SIGNATURE_OUTPUT_SIZE - Size of the output signature data in bytes
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
@@ -1717,7 +1722,44 @@ def dsc_hsm_enc_sign(
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-@main.command(no_args_is_help=True)
+# @main.command(no_args_is_help=True)
+@trust_provisioning.command(name="oem_get_cust_dice_response")
+@click.argument("challenge_addr", type=INT(), required=True)
+@click.argument("challenge_size", type=INT(), required=True)
+@click.argument("response_addr", type=INT(), required=True)
+@click.argument("response_size", type=INT(), required=True)
+@click.pass_context
+def oem_get_cust_dice_response(
+    ctx: click.Context,
+    challenge_addr: int,
+    challenge_size: int,
+    response_addr: int,
+    response_size: int,
+) -> None:
+    """Creates DICE response for given challenge.
+
+    \b
+    CHALLENGE_ADDR - The input buffer address where the challenge is located
+    CHALLENGE_SIZE - The byte count of the challenge
+    RESPONSE_ADDR  - The output buffer address where ROM writes DICE response
+    RESPONSE_SIZE  - The byte count of the response
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.tp_oem_get_cust_dice_response(
+            challenge_addr, challenge_size, response_addr, response_size
+        )
+    extra_output = ""
+    if response:
+        if mboot.status_code == StatusCode.SUCCESS:
+            extra_output = f"Response size: {response} ({hex(response)})\n"
+        else:
+            extra_output = "Output buffer is smaller than the minimum requested size"
+    display_output(
+        [response], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], extra_output
+    )
+
+
+@main.command()
 @click.argument("life-cycle", metavar="LIFE CYCLE", type=INT(), required=True)
 @click.pass_context
 def update_life_cycle(ctx: click.Context, life_cycle: int) -> None:
@@ -1807,6 +1849,21 @@ def set_wrap_data(ctx: click.Context, address: int, control: int, stage: int) ->
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.tp_set_wrapped_data(address=address, control=control, stage=stage)
         display_output(None, mboot.status_code, use_json=ctx.obj["use_json"])
+
+
+@trust_provisioning.command(name="el2go_close_device", no_args_is_help=True)
+@click.argument("address", type=INT())
+@click.option("-d", "--dry-run", is_flag=True, default=False, help="Dry run mode")
+@click.pass_context
+def el2go_close_device(ctx: click.Context, address: int, dry_run: bool) -> None:
+    """Close the device using EdgeLock2Go TP Firmware.
+
+    \b
+    ADDRESS - Address of the Secure Objects in target to provision
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.el2go_close_device(address=address, dry_run=dry_run)
+        display_output([response], mboot.status_code, use_json=ctx.obj["use_json"])
 
 
 @catch_spsdk_error

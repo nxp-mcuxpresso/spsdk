@@ -20,28 +20,28 @@ info:
 features:
   # ======== Feature 1 ========
   feature1:
-    atrribute_int1: 1
-    atrribute_str1: Database text
-    atrribute_boolT: True
-    atrribute_boolF: False
-    atrribute_dict:
+    attribute_int1: 1
+    attribute_str1: Database text
+    attribute_boolT: True
+    attribute_boolF: False
+    attribute_dict:
       dict_attribute_int: 1
       dict_attribute_str: Dict text
-    atrribute_list:
+    attribute_list:
       - 1
       - 2
       - 3
 
   # ======== Feature 2 ========
   feature2:
-    atrribute_int1: 2
-    atrribute_str1: Database text feature 2
-    atrribute_boolT: True
-    atrribute_boolF: False
-    atrribute_dict:
+    attribute_int1: 2
+    attribute_str1: Database text feature 2
+    attribute_boolT: True
+    attribute_boolF: False
+    attribute_dict:
       dict_attribute_int: 2
       dict_attribute_str: Dict text feature 2
-    atrribute_list:
+    attribute_list:
       - Hello
       - GoodBye
       - Good morning

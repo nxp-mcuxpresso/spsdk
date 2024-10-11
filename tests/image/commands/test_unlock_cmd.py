@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,11 @@ from spsdk.image.commands import (
     CmdNop,
     CmdUnlock,
     CmdUnlockCAAM,
+    UnlockCAAMFeatures,
     CmdUnlockOCOTP,
+    UnlockOCOTPFeatures,
     CmdUnlockSNVS,
+    UnlockSNVSFeatures,
     EnumEngine,
 )
 from spsdk.image.header import CmdHeader
@@ -55,9 +58,7 @@ def test_unlock_cmd_info():
 
 def test_unlock_snvs():
     """Test Unlock SNVS command"""
-    cmd = CmdUnlockSNVS(
-        CmdUnlockSNVS.FEATURE_UNLOCK_LP_SWR | CmdUnlockSNVS.FEATURE_UNLOCK_ZMK_WRITE
-    )
+    cmd = CmdUnlockSNVS(UnlockSNVSFeatures.LP_SWR.tag | UnlockSNVSFeatures.ZMK_WRITE.tag)
     assert cmd.engine == EnumEngine.SNVS
     assert cmd.size == CmdHeader.SIZE + 4
     assert cmd.unlock_lp_swr
@@ -75,7 +76,7 @@ def test_unlock_snvs():
 
 
 def test_unlock_caam():
-    cmd = CmdUnlockCAAM(features=CmdUnlockCAAM.FEATURE_UNLOCK_MID)
+    cmd = CmdUnlockCAAM(features=UnlockCAAMFeatures.MID)
     assert cmd.features == 1
     assert cmd.unlock_mid
     assert not cmd.unlock_mfg
@@ -92,9 +93,9 @@ def test_unlock_caam():
 
 def test_unlock_ocotp():
     cmd = CmdUnlockOCOTP(
-        features=CmdUnlockOCOTP.FEATURE_UNLOCK_FLD_RTN
-        | CmdUnlockOCOTP.FEATURE_UNLOCK_JTAG
-        | CmdUnlockOCOTP.FEATURE_UNLOCK_SCS,
+        features=UnlockOCOTPFeatures.FIELD_RETURN.tag
+        | UnlockOCOTPFeatures.JTAG.tag
+        | UnlockOCOTPFeatures.SCS.tag,
         uid=0x123456789,
     )
 
@@ -121,12 +122,12 @@ def test_unlock_parse_others():
 
 def test_need_uid():
     positive = [
-        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_FLD_RTN),
-        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_JTAG),
-        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_SCS),
+        CmdUnlock.need_uid(EnumEngine.OCOTP, UnlockOCOTPFeatures.FIELD_RETURN.tag),
+        CmdUnlock.need_uid(EnumEngine.OCOTP, UnlockOCOTPFeatures.JTAG.tag),
+        CmdUnlock.need_uid(EnumEngine.OCOTP, UnlockOCOTPFeatures.SCS.tag),
     ]
     negative = [
-        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_SRK_RVK),
+        CmdUnlock.need_uid(EnumEngine.OCOTP, UnlockOCOTPFeatures.SRK_REVOKE.tag),
         CmdUnlock.need_uid(EnumEngine.CAAM, 0b001),
         CmdUnlock.need_uid(EnumEngine.CAAM, 0b010),
         CmdUnlock.need_uid(EnumEngine.CAAM, 0b100),

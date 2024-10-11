@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -39,7 +39,7 @@ def device(target, config):
     if target == "VIRTUAL":
         interface = VirtualMbootInterface(VirtualDevice(config))
     else:
-        devs = MbootUSBInterface.scan_from_args(target)
+        devs = MbootUSBInterface.scan(target)
         if not devs:
             raise Exception(f"Device {target} not connected")
         interface = devs[0]

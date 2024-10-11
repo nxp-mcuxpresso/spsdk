@@ -1,0 +1,68 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+family: mimx9352
+revision: latest
+# --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
+# Description: Defines which set is used to authenticate the container.
+# Possible options: <none, oem, nxp>
+srk_set: oem
+# ---------------------------------===== Used SRK [Conditionally required] =====----------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# -------------------------------------===== SRK revoke mask [Optional] =====-------------------------------------
+# Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit
+# 1 = revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
+srk_revoke_mask: "0x00"
+# ----------------------------------===== GDET runtime behavior [Optional] =====----------------------------------
+# Description: This option defines runtime behavior of Glitch detector. Not supported by all devices and their ELE
+# firmware.
+#  - disabled:       GDET is disabled after the first OEM container has been authenticated (default behavior)
+#  - enabled_eleapi: Automatically enable GDET during all ELE API calls
+#  - enabled:        Leave GDET enabled
+# Possible options: <disabled, enabled_eleapi, enabled>
+# gdet_runtime_behavior: disabled
+# --------------------------------------===== Fuse version [Optional] =====---------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this
+# container.
+fuse_version: 0
+# ------------------------------------===== Software version [Optional] =====-------------------------------------
+# Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same
+# Fuse version field.
+sw_version: 0
+# -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
+# Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
+# must not have been revoked.
+signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem
+# -----------------------------------===== Signature Provider [Optional] =====------------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'. The
+# signature provider could be used instead of definition of 'signing_key'.
+# signature_provider: type=file;file_path=my_prv_key.pem
+
+# ================================================================================================================
+#                                      == Configuration of AHAB SRK table ==
+# ================================================================================================================
+# ---------------------------------===== SRK Table [Conditionally required] =====---------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # ----------------------------------------===== CA Flag [Optional] =====----------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+  flag_ca: false
+  # ------------------------------===== Super Root Key (SRK) table [Required] =====-------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing
+  # algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
+  # sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096,
+  # dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new
+  # type of AHAB container
+  srk_array:
+    - ../../_data/keys/ecc256/srk0_ecc256.pub
+    - ../../_data/keys/ecc256/srk1_ecc256.pub
+    - ../../_data/keys/ecc256/srk2_ecc256.pub
+    - ../../_data/keys/ecc256/srk3_ecc256.pub
+
+blob: # [Optional], Encryption blob container definition
+  dek_key_size: 128  # [Required], DEK key size; Data Encryption key size. Used for AES CBC-MAC (128/192/256 size); Possible options:[128, 192, 256]
+  dek_key: 000102030405060708090a0b0c0d0e0f # [Required], DEK key; Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted
+  dek_keyblob:
+    004800810110030017292259A92B2842A47C709261B3AFE1742FA0A92009DE9F58BCFB83313CCE75AE64298F8A577082AF147612FFFAE5017846F57B8A3550C0F368219A1BC36F1A # [Required], DEK keyblob; Wrapped Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted
+  key_identifier: 0

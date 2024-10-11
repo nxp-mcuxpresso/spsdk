@@ -11,44 +11,64 @@ import logging
 import re
 from abc import abstractmethod
 from types import TracebackType
-from typing import List, Optional, Tuple, Type, Union
+from typing import Optional, Type, Union
 
 from spsdk.ele.ele_constants import ResponseStatus
 from spsdk.ele.ele_message import EleMessage
 from spsdk.exceptions import SPSDKError, SPSDKLengthError
 from spsdk.mboot.mcuboot import McuBoot
-from spsdk.uboot.uboot import Uboot
+from spsdk.uboot.uboot import UbootFastboot, UbootSerial
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import value_to_bytes
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
+
+
+class EleDevice(SpsdkEnum):
+    """Enum containing supported ELE devices."""
+
+    MBOOT = (0, "mboot", "ELE over mboot")
+    UBOOT_SERIAL = (1, "uboot_serial", "ELE over U-Boot serial console")
+    UBOOT_FASTBOOT = (2, "uboot_fastboot", "ELE over fastboot")
 
 
 class EleMessageHandler:
     """Base class for ELE message handling."""
 
     def __init__(
-        self, device: Union[McuBoot, Uboot], family: str, revision: str = "latest"
+        self,
+        device: Union[McuBoot, UbootSerial, UbootFastboot],
+        family: str,
+        revision: str = "latest",
+        buffer_address: Optional[int] = None,
+        buffer_size: Optional[int] = None,
     ) -> None:
         """Class object initialized.
 
         :param device: Communication interface.
         :param family: Target family name.
         :param revision: Target revision, default is use 'latest' revision.
+        :param comm_buffer_address_override: Override default buffer address for ELE.
+        :param comm_buffer_size_override: Override default buffer size for ELE.
         """
         self.device = device
         self.database = get_db(device=family, revision=revision)
         self.family = family
         self.revision = revision
-        self.comm_buff_addr = self.database.get_int(DatabaseManager.COMM_BUFFER, "address")
-        self.comm_buff_size = self.database.get_int(DatabaseManager.COMM_BUFFER, "size")
+        self.comm_buff_addr = buffer_address or self.database.get_int(
+            DatabaseManager.COMM_BUFFER, "address"
+        )
+        self.comm_buff_size = buffer_size or self.database.get_int(
+            DatabaseManager.COMM_BUFFER, "size"
+        )
         logger.info(
             f"ELE communicator is using {self.comm_buff_size} B size buffer at "
             f"{self.comm_buff_addr:08X} address in {family} target."
         )
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get list of supported target families.
 
         :return: List of supported families.
@@ -56,9 +76,19 @@ class EleMessageHandler:
         return get_families(DatabaseManager.ELE)
 
     @staticmethod
-    def get_ele_device(device: str) -> str:
+    def get_supported_ele_devices() -> list[str]:
+        """Get list of supported target families.
+
+        :return: List of supported families.
+        """
+        return EleDevice.labels()
+
+    @staticmethod
+    def get_ele_device(device: str, revision: str = "latest") -> EleDevice:
         """Get default ELE device from DB."""
-        return get_db(device, "latest").get_str(DatabaseManager.ELE, "ele_device")
+        return EleDevice.from_label(
+            get_db(device, "latest").get_str(DatabaseManager.ELE, "ele_device")
+        )
 
     @abstractmethod
     def send_message(self, msg: EleMessage) -> None:
@@ -89,16 +119,31 @@ class EleMessageHandlerMBoot(EleMessageHandler):
     This class can send the ELE message into target over mBoot and decode the response.
     """
 
-    def __init__(self, device: McuBoot, family: str, revision: str = "latest") -> None:
+    def __init__(
+        self,
+        device: McuBoot,
+        family: str,
+        revision: str = "latest",
+        comm_buffer_address_override: Optional[int] = None,
+        comm_buffer_size_override: Optional[int] = None,
+    ) -> None:
         """Class object initialized.
 
         :param device: mBoot device.
         :param family: Target family name.
         :param revision: Target revision, default is use 'latest' revision.
+        :param comm_buffer_address_override: Override default buffer address for ELE.
+        :param comm_buffer_size_override: Override default buffer size for ELE.
         """
         if not isinstance(device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
-        super().__init__(device, family, revision)
+        super().__init__(
+            device,
+            family,
+            revision,
+            buffer_address=comm_buffer_address_override,
+            buffer_size=comm_buffer_size_override,
+        )
 
     def send_message(self, msg: EleMessage) -> None:
         """Send message and receive response.
@@ -164,19 +209,34 @@ class EleMessageHandlerUBoot(EleMessageHandler):
     This class can send the ELE message into target over UBoot and decode the response.
     """
 
-    def __init__(self, device: Uboot, family: str, revision: str = "latest") -> None:
+    def __init__(
+        self,
+        device: Union[UbootSerial, UbootFastboot],
+        family: str,
+        revision: str = "latest",
+        comm_buffer_address_override: Optional[int] = None,
+        comm_buffer_size_override: Optional[int] = None,
+    ) -> None:
         """Class object initialized.
 
         :param device: UBoot device.
         :param family: Target family name.
         :param revision: Target revision, default is use 'latest' revision.
+        :param comm_buffer_address_override: Override default buffer address for ELE.
+        :param comm_buffer_size_override: Override default buffer size for ELE.
         """
-        if not isinstance(device, Uboot):
+        if not isinstance(device, UbootSerial) and not isinstance(device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")
-        super().__init__(device, family, revision)
+        super().__init__(
+            device,
+            family,
+            revision,
+            buffer_address=comm_buffer_address_override,
+            buffer_size=comm_buffer_size_override,
+        )
 
-    def extract_error_values(self, error_message: str) -> Tuple[int, int, int]:
-        """Extract error values from error_mesage.
+    def extract_error_values(self, error_message: str) -> tuple[int, int, int]:
+        """Extract error values from error_message.
 
         :param error_message: Error message containing ret and response
         :return: abort_code, status and indication
@@ -210,7 +270,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         :raises SPSDKError: Invalid response status detected.
         :raises SPSDKLengthError: Invalid read back length detected.
         """
-        if not isinstance(self.device, Uboot):
+        if not isinstance(self.device, UbootSerial) and not isinstance(self.device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")
         msg.set_buffer_params(self.comm_buff_addr, self.comm_buff_size)
         response = b""
@@ -236,9 +296,10 @@ class EleMessageHandlerUBoot(EleMessageHandler):
                 msg.abort_code, msg.status, msg.indication = self.extract_error_values(output)
             else:
                 # 2. Read back the response
-                stripped_output = re.sub(r"(u-boot)?=> ", "", output.splitlines()[-1])
-                logger.debug(f"Stripped output {stripped_output}")
-                response = value_to_bytes("0x" + stripped_output)
+                output = re.sub(r"(u-boot)?=> ", "", output.splitlines()[-1])
+                output = output[: msg.response_words_count * 8]
+                logger.debug(f"Stripped output {output}")
+                response = value_to_bytes("0x" + output)
         except (SPSDKError, IndexError) as exc:
             raise SPSDKError(f"ELE Communication failed with UBoot: {str(exc)}") from exc
 
@@ -258,7 +319,6 @@ class EleMessageHandlerUBoot(EleMessageHandler):
                 response_data = self.device.read_memory(
                     msg.response_data_address, msg.response_data_size
                 )
-                self.device.read_output()
             except SPSDKError as exc:
                 raise SPSDKError(f"ELE Communication failed with mBoot: {str(exc)}") from exc
 

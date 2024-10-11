@@ -1,9 +1,0 @@
-# Copyright 2023-2024 NXP
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-alias: mc56f818xx
-# just for backwards compatibility
-
-info:
-  use_in_doc: False

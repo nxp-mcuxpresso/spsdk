@@ -10,7 +10,7 @@
 
 import datetime
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from typing_extensions import Self
 
@@ -21,7 +21,7 @@ from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import Endianness, swap_bytes
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class FCB(SegmentBase):
         return fcb
 
     @staticmethod
-    def load_from_config(config: Dict) -> "FCB":
+    def load_from_config(config: dict) -> "FCB":
         """Load configuration file of FCB.
 
         :param config: FCB configuration file.
@@ -119,7 +119,7 @@ class FCB(SegmentBase):
 
         :return: Configuration of FCB Block.
         """
-        config: Dict[str, Any] = {}
+        config: dict[str, Any] = {}
         config["family"] = self.family
         config["revision"] = self.revision
         config["type"] = self.mem_type.label
@@ -137,7 +137,7 @@ class FCB(SegmentBase):
     @classmethod
     def get_validation_schemas(
         cls, family: str, mem_type: MemoryType, revision: str = "latest"
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
@@ -148,31 +148,31 @@ class FCB(SegmentBase):
         """
         fcb_obj = FCB(family, mem_type, revision)
         sch_cfg = get_schema_file(DatabaseManager.FCB)
+        sch_family = get_schema_file("general")["family"]
         try:
-            sch_cfg["fcb_family_rev"]["properties"]["family"]["enum"] = FCB.get_supported_families()
-            sch_cfg["fcb_family_rev"]["properties"]["family"]["template_value"] = family
-            revisions = DatabaseManager().db.devices.get(family).revisions.revision_names(True)
-            sch_cfg["fcb_family_rev"]["properties"]["revision"]["enum"] = revisions
-            sch_cfg["fcb_family_rev"]["properties"]["revision"]["template_value"] = revision
-            sch_cfg["fcb_family_rev"]["properties"]["type"]["enum"] = [
+            update_validation_schema_family(
+                sch_family["properties"], FCB.get_supported_families(), family
+            )
+            sch_cfg["memory_type"]["properties"]["type"]["enum"] = [
                 mem_type.label
                 for mem_type in fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
             ]
-            sch_cfg["fcb_family_rev"]["properties"]["type"]["template_value"] = mem_type.label
+            sch_cfg["memory_type"]["properties"]["type"]["template_value"] = mem_type.label
             sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.registers.get_validation_schema()
-            return [sch_cfg["fcb_family_rev"], sch_cfg["fcb"]]
+            return [sch_family, sch_cfg["memory_type"], sch_cfg["fcb"]]
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} or {revision} is not supported") from exc
 
     @staticmethod
-    def get_validation_schemas_family() -> List[Dict[str, Any]]:
+    def get_validation_schemas_family() -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for FCB supported families.
         """
         sch_cfg = get_schema_file(DatabaseManager.FCB)
-        sch_cfg["fcb_family_rev"]["properties"]["family"]["enum"] = FCB.get_supported_families()
-        return [sch_cfg["fcb_family_rev"]]
+        sch_family = get_schema_file("general")["family"]
+        update_validation_schema_family(sch_family["properties"], FCB.get_supported_families())
+        return [sch_family, sch_cfg["memory_type"]]
 
     @staticmethod
     def generate_config_template(

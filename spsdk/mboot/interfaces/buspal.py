@@ -10,7 +10,7 @@ import logging
 import struct
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from serial import SerialException
 from serial.tools.list_ports import comports
@@ -142,9 +142,9 @@ class MbootBuspalProtocol(MbootSerialProtocol):
     def scan(
         cls,
         port: Optional[str] = None,
-        props: Optional[List[str]] = None,
+        props: Optional[list[str]] = None,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected serial ports and set BUSPAL properties.
 
         Returns list of serial ports with devices that respond to BUSPAL communication protocol.
@@ -170,7 +170,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
 
     @classmethod
     def _check_port_buspal(
-        cls, port: str, timeout: int, props: Optional[List[str]] = None
+        cls, port: str, timeout: int, props: Optional[list[str]] = None
     ) -> Optional[SerialDevice]:
         """Check if device on comport 'port' can connect using BUSPAL communication protocol.
 
@@ -199,7 +199,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
         """Implementation done by child class."""
         raise NotImplementedError()
 
-    def _configure(self, props: List[str]) -> None:
+    def _configure(self, props: list[str]) -> None:
         """Configure the BUSPAL interface.
 
         :param props: buspal settings
@@ -230,7 +230,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
             format_received == format_expected
         ), f"Received data '{format_received}' but expected '{format_expected}'"
 
-    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected
@@ -278,12 +278,12 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
         self.mode = BuspalMode.SPI
         super().__init__(device)
 
-    def _configure(self, props: List[str]) -> None:
+    def _configure(self, props: list[str]) -> None:
         """Configure the BUSPAL SPI interface.
 
         :param props: buspal settings
         """
-        spi_props: Dict[str, Any] = dict(zip(self.TARGET_SETTINGS, props))
+        spi_props: dict[str, Any] = dict(zip(self.TARGET_SETTINGS, props))
 
         speed = int(spi_props.get("speed", 100))
         polarity = SpiClockPolarity(spi_props.get("polarity", SpiClockPolarity.active_low))
@@ -304,7 +304,7 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
         self._send_command_check_response(spi_speed, bytes([BBConstants.response_ok.value]))
 
     def _send_frame(self, data: bytes, wait_for_ack: bool = True) -> None:
-        """Send data to BUSPAL I2C device.
+        """Send data to BUSPAL SPI device.
 
         :param data: Data to send
         """
@@ -388,12 +388,12 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
         self.mode = BuspalMode.I2C
         super().__init__(device)
 
-    def _configure(self, props: List[str]) -> None:
+    def _configure(self, props: list[str]) -> None:
         """Initialize the BUSPAL I2C interface.
 
         :param props: buspal settings
         """
-        i2c_props: Dict[str, Any] = dict(zip(self.TARGET_SETTINGS, props))
+        i2c_props: dict[str, Any] = dict(zip(self.TARGET_SETTINGS, props))
 
         # get I2C configuration values, use default values if settings are not defined in input string)
         speed = int(i2c_props.get("speed", 100))

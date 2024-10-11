@@ -1,0 +1,318 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+  b0: {}
+latest: b0
+
+# General MCU information
+info:
+  purpose: i.MX RT Crossover MCUs
+  spsdk_predecessor_name: rt5xx
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500
+  memory_map:
+    flexspi0_ns:
+      start_int: "0x08000000"
+      size_int: "0x04000000"
+      external: true
+    flexspi0_s:
+      start_int: "0x18000000"
+      size_int: "0x04000000"
+      external: true
+      mirror_of: flexspi0_ns
+    flexspi1_ns:
+      start_int: "0x28000000"
+      size_int: "0x04000000"
+      external: true
+    flexspi1_s:
+      start_int: "0x38000000"
+      size_int: "0x04000000"
+      external: true
+      mirror_of: flexspi1_ns
+    sram:
+      start_int: "0x20080000"
+      size_int: "0x480000"
+      external: false
+      non_xip_type: int_ram
+    usb-ram:
+      start_int: "0x40140000"
+      size_int: "0x4000"
+      external: false
+      non_xip_type: int_ram
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0023
+
+features:
+  # ======== Fuses description section ========
+  fuses:
+    grouped_registers:
+      - uid: otfad_kek_seed
+        name: OTFAD_KEK_SEED
+        width: 128
+        reversed: True
+        config_as_hexstring: True
+        description:
+          "When OTP key store is used (USE_PUF = 0), this 128-bit user
+          programmed value is used to derive OTFAD_KEK.\n\nOTFAD_KEK[127:0] =
+          AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
+        sub_regs: ["fuse108", "fuse109", "fuse110", "fuse111"]
+      - uid: otp_master_key
+        name: OTP_MASTER_KEY
+        width: 256
+        config_as_hexstring: True
+        description: "Master Key used to derive different usage keys (HMAC_KEY,
+          ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). \n- ENC_BOOT_HMAC_KEY[127:0] =
+          AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)\n-
+          ENC_BOOT_AES_KEY[256:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+          0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEK,
+          0x00000000000000000000000000000002)\n- SB_KEK[256:0] = AES_ENCRYPT
+          (OTP_MASTER_KEK, 0x00000000000000000000000000000003) ||  AES_ENCRYPT
+          (OTP_MASTER_KEK, 0x00000000000000000000000000000004) OR if
+          SBKEK_SEED != 0 then SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+          SBKEK_SEED[255:0])\n- OTFAD_KEK[127:0] = AES_ENCRYPT
+          (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
+        sub_regs:
+          [
+            "fuse112",
+            "fuse113",
+            "fuse114",
+            "fuse115",
+            "fuse116",
+            "fuse117",
+            "fuse118",
+            "fuse119",
+          ]
+      - uid: rkth
+        name: RKTH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description:
+          "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
+          exponent).\nFor i in 0..3:\n  Let M[i] = BE(Modulus i)\n  Let
+          E[i] = BE(Exponent i)\n  Let RKH[i] = SHA256( M[i] || E[i] )\n  Let
+          RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )\nNote:
+          Documentation update needed when using blhost due to endianness issue."
+        sub_regs:
+          [
+            "fuse120",
+            "fuse121",
+            "fuse122",
+            "fuse123",
+            "fuse124",
+            "fuse125",
+            "fuse126",
+            "fuse127",
+          ]
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x0010_C000
+    size: 0x1000
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_cert1]
+    rot_type: "cert_block_1"
+
+  # ======== DAT section ========
+  dat:
+    socc: 0 # SOCC identification
+    dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain_ram:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+      signed_ram:
+        image_type: SIGNED_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinRelocTable
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_MixinHmacMandatory
+          - Mbi_MixinKeyStore
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+          - Mbi_ExportMixinHmacKeyStoreFinalize
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinRelocTable
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      encrypted_signed_ram:
+        image_type: ENCRYPTED_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinRelocTable
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_MixinHwKey
+          - Mbi_MixinKeyStore
+          - Mbi_MixinHmacMandatory
+          - Mbi_MixinCtrInitVector
+          - Mbi_ExportMixinAppTrustZoneCertBlockEncrypt
+          - Mbi_ExportMixinRsaSign
+          - Mbi_ExportMixinHmacKeyStoreFinalize
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinLoadAddressOptional
+          - Mbi_MixinTrustZone
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinTrustZone
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+    images:
+      xip:
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+      load_to_ram:
+        plain: plain_ram
+        crc: crc_ram
+        signed: signed_ram
+        encrypted: encrypted_signed_ram
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          image_version: 0x0600
+          keystore: 0x0800
+          mbi: 0x1000
+        remap_align: 0x40000 # 256 KB
+      sd:
+        segments:
+          mbi: 0x1000
+      emmc:
+        segments:
+          mbi: 0x1000
+      recovery_spi_sb21:
+        segments:
+          sb21: 0x1000
+      recovery_spi_mbi:
+        segments:
+          mbi: 0x1000
+  # ======== Secure binary v2.1 section ========
+  sb21:
+    keyblobs: true
+    supported_commands:
+      [
+        erase,
+        load,
+        enable,
+        keywrap,
+        encrypt,
+        fill,
+        jump,
+        version_check,
+        keystore_to_nv,
+        keystore_from_nv,
+        programFuses,
+      ]
+
+  # ======== Shadow registers section ========
+  shadow_regs:
+    inverted_regs:
+      fuse95: fuse104 # DCFG_CC_SOCU -> DCFG_CC_SOCU_AP
+    computed_fields:
+      fuse95: # DCFG_CC_SOCU
+        fuse95-bit-31: comalg_dcfg_cc_socu_test_en # DEV_TEST_EN
+        fuse95-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8
+      fuse100: # DCFG_CC_SOCU_NS
+        fuse100-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8
+
+  # ======== Trust Zone section ========
+  tz:
+    reg_spec: tz.yaml
+
+  # ======== OTFAD section ========
+  otfad:
+    key_blob_rec_size: 64
+    key_blob_max_cnt: 4
+    key_blob_min_cnt: 4
+    byte_swap: false
+    keyblob_byte_swap_cnt: 0
+    sb_21_supported: True
+    has_kek_fuses: False
+    additional_template: []
+    additional_template_text: ""
+
+    fuses:
+      _no_verify: True
+      otp_master_key: __otp_master_key
+      otfad_kek_seed: __otfad_kek_seed
+      fuse106:
+        fuse106-bit-12: 1
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [0, 1]
+      flexspi_nand:
+        instances: [0, 1]
+      sd:
+        instances: [0, 1]
+      mmc:
+        instances: [0, 1]
+      spi_nor:
+        reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json
+        instances: [0, 1, 2, 3, 4, 5, 6, 7]

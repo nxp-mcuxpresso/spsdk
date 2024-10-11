@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Lexer for command (BD) files used by parser."""
 
-from typing import List, Union
+from typing import Union
 
 from sly import Lexer
 from sly.lex import Token
@@ -50,7 +50,7 @@ class BDLexer(Lexer):
 
     def __init__(self) -> None:
         """Initializer."""
-        self._sources: List[Variable] = []
+        self._sources: list[Variable] = []
 
     def cleanup(self) -> None:
         """Resets the lexers internals into initial state."""

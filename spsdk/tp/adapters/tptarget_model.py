@@ -8,7 +8,7 @@
 import logging
 import os
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc, PublicKeyEcc
@@ -46,7 +46,7 @@ class TpTargetSwModelConfig(ModelConfig):
         self.nxp_prod_card_auth_puk_path = self.config_data["nxp_prod_card_auth_puk_path"]
         self.family = self.config_data["family"]
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Returns whole record as dictionary.
 
         :return: All variables of class in dictionary.
@@ -75,7 +75,7 @@ class TpTargetSwModel(TpTargetInterface):
         ID = "id"
 
     @classmethod
-    def get_connected_targets(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
+    def get_connected_targets(cls, settings: Optional[dict] = None) -> list[TpIntfDescription]:
         """Get all connected TP Targets of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
@@ -103,7 +103,7 @@ class TpTargetSwModel(TpTargetInterface):
         if not descriptor.settings:
             raise SPSDKTpError("Target Model descriptor doesn't contain settings")
         self.config = TpTargetSwModelConfig(descriptor.settings["config_file"])
-        self.oem_id_public_keys: List[Tuple[int, PublicKeyEcc]] = []
+        self.oem_id_public_keys: list[tuple[int, PublicKeyEcc]] = []
         self.edh_private: Optional[PrivateKeyEcc] = None
         self.edh_public: Optional[PublicKeyEcc] = None
         self.tp_ses_kwk: Optional[bytes] = None
@@ -282,9 +282,9 @@ class TpTargetSwModel(TpTargetInterface):
 
     def _generate_oem_id_keys(
         self, key_count: int, use_existing: bool = False
-    ) -> List[Tuple[int, PublicKeyEcc]]:
+    ) -> list[tuple[int, PublicKeyEcc]]:
         logger.info("Generating OEM cert public keys")
-        oem_id_public_keys: List[Tuple[int, PublicKeyEcc]] = []
+        oem_id_public_keys: list[tuple[int, PublicKeyEcc]] = []
 
         key_flags = OEMKeyFlags.parse(flags=key_count, family=self.config.family)
         logger.info(f"Generating {key_count} OEM_ID keys")
@@ -393,7 +393,7 @@ class TpTargetSwModel(TpTargetInterface):
         - id - used if multiple models are provided via `config_file`"""
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Return all additional validation schemas for interface.
 
         return: List of all additional validation schemas.

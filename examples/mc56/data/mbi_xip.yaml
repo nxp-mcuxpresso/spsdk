@@ -2,15 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-# =================  Master Boot Image Configuration template for mc56f818xx, Plain Signed XIP Image.  =================
+# =================  Master Boot Image Configuration template for mc56f81868, Plain Signed XIP Image.  =================
 
 # ======================================================================================================================
 #                                                  == Basic Settings ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: MCU family name.
-# Possible options: <mc56f818xx, mwct2xd2>
-family: mc56f818xx
+# Possible options: <mc56f81868, mwct20d2>
+family: mc56f81868
 # --------------------------------------===== Application target [Required] =====---------------------------------------
 # Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
 # Possible options: <xip, load-to-ram>

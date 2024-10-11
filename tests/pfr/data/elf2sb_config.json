@@ -2,7 +2,7 @@
     "family": "rt5xx",
     "inputImageFile": "input_images/rt500_hello_world_plain.bin",
     "imageLinkAddress": "0x08001000",
-    "imageLinkAdressFromImage": false,
+    "imageLinkAddressFromImage": false,
     "outputImageExecutionTarget": "External flash (XIP)",
     "outputImageAuthenticationType": "Signed",
     "deviceKeySource": "",

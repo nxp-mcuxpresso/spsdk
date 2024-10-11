@@ -9,13 +9,14 @@
 
 
 from abc import abstractmethod
-from typing import List, Optional, Sequence, Type, Union
+from typing import Optional, Sequence, Type, Union
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.keys import PrivateKey, PublicKey
 from spsdk.exceptions import SPSDKError
-from spsdk.image.ahab.ahab_srk import SRKRecord
+from spsdk.image.ahab.ahab_srk import SRKRecord, SRKRecordV2
 from spsdk.image.ahab.ahab_srk import SRKTable as AhabSrkTable
+from spsdk.image.ahab.ahab_srk import SRKTableV2 as AhabSrkTableV2
 from spsdk.image.secret import SrkItem
 from spsdk.image.secret import SrkTable as HabSrkTable
 from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21
@@ -29,12 +30,13 @@ class Rot:
     def __init__(
         self,
         family: str,
+        revision: str,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> None:
         """Root of Trust initialization."""
-        self.rot_obj = self.get_rot_class(family)(
+        self.rot_obj = self.get_rot_class(family, revision)(
             keys_or_certs=keys_or_certs, password=password, search_paths=search_paths
         )
 
@@ -47,14 +49,14 @@ class Rot:
         return self.rot_obj.export()
 
     @classmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get all supported families."""
         return get_families(DatabaseManager.CERT_BLOCK)
 
     @classmethod
-    def get_rot_class(cls, family: str) -> Type["RotBase"]:
+    def get_rot_class(cls, family: str, revision: str = "latest") -> Type["RotBase"]:
         """Get RoT class."""
-        db = get_db(family, "latest")
+        db = get_db(family, revision)
         rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
         for subclass in RotBase.__subclasses__():
             if subclass.rot_type == rot_type:
@@ -71,7 +73,7 @@ class RotBase:
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> None:
         """Rot initialization."""
         self.keys_or_certs = keys_or_certs
@@ -98,7 +100,7 @@ class RotCertBlockv1(RotBase):
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> None:
         """Rot cert block v1 initialization."""
         super().__init__(keys_or_certs, password, search_paths)
@@ -124,7 +126,7 @@ class RotCertBlockv21(RotBase):
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> None:
         """Rot cert block v21 initialization."""
         super().__init__(keys_or_certs, password, search_paths)
@@ -150,13 +152,48 @@ class RotSrkTableAhab(RotBase):
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> None:
         """AHAB SRK table initialization."""
         super().__init__(keys_or_certs, password, search_paths)
         self.srk = AhabSrkTable(
-            [SRKRecord(RKHT.convert_key(key, password, search_paths)) for key in keys_or_certs]
-        )
+            [
+                SRKRecord.create_from_key(RKHT.convert_key(key, password, search_paths))
+                for key in keys_or_certs
+            ]
+        )  # TODO Add srk_flags - CA flag
+        self.srk.update_fields()
+
+    def calculate_hash(self) -> bytes:
+        """Calculate ROT hash."""
+        return self.srk.compute_srk_hash()
+
+    def export(self) -> bytes:
+        """Export RoT."""
+        return self.srk.export()
+
+
+class RotSrkTableAhabV2(RotBase):
+    """Root of Trust for AHAB SrkTable version 2 class."""
+
+    rot_type = "srk_table_ahab_v2"
+
+    def __init__(
+        self,
+        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
+        password: Optional[str] = None,
+        search_paths: Optional[list[str]] = None,
+    ) -> None:
+        """AHAB SRK table initialization."""
+        super().__init__(keys_or_certs, password, search_paths)
+        self.srk = AhabSrkTableV2(
+            [
+                SRKRecordV2.create_from_key(
+                    RKHT.convert_key(key, password, search_paths), srk_id=key_id
+                )
+                for key_id, key in enumerate(keys_or_certs)
+            ]
+        )  # TODO Add srk_flags - CA flag
         self.srk.update_fields()
 
     def calculate_hash(self) -> bytes:
@@ -177,7 +214,7 @@ class RotSrkTableHab(RotBase):
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> None:
         """HAB SRK table initialization."""
         super().__init__(keys_or_certs, password, search_paths)
@@ -207,7 +244,7 @@ class RotSrkTableHab(RotBase):
     def _load_certificate(
         cls,
         certificate: Union[str, bytes, bytearray],
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> Certificate:
         """Load certificate if certificate provided, or extract public key if private/public key is provided."""
         if isinstance(certificate, str):

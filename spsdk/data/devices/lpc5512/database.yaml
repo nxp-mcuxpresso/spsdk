@@ -1,0 +1,26 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: lpc5516
+
+# General MCU information
+info:
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: "0x0"
+      size_int: "0x10000"
+      external: false
+    sram:
+      start_int: "0x20000000"
+      size_int: "0x4000"
+      external: false
+    sramx:
+      start_int: "0x4000000"
+      size_int: "0x4000"
+      external: false
+    usb-ram:
+      start_int: "0x20010000"
+      size_int: "0x4000"
+      external: false
+

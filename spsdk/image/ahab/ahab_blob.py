@@ -10,7 +10,7 @@
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from typing_extensions import Self
 
@@ -218,17 +218,18 @@ class AhabBlob(HeaderContainer):
             mode=mode,
             algorithm=KeyBlobEncryptionAlgorithm.from_tag(algorithm),
         )
+        blob.length = container_length
         blob._parsed_header = HeaderContainerData.parse(binary=data)
         return blob
 
-    def create_config(self, index: int, data_path: str) -> Dict[str, Any]:
+    def create_config(self, index: int, data_path: str) -> dict[str, Any]:
         """Create configuration of the AHAB Image Blob.
 
         :param index: Container Index.
         :param data_path: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        ret_cfg: Dict[str, Any] = {}
+        ret_cfg: dict[str, Any] = {}
         assert self.dek_keyblob
         filename = f"container{index}_dek_keyblob.bin"
         write_file(self.export(), os.path.join(data_path, filename), "wb")
@@ -241,7 +242,7 @@ class AhabBlob(HeaderContainer):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "AhabBlob":
         """Converts the configuration option into an AHAB image signature block blob object.
 

@@ -1,0 +1,36 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: kw45b41z8
+
+# General MCU information
+info:
+  memory_map: # Memory map basic info
+    internal-flash_ns:
+      start_int: "0x0"
+      size_int: "0x80000"
+      external: false
+    flash-logical-window_ns:
+      start_int: "0x1000000"
+      size_int: "0x80000"
+      external: false
+      mirror_of: internal-flash_ns
+    internal-flash_s:
+      start_int: "0x10000000"
+      size_int: "0x80000"
+      external: false
+      mirror_of: internal-flash_ns
+    flash-logical-window_s:
+      start_int: "0x11000000"
+      size_int: "0x80000"
+      external: false
+      mirror_of: internal-flash_ns
+    system-tcm:
+      start_int: "0x20000000"
+      size_int: "0x1C000"
+      external: false
+    code-tcm:
+      start_int: "0x4000000"
+      size_int: "0x4000"
+      external: false

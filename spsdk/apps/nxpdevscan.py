@@ -8,7 +8,7 @@
 """NXP USB Device Scanner."""
 
 import sys
-from typing import IO
+from typing import IO, Sequence, Union
 
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
@@ -17,6 +17,13 @@ from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.utils import nxpdevscan
+from spsdk.utils.devicedescription import (
+    SDIODeviceDescription,
+    SIODeviceDescription,
+    UartDeviceDescription,
+    USBDeviceDescription,
+    UUUDeviceDescription,
+)
 
 
 @click.command(name="nxpdevscan")
@@ -29,6 +36,10 @@ from spsdk.utils import nxpdevscan
 )
 @click.option("-o", "--output", default="-", type=click.File("w"))
 # NOTE: The MutuallyExclusiveOptionGroup doesn't work for flags, we keep it just for display purposes
+@click.option(
+    "-n", "--no-scan", is_flag=True, default=True, help="Do not scan UART devices by pinging them."
+)
+@click.option("--nxp", is_flag=True, default=True, help="Scan only NXP UART devices.")
 @optgroup.group("Narrow down the scope of scanning", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option(
     "-a",
@@ -36,7 +47,7 @@ from spsdk.utils import nxpdevscan
     "scope",
     flag_value="all",
     default=True,
-    help="Search for all devices (default)",
+    help="Search for all NXP devices (default)",
 )
 @optgroup.option(
     "-u",
@@ -66,43 +77,71 @@ from spsdk.utils import nxpdevscan
     flag_value="lpcusbsio",
     help="Search only for USBSIO devices",
 )
+@optgroup.option(
+    "--uuu",
+    "scope",
+    flag_value="uuu",
+    help="Search only for UUU devices",
+)
 @spsdk_apps_common_options
-def main(extend_vids: str, output: IO[str], scope: str, log_level: int) -> None:
-    """Utility listing all connected NXP USB and UART devices."""
+def main(
+    extend_vids: str, output: IO[str], scope: str, log_level: int, no_scan: bool, nxp: bool
+) -> None:
+    """Utility listing all connected NXP USB and UART devices.
+
+    NOTE: This utility lists all NXPs USB and UART devices connected to the host.
+    By default it scans UART devices by pinging them (sending the mboot or SDP command).
+    This however causes that the device ISP mode is locked to UART.
+    Use the -n/--no-scan option to disable this behavior.
+    If you want to only scan for NXP UART devices, use the --nxp option.
+    """
     spsdk_logger.install(level=log_level)
     additional_vids = [int(vid, 16) for vid in extend_vids]
 
+    def print_devices(
+        output: IO[str],
+        title: str,
+        devices: Sequence[
+            Union[
+                SDIODeviceDescription,
+                USBDeviceDescription,
+                UartDeviceDescription,
+                SIODeviceDescription,
+                UUUDeviceDescription,
+            ]
+        ],
+    ) -> None:
+        """Print connected devices using click echo.
+
+        :param output: Output stream
+        :param title: title for group print
+        :param devices: device descriptors
+        """
+        if hasattr(output, "name") and output.name == "<stdout>":
+            click.echo(8 * "-" + f" {title} " + 8 * "-" + "\n", file=output)
+        for device in devices:
+            click.echo(str(device), file=output)
+            click.echo("", file=output)
+
     if scope in ["all", "sdio"] and sys.platform != "win32":
         nxp_sdio_devices = nxpdevscan.search_nxp_sdio_devices()
-        if hasattr(output, "name") and output.name == "<stdout>":
-            click.echo(8 * "-" + " Connected NXP SDIO Devices " + 8 * "-" + "\n", output)
-        for sdio_dev in nxp_sdio_devices:
-            click.echo(str(sdio_dev), output)
-            click.echo("", output)
+        print_devices(output, "Connected NXP SDIO Devices", nxp_sdio_devices)
 
     if scope in ["all", "usb"]:
         nxp_usb_devices = nxpdevscan.search_nxp_usb_devices(additional_vids)
-        if hasattr(output, "name") and output.name == "<stdout>":
-            click.echo(8 * "-" + " Connected NXP USB Devices " + 8 * "-" + "\n", output)
-        for usb_dev in nxp_usb_devices:
-            click.echo(str(usb_dev), output)
-            click.echo("", output)
+        print_devices(output, "Connected NXP USB Devices", nxp_usb_devices)
 
     if scope in ["all", "port"]:
-        nxp_uart_devices = nxpdevscan.search_nxp_uart_devices()
-        if hasattr(output, "name") and output.name == "<stdout>":
-            click.echo(8 * "-" + " Connected NXP UART Devices " + 8 * "-" + "\n", output)
-        for uart_dev in nxp_uart_devices:
-            click.echo(str(uart_dev), output)
-            click.echo("", output)
+        nxp_uart_devices = nxpdevscan.search_nxp_uart_devices(no_scan, nxp)
+        print_devices(output, "Connected NXP UART Devices", nxp_uart_devices)
 
     if scope in ["all", "lpcusbsio"]:
         nxp_sio_devices = nxpdevscan.search_libusbsio_devices()
-        if hasattr(output, "name") and output.name == "<stdout>":
-            click.echo(8 * "-" + " Connected NXP SIO Devices " + 8 * "-" + "\n", output)
-        for sio_dev in nxp_sio_devices:
-            click.echo(str(sio_dev), output)
-            click.echo("", output)
+        print_devices(output, "Connected NXP SIO Devices", nxp_sio_devices)
+
+    if scope in ["all", "uuu"]:
+        nxp_uuu_devices = nxpdevscan.search_uuu_usb_devices()
+        print_devices(output, "Connected NXP UUU Devices", nxp_uuu_devices)
 
 
 @catch_spsdk_error

@@ -9,13 +9,22 @@
 
 import logging
 
-from spsdk.mboot.interfaces.uart import MbootUARTInterface
+from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.properties import PropertyTag
+from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
 from spsdk.wpc.utils import SPSDKEncoding, SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
 
 logger = logging.getLogger(__name__)
+
+
+def _get_interface(params: dict) -> MbootProtocolBase:
+    """A helper function to obtain Mboot interface from user settings."""
+    if_params = load_interface_config(cli_params=params)
+    if_class = MbootProtocolBase.get_interface_class(identifier=if_params.IDENTIFIER)
+    interface = if_class.scan_single(**if_params.get_scan_args())
+    return interface
 
 
 class WPCTargetMBoot(WPCTarget):
@@ -23,14 +32,15 @@ class WPCTargetMBoot(WPCTarget):
 
     identifier = "mboot"
 
-    def __init__(self, family: str, port: str) -> None:
+    def __init__(self, family: str, **kwargs: str) -> None:
         """Initialize WPC Target adapter.
 
         :param family: Target family name
-        :param port: Serial port used for communication with the target
+        :param kwargs: Dictionary containing interface definition.
+            Examples: "port": "com4", "usb":"0x1fc9:0x014f", "plugin": "identifier=my_plugin,param1=value1"
         """
         super().__init__(family)
-        self.interface = MbootUARTInterface.scan_single(port=port)
+        self.interface = _get_interface(params=kwargs)
         db = get_db(device=family)
         self.buffer_address = db.get_int(DatabaseManager.COMM_BUFFER, "address")
         self.id_length = db.get_int(DatabaseManager.WPC, "id_length")

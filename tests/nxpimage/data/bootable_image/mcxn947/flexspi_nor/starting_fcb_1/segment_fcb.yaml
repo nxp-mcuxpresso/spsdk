@@ -1,0 +1,624 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ======  FCB configuration for mcxn9xx.
+# Created: 21/08/2024 12:15:24.
+# NXP SPSDK version: 2.3.0.dev99+g47c905b50  ======
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc553x, lpc55s3x, mcxn54x, mcxn94x, mcxn9xx, rt1010, rt1015, rt102x, rt104x, rt105x, rt106x,
+# rt116x, rt117x, rt118x, rt5xx, rt6xx, rt7xx, rw61x>
+family: mcxn9xx
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by FCB description.
+# Possible options: <flexspi_nor>
+type: flexspi_nor
+# --------------------------------------------===== mcxn9xx [Required] =====--------------------------------------------
+fcb_settings:
+  # ---------------------------------------------===== tag [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b;  [0x000-0x003] Tag, fixed value 0x42464346UL
+  tag: '0x42464346'
+  # -------------------------------------------===== version [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b;  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor,
+  # [7:0] - bugfix
+  version: '0x56010400'
+  # ------------------------------------------===== reserved0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b;  [0x008-0x00b] Reserved for future use
+  reserved0: '0x00000000'
+  # --------------------------------------===== readSampleClkSrc [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b;  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
+  readSampleClkSrc: '0x01'
+  # -----------------------------------------===== csHoldTime [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000000D, Width: 8b;  [0x00d-0x00d] CS hold time, default value: 3
+  csHoldTime: '0x03'
+  # -----------------------------------------===== csSetupTime [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000000E, Width: 8b;  [0x00e-0x00e] CS setup time, default value: 3
+  csSetupTime: '0x03'
+  # -------------------------------------===== columnAddressWidth [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000000F, Width: 8b;  [0x00f-0x00f] Column Address with, for HyperBus protocol, it is fixed
+  # to 3, For  Serial NAND, need to refer to datasheet
+  columnAddressWidth: '0x00'
+  # -------------------------------------===== deviceModeCfgEnable [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000010, Width: 8b;  [0x010-0x010] Device Mode Configure enable flag, 1 - Enable, 0 -
+  # Disable
+  deviceModeCfgEnable: '0x00'
+  # ---------------------------------------===== deviceModeType [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000011, Width: 8b;  [0x011-0x011] Specify the configuration command type:Quad Enable,
+  # DPI/QPI/OPI switch,  Generic configuration, etc.
+  deviceModeType: '0x00'
+  # -------------------------------------===== waitTimeCfgCommands [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000012, Width: 16b;  [0x012-0x013] Wait time for all configuration commands, unit: 100us,
+  # Used for  DPI/QPI/OPI switch or reset command
+  waitTimeCfgCommands: '0x0000'
+  # ----------------------------------------===== deviceModeSeq [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b;  [0x014-0x017] Device mode sequence info, [7:0] - LUT sequence id,
+  # [15:8] - LUt  sequence number, [31:16] Reserved
+  deviceModeSeq:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ----------------------------------------===== deviceModeArg [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000018, Width: 32b;  [0x018-0x01b] Argument/Parameter for device configuration
+  deviceModeArg: '0x00000000'
+  # ---------------------------------------===== configCmdEnable [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001C, Width: 8b;  [0x01c-0x01c] Configure command Enable Flag, 1 - Enable, 0 - Disable
+  configCmdEnable: '0x00'
+  # --------------------------------------===== configModeType_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001D, Width: 8b;  [0x01d-0x01f] Configure Mode Type, similar as deviceModeTpe
+  configModeType_0: '0x00'
+  # --------------------------------------===== configModeType_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001E, Width: 8b;  [0x01d-0x01f] Configure Mode Type, similar as deviceModeTpe
+  configModeType_1: '0x00'
+  # --------------------------------------===== configModeType_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001F, Width: 8b;  [0x01d-0x01f] Configure Mode Type, similar as deviceModeTpe
+  configModeType_2: '0x00'
+  # ---------------------------------------===== configCmdSeqs_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
+  # as deviceModeSeq
+  configCmdSeqs_0:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== configCmdSeqs_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
+  # as deviceModeSeq
+  configCmdSeqs_1:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== configCmdSeqs_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000028, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
+  # as deviceModeSeq
+  configCmdSeqs_2:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ------------------------------------------===== reserved1 [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b;  [0x02c-0x02f] Reserved for future use
+  reserved1: '0x00000000'
+  # ---------------------------------------===== configCmdArgs_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000030, Width: 32b;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
+  configCmdArgs_0: '0x00000000'
+  # ---------------------------------------===== configCmdArgs_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000034, Width: 32b;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
+  configCmdArgs_1: '0x00000000'
+  # ---------------------------------------===== configCmdArgs_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000038, Width: 32b;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
+  configCmdArgs_2: '0x00000000'
+  # ------------------------------------------===== reserved2 [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000003C, Width: 32b;  [0x03c-0x03f] Reserved for future use
+  reserved2: '0x00000000'
+  # ------------------------------------===== controllerMiscOption [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b;  [0x040-0x043] Controller Misc Options, see Misc feature bit
+  # definitions for more  details
+  controllerMiscOption: '0x00000010'
+  # -----------------------------------------===== deviceType [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000044, Width: 8b;  [0x044-0x044] Device Type:  See Flash Type Definition for more details
+  deviceType: '0x01'
+  # ----------------------------------------===== sflashPadType [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000045, Width: 8b;  [0x045-0x045] Serial Flash Pad Type: 1 - Single, 2 - Dual, 4 - Quad, 8
+  # - Octal
+  sflashPadType: '0x04'
+  # ----------------------------------------===== serialClkFreq [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000046, Width: 8b;  [0x046-0x046] Serial Flash Frequency, device specific definitions, See
+  # System Boot  Chapter for more details
+  serialClkFreq: '0x05'
+  # -------------------------------------===== lutCustomSeqEnable [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000047, Width: 8b;  [0x047-0x047] LUT customization Enable, it is required if the
+  # program/erase cannot  be done using 1 LUT sequence, currently, only applicable to HyperFLASH
+  lutCustomSeqEnable: '0x00'
+  # -----------------------------------------===== reserved3_0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000048, Width: 32b;  [0x048-0x04f] Reserved for future use
+  reserved3_0: '0x00000000'
+  # -----------------------------------------===== reserved3_1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000004C, Width: 32b;  [0x048-0x04f] Reserved for future use
+  reserved3_1: '0x00000000'
+  # ----------------------------------------===== sflashA1Size [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000050, Width: 32b;  [0x050-0x053] Size of Flash connected to A1
+  sflashA1Size: '0x00800000'
+  # ----------------------------------------===== sflashA2Size [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000054, Width: 32b;  [0x054-0x057] Size of Flash connected to A2
+  sflashA2Size: '0x00000000'
+  # ----------------------------------------===== sflashB1Size [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000058, Width: 32b;  [0x058-0x05b] Size of Flash connected to B1
+  sflashB1Size: '0x00000000'
+  # ----------------------------------------===== sflashB2Size [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000005C, Width: 32b;  [0x05c-0x05f] Size of Flash connected to B2
+  sflashB2Size: '0x00000000'
+  # ------------------------------------===== csPadSettingOverride [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000060, Width: 32b;  [0x060-0x063] CS pad setting override value
+  csPadSettingOverride: '0x00000000'
+  # -----------------------------------===== sclkPadSettingOverride [Optional] =====------------------------------------
+  # Description: Offset: 0x00000064, Width: 32b;  [0x064-0x067] SCK pad setting override value
+  sclkPadSettingOverride: '0x00000000'
+  # -----------------------------------===== dataPadSettingOverride [Optional] =====------------------------------------
+  # Description: Offset: 0x00000068, Width: 32b;  [0x068-0x06b] data pad setting override value
+  dataPadSettingOverride: '0x00000000'
+  # ------------------------------------===== dqsPadSettingOverride [Optional] =====------------------------------------
+  # Description: Offset: 0x0000006C, Width: 32b;  [0x06c-0x06f] DQS pad setting override value
+  dqsPadSettingOverride: '0x00000000'
+  # -----------------------------------------===== timeoutInMs [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000070, Width: 32b;  [0x070-0x073] Timeout threshold for read status command
+  timeoutInMs: '0x00000000'
+  # ---------------------------------------===== commandInterval [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000074, Width: 32b;  [0x074-0x077] CS deselect interval between two commands
+  commandInterval: '0x00000000'
+  # ---------------------------------------===== dataValidTime_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000078, Width: 16b;  [0x078-0x07b] CLK edge to data valid time for PORT A and PORT B
+  dataValidTime_0: '0x0000'
+  # ---------------------------------------===== dataValidTime_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000007A, Width: 16b;  [0x078-0x07b] CLK edge to data valid time for PORT A and PORT B
+  dataValidTime_1: '0x0000'
+  # -----------------------------------------===== busyOffset [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000007C, Width: 16b;  [0x07c-0x07d] Busy offset, valid value: 0-31
+  busyOffset: '0x0000'
+  # ---------------------------------------===== busyBitPolarity [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000007E, Width: 16b;  [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device
+  # is busy, 1 -  busy flag is 0 when flash device is busy
+  busyBitPolarity: '0x0000'
+  # ----------------------------------------===== lookupTable_0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000080, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_0: '0x0A1804EB'
+  # ----------------------------------------===== lookupTable_1 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000084, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_1: '0x26043206'
+  # ----------------------------------------===== lookupTable_2 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000088, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_2: '0x00000000'
+  # ----------------------------------------===== lookupTable_3 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000008C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_3: '0x00000000'
+  # ----------------------------------------===== lookupTable_4 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000090, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_4: '0x24040405'
+  # ----------------------------------------===== lookupTable_5 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000094, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_5: '0x00000000'
+  # ----------------------------------------===== lookupTable_6 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000098, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_6: '0x00000000'
+  # ----------------------------------------===== lookupTable_7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000009C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_7: '0x00000000'
+  # ----------------------------------------===== lookupTable_8 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000A0, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_8: '0x00000000'
+  # ----------------------------------------===== lookupTable_9 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000A4, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_9: '0x00000000'
+  # ---------------------------------------===== lookupTable_10 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000A8, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_10: '0x00000000'
+  # ---------------------------------------===== lookupTable_11 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000AC, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_11: '0x00000000'
+  # ---------------------------------------===== lookupTable_12 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000B0, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_12: '0x00000406'
+  # ---------------------------------------===== lookupTable_13 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000B4, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_13: '0x00000000'
+  # ---------------------------------------===== lookupTable_14 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000B8, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_14: '0x00000000'
+  # ---------------------------------------===== lookupTable_15 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000BC, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_15: '0x00000000'
+  # ---------------------------------------===== lookupTable_16 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000C0, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_16: '0x00000000'
+  # ---------------------------------------===== lookupTable_17 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000C4, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_17: '0x00000000'
+  # ---------------------------------------===== lookupTable_18 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000C8, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_18: '0x00000000'
+  # ---------------------------------------===== lookupTable_19 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000CC, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_19: '0x00000000'
+  # ---------------------------------------===== lookupTable_20 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000D0, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_20: '0x08180420'
+  # ---------------------------------------===== lookupTable_21 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000D4, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_21: '0x00000000'
+  # ---------------------------------------===== lookupTable_22 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000D8, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_22: '0x00000000'
+  # ---------------------------------------===== lookupTable_23 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000DC, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_23: '0x00000000'
+  # ---------------------------------------===== lookupTable_24 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000E0, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_24: '0x00000000'
+  # ---------------------------------------===== lookupTable_25 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000E4, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_25: '0x00000000'
+  # ---------------------------------------===== lookupTable_26 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000E8, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_26: '0x00000000'
+  # ---------------------------------------===== lookupTable_27 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000EC, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_27: '0x00000000'
+  # ---------------------------------------===== lookupTable_28 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000F0, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_28: '0x00000000'
+  # ---------------------------------------===== lookupTable_29 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000F4, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_29: '0x00000000'
+  # ---------------------------------------===== lookupTable_30 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000F8, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_30: '0x00000000'
+  # ---------------------------------------===== lookupTable_31 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000FC, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_31: '0x00000000'
+  # ---------------------------------------===== lookupTable_32 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000100, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_32: '0x081804D8'
+  # ---------------------------------------===== lookupTable_33 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000104, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_33: '0x00000000'
+  # ---------------------------------------===== lookupTable_34 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000108, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_34: '0x00000000'
+  # ---------------------------------------===== lookupTable_35 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000010C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_35: '0x00000000'
+  # ---------------------------------------===== lookupTable_36 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000110, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_36: '0x08180402'
+  # ---------------------------------------===== lookupTable_37 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000114, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_37: '0x00002004'
+  # ---------------------------------------===== lookupTable_38 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000118, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_38: '0x00000000'
+  # ---------------------------------------===== lookupTable_39 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000011C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_39: '0x00000000'
+  # ---------------------------------------===== lookupTable_40 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000120, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_40: '0x00000000'
+  # ---------------------------------------===== lookupTable_41 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000124, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_41: '0x00000000'
+  # ---------------------------------------===== lookupTable_42 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000128, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_42: '0x00000000'
+  # ---------------------------------------===== lookupTable_43 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000012C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_43: '0x00000000'
+  # ---------------------------------------===== lookupTable_44 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000130, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_44: '0x00000460'
+  # ---------------------------------------===== lookupTable_45 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000134, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_45: '0x00000000'
+  # ---------------------------------------===== lookupTable_46 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000138, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_46: '0x00000000'
+  # ---------------------------------------===== lookupTable_47 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000013C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_47: '0x00000000'
+  # ---------------------------------------===== lookupTable_48 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000140, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_48: '0x00000000'
+  # ---------------------------------------===== lookupTable_49 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000144, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_49: '0x00000000'
+  # ---------------------------------------===== lookupTable_50 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000148, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_50: '0x00000000'
+  # ---------------------------------------===== lookupTable_51 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000014C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_51: '0x00000000'
+  # ---------------------------------------===== lookupTable_52 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000150, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_52: '0x00000000'
+  # ---------------------------------------===== lookupTable_53 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000154, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_53: '0x00000000'
+  # ---------------------------------------===== lookupTable_54 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000158, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_54: '0x00000000'
+  # ---------------------------------------===== lookupTable_55 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000015C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_55: '0x00000000'
+  # ---------------------------------------===== lookupTable_56 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000160, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_56: '0x00000000'
+  # ---------------------------------------===== lookupTable_57 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000164, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_57: '0x00000000'
+  # ---------------------------------------===== lookupTable_58 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000168, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_58: '0x00000000'
+  # ---------------------------------------===== lookupTable_59 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000016C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_59: '0x00000000'
+  # ---------------------------------------===== lookupTable_60 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000170, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_60: '0x00000000'
+  # ---------------------------------------===== lookupTable_61 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000174, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_61: '0x00000000'
+  # ---------------------------------------===== lookupTable_62 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000178, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_62: '0x00000000'
+  # ---------------------------------------===== lookupTable_63 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000017C, Width: 32b;  [0x080-0x17f] Lookup table holds Flash command sequences
+  lookupTable_63: '0x00000000'
+  # ---------------------------------------===== lutCustomSeq_0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000180, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_0:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000184, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_1:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000188, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_2:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000018C, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_3:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000190, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_4:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000194, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_5:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000198, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_6:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000019C, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_7:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001A0, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_8:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001A4, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_9:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000001A8, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_10:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000001AC, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
+  lutCustomSeq_11:
+    # ------------------------------------------===== seqNum [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b,  Sequence Number, valid number: 1-16
+    seqNum: '0x00'
+    # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
+    seqId: '0x00'
+    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 16b, N/A
+    reserved: '0x0000'
+  # -----------------------------------------===== reserved4_0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000001B0, Width: 32b;  [0x1b0-0x1bf] Reserved for future use
+  reserved4_0: '0x00000000'
+  # -----------------------------------------===== reserved4_1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000001B4, Width: 32b;  [0x1b0-0x1bf] Reserved for future use
+  reserved4_1: '0x00000000'
+  # -----------------------------------------===== reserved4_2 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000001B8, Width: 32b;  [0x1b0-0x1bf] Reserved for future use
+  reserved4_2: '0x00000000'
+  # -----------------------------------------===== reserved4_3 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000001BC, Width: 32b;  [0x1b0-0x1bf] Reserved for future use
+  reserved4_3: '0x00000000'
+  # ------------------------------------------===== pageSize [Optional] =====-------------------------------------------
+  # Description: Offset: 0x000001C0, Width: 32b;  Page size of Serial NOR
+  pageSize: '0x00000100'
+  # -----------------------------------------===== sectorSize [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001C4, Width: 32b;  Sector size of Serial NOR
+  sectorSize: '0x00001000'
+  # -------------------------------------===== ipcmdSerialClkFreq [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001C8, Width: 8b;  Clock frequency for IP command
+  ipcmdSerialClkFreq: '0x01'
+  # -------------------------------------===== isUniformBlockSize [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001C9, Width: 8b;  Sector/Block size is the same
+  isUniformBlockSize: '0x00'
+  # -------------------------------------===== isDataOrderSwapped [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001CA, Width: 8b;  Data order (D0, D1, D2, D3) is swapped (D1,D0, D3, D2)
+  isDataOrderSwapped: '0x00'
+  # -----------------------------------------===== reserved0_0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000001CB, Width: 8b;  Reserved for future use
+  reserved0_0: '0x00'
+  # ----------------------------------------===== serialNorType [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001CC, Width: 8b;  Serial NOR Flash type: 0/1/2/3
+  serialNorType: '0x00'
+  # --------------------------------------===== needExitNoCmdMode [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001CD, Width: 8b;  Need to exit NoCmd mode before other IP command
+  needExitNoCmdMode: '0x00'
+  # ------------------------------------===== halfClkForNonReadCmd [Optional] =====-------------------------------------
+  # Description: Offset: 0x000001CE, Width: 8b;  Half the Serial Clock for non-read command: true/false
+  halfClkForNonReadCmd: '0x00'
+  # ------------------------------------===== needRestoreNoCmdMode [Optional] =====-------------------------------------
+  # Description: Offset: 0x000001CF, Width: 8b;  Need to Restore NoCmd mode after IP command execution
+  needRestoreNoCmdMode: '0x00'
+  # ------------------------------------------===== blockSize [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001D0, Width: 32b;  Block size
+  blockSize: '0x00010000'
+  # ----------------------------------------===== flashStateCtx [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001D4, Width: 32b;  Flash State Context
+  flashStateCtx: '0x00000000'
+  # -----------------------------------------===== reserve2_0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001D8, Width: 32b;  Reserved for future use
+  reserve2_0: '0x00000000'
+  # -----------------------------------------===== reserve2_1 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001DC, Width: 32b;  Reserved for future use
+  reserve2_1: '0x00000000'
+  # -----------------------------------------===== reserve2_2 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001E0, Width: 32b;  Reserved for future use
+  reserve2_2: '0x00000000'
+  # -----------------------------------------===== reserve2_3 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001E4, Width: 32b;  Reserved for future use
+  reserve2_3: '0x00000000'
+  # -----------------------------------------===== reserve2_4 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001E8, Width: 32b;  Reserved for future use
+  reserve2_4: '0x00000000'
+  # -----------------------------------------===== reserve2_5 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001EC, Width: 32b;  Reserved for future use
+  reserve2_5: '0x00000000'
+  # -----------------------------------------===== reserve2_6 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001F0, Width: 32b;  Reserved for future use
+  reserve2_6: '0x00000000'
+  # -----------------------------------------===== reserve2_7 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001F4, Width: 32b;  Reserved for future use
+  reserve2_7: '0x00000000'
+  # -----------------------------------------===== reserve2_8 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001F8, Width: 32b;  Reserved for future use
+  reserve2_8: '0x00000000'
+  # -----------------------------------------===== reserve2_9 [Optional] =====------------------------------------------
+  # Description: Offset: 0x000001FC, Width: 32b;  Reserved for future use
+  reserve2_9: '0x00000000'

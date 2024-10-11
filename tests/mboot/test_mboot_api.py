@@ -330,3 +330,9 @@ def test_tp_set_wrapped_data(mcuboot: McuBoot, target):
 def test_cmd_flash_read_resource_invalid(mcuboot: McuBoot):
     with pytest.raises(McuBootError):
         mcuboot.flash_read_resource(address=1, length=3)
+
+
+def test_available_commands(mcuboot: McuBoot):
+    mcuboot.available_commands_lst = [CommandTag.READ_MEMORY, CommandTag.WRITE_MEMORY]
+    cmds = mcuboot.available_commands
+    assert cmds == [CommandTag.READ_MEMORY, CommandTag.WRITE_MEMORY]

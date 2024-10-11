@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timezone
 from struct import pack
 from time import sleep
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 
 import pytest
 from cryptography import x509
@@ -398,7 +398,7 @@ def _burn_image_to_sd(cpu_params: CpuParams, img: BootImgRT, img_data: bytes) ->
     if VERIFY_SRK_FUSES:
         assert verify_srk_fuses(mboot, srk_table4(cpu_params))
 
-    # ### Configure external FLASH on EVK: flex-spi-nor using options on address 0x2000 ###
+    # ### Configure external FLASH on EVK: flexspi-nor using options on address 0x2000 ###
     # call "%blhost%" -u 0x15A2,0x0073 -j -- fill-memory 0x2000 4 0xD0000000 word
     assert mboot.fill_memory(INT_RAM_ADDR_DATA, 4, 0xD0000000)
     # call "%blhost%" -u 0x15A2,0x0073 -j -- fill-memory 0x2004 4 0x00000000 word
@@ -457,7 +457,7 @@ def _burn_image_to_flash(
     cpu_params: CpuParams,
     img: BootImgRT,
     img_data: bytes,
-    otpmk_bee_regions: Tuple[BeeFacRegion, ...] = tuple(),
+    otpmk_bee_regions: tuple[BeeFacRegion, ...] = tuple(),
 ) -> None:
     """Burn image into external FLASH. This function is called only in production mode.
 
@@ -475,7 +475,7 @@ def _burn_image_to_flash(
     if VERIFY_SRK_FUSES:
         assert verify_srk_fuses(mboot, srk_table4(cpu_params))
 
-    # ### Configure external FLASH on EVK: flex-spi-nor using options on address 0x2000 ###
+    # ### Configure external FLASH on EVK: flexspi-nor using options on address 0x2000 ###
     # call "%blhost%" -u 0x15A2,0x0073 -j -- fill-memory 0x2000 4 0xC0233007 word
     assert mboot.fill_memory(INT_RAM_ADDR_DATA, 4, cpu_params.ext_flash_cfg_word0)
     # call "%blhost%" -u 0x15A2,0x0073 -j -- fill-memory 0x2004 4 0x00000000 word
@@ -551,7 +551,7 @@ def write_image(
     cpu_params: CpuParams,
     image_file_name: str,
     img: BootImgRT,
-    otpmk_bee_regions: Tuple[BeeFacRegion, ...] = tuple(),
+    otpmk_bee_regions: tuple[BeeFacRegion, ...] = tuple(),
 ) -> None:
     """Write image to the external flash
     The method behavior depends on TEST_IMG_CONTENT:

@@ -9,7 +9,7 @@
 
 import os
 import sys
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 import click
 import colorama
@@ -34,7 +34,7 @@ from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import load_configuration, load_text, write_file
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
-disable_files_dirs_formatters: Dict[str, Callable[[str], bool]] = {
+disable_files_dirs_formatters: dict[str, Callable[[str], bool]] = {
     "dir": lambda x: bool(os.path.basename(x.replace("\\", "/"))),
     "file": lambda x: bool(os.path.basename(x.replace("\\", "/"))),
     "file_name": lambda x: os.path.basename(x.replace("\\", "/")) not in ("", None),
@@ -42,7 +42,7 @@ disable_files_dirs_formatters: Dict[str, Callable[[str], bool]] = {
 }
 
 
-def get_all_files(source: str, recursive: bool = False) -> List[str]:
+def get_all_files(source: str, recursive: bool = False) -> list[str]:
     """Gather all python files in root_folders."""
     all_files = []
 
@@ -60,19 +60,19 @@ def get_all_files(source: str, recursive: bool = False) -> List[str]:
     return all_files
 
 
-def get_schemas_mbi(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_mbi(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for MBI configurations.
 
     :param config: Any configuration of MBI
     :return: Validation JSON schemas
     """
     mbi_cls = get_mbi_class(config)
-    schemas = mbi_cls.get_validation_schemas()
+    schemas = mbi_cls.get_validation_schemas(config["family"])
     check_config(config=config, schemas=schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
 
-def get_schemas_sb31(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_sb31(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for SB3.1 configurations.
 
     :param config: Any configuration of SB3.1
@@ -84,21 +84,20 @@ def get_schemas_sb31(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_devhsm(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_devhsm(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for DEVHSM configurations.
 
     :param config: Any configuration of DEVHSM
     :return: Validation JSON schemas
     """
-    sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
-    check_config(config, [sb3_sch_cfg["sb3_family"]])
+    check_config(config, SecureBinary31.get_validation_schemas_family())
 
     schemas = DevHsmSB31.get_validation_schemas(config["family"])
     check_config(config=config, schemas=schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
 
-def get_schemas_cert_block(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_cert_block(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Certification block configurations.
 
     :param config: Any configuration of Certification block
@@ -110,7 +109,7 @@ def get_schemas_cert_block(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_ahab(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_ahab(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for AHAB configurations.
 
     :param config: Any configuration of AHAB
@@ -122,19 +121,21 @@ def get_schemas_ahab(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_signed_message(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_signed_message(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Signed Message configurations.
 
     :param config: Any configuration of Signed Message
     :return: Validation JSON schemas
     """
-    schemas = SignedMessage.get_validation_schemas()
+    schemas = SignedMessage.get_validation_schemas(
+        config["family"], config.get("revision", "latest")
+    )
 
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
 
-def get_schemas_otfad(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_otfad(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for OTFAD configurations.
 
     :param config: Any configuration of OTFAD
@@ -151,7 +152,7 @@ def get_schemas_otfad(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_iee(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_iee(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for IEE configurations.
 
     :param config: Any configuration of IEE
@@ -168,7 +169,7 @@ def get_schemas_iee(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_fcb(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_fcb(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for FCB configurations.
 
     :param config: Any configuration of FCB
@@ -184,7 +185,7 @@ def get_schemas_fcb(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_bootable_image(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_bootable_image(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Bootable Image configurations.
 
     :param config: Any configuration of bootable image
@@ -200,7 +201,7 @@ def get_schemas_bootable_image(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_xmcd(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_xmcd(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for XMCD configurations.
 
     :param config: Any configuration of XMCD
@@ -217,7 +218,7 @@ def get_schemas_xmcd(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_bee(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_bee(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for BEE configurations.
 
     :param config: Any configuration of BEE
@@ -228,7 +229,7 @@ def get_schemas_bee(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_trust_zone(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_trust_zone(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Trust Zone configurations.
 
     :param config: Any configuration of Trust Zone
@@ -240,7 +241,7 @@ def get_schemas_trust_zone(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     return schemas
 
 
-def get_schemas_binary_image(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_schemas_binary_image(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Binary Image merge configurations.
 
     :param config: Any configuration of Binary Image merge
@@ -341,7 +342,7 @@ def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
     help="Add to original file additional extension '.converted'",
 )
 def main(
-    config: List[str],
+    config: list[str],
     recursive: bool,
     config_type: Optional[str],
     output: Optional[str],

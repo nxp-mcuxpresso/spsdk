@@ -9,7 +9,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigError
 from spsdk.pfr.pfr import CFPA, CMPA, SPSDKPfrError
@@ -31,7 +31,7 @@ class Rule:
     cond: str
 
 
-class RulesList(List[Rule]):
+class RulesList(list[Rule]):
     """List of rules."""
 
     @staticmethod
@@ -71,7 +71,7 @@ class Pfrc:
         :param cmpa: configuration data loaded from CMPA config file, defaults to None
         :param cfpa: configuration data loaded from CFPA config file, defaults to None
         :raises SPSDKPfrError: No configuration is provided
-        :raises SPSDKPfrConfigError: Problem with PFR configuration(s) occured
+        :raises SPSDKPfrConfigError: Problem with PFR configuration(s) occurred
         """
         if not (cmpa or cfpa):
             raise SPSDKPfrError("No cmpa or cfpa configurations specified")
@@ -79,7 +79,11 @@ class Pfrc:
         self.cfpa = cfpa
 
         self.chip_family = cmpa.family if cmpa else cfpa.family  # type: ignore
-        if not self.chip_family or self.chip_family not in self.get_supported_families():
+        pfrc_devices = self.get_supported_families()
+        pfrc_devices += list(
+            DatabaseManager().quick_info.devices.get_predecessors(pfrc_devices).keys()
+        )
+        if not self.chip_family or self.chip_family not in pfrc_devices:
             raise SPSDKPfrConfigError(
                 f"Chip family from configuration is not supported: {self.chip_family} "
                 f"Supported families:{self.get_supported_families()}"
@@ -88,7 +92,7 @@ class Pfrc:
         self.db = get_db(self.chip_family, "latest")
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Return list of supported families.
 
         :return: List of supported families.
@@ -103,7 +107,7 @@ class Pfrc:
 
     def validate_brick_conditions(
         self, additional_rules_file: Optional[str] = None
-    ) -> Tuple[RulesList, RulesList, RulesList]:
+    ) -> tuple[RulesList, RulesList, RulesList]:
         """The method validates the brick conditions for specified configuration.
 
         :param additional_rules_file: Additional rules file, defaults to None

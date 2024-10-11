@@ -19,7 +19,7 @@ class SuperAwesomeSP(SignatureProvider):
     """Signature Provider based on a remote signing service."""
 
     # identifier of this signature provider; used in yaml configuration file
-    sp_type = "sasp"
+    identifier = "sasp"
 
     def __init__(self, key_number: int, key_type: str) -> None:
         """Initialize the Super Awesome SignatureProvider.

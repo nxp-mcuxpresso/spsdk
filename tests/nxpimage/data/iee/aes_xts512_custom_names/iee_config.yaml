@@ -1,11 +1,11 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  IEE converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                         == Basic Settings ==                                        
+#                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x']
+family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189']
 output_folder: iee_output # [Required], IEE output directory; Path to directory where the IEE output will be generated
 output_name: '' # [Optional], Output binary image filename; Filename of the output image containing keyblobs and encrypted data blobs without file extension (.bin will be appended)
 keyblob_name: keyblob # [Optional], Keyblob filename; Filename of the keyblob without file extension (.bin will be appended)
@@ -13,19 +13,19 @@ encrypted_name: '' # [Optional], Encrypted name; filename of the encrypted datab
 generate_readme: true # [Optional], Generate readme.txt; Readme file contains information about image layout
 generate_fuses_script: false # [Optional], Generate blhost batch file to burn fuses; BCF file with fuses configuration
 # ----------------------------------------------------------------------------------------------------
-#                                          == IEE Settings ==                                         
+#                                          == IEE Settings ==
 # ----------------------------------------------------------------------------------------------------
 keyblob_address: 805306368 # [Required], Base address of the IEE keyblob; Should be aligned to 1 kB
 data_blobs: # [Optional], Data blobs list; List of all data blobs that will be encrypted
   - data: evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin  # [Required], Binary data blob; Path to binary file with plain text data to be encrypted
     address: 805310464 # [Optional], Data blob address, it doesn't have to be specified for S-REC
 # ----------------------------------------------------------------------------------------------------
-#                                     == Keyblob Encryption Key ==                                    
+#                                     == Keyblob Encryption Key ==
 # ----------------------------------------------------------------------------------------------------
 ibkek1: 1780731860627700044960722568376592200742329637303199754547598369979440671 # [Required], IBKEK1 AES-XTS 256-bit key; IBKEK1 AES-XTS key for keyblob encryption
 ibkek2: 14532552714582660066924456880521368950258152170031413196862950297402215317055 # [Required], IBKEK2 AES-XTS 256-bit key; IBKEK2 AES-XTS key for keyblob encryption
 # ----------------------------------------------------------------------------------------------------
-#                                 == List of Key Blobs used by IEE ==                                 
+#                                 == List of Key Blobs used by IEE ==
 # ----------------------------------------------------------------------------------------------------
 key_blobs: # [Required], The list of definition of individual key blobs including plain data. Add other array items as you need and device allows
   - region_lock: false  # [Optional], Keyblob lock attribute; Determines if the ROM will lock the IEE configuration to prevent later changes.

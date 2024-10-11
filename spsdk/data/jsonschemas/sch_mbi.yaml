@@ -114,9 +114,20 @@ digest_hash_algo:
     manifestDigestHashAlgorithm:
       type: string
       title: Manifest signing hash algorithm
-      description: Optional Manifest signing hash algorithm name to create Certificate v3.1 Manifest.
+      description: Optional Manifest signing hash algorithm name to create Certificate Block v2.1 Manifest.
       enum: [sha256, sha384, sha512]
+      skip_in_template: true
       template_value: sha256
+
+add_digest_hash:
+  type: object
+  title: Add Manifest Digest
+  properties:
+    addManifestDigest:
+      type: boolean
+      title: Add Manifest Digest
+      description: Used for concurrent execution of ECDSA verify and hash calculation.
+      template_value: true
 
 cert_block_v1:
   type: object
@@ -181,7 +192,7 @@ signature_provider:
     signProvider:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'.
       template_value: type=file;file_path=my_prv_key.pem
   oneOf:
     - allOf:
@@ -286,18 +297,6 @@ app_table:
             description: Enabler to load/use the image.
             template_value: true
 
-family:
-  type: object
-  title: Basic Settings
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      # enum: [] # The family list will be replaced in runtime
-      template_value: lpc55s6x
-  required: [family]
-
 image_type:
   type: object
   title: Basic Settings
@@ -330,6 +329,7 @@ image_type:
           signed,
           signed-encrypted,
           signed-nxp,
+          nxp_signed,
           Plain,
           CRC,
           Signed,
@@ -365,3 +365,15 @@ lifecycle:
           "OEM_CLOSED_NO_RETURN",
         ]
       template_value: NOT_SET
+
+just_header:
+  type: object
+  title: Basic Settings
+  properties:
+    justHeader:
+      type: boolean
+      title: Generate only header
+      description:
+        Build only the boot headers (Vector table, BCA, FCB) 0x0..0x800 binary without the application.
+        This is needed for device HSM provisioning file in case the user set ROP2, ROP3.
+      template_value: false

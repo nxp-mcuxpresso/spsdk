@@ -2,12 +2,11 @@ include LICENSE
 include SW_Content_Register_SPSDK.txt
 include requirements*
 include spsdk/py.typed
-recursive-include spsdk/data *
-recursive-include spsdk *.pyi
-recursive-exclude .idea *
-recursive-exclude .github *
-recursive-exclude docs *
-recursive-exclude examples *
-recursive-exclude tests *
-recursive-exclude tools *
-recursive-exclude pipeline *
+prune .idea *
+prune .github *
+prune docs *
+prune examples *
+prune tests *
+prune tools *
+prune pipeline *
+graft spsdk/data *

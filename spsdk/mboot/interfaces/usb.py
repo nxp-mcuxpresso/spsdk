@@ -8,7 +8,7 @@
 
 """USB Mboot interface implementation."""
 
-from typing import Dict, List, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -42,16 +42,16 @@ class MbootUSBInterface(MbootBulkProtocol):
         return "Unknown"
 
     @classmethod
-    def get_devices(cls) -> Dict[str, List[UsbId]]:
+    def get_devices(cls) -> dict[str, list[UsbId]]:
         """Get list of all supported devices from the database.
 
         :return: Dictionary containing device names with their usb configurations
         """
         devices = {}
-        for device in DatabaseManager().db.devices:
-            usb_ids = device.info.isp.get_usb_ids("mboot")
+        for device, quick_info in DatabaseManager().quick_info.devices.devices.items():
+            usb_ids = quick_info.info.isp.get_usb_ids("mboot")
             if usb_ids:
-                devices[device.name] = usb_ids
+                devices[device] = usb_ids
         return devices
 
     @classmethod
@@ -59,7 +59,7 @@ class MbootUSBInterface(MbootBulkProtocol):
         cls,
         device_id: Optional[str] = None,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected USB devices.
 
         :param device_id: Device identifier <vid>, <vid:pid>, device/instance path, device name are supported

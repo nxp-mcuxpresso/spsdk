@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,4 +11,4 @@ rot_meta:
 - 2048-rsa-example-cert.der
 rot_id: 0
 rotk: 2048-rsa-example-key.pem
-dck: new_dck_2048.pub
+dck: ../../_data/keys/rsa2048/dck_rsa2048.pub

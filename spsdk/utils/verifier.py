@@ -9,7 +9,7 @@
 
 import textwrap
 from dataclasses import dataclass
-from typing import List, Optional, Type, Union
+from typing import Optional, Type, Union
 
 import colorama
 import prettytable
@@ -74,7 +74,7 @@ class Verifier:
         :param raw: Raw verifier without any formatting
         """
         self.name = name
-        self.records: List[Union[VerifierRecord, "Verifier"]] = []
+        self.records: list[Union[VerifierRecord, "Verifier"]] = []
         self.description = description
         self.indent = indent
         self.level = 1
@@ -123,7 +123,7 @@ class Verifier:
             )
         return ret
 
-    def draw(self, results: Optional[List[VerifierResult]] = None) -> str:
+    def draw(self, results: Optional[list[VerifierResult]] = None) -> str:
         """Draw the results.
 
         :param results: Filter for selected results, default is None
@@ -207,7 +207,7 @@ class Verifier:
         :param name: Name of verifying condition/expression
         :param result: Result of verifying condition/expression,
             it could be also used boolean type as assert (True == SUCCEEDED, False == ERROR)
-        :param value: Result of  verifying condition/expression
+        :param value: Result of verifying condition/expression
         :param important: Mark of important record
         :param raw: Raw record without any formatting
         """
@@ -313,6 +313,13 @@ class Verifier:
 
         if isinstance(value, enum):
             value_enum = value
+        elif isinstance(value, SpsdkEnum):
+            self.add_record(
+                name,
+                VerifierResult.WARNING,
+                value.label + f", {value.description}" if value.description else "",
+            )
+            return
         else:
             try:
                 assert isinstance(value, (int, str))
@@ -339,7 +346,7 @@ class Verifier:
             child.name = f"{prefix_name}: {child.name}"
         self.records.append(child)
 
-    def get_count(self, results: Optional[List[VerifierResult]] = None) -> int:
+    def get_count(self, results: Optional[list[VerifierResult]] = None) -> int:
         """Get count of records of requested result state.
 
         :param results: List of types of result to count, defaults to None (get all)
@@ -389,8 +396,8 @@ class Verifier:
 
         :return: String table with summary results.
         """
-        header: List[str] = []
-        row: List[int] = []
+        header: list[str] = []
+        row: list[int] = []
         for res in VerifierResult:
             header.append(VerifierResult.draw(res))
             row.append(self.get_count([res]))

@@ -1,0 +1,3394 @@
+{
+    "cpu": "LPC55S36",
+    "groups": [
+        {
+            "group": {
+                "name": "Configuration",
+                "description": "Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "BOOT_CFG",
+                    "description": "Boot Configuration",
+                    "offset_int": "0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field000-bits0-2",
+                            "name": "DEFAULT_BOOT_SOURCE",
+                            "description": "Default Boot Source",
+                            "values": [
+                                {
+                                    "name": "ISP_PIN",
+                                    "value": 0,
+                                    "description": "ISP pin source"
+                                },
+                                {
+                                    "name": "FLEXSPI_FLASH",
+                                    "value": 1,
+                                    "description": "FlexSPI flash"
+                                },
+                                {
+                                    "name": "SERIAL_ISP_BOOT",
+                                    "value": 2,
+                                    "description": "Serial ISP boot"
+                                },
+                                {
+                                    "name": "INTERNAL_FLASH",
+                                    "value": 3,
+                                    "description": "Internal Flash"
+                                },
+                                {
+                                    "name": "AUTO_BOOT",
+                                    "value": 4,
+                                    "description": "Auto boot similar to ISP"
+                                },
+                                {
+                                    "name": "Reserved_0",
+                                    "value": 5,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_1",
+                                    "value": 6,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_2",
+                                    "value": 7,
+                                    "description": "Reserved."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field000-bits4-6",
+                            "name": "DEFAULT_ISP_MODE",
+                            "description": "Default ISP mode",
+                            "values": [
+                                {
+                                    "name": "AUTO_ISP",
+                                    "value": 0,
+                                    "description": "Auto ISP"
+                                },
+                                {
+                                    "name": "USB_HID_MSC",
+                                    "value": 1,
+                                    "description": "USB HID MSC"
+                                },
+                                {
+                                    "name": "UART_ISP",
+                                    "value": 2,
+                                    "description": "UART ISP"
+                                },
+                                {
+                                    "name": "SPI_ISP",
+                                    "value": 3,
+                                    "description": "SPI Slave ISP"
+                                },
+                                {
+                                    "name": "I2C_ISP",
+                                    "value": 4,
+                                    "description": "I2C Slave ISP"
+                                },
+                                {
+                                    "name": "CAN_ISP",
+                                    "value": 5,
+                                    "description": "CAN ISP"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "DISBL_ISP_FALLTHRU",
+                                    "value": 7,
+                                    "description": "Disable ISP fall through"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field000-bits7-8",
+                            "name": "BOOT_SPEED",
+                            "description": "Boot Speed Core Clock",
+                            "values": [
+                                {
+                                    "name": "SYS_SPD_CODE",
+                                    "value": 0,
+                                    "description": "Defined by NMPA[SYSTEM_SPEED_CODE]"
+                                },
+                                {
+                                    "name": "MHZ96_FRO",
+                                    "value": 1,
+                                    "description": "96MHz FRO"
+                                },
+                                {
+                                    "name": "MHZ48_FRO",
+                                    "value": 2,
+                                    "description": "48MHz FRO"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 10
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field000-bits19-20",
+                            "name": "ITRC_ZEROIZE",
+                            "description": "ITRC_ZEROIZE",
+                            "values": [
+                                {
+                                    "name": "NO_ACTION",
+                                    "value": 0,
+                                    "description": "No action"
+                                },
+                                {
+                                    "name": "PKC_RAM",
+                                    "value": 1,
+                                    "description": "Zeroize PKC RAM"
+                                },
+                                {
+                                    "name": "A0_RAM",
+                                    "value": 2,
+                                    "description": "Zeroize low power RAM (AO_RAM)"
+                                },
+                                {
+                                    "name": "BOTH_A0_AND_PKC_RAM",
+                                    "value": 3,
+                                    "description": "Zeroize both AO_RAM and PKC_RAM"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field000-bit21",
+                            "name": "ASRT_FATAL",
+                            "description": "ASRT_FATAL"
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field000-bit22",
+                            "name": "ASRT_RBF",
+                            "description": "ASRT_RBF"
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field000-bit23",
+                            "name": "ASRT_ISPF",
+                            "description": "ASRT_ISPF"
+                        },
+                        {
+                            "width": 8,
+                            "reset_value_int": "0",
+                            "id": "field000-bits24-31",
+                            "name": "BOOT_FAILURE_PIN",
+                            "description": "Boot Failure Pin"
+                        }
+                    ]
+                },
+                {
+                    "id": "field004",
+                    "name": "SPI_CAN_CFG",
+                    "description": "SPI CAN Configuration",
+                    "offset_int": "0x0004",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field004-bits0-1",
+                            "name": "SPI_RECOVERY_BOOT_EN",
+                            "description": "SPI Recovery Boot Enable"
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field004-bits2-4",
+                            "name": "SPI_REC_IF",
+                            "description": "SPI Recovery Interface",
+                            "values": [
+                                {
+                                    "name": "HSPI",
+                                    "value": 0,
+                                    "description": "HSPI P1_3-MISO, P0_26-MOSI, P1_1-SSEL1, P1_2-SCK"
+                                },
+                                {
+                                    "name": "FC0",
+                                    "value": 1,
+                                    "description": "FC0 P0_30-MISO, P0_24-MOSI, P0_31-SSEL0, P0_28-SCK"
+                                },
+                                {
+                                    "name": "FC3",
+                                    "value": 2,
+                                    "description": "FC3 P0_2-MISO, P0_3-MOSI, P0_4-SSEL0, P0_6-SCK"
+                                },
+                                {
+                                    "name": "FC1",
+                                    "value": 3,
+                                    "description": "FC1 P2_4-MISO, P2_3-MOSI, P2_5-SSEL0, P1_9-SCK"
+                                },
+                                {
+                                    "name": "Reserved_0",
+                                    "value": 4,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_1",
+                                    "value": 5,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_2",
+                                    "value": 6,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_3",
+                                    "value": 7,
+                                    "description": "Reserved."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 11
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field004-bits16-19",
+                            "name": "CAN_BAUD_RATE",
+                            "description": "CAN Baud Rate",
+                            "values": [
+                                {
+                                    "name": "AUTO_BAUD_DETECT",
+                                    "value": 0,
+                                    "description": "Auto baud detection (125K, 250K, 500K, 1M). Default."
+                                },
+                                {
+                                    "name": "KBPS_10",
+                                    "value": 1,
+                                    "description": "10 kbp"
+                                },
+                                {
+                                    "name": "KBPS_20",
+                                    "value": 2,
+                                    "description": "20 kbp"
+                                },
+                                {
+                                    "name": "KBPS_50",
+                                    "value": 3,
+                                    "description": "50 kbps"
+                                },
+                                {
+                                    "name": "KBPS_125",
+                                    "value": 4,
+                                    "description": "125 kbps"
+                                },
+                                {
+                                    "name": "KBPS_250",
+                                    "value": 5,
+                                    "description": "250 kbps"
+                                },
+                                {
+                                    "name": "KBPS_500",
+                                    "value": 6,
+                                    "description": "500 kbps"
+                                },
+                                {
+                                    "name": "KBPS_800",
+                                    "value": 7,
+                                    "description": "800 kbps"
+                                },
+                                {
+                                    "name": "KBPS_1000",
+                                    "value": 8,
+                                    "description": "1,000 kbps"
+                                },
+                                {
+                                    "name": "Reserved_0",
+                                    "value": 9,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_1",
+                                    "value": 10,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_2",
+                                    "value": 11,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_3",
+                                    "value": 12,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_4",
+                                    "value": 13,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_5",
+                                    "value": 14,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_6",
+                                    "value": 15,
+                                    "description": "Reserved."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 12
+                        }
+                    ]
+                },
+                {
+                    "id": "field008",
+                    "name": "USB_ID",
+                    "description": "USB Identifiers",
+                    "offset_int": "0x0008",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field008-bits0-15",
+                            "name": "USB_VENDOR_ID",
+                            "description": "USB Vendor ID"
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field008-bits16-31",
+                            "name": "USB_PRODUCT_ID",
+                            "description": "USB Product ID"
+                        }
+                    ]
+                },
+                {
+                    "id": "field00C",
+                    "name": "BOOT_TIMEOUT",
+                    "description": "Boot Timeout",
+                    "offset_int": "0x000C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field00C-bits0-15",
+                            "name": "POWERDOWN_TIMEOUT_SECS",
+                            "description": "Powerdown Timeout"
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field00C-bits16-31",
+                            "name": "WDOG_TIMEOUT_SECS",
+                            "description": "WDOG Timeout"
+                        }
+                    ]
+                },
+                {
+                    "id": "field010",
+                    "name": "DCFG_CC_SOCU_PIN",
+                    "description": "Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+                    "offset_int": "0x0010",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit0",
+                            "name": "NIDEN",
+                            "description": "Non-secure Non-invasive Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit1",
+                            "name": "DBGEN",
+                            "description": "Non-secure Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit2",
+                            "name": "SPNIDEN",
+                            "description": "Secure Non-invasive Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit3",
+                            "name": "SPIDEN",
+                            "description": "Secure Invasive Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP Boot Command Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit7",
+                            "name": "FA_CMD_EN",
+                            "description": "FA Command Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit8",
+                            "name": "ME_CMD_EN",
+                            "description": "Flash Mass Erase Command Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field010-bit15",
+                            "name": "UUID_CHECK",
+                            "description": "Enforce UUID match during Debug authentication.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field010-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "Inverse Value",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field014",
+                    "name": "DCFG_CC_SOCU_DFLT",
+                    "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+                    "offset_int": "0x0014",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit0",
+                            "name": "NIDEN",
+                            "description": "Non Secure Non-invasive Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit1",
+                            "name": "DBGEN",
+                            "description": "Non-secure Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit2",
+                            "name": "SPNIDEN",
+                            "description": "Secure Non-invasive Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit3",
+                            "name": "SPIDEN",
+                            "description": "Secure Invasive Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP Command Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit7",
+                            "name": "FA_CMD_EN",
+                            "description": "FA Command Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field014-bit8",
+                            "name": "ME_CMD_EN",
+                            "description": "Flash Mass Erase Command Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 7
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field014-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "Inverse Value",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field018",
+                    "name": "VENDOR_USAGE",
+                    "description": "Vendor Usage",
+                    "offset_int": "0x0018",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 16
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field018-bits16-31",
+                            "name": "VENDOR_USAGE",
+                            "description": "Vendor Usage [31:16]"
+                        }
+                    ]
+                },
+                {
+                    "id": "field01C",
+                    "name": "SECURE_BOOT_CFG",
+                    "description": "Secure Boot Configuration",
+                    "offset_int": "0x001C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits0-1",
+                            "name": "ENF_CNSA",
+                            "description": "Enforce CNSA suite algorithm.",
+                            "values": [
+                                {
+                                    "name": "ECC_P256",
+                                    "value": 0,
+                                    "description": "ECC P-256 keys"
+                                },
+                                {
+                                    "name": "ECC_P384_0",
+                                    "value": 1,
+                                    "description": "ECC P-384 keys, SHA384 and AES256"
+                                },
+                                {
+                                    "name": "ECC_P384_1",
+                                    "value": 2,
+                                    "description": "ECC P-384 keys, SHA384 and AES256"
+                                },
+                                {
+                                    "name": "ECC_P384_2",
+                                    "value": 3,
+                                    "description": "ECC P-384 keys, SHA384 and AES256"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits2-3",
+                            "name": "DICE_INC_NXP_CFG",
+                            "description": "Include NXP area in DICE computation.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "INCLUDE_0",
+                                    "value": 1,
+                                    "description": "Included"
+                                },
+                                {
+                                    "name": "INCLUDE_1",
+                                    "value": 2,
+                                    "description": "Included"
+                                },
+                                {
+                                    "name": "INCLUDE_2",
+                                    "value": 3,
+                                    "description": "Included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits4-5",
+                            "name": "DICE_CUST_CFG",
+                            "description": "Include CMPA page and key store area in DICE computation.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "INCLUDE_0",
+                                    "value": 1,
+                                    "description": "Included"
+                                },
+                                {
+                                    "name": "INCLUDE_1",
+                                    "value": 2,
+                                    "description": "Included"
+                                },
+                                {
+                                    "name": "INCLUDE_2",
+                                    "value": 3,
+                                    "description": "Included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits6-7",
+                            "name": "SKIP_DICE",
+                            "description": "Skip DICE computation.",
+                            "values": [
+                                {
+                                    "name": "ENABLE_DICE",
+                                    "value": 0,
+                                    "description": "Enable DICE"
+                                },
+                                {
+                                    "name": "DISABLE_DICE_0",
+                                    "value": 1,
+                                    "description": "Disable DICE"
+                                },
+                                {
+                                    "name": "DISABLE_DICE_1",
+                                    "value": 2,
+                                    "description": "Disable DICE"
+                                },
+                                {
+                                    "name": "DISABLE_DICE_2",
+                                    "value": 3,
+                                    "description": "Disable DICE"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits8-9",
+                            "name": "ENF_TZM_PRESET",
+                            "description": "TrustZone-M mode.",
+                            "values": [
+                                {
+                                    "name": "IGNORE",
+                                    "value": 0,
+                                    "description": "Ignored"
+                                },
+                                {
+                                    "name": "ENFORCE_0",
+                                    "value": 1,
+                                    "description": "Enforce preset TZM data in image manifest."
+                                },
+                                {
+                                    "name": "ENFORCE_1",
+                                    "value": 2,
+                                    "description": "Enforce preset TZM data in image manifest."
+                                },
+                                {
+                                    "name": "ENFORCE_2",
+                                    "value": 3,
+                                    "description": "Enforce preset TZM data in image manifest."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits10-11",
+                            "name": "BLOCK_SET_KEY",
+                            "description": "Block PUF key code generation.",
+                            "values": [
+                                {
+                                    "name": "ALLOW",
+                                    "value": 0,
+                                    "description": "Allow PUF Key Code generation"
+                                },
+                                {
+                                    "name": "DISABLE_0",
+                                    "value": 1,
+                                    "description": "Disable PUF Key Code generation"
+                                },
+                                {
+                                    "name": "DISABLE_1",
+                                    "value": 2,
+                                    "description": "Disable PUF Key Code generation"
+                                },
+                                {
+                                    "name": "DISABLE_2",
+                                    "value": 3,
+                                    "description": "Disable PUF Key Code generation"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits12-13",
+                            "name": "BLOCK_ENROLL",
+                            "description": "Block PUF enrollment.",
+                            "values": [
+                                {
+                                    "name": "ALLOW",
+                                    "value": 0,
+                                    "description": "Allow PUF enroll operation"
+                                },
+                                {
+                                    "name": "DISABLE_0",
+                                    "value": 1,
+                                    "description": "Disable PUF enroll operation"
+                                },
+                                {
+                                    "name": "DISABLE_1",
+                                    "value": 2,
+                                    "description": "Disable PUF enroll operation"
+                                },
+                                {
+                                    "name": "DISABLE_2",
+                                    "value": 3,
+                                    "description": "Disable PUF enroll operation"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits16-17",
+                            "name": "FIPS_SHA_STEN",
+                            "description": "Enable self-test for SHA2 block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE_ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits18-19",
+                            "name": "FIPS_AES_STEN",
+                            "description": "Enable self-test for AES block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE_ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits20-21",
+                            "name": "FIPS_ECDSA_STEN",
+                            "description": "Enable self-test for ECDSA block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE_ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits22-23",
+                            "name": "FIPS_DRBG_STEN",
+                            "description": "Enable self-test for DRBG block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE_ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits24-25",
+                            "name": "FIPS_CMAC_STEN",
+                            "description": "Enable self-test for CMAC block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE_ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits26-27",
+                            "name": "FIPS_KDF_STEN",
+                            "description": "Enable self-test for KDF block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "Not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE_ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits30-31",
+                            "name": "SEC_BOOT_EN",
+                            "description": "Secure Boot Enable.",
+                            "values": [
+                                {
+                                    "name": "PLAIN_IMAGE",
+                                    "value": 0,
+                                    "description": "Plain image (internal flash with or without CRC)"
+                                },
+                                {
+                                    "name": "CMAC_CHECK_IMAGE",
+                                    "value": 1,
+                                    "description": "Do CMAC checking of image."
+                                },
+                                {
+                                    "name": "ECDSA_CHECK_IMAGE_0",
+                                    "value": 2,
+                                    "description": "Do complete ECDSA checking of signed images. (internal flash, ECDSA signed)"
+                                },
+                                {
+                                    "name": "ECDSA_CHECK_IMAGE_1",
+                                    "value": 3,
+                                    "description": "Do complete ECDSA checking of signed images. (internal flash, ECDSA signed)"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field020",
+                    "name": "PRINCE_CONFIG",
+                    "description": "Prince Configuration",
+                    "offset_int": "0x0020",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 16
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field020-bits16-17",
+                            "name": "LOCK_REG0",
+                            "description": "Lock Region 0",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED_0",
+                                    "value": 1,
+                                    "description": "Region is locked."
+                                },
+                                {
+                                    "name": "LOCKED_1",
+                                    "value": 2,
+                                    "description": "Region is locked."
+                                },
+                                {
+                                    "name": "LOCKED_2",
+                                    "value": 3,
+                                    "description": "Region is locked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field020-bits18-19",
+                            "name": "LOCK_REG1",
+                            "description": "Lock Region 1",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED_0",
+                                    "value": 1,
+                                    "description": "Region is locked."
+                                },
+                                {
+                                    "name": "LOCKED_1",
+                                    "value": 2,
+                                    "description": "Region is locked."
+                                },
+                                {
+                                    "name": "LOCKED_2",
+                                    "value": 3,
+                                    "description": "Region is locked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field020-bits20-21",
+                            "name": "LOCK_REG2",
+                            "description": "Lock Region 2",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED_0",
+                                    "value": 1,
+                                    "description": "Region is locked."
+                                },
+                                {
+                                    "name": "LOCKED_1",
+                                    "value": 2,
+                                    "description": "Region is locked."
+                                },
+                                {
+                                    "name": "LOCKED_2",
+                                    "value": 3,
+                                    "description": "Region is locked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field020-bits24-25",
+                            "name": "REG0_ERASE_CHECK_EN",
+                            "description": "Region 0 Erase Check Enable",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Check is disabled"
+                                },
+                                {
+                                    "name": "ENABLE_0",
+                                    "value": 1,
+                                    "description": "Check is enabled"
+                                },
+                                {
+                                    "name": "ENABLE_1",
+                                    "value": 2,
+                                    "description": "Check is enabled"
+                                },
+                                {
+                                    "name": "ENABLE_2",
+                                    "value": 3,
+                                    "description": "Check is enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field020-bits26-27",
+                            "name": "REG1_ERASE_CHECK_EN",
+                            "description": "Region 1 Erase Check Enable",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Check is disabled"
+                                },
+                                {
+                                    "name": "ENABLE_0",
+                                    "value": 1,
+                                    "description": "Check is enabled"
+                                },
+                                {
+                                    "name": "ENABLE_1",
+                                    "value": 2,
+                                    "description": "Check is enabled"
+                                },
+                                {
+                                    "name": "ENABLE_2",
+                                    "value": 3,
+                                    "description": "Check is enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field020-bits28-29",
+                            "name": "REG2_ERASE_CHECK_EN",
+                            "description": "Region 2 Erase Check Enable",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Check is disabled"
+                                },
+                                {
+                                    "name": "ENABLE_0",
+                                    "value": 1,
+                                    "description": "Check is enabled"
+                                },
+                                {
+                                    "name": "ENABLE_1",
+                                    "value": 2,
+                                    "description": "Check is enabled"
+                                },
+                                {
+                                    "name": "ENABLE_2",
+                                    "value": 3,
+                                    "description": "Check is enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "field024",
+                    "name": "PRINCE_SR_0",
+                    "description": "Region 0, Sub-region Enable",
+                    "offset_int": "0x0024",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field028",
+                    "name": "PRINCE_SR_1",
+                    "description": "Region 1, Sub-region Enable",
+                    "offset_int": "0x0028",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field02C",
+                    "name": "PRINCE_SR_2",
+                    "description": "Region 2, Sub-region Enable",
+                    "offset_int": "0x002C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field030",
+                    "name": "XTAL_32KHZ_CAPABANK_TRIM",
+                    "description": "Xtal 32kHz Capabank Trimming",
+                    "offset_int": "0x0030",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field030-bit0",
+                            "name": "TRIM_VALID",
+                            "description": "Trim Valid",
+                            "values": [
+                                {
+                                    "name": "NOT_VALID",
+                                    "value": 0,
+                                    "description": "Capa Bank trimmings not valid. Default trimmings value are used."
+                                },
+                                {
+                                    "name": "VALID",
+                                    "value": 1,
+                                    "description": "Capa Bank trimmings valid."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field030-bits1-10",
+                            "name": "XTAL_LOAD_CAP_IEC_PF_X100",
+                            "description": "XTAL LOAD CAP IEC PF X100"
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field030-bits11-20",
+                            "name": "PCB_XIN_PARA_CAP_PF_X100",
+                            "description": "PCB XIN PARA CAP PF X100"
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field030-bits21-30",
+                            "name": "PCB_XOUT_PARA_CAP_PF_X100",
+                            "description": "PCB XOUT PARA CAP PF X100"
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "field034",
+                    "name": "XTAL_16MHZ_CAPABANK_TRIM",
+                    "description": "Xtal 16MHz Capabank Trimming",
+                    "offset_int": "0x0034",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field034-bit0",
+                            "name": "TRIM_VALID",
+                            "description": "Trim Valid",
+                            "values": [
+                                {
+                                    "name": "NOT_VALID",
+                                    "value": 0,
+                                    "description": "Capa Bank trimmings not valid. Default trimmings value are used."
+                                },
+                                {
+                                    "name": "VALID",
+                                    "value": 1,
+                                    "description": "Capa Bank trimmings valid."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field034-bits1-10",
+                            "name": "XTAL_LOAD_CAP_IEC_PF_X100",
+                            "description": "XTAL LOAD CAP IEC PF X100"
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field034-bits11-20",
+                            "name": "PCB_XIN_PARA_CAP_PF_X100",
+                            "description": "PCB XIN PARA CAP PF X100"
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field034-bits21-30",
+                            "name": "PCB_XOUT_PARA_CAP_PF_X100",
+                            "description": "PCB XOUT PARA CAP PF X100"
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "field038",
+                    "name": "FLASH_REMAP_SIZE",
+                    "description": "Flash Remap Size",
+                    "offset_int": "0x0038",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field03C",
+                    "name": "FLASH_REMAP_OFFSET",
+                    "description": "Flash Remap Offset",
+                    "offset_int": "0x003C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field040",
+                    "name": "PRINCE_XOM_0",
+                    "description": "Prince eXecute-Only-Memory (XOM) 0",
+                    "offset_int": "0x0040",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field044",
+                    "name": "PRINCE_XOM_1",
+                    "description": "Prince eXecute-Only-Memory (XOM) 1",
+                    "offset_int": "0x0044",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field048",
+                    "name": "PRINCE_XOM_2",
+                    "description": "Prince eXecute-Only-Memory (XOM) 2",
+                    "offset_int": "0x0048",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field04C",
+                    "name": "RoTK_USAGE",
+                    "description": "Root of Trust Key Usage",
+                    "offset_int": "0x004C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field04C-bits0-2",
+                            "name": "RoTK0_Usage",
+                            "description": "RoTK0_Usage",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_AND_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot and FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot and FW image CA."
+                                },
+                                {
+                                    "name": "IMGKEY_FWUPD_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key and FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field04C-bits3-5",
+                            "name": "RoTK1_Usage",
+                            "description": "RoTK1_Usage",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_AND_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot and FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot and FW image CA."
+                                },
+                                {
+                                    "name": "IMGKEY_FWUPD_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key and FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field04C-bits6-8",
+                            "name": "RoTK2_Usage",
+                            "description": "RoTK2_Usage",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_AND_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot and FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot and FW image CA."
+                                },
+                                {
+                                    "name": "IMGKEY_FWUPD_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key and FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field04C-bits9-11",
+                            "name": "RoTK3_Usage",
+                            "description": "RoTK3_Usage",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_AND_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot and FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot and FW image CA."
+                                },
+                                {
+                                    "name": "IMGKEY_FWUPD_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key and FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 20
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ROTKH",
+                "description": "ROTKH fields"
+            },
+            "registers": [
+                {
+                    "id": "field050",
+                    "name": "ROTKH0",
+                    "description": "Root of Trust Key Hash 0",
+                    "offset_int": "0x0050",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field054",
+                    "name": "ROTKH1",
+                    "description": "Root of Trust Key Hash 1",
+                    "offset_int": "0x0054",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field058",
+                    "name": "ROTKH2",
+                    "description": "Root of Trust Key Hash 2",
+                    "offset_int": "0x0058",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field05C",
+                    "name": "ROTKH3",
+                    "description": "Root of Trust Key Hash 3",
+                    "offset_int": "0x005C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field060",
+                    "name": "ROTKH4",
+                    "description": "Root of Trust Key Hash 4",
+                    "offset_int": "0x0060",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field064",
+                    "name": "ROTKH5",
+                    "description": "Root of Trust Key Hash 5",
+                    "offset_int": "0x0064",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field068",
+                    "name": "ROTKH6",
+                    "description": "Root of Trust Key Hash 6",
+                    "offset_int": "0x0068",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field06C",
+                    "name": "ROTKH7",
+                    "description": "Root of Trust Key Hash 7",
+                    "offset_int": "0x006C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field070",
+                    "name": "ROTKH8",
+                    "description": "Root of Trust Key Hash 8",
+                    "offset_int": "0x0070",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field074",
+                    "name": "ROTKH9",
+                    "description": "Root of Trust Key Hash 9",
+                    "offset_int": "0x0074",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field078",
+                    "name": "ROTKH10",
+                    "description": "Root of Trust Key Hash 10",
+                    "offset_int": "0x0078",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field07C",
+                    "name": "ROTKH11",
+                    "description": "Root of Trust Key Hash 11",
+                    "offset_int": "0x007C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field080",
+                    "name": "FLEXSPI_BOOT_CFG0",
+                    "description": "FlexSPI Boot Configuration 0",
+                    "offset_int": "0x0080",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field080-bit0",
+                            "name": "FLEXSPI_AUTO_PROBE_EN",
+                            "description": "FLEXSPI_AUTO_PROBE_EN",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field080-bits1-3",
+                            "name": "FLEXSPI_PROBE_TYPE",
+                            "description": "FLEXSPI_PROBE_TYPE",
+                            "values": [
+                                {
+                                    "name": "QUADSPI_NOR",
+                                    "value": 0,
+                                    "description": "QuadSPI NOR"
+                                },
+                                {
+                                    "name": "MACRONIX_OCTAL_FLASH",
+                                    "value": 1,
+                                    "description": "Macronix Octal FLASH"
+                                },
+                                {
+                                    "name": "MICRON_OCTAL_FLASH",
+                                    "value": 2,
+                                    "description": "Micron Octal FLASH"
+                                },
+                                {
+                                    "name": "ADESTO_OCTAL_FLASH",
+                                    "value": 3,
+                                    "description": "Adesto Octal FLASH"
+                                },
+                                {
+                                    "name": "Reserved_0",
+                                    "value": 4,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_1",
+                                    "value": 5,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_2",
+                                    "value": 6,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_3",
+                                    "value": 7,
+                                    "description": "Reserved."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field080-bits4-6",
+                            "name": "FLEXSPI_FLASH_TYPE",
+                            "description": "FLEXSPI_FLASH_TYPE",
+                            "values": [
+                                {
+                                    "name": "QSPI_ADDR_3B",
+                                    "value": 0,
+                                    "description": "QSPI_ADDR_3B"
+                                },
+                                {
+                                    "name": "Reserved_0",
+                                    "value": 1,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "HYPER_1V8",
+                                    "value": 2,
+                                    "description": "HYPER_1V8"
+                                },
+                                {
+                                    "name": "HYPER_3V3",
+                                    "value": 3,
+                                    "description": "HYPER_3V3"
+                                },
+                                {
+                                    "name": "FlexSPI_DDR_MXIC",
+                                    "value": 4,
+                                    "description": "FlexSPI_DDR_MXIC"
+                                },
+                                {
+                                    "name": "FlexSPI_DDR_MICRON",
+                                    "value": 5,
+                                    "description": "FlexSPI_DDR_MICRON"
+                                },
+                                {
+                                    "name": "Reserved_1",
+                                    "value": 6,
+                                    "description": "Reserved."
+                                },
+                                {
+                                    "name": "Reserved_2",
+                                    "value": 7,
+                                    "description": "Reserved."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field080-bits7-10",
+                            "name": "FLEXSPI_DUMMY_CYCLES",
+                            "description": "FLEXSPI_DUMMY_CYCLES"
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field080-bits11-13",
+                            "name": "FLEXSPI_FREQUENCY",
+                            "description": "FLEXSPI_FREQUENCY",
+                            "values": [
+                                {
+                                    "name": "MHZ_50",
+                                    "value": 0,
+                                    "description": "50 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_60",
+                                    "value": 1,
+                                    "description": "60 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_80",
+                                    "value": 2,
+                                    "description": "80 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_100",
+                                    "value": 3,
+                                    "description": "100 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_120",
+                                    "value": 4,
+                                    "description": "120 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_133",
+                                    "value": 5,
+                                    "description": "133 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_166",
+                                    "value": 6,
+                                    "description": "166 Mhz"
+                                },
+                                {
+                                    "name": "MHZ_200",
+                                    "value": 7,
+                                    "description": "200 Mhz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field080-bit14",
+                            "name": "FLEXSPI_RESET_ENABLE",
+                            "description": "FLEXSPI_RESET_ENABLE",
+                            "values": [
+                                {
+                                    "name": "NO_RESET",
+                                    "value": 0,
+                                    "description": "No Reset(O/QSPI device reset pin is not connected or available.)"
+                                },
+                                {
+                                    "name": "ENABLE_RESET",
+                                    "value": 1,
+                                    "description": "Enable Reset(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0",
+                            "id": "field080-bits15-17",
+                            "name": "FLEXSPI_RESET_GPIO_PORT",
+                            "description": "FLEXSPI_RESET_ENABLE"
+                        },
+                        {
+                            "width": 5,
+                            "reset_value_int": "0",
+                            "id": "field080-bits18-22",
+                            "name": "FLEXSPI_RESET_GPIO_PIN",
+                            "description": "FLEXSPI_RESET_GPIO_PIN"
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field080-bits23-24",
+                            "name": "FLEXSPI_HOLD_TIME",
+                            "description": "FLEXSPI_HOLD TIME",
+                            "values": [
+                                {
+                                    "name": "WAIT_500_MICROSECS",
+                                    "value": 0,
+                                    "description": "Wait for 500 micro seconds"
+                                },
+                                {
+                                    "name": "WAIT_1_MILISECS",
+                                    "value": 1,
+                                    "description": "Wait for 1 mili seconds"
+                                },
+                                {
+                                    "name": "WAIT_3_MILISECS",
+                                    "value": 2,
+                                    "description": "Wait for 3 mili seconds"
+                                },
+                                {
+                                    "name": "WAIT_10_MILISECS",
+                                    "value": 3,
+                                    "description": "Wait for 10 mili seconds"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field080-bits25-28",
+                            "name": "FLEXSPI_PWR_HOLD_TIME",
+                            "description": "FLEXSPI_PWR_HOLD_TIME",
+                            "values": [
+                                {
+                                    "name": "NO_DELAY",
+                                    "value": 0,
+                                    "description": "No delay"
+                                },
+                                {
+                                    "name": "WAIT_100_MICROSECS",
+                                    "value": 1,
+                                    "description": "Waits additional 100 micro-seconds."
+                                },
+                                {
+                                    "name": "WAIT_500_MICROSECS",
+                                    "value": 2,
+                                    "description": "Waits additional 500 micro-seconds."
+                                },
+                                {
+                                    "name": "WAIT_1_MILISECS",
+                                    "value": 3,
+                                    "description": "Waits additional 1 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_10_MILISECS",
+                                    "value": 4,
+                                    "description": "Waits additional 10 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_20_MILISECS",
+                                    "value": 5,
+                                    "description": "Waits additional 20 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_40_MILISECS",
+                                    "value": 6,
+                                    "description": "Waits additional 40 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_60_MILISECS",
+                                    "value": 7,
+                                    "description": "Waits additional 60 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_80_MILISECS",
+                                    "value": 8,
+                                    "description": "Waits additional 80 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_100_MILISECS",
+                                    "value": 9,
+                                    "description": "Waits additional 100 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_120_MILISECS",
+                                    "value": 10,
+                                    "description": "Waits additional 120 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_140_MILISECS",
+                                    "value": 11,
+                                    "description": "Waits additional 140 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_160_MILISECS",
+                                    "value": 12,
+                                    "description": "Waits additional 160 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_180_MILISECS",
+                                    "value": 13,
+                                    "description": "Waits additional 180 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_200_MILISECS",
+                                    "value": 14,
+                                    "description": "Waits additional 200 mili-seconds."
+                                },
+                                {
+                                    "name": "WAIT_220_MILISECS",
+                                    "value": 15,
+                                    "description": "Waits additional 220 mili-seconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field080-bit29",
+                            "name": "PIN_SLEW_RATE",
+                            "description": "Enable faster slew rate",
+                            "values": [
+                                {
+                                    "name": "STANDARD",
+                                    "value": 0,
+                                    "description": "Standard slew rate"
+                                },
+                                {
+                                    "name": "FASTER",
+                                    "value": 1,
+                                    "description": "Faster slew rate"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "field084",
+                    "name": "FLEXSPI_BOOT_CFG1",
+                    "description": "FlexSPI Boot Configuration 1",
+                    "offset_int": "0x0084",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 7,
+                            "reset_value_int": "0",
+                            "id": "field084-bits0-6",
+                            "name": "FLEXSPI_DELAY_CELL_NUM",
+                            "description": "FLEXSPI_DELAY_CELL_NUM"
+                        },
+                        {
+                            "width": 10,
+                            "reset_value_int": "0",
+                            "id": "field084-bits7-16",
+                            "name": "FLEXSPI_IMAGE_OFFSET",
+                            "description": "FLEXSPI_IMAGE_OFFSET"
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field084-bits17-20",
+                            "name": "FLEXSPI_REMAP_IMAGE_SIZE",
+                            "description": "FLEXSPI_REMAP_IMAGE_SIZE",
+                            "values": [
+                                {
+                                    "name": "SIZE",
+                                    "value": 0,
+                                    "description": "SIZE"
+                                },
+                                {
+                                    "name": "SIZE_1MB",
+                                    "value": 1,
+                                    "description": "SIZE_1MB Size of remapped area is 1MByte."
+                                },
+                                {
+                                    "name": "SIZE_2MB",
+                                    "value": 2,
+                                    "description": "SIZE_2MB Size of remapped area is 2MByte."
+                                },
+                                {
+                                    "name": "SIZE_3MB",
+                                    "value": 3,
+                                    "description": "SIZE_3MB Size of remapped area is 3MByte."
+                                },
+                                {
+                                    "name": "SIZE_4MB",
+                                    "value": 4,
+                                    "description": "SIZE_4MB Size of remapped area is 4MByte."
+                                },
+                                {
+                                    "name": "SIZE_5MB",
+                                    "value": 5,
+                                    "description": "SIZE_5MB Size of remapped area is 5MByte."
+                                },
+                                {
+                                    "name": "SIZE_6MB",
+                                    "value": 6,
+                                    "description": "SIZE_6MB Size of remapped area is 6MByte."
+                                },
+                                {
+                                    "name": "SIZE_7MB",
+                                    "value": 7,
+                                    "description": "SIZE_7MB Size of remapped area is 7MByte."
+                                },
+                                {
+                                    "name": "SIZE_8MB",
+                                    "value": 8,
+                                    "description": "SIZE_8MB Size of remapped area is 8MByte."
+                                },
+                                {
+                                    "name": "SIZE_9MB",
+                                    "value": 9,
+                                    "description": "SIZE_9MB Size of remapped area is 9MByte."
+                                },
+                                {
+                                    "name": "SIZE_10MB",
+                                    "value": 10,
+                                    "description": "SIZE_10MB Size of remapped area is 10MByte."
+                                },
+                                {
+                                    "name": "SIZE_11MB",
+                                    "value": 11,
+                                    "description": "SIZE_11MB Size of remapped area is 11MByte."
+                                },
+                                {
+                                    "name": "SIZE_12MB",
+                                    "value": 12,
+                                    "description": "SIZE_12MB Size of remapped area is 12MByte."
+                                },
+                                {
+                                    "name": "SIZE_256KB",
+                                    "value": 13,
+                                    "description": "SIZE_256KB Size of remapped area is 256KByte."
+                                },
+                                {
+                                    "name": "SIZE_512KB",
+                                    "value": 14,
+                                    "description": "SIZE_512KB Size of remapped area is 512KByte."
+                                },
+                                {
+                                    "name": "SIZE_768KB",
+                                    "value": 15,
+                                    "description": "SIZE_768KB Size of remapped area is 768KByte."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 11
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00088-0008C",
+                "description": "Reserved 00088-0008C"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00088",
+                    "name": "Reserved 0x00088",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0088",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0008C",
+                    "name": "Reserved 0x0008C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x008C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "IPED",
+                "description": "IPED fields"
+            },
+            "registers": [
+                {
+                    "id": "field090",
+                    "name": "IPED0_START",
+                    "description": "IPED region 0 Start",
+                    "offset_int": "0x0090",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field090-bits0-1",
+                            "name": "ENABLE_REG0",
+                            "description": "Enable IPED region 0 settings during boot",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Region is disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Region is enabled"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_0",
+                                    "value": 2,
+                                    "description": "Region is enabled and locked"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_1",
+                                    "value": 3,
+                                    "description": "Region is enabled and locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field090-bits8-31",
+                            "name": "IPED_REG0_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 0 decryption start address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field094",
+                    "name": "IPED0_END",
+                    "description": "IPED region 0 End",
+                    "offset_int": "0x0094",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field094-bits8-31",
+                            "name": "IPED_REG0_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 0 decryption end address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field098",
+                    "name": "IPED1_START",
+                    "description": "IPED region 1 Start",
+                    "offset_int": "0x0098",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field098-bits0-1",
+                            "name": "ENABLE_REG1",
+                            "description": "Enable IPED region 1 settings during boot",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Region is disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Region is enabled"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_0",
+                                    "value": 2,
+                                    "description": "Region is enabled and locked"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_1",
+                                    "value": 3,
+                                    "description": "Region is enabled and locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field098-bits8-31",
+                            "name": "IPED_REG1_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 1 decryption start address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field09C",
+                    "name": "IPED1_END",
+                    "description": "IPED region 1 End",
+                    "offset_int": "0x009C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field09C-bits8-31",
+                            "name": "IPED_REG1_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 1 decryption end address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field0A0",
+                    "name": "IPED2_START",
+                    "description": "IPED region 2 Start",
+                    "offset_int": "0x00A0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field0A0-bits0-1",
+                            "name": "ENABLE_REG2",
+                            "description": "Enable IPED region 2 settings during boot",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Region is disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Region is enabled"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_0",
+                                    "value": 2,
+                                    "description": "Region is enabled and locked"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_1",
+                                    "value": 3,
+                                    "description": "Region is enabled and locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field0A0-bits8-31",
+                            "name": "IPED_REG2_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 2 decryption start address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field0A4",
+                    "name": "IPED2_END",
+                    "description": "IPED region 2 End",
+                    "offset_int": "0x00A4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field0A4-bits8-31",
+                            "name": "IPED_REG2_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 2 decryption end address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field0A8",
+                    "name": "IPED3_START",
+                    "description": "IPED region 3 Start",
+                    "offset_int": "0x00A8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field0A8-bits0-1",
+                            "name": "ENABLE_REG3",
+                            "description": "Enable IPED region 3 settings during boot",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Region is disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Region is enabled"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_0",
+                                    "value": 2,
+                                    "description": "Region is enabled and locked"
+                                },
+                                {
+                                    "name": "ENABLED_AND_LOCKED_1",
+                                    "value": 3,
+                                    "description": "Region is enabled and locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field0A8-bits8-31",
+                            "name": "IPED_REG3_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 3 decryption start address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                },
+                {
+                    "id": "field0AC",
+                    "name": "IPED3_END",
+                    "description": "IPED region 3 End",
+                    "offset_int": "0x00AC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 24,
+                            "reset_value_int": "0",
+                            "id": "field0AC-bits8-31",
+                            "name": "IPED_REG3_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 3 decryption end address for FlexSPI boot. Lower address bits are always 0",
+                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Quick GPIO Configuration",
+                "description": "Quick GPIO Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field0B0",
+                    "name": "QUICK_SET_GPIO_0",
+                    "description": "Quick Set to Drive GPIO 0 port pins high",
+                    "offset_int": "0x00B0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0B4",
+                    "name": "QUICK_CLR_GPIO_0",
+                    "description": "Quick Clear to Drive GPIO 0 port pins low",
+                    "offset_int": "0x00B4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0B8",
+                    "name": "QUICK_SET_GPIO_1",
+                    "description": "Quick Set to Drive GPIO 1 port pins high",
+                    "offset_int": "0x00B8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0BC",
+                    "name": "QUICK_CLR_GPIO_1",
+                    "description": "Quick Clear to Drive GPIO 1 port pins low",
+                    "offset_int": "0x00BC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 000C0-000FC",
+                "description": "Reserved 000C0-000FC"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000C0",
+                    "name": "Reserved 0x000C0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000C4",
+                    "name": "Reserved 0x000C4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000C8",
+                    "name": "Reserved 0x000C8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000CC",
+                    "name": "Reserved 0x000CC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00CC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000D0",
+                    "name": "Reserved 0x000D0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000D4",
+                    "name": "Reserved 0x000D4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000D8",
+                    "name": "Reserved 0x000D8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000DC",
+                    "name": "Reserved 0x000DC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00DC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E0",
+                    "name": "Reserved 0x000E0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E4",
+                    "name": "Reserved 0x000E4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E8",
+                    "name": "Reserved 0x000E8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000EC",
+                    "name": "Reserved 0x000EC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00EC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F0",
+                    "name": "Reserved 0x000F0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F4",
+                    "name": "Reserved 0x000F4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F8",
+                    "name": "Reserved 0x000F8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000FC",
+                    "name": "Reserved 0x000FC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00FC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Customer defined",
+                "description": "Customer defined"
+            },
+            "registers": [
+                {
+                    "id": "field100",
+                    "name": "CUSTOMER_DEFINED0",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0100",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field104",
+                    "name": "CUSTOMER_DEFINED1",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0104",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field108",
+                    "name": "CUSTOMER_DEFINED2",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0108",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field10C",
+                    "name": "CUSTOMER_DEFINED3",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x010C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field110",
+                    "name": "CUSTOMER_DEFINED4",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0110",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field114",
+                    "name": "CUSTOMER_DEFINED5",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0114",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field118",
+                    "name": "CUSTOMER_DEFINED6",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0118",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field11C",
+                    "name": "CUSTOMER_DEFINED7",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x011C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field120",
+                    "name": "CUSTOMER_DEFINED8",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0120",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field124",
+                    "name": "CUSTOMER_DEFINED9",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0124",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field128",
+                    "name": "CUSTOMER_DEFINED10",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0128",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field12C",
+                    "name": "CUSTOMER_DEFINED11",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x012C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field130",
+                    "name": "CUSTOMER_DEFINED12",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0130",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field134",
+                    "name": "CUSTOMER_DEFINED13",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0134",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field138",
+                    "name": "CUSTOMER_DEFINED14",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0138",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field13C",
+                    "name": "CUSTOMER_DEFINED15",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x013C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field140",
+                    "name": "CUSTOMER_DEFINED16",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0140",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field144",
+                    "name": "CUSTOMER_DEFINED17",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0144",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field148",
+                    "name": "CUSTOMER_DEFINED18",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0148",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field14C",
+                    "name": "CUSTOMER_DEFINED19",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x014C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field150",
+                    "name": "CUSTOMER_DEFINED20",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0150",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field154",
+                    "name": "CUSTOMER_DEFINED21",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0154",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field158",
+                    "name": "CUSTOMER_DEFINED22",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0158",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field15C",
+                    "name": "CUSTOMER_DEFINED23",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x015C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field160",
+                    "name": "CUSTOMER_DEFINED24",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0160",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field164",
+                    "name": "CUSTOMER_DEFINED25",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0164",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field168",
+                    "name": "CUSTOMER_DEFINED26",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0168",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field16C",
+                    "name": "CUSTOMER_DEFINED27",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x016C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field170",
+                    "name": "CUSTOMER_DEFINED28",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0170",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field174",
+                    "name": "CUSTOMER_DEFINED29",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0174",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field178",
+                    "name": "CUSTOMER_DEFINED30",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0178",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field17C",
+                    "name": "CUSTOMER_DEFINED31",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x017C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field180",
+                    "name": "CUSTOMER_DEFINED32",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0180",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field184",
+                    "name": "CUSTOMER_DEFINED33",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0184",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field188",
+                    "name": "CUSTOMER_DEFINED34",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0188",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field18C",
+                    "name": "CUSTOMER_DEFINED35",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x018C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field190",
+                    "name": "CUSTOMER_DEFINED36",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0190",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field194",
+                    "name": "CUSTOMER_DEFINED37",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0194",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field198",
+                    "name": "CUSTOMER_DEFINED38",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0198",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field19C",
+                    "name": "CUSTOMER_DEFINED39",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x019C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1A0",
+                    "name": "CUSTOMER_DEFINED40",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01A0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1A4",
+                    "name": "CUSTOMER_DEFINED41",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01A4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1A8",
+                    "name": "CUSTOMER_DEFINED42",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01A8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1AC",
+                    "name": "CUSTOMER_DEFINED43",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01AC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1B0",
+                    "name": "CUSTOMER_DEFINED44",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01B0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1B4",
+                    "name": "CUSTOMER_DEFINED45",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01B4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1B8",
+                    "name": "CUSTOMER_DEFINED46",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01B8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1BC",
+                    "name": "CUSTOMER_DEFINED47",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01BC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1C0",
+                    "name": "CUSTOMER_DEFINED48",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01C0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1C4",
+                    "name": "CUSTOMER_DEFINED49",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01C4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1C8",
+                    "name": "CUSTOMER_DEFINED50",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01C8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1CC",
+                    "name": "CUSTOMER_DEFINED51",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01CC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1D0",
+                    "name": "CUSTOMER_DEFINED52",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01D0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1D4",
+                    "name": "CUSTOMER_DEFINED53",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01D4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1D8",
+                    "name": "CUSTOMER_DEFINED54",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01D8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1DC",
+                    "name": "CUSTOMER_DEFINED55",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01DC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1E0",
+                    "name": "CUSTOMER_DEFINED56",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01E0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1E4",
+                    "name": "CUSTOMER_DEFINED57",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01E4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1E8",
+                    "name": "CUSTOMER_DEFINED58",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01E8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1EC",
+                    "name": "CUSTOMER_DEFINED59",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01EC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CMAC",
+                "description": "CMAC fields"
+            },
+            "registers": [
+                {
+                    "id": "field1F0",
+                    "name": "CMPA_CMAC0",
+                    "description": "CMPA CMAC 0",
+                    "offset_int": "0x01F0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1F4",
+                    "name": "CMPA_CMAC1",
+                    "description": "CMPA CMAC 1",
+                    "offset_int": "0x01F4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1F8",
+                    "name": "CMPA_CMAC2",
+                    "description": "CMPA CMAC 2",
+                    "offset_int": "0x01F8",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1FC",
+                    "name": "CMPA_CMAC3",
+                    "description": "CMPA CMAC 3",
+                    "offset_int": "0x01FC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        }
+    ]
+}

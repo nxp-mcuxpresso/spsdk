@@ -6,8 +6,8 @@
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
 # default.
-# Possible options: <mx8ulp, mx93, mx95, rt118x>
-family: mx93
+# Possible options: <mimx8ulp, mimx9352, mimx9596, mimxrt1189>
+family: mimx9352
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: a1

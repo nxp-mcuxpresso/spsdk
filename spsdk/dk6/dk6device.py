@@ -7,7 +7,7 @@
 """DK6 Device high level API."""
 import logging
 from types import TracebackType
-from typing import Callable, Dict, List, Optional, Type, Union
+from typing import Callable, Optional, Type, Union
 
 from spsdk.dk6.commands import (
     GetChipIdResponse,
@@ -170,7 +170,7 @@ class DK6Device:
         :param device: SerialDevice that will be used for communication
         :param baudrate: communication baudrate, defaults to 115200
         """
-        self.memories: Dict[int, DK6Memory] = {}
+        self.memories: dict[int, DK6Memory] = {}
         self.chip_id: Union[GetChipIdResponse, None] = None
         self.uart = Uart(device)
         self.protocol = DK6Protocol(self.uart)
@@ -180,7 +180,10 @@ class DK6Device:
 
     def __del__(self) -> None:
         logger.info("Closing DK6 device")
-        self.close()
+        try:
+            self.close()
+        except SPSDKError as exc:
+            logger.debug(f"Device cannot be closed: {exc}")
 
     def __enter__(self) -> "DK6Device":
         return self
@@ -194,7 +197,7 @@ class DK6Device:
         logger.info("Closing DK6 device")
         self.close()
 
-    def _split_data(self, data: bytes) -> List[bytes]:
+    def _split_data(self, data: bytes) -> list[bytes]:
         """Split data to send if necessary.
 
         :param data: Data to send

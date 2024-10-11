@@ -13,16 +13,14 @@ manual of your device for allowed values.
 
 
 import logging
-import os
 from struct import pack, unpack
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Union
 
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_certificate import AhabCertificate
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
     LITTLE_ENDIAN,
@@ -35,13 +33,13 @@ from spsdk.image.ahab.ahab_data import (
     AHABTags,
     FlagsSrkSet,
 )
-from spsdk.image.ahab.ahab_iae import ImageArrayEntry, ImageArrayEntryTemplates
-from spsdk.image.ahab.ahab_sign_block import SignatureBlock
+from spsdk.image.ahab.ahab_iae import ImageArrayEntry, ImageArrayEntryTemplates, ImageArrayEntryV2
+from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
+from spsdk.image.ahab.ahab_srk import SRKTableArray
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.fuses import FuseScript
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import align, value_to_int, write_file
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.misc import align, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -71,9 +69,12 @@ class AHABContainerBase(HeaderContainer):
 
     """
 
+    SIGNATURE_BLOCK = SignatureBlock
+
     TAG = 0x00  # Need to be updated by child class
     VERSION = 0x00
     NAME = "Container"
+    CONTAINER_SIZE = 0x400
     FLAGS_SRK_SET_OFFSET = 0
     FLAGS_SRK_SET_SIZE = 2
 
@@ -84,10 +85,11 @@ class AHABContainerBase(HeaderContainer):
 
     def __init__(
         self,
+        chip_config: AhabChipConfig,
         flags: int = 0,
         fuse_version: int = 0,
         sw_version: int = 0,
-        signature_block: Optional[SignatureBlock] = None,
+        signature_block: Optional[Union[SignatureBlock, SignatureBlockV2]] = None,
     ):
         """Class object initializer.
 
@@ -102,11 +104,17 @@ class AHABContainerBase(HeaderContainer):
         self.flags = flags
         self.fuse_version = fuse_version
         self.sw_version = sw_version
-        self.signature_block = signature_block or SignatureBlock()
-        self.search_paths: List[str] = []
+        self.signature_block = signature_block
+        self.chip_config = AhabChipContainerConfig(
+            base=chip_config,
+            used_srk_id=self.flag_used_srk_id,
+            srk_set=self.flag_srk_set,
+            srk_revoke_keys=self.flag_srk_revoke_keys,
+            locked=False,
+        )
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, AHABContainerBase):
+        if isinstance(other, type(self)):
             if (
                 super().__eq__(other)
                 and self.flags == other.flags
@@ -170,6 +178,24 @@ class AHABContainerBase(HeaderContainer):
         return hex(self.flag_srk_revoke_keys)
 
     @property
+    def srk_count(self) -> int:
+        """Get count of used signatures in container."""
+        if self.signature_block and self.signature_block.srk_assets:
+            return self.signature_block.srk_assets.srk_count
+
+        return 0
+
+    def get_srk_hash(self, srk_id: int = 0) -> bytes:
+        """Get SRK hash.
+
+        :param srk_id: ID of SRK table in case of using multiple Signatures, default is 0.
+        :return: SHA256 hash of SRK table.
+        """
+        if self.signature_block and self.signature_block.srk_assets:
+            return self.signature_block.srk_assets.compute_srk_hash(srk_id)
+        return b""
+
+    @property
     def _signature_block_offset(self) -> int:
         """Returns current signature block offset.
 
@@ -202,9 +228,10 @@ class AHABContainerBase(HeaderContainer):
 
         :return: Length in bytes of AHAB Container header.
         """
-        return super().__len__() + len(  # This returns the fixed length of the container header
-            self.signature_block
-        )
+        ret = super().__len__()
+        if self.signature_block is not None:
+            ret += len(self.signature_block)
+        return ret  # This returns the fixed length of the container header
 
     @classmethod
     def format(cls) -> str:
@@ -225,13 +252,12 @@ class AHABContainerBase(HeaderContainer):
         :raises SPSDKError: When inconsistent image array length is detected.
         """
         # Update the signature block to get overall size of it
-        self.signature_block.update_fields()
+        if self.signature_block is not None:
+            self.signature_block.update_fields()
         # Update the Container header length
         self.length = self.header_length()
         # # Sign the image header
-        if self.flag_srk_set != FlagsSrkSet.NONE:
-            assert self.signature_block.signature
-            self.signature_block.signature.sign(self.get_signature_data())
+        self.sign_itself()
 
     def get_signature_data(self) -> bytes:
         """Returns binary data to be signed.
@@ -258,7 +284,7 @@ class AHABContainerBase(HeaderContainer):
             | t |   +---------------------+---------------------+     Sign       |
             | u |   |     blob offset     | signature offset    |                |
             | r |   +---------------------+---------------------+                |
-            | e |   |                   SRK Table               |                |
+            | e |   |       SRK Table / SRK Table Array         |                |
             |   +---+-----------+---------+--------+------------+----------------+
             | B | S |   tag     | length  | length | version    | Signature data |
             | l | i +-----------+---------+--------+------------+ fixed length   |
@@ -273,11 +299,22 @@ class AHABContainerBase(HeaderContainer):
 
         :return: bytes representing data to be signed.
         """
-        if not self.signature_block.signature or not self.signature_block.srk_table:
+        if (
+            not self.signature_block
+            or not self.signature_block.signature
+            or not self.signature_block.srk_assets
+        ):
             return bytes()  # Its OK to return just empty data - the verifier catch this issue
 
         signature_offset = self._signature_block_offset + self.signature_block.signature_offset
         return self._export()[:signature_offset]
+
+    def sign_itself(self) -> None:
+        """Sign itself if needed."""
+        if self.flag_srk_set != FlagsSrkSet.NONE:
+            if not self.signature_block:
+                raise SPSDKError("Cannot sign because the Signature block is missing.")
+            self.signature_block.sign_itself(self.get_signature_data())
 
     def _export(self) -> bytes:
         """Export container header into bytes.
@@ -309,27 +346,46 @@ class AHABContainerBase(HeaderContainer):
         ret.add_record_bit_range("Flags", self.flags, 32)
         ret.add_record_bit_range("SW version", self.flags, 16)
         ret.add_record_bit_range("Fuse version", self.flags, 8)
+        ret.add_record_range("Signature Block offset", self._signature_block_offset, max_val=65535)
 
-        ret.add_child(self.signature_block.verify())
+        if self.signature_block:
+            ret.add_child(self.signature_block.verify())
+
         return ret
 
-    @staticmethod
-    def _parse(binary: bytes) -> Tuple[int, int, int, int, int]:
+    @classmethod
+    def pre_parse_verify(cls, data: bytes) -> Verifier:
+        """Pre-Parse verify of AHAB container.
+
+        :param data: Binary data with Container block to pre-parse.
+        :return: Verifier of pre-parsed binary data.
+        """
+        ret = cls.check_container_head(data)
+        if ret.has_errors:
+            return ret
+        (signature_block_offset, _) = unpack(LITTLE_ENDIAN + UINT16 + UINT16, data[0x0C:0x10])
+
+        ret.add_child(cls.SIGNATURE_BLOCK.pre_parse_verify(data[signature_block_offset:]))
+        return ret
+
+    @classmethod
+    def _parse(cls, binary: bytes) -> tuple[int, int, int, int, int, int]:
         """Parse input binary chunk to the container object.
 
         :param binary: Binary data with Container block to parse.
         :return: Tuple of following AHAB container fields:
+            - container length
             - flags
             - software version
             - fuse version
             - number of images
             - signature block offset
         """
-        AHABContainer.check_container_head(binary).validate()
-        image_format = AHABContainer.format()
+        cls.check_container_head(binary).validate()
+        image_format = cls.format()
         (
             _,  # version
-            _,  # container_length
+            container_length,
             _,  # tag
             flags,
             sw_version,
@@ -337,48 +393,48 @@ class AHABContainerBase(HeaderContainer):
             number_of_images,
             signature_block_offset,
             _,  # reserved
-        ) = unpack(image_format, binary[: AHABContainer.fixed_length()])
+        ) = unpack(image_format, binary[: cls.fixed_length()])
 
-        return (flags, sw_version, fuse_version, number_of_images, signature_block_offset)
+        return (
+            container_length,
+            flags,
+            sw_version,
+            fuse_version,
+            number_of_images,
+            signature_block_offset,
+        )
 
-    def _create_config(self, index: int, data_path: str) -> Dict[str, Any]:
+    def _create_flags_config(self) -> dict[str, Any]:
+        """Create configuration of the AHAB container flags.
+
+        :return: Configuration dictionary.
+        """
+        cfg: dict[str, Any] = {}
+
+        cfg["srk_set"] = self.flag_srk_set.label
+        cfg["used_srk_id"] = self.flag_used_srk_id
+        cfg["srk_revoke_mask"] = self.flag_srk_revoke_mask
+        return cfg
+
+    def _create_config(self, index: int, data_path: str) -> dict[str, Any]:
         """Create configuration of the AHAB Image.
 
         :param index: Container index.
         :param data_path: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        cfg: Dict[str, Any] = {}
+        cfg = self._create_flags_config()
 
-        cfg["srk_set"] = self.flag_srk_set.label
-        cfg["used_srk_id"] = self.flag_used_srk_id
-        cfg["srk_revoke_mask"] = self.flag_srk_revoke_mask
         cfg["fuse_version"] = self.fuse_version
         cfg["sw_version"] = self.sw_version
-        cfg["signing_key"] = "N/A"
 
-        if self.signature_block.srk_table:
-            cfg["srk_table"] = self.signature_block.srk_table.create_config(index, data_path)
-
-        if self.signature_block.certificate:
-            cert_cfg = self.signature_block.certificate.create_config(
-                index, data_path, self.flag_srk_set
-            )
-            write_file(
-                CommentedConfig(
-                    "Parsed AHAB Certificate", AhabCertificate.get_validation_schemas()
-                ).get_config(cert_cfg),
-                os.path.join(data_path, "certificate.yaml"),
-            )
-            cfg["certificate"] = "certificate.yaml"
-
-        if self.signature_block.blob:
-            cfg["blob"] = self.signature_block.blob.create_config(index, data_path)
+        if self.signature_block:
+            cfg.update(self.signature_block.create_config(index=index, data_path=data_path))
 
         return cfg
 
-    def load_from_config_generic(self, config: Dict[str, Any]) -> None:
-        """Converts the configuration option into an AHAB image object.
+    def _load_from_config_flags(self, config: dict[str, Any]) -> None:
+        """Loads from config AHAB container flags.
 
         "config" content of container configurations.
 
@@ -389,11 +445,20 @@ class AHABContainerBase(HeaderContainer):
             used_srk_id=value_to_int(config.get("used_srk_id", 0)),
             srk_revoke_mask=value_to_int(config.get("srk_revoke_mask", 0)),
         )
+
+    def load_from_config_generic(self, config: dict[str, Any]) -> None:
+        """Converts the configuration option into an AHAB image object.
+
+        "config" content of container configurations.
+
+        :param config: array of AHAB containers configuration dictionaries.
+        """
+        self._load_from_config_flags(config)
         self.fuse_version = value_to_int(config.get("fuse_version", 0))
         self.sw_version = value_to_int(config.get("sw_version", 0))
-
-        self.signature_block = SignatureBlock.load_from_config(
-            config, search_paths=self.search_paths
+        self.chip_config.used_srk_id = value_to_int(config.get("used_srk_id", 0))
+        self.signature_block = self.SIGNATURE_BLOCK.load_from_config(
+            config, self.chip_config, search_paths=self.chip_config.base.search_paths
         )
 
 
@@ -440,6 +505,12 @@ class AHABContainer(AHABContainerBase):
     """
 
     TAG = AHABTags.CONTAINER_HEADER.tag
+    IAE_TYPE = ImageArrayEntry
+
+    SIGNATURE_BLOCK = SignatureBlock
+
+    START_IMAGE_ADDRESS = 0x2000
+    START_IMAGE_ADDRESS_NAND = 0x1C00
 
     # Container special flags:
     FLAGS_GDET_ENABLE_OFFSET = 20
@@ -467,8 +538,8 @@ class AHABContainer(AHABContainerBase):
         flags: int = 0,
         fuse_version: int = 0,
         sw_version: int = 0,
-        image_array: Optional[List[ImageArrayEntry]] = None,
-        signature_block: Optional[SignatureBlock] = None,
+        image_array: Optional[Union[list[ImageArrayEntry], list[ImageArrayEntryV2]]] = None,
+        signature_block: Optional[Union[SignatureBlock, SignatureBlockV2]] = None,
         container_offset: int = 0,
     ):
         """Class object initializer.
@@ -483,23 +554,21 @@ class AHABContainer(AHABContainerBase):
         :param signature_block: signature block.
         """
         super().__init__(
+            chip_config=chip_config,
             flags=flags,
             fuse_version=fuse_version,
             sw_version=sw_version,
             signature_block=signature_block,
         )
-        self.search_paths = chip_config.search_paths or []
-        self.chip_config = AhabChipContainerConfig(
-            base=chip_config, container_offset=container_offset, locked=False
-        )
+        self.chip_config.container_offset = container_offset
         self.image_array = image_array or []
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, AHABContainer):
-            if super().__eq__(other) and self.image_array == other.image_array:
-                return True
-
-        return False
+        return (
+            isinstance(other, AHABContainer)
+            and super().__eq__(other)
+            and self.image_array == other.image_array
+        )
 
     def __repr__(self) -> str:
         return f"AHAB Container at offset {hex(self.chip_config.container_offset)} "
@@ -531,19 +600,17 @@ class AHABContainer(AHABContainerBase):
         """
         # Constant size of Container header + Image array Entry table
         return align(
-            super().fixed_length() + len(self.image_array) * ImageArrayEntry.fixed_length(),
+            super().fixed_length() + len(self.image_array) * self.IAE_TYPE.fixed_length(),
             CONTAINER_ALIGNMENT,
         )
 
     @property
     def srk_hash(self) -> bytes:
-        """Get SRK hash.
+        """SRK hash if available.
 
         :return: SHA256 hash of SRK table.
         """
-        if hasattr(self.signature_block, "srk_table") and self.signature_block.srk_table:
-            return self.signature_block.srk_table.compute_srk_hash()
-        return b""
+        return self.get_srk_hash(0)
 
     def header_length(self) -> int:
         """Length of AHAB Container header.
@@ -553,10 +620,12 @@ class AHABContainer(AHABContainerBase):
         return (
             super().fixed_length()  # This returns the fixed length of the container header
             # This returns the total length of all image array entries
-            + len(self.image_array) * ImageArrayEntry.fixed_length()
+            + len(self.image_array) * self.IAE_TYPE.fixed_length()
             # This returns the length of signature block (including SRK table,
             # blob etc. if present)
             + len(self.signature_block)
+            if self.signature_block
+            else 0
         )
 
     def update_fields(self) -> None:
@@ -569,6 +638,7 @@ class AHABContainer(AHABContainerBase):
             if (
                 image_entry.flags_is_encrypted
                 and not image_entry.already_encrypted_image
+                and self.signature_block
                 and self.signature_block.blob
             ):
                 image_entry.encrypted_image = self.signature_block.blob.encrypt_data(
@@ -577,7 +647,8 @@ class AHABContainer(AHABContainerBase):
                 image_entry.already_encrypted_image = True
 
         # 2. Update the signature block to get overall size of it
-        self.signature_block.update_fields()
+        if self.signature_block:
+            self.signature_block.update_fields()
         # 3. Updates Image Entries
         for image_entry in self.image_array:
             image_entry.update_fields()
@@ -588,7 +659,7 @@ class AHABContainer(AHABContainerBase):
         """Decrypt all images if possible."""
         for i, image_entry in enumerate(self.image_array):
             if image_entry.flags_is_encrypted:
-                if self.signature_block.blob is None:
+                if self.signature_block is None or self.signature_block.blob is None:
                     raise SPSDKError("Cannot decrypt image without Blob!")
 
                 decrypted_data = self.signature_block.blob.decrypt_data(
@@ -628,10 +699,11 @@ class AHABContainer(AHABContainerBase):
 
         container_header[: self._signature_block_offset] = container_header_only
         # Add Signature Block
-        container_header[
-            self._signature_block_offset : self._signature_block_offset
-            + align(len(self.signature_block), CONTAINER_ALIGNMENT)
-        ] = self.signature_block.export()
+        if self.signature_block:
+            container_header[
+                self._signature_block_offset : self._signature_block_offset
+                + align(len(self.signature_block), CONTAINER_ALIGNMENT)
+            ] = self.signature_block.export()
 
         return container_header
 
@@ -662,7 +734,7 @@ class AHABContainer(AHABContainerBase):
                     if image_entry.flags_is_encrypted:
                         ver_enc = Verifier("Image Encryption", description="")
                         if (
-                            self.signature_block.blob
+                            self.signature_block and self.signature_block.blob
                         ):  # The error in case that the blob doesn't exist is
                             # already printed in image array entry verifier
 
@@ -691,7 +763,7 @@ class AHABContainer(AHABContainerBase):
                             if self.flag_srk_set == FlagsSrkSet.NXP:
                                 ver_enc.add_record(
                                     "Decrypted data",
-                                    VerifierResult.SUCCEEDED,
+                                    VerifierResult.WARNING,
                                     "The NXP image can't be verified",
                                 )
                             else:
@@ -703,107 +775,16 @@ class AHABContainer(AHABContainerBase):
                 ret.add_child(ver_img_arr)
 
         def verify_authenticity() -> None:
+            ret.add_record_enum("Container authenticity", self.flag_srk_set, FlagsSrkSet)
             if self.flag_srk_set != "none":
-                ver_sign = Verifier("Container authenticity")
-                if self.flag_srk_set.tag in FlagsSrkSet.tags():
-                    ver_sign.add_record_enum("SRK Set", self.flag_srk_set, FlagsSrkSet)
+                if self.signature_block is None:
+                    ret.add_record("Signature block", VerifierResult.ERROR, "Missing")
                 else:
-                    ver_sign.add_record(
-                        "SRK Set", VerifierResult.WARNING, f"Unknown: {self.flag_srk_set.tag}"
+                    ret.add_child(
+                        self.signature_block.verify_container_authenticity(
+                            self.get_signature_data()
+                        )
                     )
-                ver_sign.add_record(
-                    "SRK Table & Signature block presence",
-                    bool(self.signature_block.srk_table and self.signature_block.signature),
-                )
-                used_image_key = (
-                    self.signature_block.certificate
-                    and self.signature_block.certificate.permission_to_sign_container
-                )
-                ver_sign.add_record(
-                    "Signed source", True, "Certificate image key" if used_image_key else "SRK key"
-                )
-                # Verify signature
-                if not self.signature_block.srk_table:
-                    ret.add_record("Signature", VerifierResult.ERROR, "Missing SRK table")
-                elif used_image_key and not self.signature_block.certificate:
-                    ret.add_record("Signature", VerifierResult.ERROR, "Missing Certificate")
-                elif (
-                    used_image_key
-                    and self.signature_block.certificate
-                    and not self.signature_block.certificate.public_key
-                ):
-                    ret.add_record(
-                        "Signature", VerifierResult.ERROR, "Missing Certificate public key"
-                    )
-                elif not self.signature_block.signature:
-                    ret.add_record("Signature", VerifierResult.ERROR, "Missing Signature Container")
-                elif not self.signature_block.signature.signature_data:
-                    ret.add_record("Signature", VerifierResult.ERROR, "Missing Signature data")
-                else:
-                    try:
-                        if used_image_key:
-                            assert self.signature_block.certificate
-                            assert self.signature_block.certificate.public_key
-                            public_key = (
-                                self.signature_block.certificate.public_key.get_public_key()
-                            )
-
-                        else:
-                            public_key = self.signature_block.srk_table.get_source_keys()[
-                                self.flag_used_srk_id
-                            ]
-                    except SPSDKError as exc:
-                        ret.add_record(
-                            "Signature",
-                            VerifierResult.ERROR,
-                            (
-                                "Cannot restore public key to verify signature."
-                                f" The key is restoring from {'certificate' if used_image_key else 'SRK'}. "
-                                f"The problem raised with this reason: {str(exc)}"
-                            ),
-                        )
-                    if (
-                        self.signature_block.signature.signature_data
-                        == self.signature_block.signature.get_dummy_signature(
-                            len(self.signature_block.signature.signature_data)
-                        )
-                    ):
-                        ret.add_record(
-                            "Signature",
-                            VerifierResult.WARNING,
-                            "The container has dummy signature. Must be re-signed!",
-                        )
-                    else:
-                        sign_ok = public_key.verify_signature(
-                            self.signature_block.signature.signature_data,
-                            self.get_signature_data(),
-                            pss_padding=True,
-                        )
-                        ret.add_record(
-                            "Signature",
-                            sign_ok,
-                            self.signature_block.signature.signature_data.hex(),
-                        )
-
-                # Show revoke keys
-                if self.flag_srk_revoke_keys:
-                    msg = ""
-                    for x in range(4):
-                        if (self.flag_srk_revoke_keys >> x) & 0x01:
-                            msg += f"SRK{x}"
-                    ret.add_record("Revoke keys", VerifierResult.WARNING, msg)
-                else:
-                    ret.add_record("Revoke keys", VerifierResult.SUCCEEDED, "No SRK key is revoked")
-                # Verify used srk id
-                ret.add_record(
-                    "SRK used key id",
-                    not bool((1 << self.flag_used_srk_id) & self.flag_srk_revoke_keys),
-                    self.flag_used_srk_id,
-                )
-
-                ret.add_child(ver_sign)
-            else:
-                ret.add_record("Container authenticity", VerifierResult.SUCCEEDED, "Not used")
 
         description = str(self)
         if self.flag_srk_set == FlagsSrkSet.OEM:
@@ -823,7 +804,7 @@ class AHABContainer(AHABContainerBase):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes, chip_config: AhabChipConfig, container_id: int) -> Self:  # type: ignore# type: ignore # pylint: disable=arguments-differ
+    def parse(cls, data: bytes, chip_config: AhabChipConfig, container_id: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
         """Parse input binary chunk to the container object.
 
         :param data: Binary data with Container block to parse.
@@ -832,30 +813,32 @@ class AHABContainer(AHABContainerBase):
         :return: Object recreated from the binary data.
         """
         (
+            container_length,
             flags,
             sw_version,
             fuse_version,
             number_of_images,
             signature_block_offset,
-        ) = AHABContainerBase._parse(data)
+        ) = cls._parse(data)
 
         parsed_container = cls(
             chip_config=chip_config,
             flags=flags,
             fuse_version=fuse_version,
             sw_version=sw_version,
-            container_offset=chip_config.container_size * container_id,
+            container_offset=cls.CONTAINER_SIZE * container_id,
         )
         # Lock the parsed container to any updates of offsets
+        parsed_container.length = container_length
         parsed_container.chip_config.locked = True
 
-        parsed_container.signature_block = SignatureBlock.parse(data[signature_block_offset:])
+        parsed_container.signature_block = cls.SIGNATURE_BLOCK.parse(
+            data[signature_block_offset:], parsed_container.chip_config
+        )
 
         for i in range(number_of_images):
-            image_array_entry_binary_start = (
-                AHABContainer.fixed_length() + i * ImageArrayEntry.fixed_length()
-            )
-            image_array_entry = ImageArrayEntry.parse(
+            image_array_entry_binary_start = cls.fixed_length() + i * cls.IAE_TYPE.fixed_length()
+            image_array_entry = cls.IAE_TYPE.parse(
                 data[image_array_entry_binary_start:], parsed_container.chip_config
             )
             binary_image_start = image_array_entry._image_offset
@@ -867,24 +850,9 @@ class AHABContainer(AHABContainerBase):
             binary_image_end = min(binary_image_start + image_size, len(data))
             image_array_entry.image = data[binary_image_start:binary_image_end]
 
-            parsed_container.image_array.append(image_array_entry)
+            parsed_container.image_array.append(image_array_entry)  # type: ignore
         parsed_container._parsed_header = HeaderContainerData.parse(binary=data)
         return parsed_container
-
-    @classmethod
-    def pre_parse_verify(cls, data: bytes) -> Verifier:
-        """Pre-Parse verify of AHAB container.
-
-        :param data: Binary data with Container block to pre-parse.
-        :return: Verifier of pre-parsed binary data.
-        """
-        ret = cls.check_container_head(data)
-        if ret.has_errors:
-            return ret
-        (signature_block_offset, _) = unpack(LITTLE_ENDIAN + UINT16 + UINT16, data[0x0C:0x10])
-
-        ret.add_child(SignatureBlock.pre_parse_verify(data[signature_block_offset:]))
-        return ret
 
     @property
     def flag_gdet_runtime_behavior(self) -> FlagsGdetBehavior:
@@ -894,7 +862,17 @@ class AHABContainer(AHABContainerBase):
         )
         return self.FlagsGdetBehavior.from_tag(gdet_enable)
 
-    def create_config(self, index: int, data_path: str) -> Dict[str, Any]:
+    def _create_flags_config(self) -> dict[str, Any]:
+        """Create configuration of the AHAB container flags.
+
+        :return: Configuration dictionary.
+        """
+        cfg = super()._create_flags_config()
+        cfg["gdet_runtime_behavior"] = self.flag_gdet_runtime_behavior.label
+
+        return cfg
+
+    def create_config(self, index: int, data_path: str) -> dict[str, Any]:
         """Create configuration of the AHAB Image.
 
         :param index: Container index.
@@ -913,10 +891,23 @@ class AHABContainer(AHABContainerBase):
         ret_cfg["container"] = cfg
         return ret_cfg
 
-    @staticmethod
+    def _load_from_config_flags(self, config: dict[str, Any]) -> None:
+        """Loads from config AHAB container flags.
+
+        "config" content of container configurations.
+
+        :param config: array of AHAB containers configuration dictionaries.
+        """
+        super()._load_from_config_flags(config)
+        self.flags |= (
+            self.FlagsGdetBehavior.from_attr(config.get("gdet_runtime_behavior", "disabled")).tag
+            << self.FLAGS_GDET_ENABLE_OFFSET
+        )
+
+    @classmethod
     def load_from_config(
-        chip_config: AhabChipConfig, config: Dict[str, Any], container_ix: int
-    ) -> "AHABContainer":
+        cls, chip_config: AhabChipConfig, config: dict[str, Any], container_ix: int
+    ) -> Self:
         """Converts the configuration option into an AHAB image object.
 
         "config" content of container configurations.
@@ -926,37 +917,14 @@ class AHABContainer(AHABContainerBase):
         :param container_ix: Container index that is loaded.
         :return: AHAB Container object.
         """
-        ahab_container = AHABContainer(chip_config=chip_config)
-        ahab_container.chip_config.container_offset = chip_config.container_size * container_ix
+        ahab_container = cls(chip_config=chip_config)
+        ahab_container.chip_config.container_offset = cls.CONTAINER_SIZE * container_ix
         ahab_container.load_from_config_generic(config)
-        ahab_container.flags |= (
-            AHABContainer.FlagsGdetBehavior.from_attr(
-                config.get("gdet_runtime_behavior", "disabled")
-            ).tag
-            << AHABContainer.FLAGS_GDET_ENABLE_OFFSET
-        )
-        images: List[Dict[str, Any]] = config.get("images", [])
 
-        config_loaders = ImageArrayEntryTemplates.__subclasses__()
-        for image in images:
-            hit = False
-            if "image_path" in image:
-                ahab_container.image_array.append(
-                    ImageArrayEntry.load_from_config(ahab_container.chip_config, image)
-                )
-                continue
-            for iae_template_class in config_loaders:
-                if image.get(iae_template_class.KEY):
-                    ahab_container.image_array.append(
-                        iae_template_class.create_image_array_entry(
-                            ahab_container.chip_config,
-                            image,
-                        )
-                    )
-                    hit = True
-                    break
-            if not hit:
-                logger.error(f"Can't handle {image} configuration record")
+        images: list[dict[str, Any]] = config.get("images", [])
+        ahab_container.image_array = ImageArrayEntryTemplates.create_image_array_entries(
+            iae_cls=cls.IAE_TYPE, chip_config=ahab_container.chip_config, config=images
+        )
 
         return ahab_container
 
@@ -986,5 +954,161 @@ class AHABContainer(AHABContainerBase):
                 self.chip_config.base.family, self.chip_config.base.revision, DatabaseManager.AHAB
             )
         except SPSDKError as exc:
-            return f"The SRKH fuses are not available, yet: {exc.description}"
+            return f"The Super Root Keys Hash fuses are not available, yet: {exc.description}"
         return fuse_script.generate_script(self, True)
+
+    @classmethod
+    def get_container_offset(cls, ix: int) -> int:
+        """Get container offset by index.
+
+        :param ix: Container index
+        :return: Container offset
+        """
+        if ix < 0:
+            raise SPSDKValueError(f"Invalid container offset: {ix}")
+        if ix > 3:
+            raise SPSDKValueError("There is no option to have more that 4 containers")
+        return cls.CONTAINER_SIZE * ix
+
+    @property
+    def start_of_images(self) -> int:
+        """Get real start of container images."""
+        return min(x.image_offset for x in self.image_array)
+
+
+class AHABContainerV2(AHABContainer):
+    """Class representing AHAB container.
+
+    Container header::
+
+        +---------------+----------------+----------------+----------------+
+        |    Byte 3     |     Byte 2     |      Byte 1    |     Byte 0     |
+        +---------------+----------------+----------------+----------------+
+        |      Tag      |              Length             |    Version     |
+        +---------------+---------------------------------+----------------+
+        |                              Flags                               |
+        +---------------+----------------+---------------------------------+
+        |  # of images  |  Fuse version  |             SW version          |
+        +---------------+----------------+---------------------------------+
+        |              Reserved          |       Signature Block Offset    |
+        +----+---------------------------+---------------------------------+
+        | I  |image0: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
+        + m  |-------------------------------------------------------------+
+        | g  |image1: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
+        + .  |-------------------------------------------------------------+
+        | A  |...                                                          |
+        | r  |...                                                          |
+        | r  |                                                             |
+        + a  |-------------------------------------------------------------+
+        | y  |imageN: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
+        +----+-------------------------------------------------------------+
+        |                      Signature block                             |
+        +------------------------------------------------------------------+
+        |                                                                  |
+        |                                                                  |
+        |                                                                  |
+        +------------------------------------------------------------------+
+        |                      Data block_0                                |
+        +------------------------------------------------------------------+
+        |                                                                  |
+        |                                                                  |
+        +------------------------------------------------------------------+
+        |                      Data block_n                                |
+        +------------------------------------------------------------------+
+
+    """
+
+    IAE_TYPE = ImageArrayEntryV2
+
+    SIGNATURE_BLOCK = SignatureBlockV2  # type:ignore
+    CONTAINER_SIZE = 0x4000
+    VERSION = 0x02
+
+    START_IMAGE_ADDRESS = 0xC000
+    START_IMAGE_ADDRESS_NAND = 0xBC00
+
+    # Container special flags:
+    FLAGS_CHECK_ALL_SIGNATURES_OFFSET = 15
+    FLAGS_CHECK_ALL_SIGNATURES_SIZE = 1
+
+    class FlagsCheckAllSignatures(SpsdkEnum):
+        """Flags Check all signatures."""
+
+        Default = (0x00, "default", "Apply default fuse policy")
+        CheckAllSignatures = (
+            0x01,
+            "check_all_signatures",
+            "Force verification of all present signatures",
+        )
+
+    @property
+    def flag_check_all_signatures(self) -> FlagsCheckAllSignatures:
+        """Check all signatures flag as enumeration."""
+        check_all = (self.flags >> self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET) & (
+            (1 << self.FLAGS_CHECK_ALL_SIGNATURES_SIZE) - 1
+        )
+        return self.FlagsCheckAllSignatures.from_tag(check_all)
+
+    def _create_flags_config(self) -> dict[str, Any]:
+        """Create configuration of the AHAB container flags.
+
+        :return: Configuration dictionary.
+        """
+        cfg = super()._create_flags_config()
+        cfg["check_all_signatures"] = self.flag_check_all_signatures.label
+
+        return cfg
+
+    def _load_from_config_flags(self, config: dict[str, Any]) -> None:
+        """Loads from config AHAB container flags.
+
+        "config" content of container configurations.
+
+        :param config: array of AHAB containers configuration dictionaries.
+        """
+        super()._load_from_config_flags(config)
+        self.flags |= (
+            self.FlagsCheckAllSignatures.from_attr(
+                config.get("check_all_signatures", "default")
+            ).tag
+            << self.FLAGS_GDET_ENABLE_OFFSET
+        )
+
+    def create_srk_hash_fuses_script(self) -> str:
+        """Create fuses script of SRK hash.
+
+        :return: Text description of SRK hash.
+        """
+        ret = ""
+        if self.signature_block and self.signature_block.srk_assets:
+            assert isinstance(self.signature_block.srk_assets, SRKTableArray)
+            for ix in range(len(self.signature_block.srk_assets._srk_tables)):
+                try:
+                    fuse_script = FuseScript(
+                        self.chip_config.base.family,
+                        self.chip_config.base.revision,
+                        DatabaseManager.AHAB,
+                        index=ix,
+                    )
+                except SPSDKError as exc:
+                    return (
+                        f"The Super Root Keys Hash fuses are not available, yet: {exc.description}"
+                    )
+                ret += fuse_script.generate_script(self, True) + "\n"
+        return ret
+
+    @property
+    def srk_hash0(self) -> bytes:
+        """SRK hash if available.
+
+        :return: SHA256 hash of SRK table.
+        """
+        return self.get_srk_hash(0)
+
+    @property
+    def srk_hash1(self) -> bytes:
+        """SRK hash if available.
+
+        :return: SHA256 hash of SRK table.
+        """
+        return self.get_srk_hash(1)

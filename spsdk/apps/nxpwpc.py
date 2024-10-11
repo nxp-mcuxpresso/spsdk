@@ -11,7 +11,7 @@
 import logging
 import os
 import sys
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 import click
 
@@ -133,32 +133,33 @@ def target_options(required: bool = True) -> Callable:
     return decorator
 
 
-def update_config(config_data: dict, name: str, value: Union[str, Tuple[str], None] = None) -> dict:
+def update_config(config_data: dict, name: str, value: Union[str, tuple[str], None] = None) -> dict:
     """Parse string with coma-separated key-pairs into a dictionary."""
     if not value:
         return config_data
     try:
-        if name not in config_data:
+        if name not in config_data or config_data[name] is None:
             config_data[name] = {}
         if isinstance(value, str):
             config_data[name] = value
         if isinstance(value, tuple):
             for param in value:
-                key, val = param.split("=")
+                # key, val = param.split("=")
+                key, _, val = param.partition("=")
                 config_data[name][key] = val
         return config_data
     except Exception as e:
-        raise SPSDKAppError(f"Unable to parse parameters: '{value}'") from e
+        raise SPSDKAppError(f"Unable to parse parameters: '{value}': {e}") from e
 
 
 def merge_config_data(
     service_type: Optional[str] = None,
-    service_parameters: Optional[Tuple[str]] = None,
+    service_parameters: Optional[tuple[str]] = None,
     target_type: Optional[str] = None,
-    target_parameters: Optional[Tuple[str]] = None,
+    target_parameters: Optional[tuple[str]] = None,
     family: Optional[str] = None,
     config: Optional[str] = None,
-) -> Tuple[dict, Optional[List[str]]]:
+) -> tuple[dict, Optional[list[str]]]:
     """Merge config data from config file and command line."""
     config_data = load_configuration(config) if config else {}
     config_data = update_config(config_data, "service_type", service_type)
@@ -166,7 +167,7 @@ def merge_config_data(
     config_data = update_config(config_data, "target_type", target_type)
     config_data = update_config(config_data, "target_parameters", target_parameters)
     config_data = update_config(config_data, "family", family)
-    search_paths: Optional[List[str]] = None
+    search_paths: Optional[list[str]] = None
     if config:
         search_paths = [os.path.dirname(os.path.abspath(config))]
     return config_data, search_paths
@@ -193,9 +194,9 @@ def main(log_level: int) -> None:
 )
 def insert_cert(
     service_type: str,
-    service_parameters: Tuple[str],
+    service_parameters: tuple[str],
     target_type: str,
-    target_parameters: Tuple[str],
+    target_parameters: tuple[str],
     family: str,
     config: str,
     save_debug_data: bool,
@@ -247,7 +248,7 @@ def insert_cert(
 @spsdk_output_option()
 def get_wpc_id(
     target_type: str,
-    target_parameters: Tuple[str],
+    target_parameters: tuple[str],
     family: str,
     config: str,
     output: str,
@@ -285,7 +286,7 @@ def get_wpc_id(
 @spsdk_output_option()
 def get_wpc_cert(
     service_type: str,
-    service_parameters: Tuple[str],
+    service_parameters: tuple[str],
     family: str,
     config: str,
     wpc_id: str,
@@ -325,7 +326,7 @@ def get_wpc_cert(
 )
 def put_wpc_cert(
     target_type: str,
-    target_parameters: Tuple[str],
+    target_parameters: tuple[str],
     family: str,
     config: str,
     wpc_cert: str,
@@ -360,7 +361,7 @@ def get_template(service_type: str, target_type: str, family: str, output: str) 
         family=family, service=services[service_type], target=targets[target_type]
     )
     write_file(template, output)
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"The WPC template for {family} has been saved into {output} YAML file")
 
 
 @catch_spsdk_error

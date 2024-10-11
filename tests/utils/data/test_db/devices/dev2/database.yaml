@@ -32,7 +32,7 @@ info:
 features:
   # ======== Feature 1 ========
   feature1:
-    sub_feature1: Yeah
+    sub_features: [sub_feature1]
 
   # ======== Feature Fuses Testing ========
   fuses: {}

@@ -7,7 +7,7 @@
 
 """Boot Selection for SB file."""
 
-from typing import List, Sequence
+from typing import Sequence
 
 from typing_extensions import Self
 
@@ -39,7 +39,7 @@ class BootSectionV1(BaseClass):
         :param flags: see SecureBootFlagsV1
         """
         self._header = BootSectionHeaderV1(section_id, flags)
-        self._commands: List[CmdBaseClass] = []
+        self._commands: list[CmdBaseClass] = []
 
     @property
     def section_id(self) -> int:

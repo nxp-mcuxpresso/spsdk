@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """SDP bulk implementation."""
 import logging
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from spsdk.exceptions import SPSDKAttributeError, SPSDKConnectionError
 from spsdk.sdp.commands import CmdResponse
@@ -72,7 +72,7 @@ class SDPBulkProtocol(SDPProtocolBase):
         raw_data = self.device.read(1024)
         return self._decode_report(bytes(raw_data))
 
-    def _create_frames(self, data: bytes, report_id: int, report_size: int) -> List[bytes]:
+    def _create_frames(self, data: bytes, report_id: int, report_size: int) -> list[bytes]:
         """Split the data into chunks of max size and encapsulate each of them .
 
         :param data: Data to send
@@ -80,7 +80,7 @@ class SDPBulkProtocol(SDPProtocolBase):
         :param report_size: Max size of a report
         :return: Encoded bytes and length of the final report frame
         """
-        frames: List[bytes] = []
+        frames: list[bytes] = []
         data_index = 0
         while data_index < len(data):
             try:
@@ -92,7 +92,7 @@ class SDPBulkProtocol(SDPProtocolBase):
 
     def _create_frame(
         self, data: bytes, report_id: int, report_size: int, offset: int = 0
-    ) -> Tuple[bytes, int]:
+    ) -> tuple[bytes, int]:
         """Get the data chunk, encapsulate it into frame and return it with index.
 
         :param data: Data to send

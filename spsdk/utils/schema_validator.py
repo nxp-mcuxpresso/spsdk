@@ -11,7 +11,7 @@ import io
 import logging
 import os
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import fastjsonschema
 from deepmerge import Merger, always_merger
@@ -24,6 +24,7 @@ from ruamel.yaml.comments import CommentedSeq as CSeq
 
 from spsdk import SPSDK_YML_INDENT
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.misc import (
     find_dir,
     find_file,
@@ -119,7 +120,7 @@ def _is_hex_number(param: Any) -> bool:
 
 def _print_validation_fail_reason(
     exc: fastjsonschema.JsonSchemaValueException,
-    extra_formatters: Optional[Dict[str, Callable[[str], bool]]] = None,
+    extra_formatters: Optional[dict[str, Callable[[str], bool]]] = None,
 ) -> str:
     """Print formatted and easy to read reason why the  validation failed.
 
@@ -130,7 +131,7 @@ def _print_validation_fail_reason(
 
     def process_one_of_rule(
         exception: fastjsonschema.JsonSchemaValueException,
-        extra_formatters: Optional[Dict[str, Callable[[str], bool]]],
+        extra_formatters: Optional[dict[str, Callable[[str], bool]]],
     ) -> str:
         message = ""
         for rule_def in exception.rule_definition:
@@ -153,7 +154,7 @@ def _print_validation_fail_reason(
 
     def process_nested_rule(
         exception: fastjsonschema.JsonSchemaValueException,
-        extra_formatters: Optional[Dict[str, Callable[[str], bool]]],
+        extra_formatters: Optional[dict[str, Callable[[str], bool]]],
     ) -> str:
         message = ""
         for rule_def_ix, rule_def in enumerate(exception.rule_definition):
@@ -188,10 +189,10 @@ def _print_validation_fail_reason(
 
 
 def check_config(
-    config: Union[str, Dict[str, Any]],
-    schemas: List[Dict[str, Any]],
-    extra_formatters: Optional[Dict[str, Callable[[str], bool]]] = None,
-    search_paths: Optional[List[str]] = None,
+    config: Union[str, dict[str, Any]],
+    schemas: list[dict[str, Any]],
+    extra_formatters: Optional[dict[str, Callable[[str], bool]]] = None,
+    search_paths: Optional[list[str]] = None,
 ) -> None:
     """Check the configuration by provided list of validation schemas.
 
@@ -201,7 +202,7 @@ def check_config(
     :param search_paths: List of paths where to search for the file, defaults to None
     :raises SPSDKError: Invalid validation schema or configuration
     """
-    custom_formatters: Dict[str, Callable[[str], bool]] = {
+    custom_formatters: dict[str, Callable[[str], bool]] = {
         "dir": lambda x: bool(find_dir(x, search_paths=search_paths, raise_exc=False)),
         "file": lambda x: bool(find_file(x, search_paths=search_paths, raise_exc=False)),
         "file_name": lambda x: os.path.basename(x.replace("\\", "/")) not in ("", None),
@@ -220,7 +221,7 @@ def check_config(
     else:
         config_to_check = copy.deepcopy(config)
 
-    schema: Dict[str, Any] = {}
+    schema: dict[str, Any] = {}
     for sch in schemas:
         always_merger.merge(schema, copy.deepcopy(sch))
     validator = None
@@ -255,7 +256,7 @@ class CommentedConfig:
     def __init__(
         self,
         main_title: str,
-        schemas: List[Dict[str, Any]],
+        schemas: list[dict[str, Any]],
         note: Optional[str] = None,
     ):
         """Constructor for Config templates.
@@ -296,7 +297,7 @@ class CommentedConfig:
         return ret
 
     @staticmethod
-    def get_property_optional_required(key: str, block: Dict[str, Any]) -> PropertyRequired:
+    def get_property_optional_required(key: str, block: dict[str, Any]) -> PropertyRequired:
         """Function to determine if the config property is required or not.
 
         :param key: Name of config record
@@ -305,7 +306,7 @@ class CommentedConfig:
         """
         schema_kws = ["allOf", "anyOf", "oneOf", "if", "then", "else"]
 
-        def _find_required(d_in: Dict[str, Any]) -> Optional[List[str]]:
+        def _find_required(d_in: dict[str, Any]) -> Optional[list[str]]:
             if "required" in d_in:
                 return d_in["required"]
 
@@ -316,9 +317,9 @@ class CommentedConfig:
                         return ret
             return None
 
-        def _find_required_in_schema_kws(schema_node: Union[List, Dict[str, Any]]) -> List[str]:
+        def _find_required_in_schema_kws(schema_node: Union[list, dict[str, Any]]) -> list[str]:
             """Find all required properties in structure composed of nested properties."""
-            all_props: List[str] = []
+            all_props: list[str] = []
             if isinstance(schema_node, dict):
                 for k, v in schema_node.items():
                     if k == "required":
@@ -350,8 +351,8 @@ class CommentedConfig:
 
     def _create_object_block(
         self,
-        block: Dict[str, Dict[str, Any]],
-        custom_value: Optional[Union[Dict[str, Any], List[Any]]] = None,
+        block: dict[str, dict[str, Any]],
+        custom_value: Optional[Union[dict[str, Any], list[Any]]] = None,
     ) -> CMap:
         """Private function used to create object block with data.
 
@@ -381,7 +382,7 @@ class CommentedConfig:
             if custom_value and value is None:
                 continue
 
-            val_p: Dict = block["properties"][key]
+            val_p: dict = block["properties"][key]
             value_to_add = self._get_schema_value(val_p, value)
             if value_to_add is None:
                 raise SPSDKError(f"Cannot create the value for {key}")
@@ -401,7 +402,7 @@ class CommentedConfig:
         return cfg_m
 
     def _create_array_block(
-        self, block: Dict[str, Dict[str, Any]], custom_value: Optional[List[Any]]
+        self, block: dict[str, dict[str, Any]], custom_value: Optional[list[Any]]
     ) -> CSeq:
         """Private function used to create array block with data.
 
@@ -412,20 +413,20 @@ class CommentedConfig:
         assert block.get("type") == "array"
         assert "items" in block.keys()
         self.indent += 1
-        val_i: Dict = block["items"]
+        val_i: dict = block["items"]
 
         cfg_s = CSeq()
         if custom_value is not None:
             for cust_val in custom_value:
                 value = self._get_schema_value(val_i, cust_val)
-                if isinstance(value, (CSeq, List)):
+                if isinstance(value, (CSeq, list)):
                     cfg_s.extend(value)
                 else:
                     cfg_s.append(value)
         else:
             value = self._get_schema_value(val_i, None)
             # the template_value can be the actual list(not only one element)
-            if isinstance(value, (CSeq, List)):
+            if isinstance(value, (CSeq, list)):
                 cfg_s.extend(value)
             else:
                 cfg_s.append(value)
@@ -433,7 +434,7 @@ class CommentedConfig:
         return cfg_s
 
     @staticmethod
-    def _check_matching_oneof_option(one_of: Dict[str, Any], cust_val: Any) -> bool:
+    def _check_matching_oneof_option(one_of: dict[str, Any], cust_val: Any) -> bool:
         """Find matching given custom value to "oneOf" schema.
 
         :param one_of:oneOf schema
@@ -441,7 +442,7 @@ class CommentedConfig:
         :raises SPSDKError: if not found
         """
 
-        def check_type(option: Dict, t: str) -> bool:
+        def check_type(option: dict, t: str) -> bool:
             option_type = option.get("type")
             if isinstance(option_type, list):
                 return t in option_type
@@ -464,8 +465,8 @@ class CommentedConfig:
 
     def _handle_one_of_block(
         self,
-        block: Dict[str, Any],
-        custom_value: Optional[Union[Dict[str, Any], List[Any]]] = None,
+        block: dict[str, Any],
+        custom_value: Optional[Union[dict[str, Any], list[Any]]] = None,
     ) -> CMap:
         """Private function used to create oneOf block with data, and return as an array that contains all values.
 
@@ -474,7 +475,7 @@ class CommentedConfig:
         :return: CS base configuration object
         """
 
-        def get_help_name(schema: Dict) -> str:
+        def get_help_name(schema: dict) -> str:
             if schema.get("type") == "object":
                 options = list(schema["properties"].keys())
                 if len(options) == 1:
@@ -528,8 +529,8 @@ class CommentedConfig:
         return ret
 
     def _get_schema_value(
-        self, block: Dict[str, Any], custom_value: Any
-    ) -> Union[CMap, CSeq, str, int, float, List]:
+        self, block: dict[str, Any], custom_value: Any
+    ) -> Union[CMap, CSeq, str, int, float, list]:
         """Private function used to fill up configuration block with data.
 
         :param block: Source block with data
@@ -577,9 +578,9 @@ class CommentedConfig:
     def _add_comment(
         self,
         cfg: Union[CMap, CSeq],
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         key: Union[str, int],
-        value: Optional[Union[CMap, CSeq, str, int, float, List]],
+        value: Optional[Union[CMap, CSeq, str, int, float, list]],
         required: str,
     ) -> None:
         """Private function used to create comment for block.
@@ -627,7 +628,7 @@ class CommentedConfig:
         if template_title:
             self._update_before_comment(cfg, key, "\n" + self._get_title_block(template_title))
 
-    def _get_schema_block_keys(self, schema: Dict[str, Dict[str, Any]]) -> List[str]:
+    def _get_schema_block_keys(self, schema: dict[str, dict[str, Any]]) -> list[str]:
         """Creates list of property keys in given schema.
 
         :param schema: Input schema piece.
@@ -669,7 +670,7 @@ class CommentedConfig:
         for c in new_lines:
             comments[1].insert(0, comment_token(c, start_mark))
 
-    def export(self, config: Optional[Dict[str, Any]] = None) -> CMap:
+    def export(self, config: Optional[dict[str, Any]] = None) -> CMap:
         """Export configuration template into CommentedMap.
 
         :param config: Configuration to be applied to template.
@@ -680,7 +681,7 @@ class CommentedConfig:
         self.creating_configuration = bool(config)
         loc_schemas = copy.deepcopy(self.schemas)
         # 1. Get blocks with their titles and lists of their keys
-        block_list: Dict[str, Any] = {}
+        block_list: dict[str, Any] = {}
         for schema in loc_schemas:
             if schema.get("skip_in_template", False):
                 continue
@@ -707,13 +708,13 @@ class CommentedConfig:
             ["override"],
         )
 
-        merged: Dict[str, Any] = {}
+        merged: dict[str, Any] = {}
         for schema in loc_schemas:
             schemas_merger.merge(merged, copy.deepcopy(schema))
 
         # 3. Create order of individual settings
 
-        order_dict: Dict[str, Any] = OrderedDict()
+        order_dict: dict[str, Any] = OrderedDict()
         properties_for_template = self._get_schema_block_keys(merged)
         for block in block_list.values():
             block_properties: list = block["properties"]
@@ -763,7 +764,7 @@ class CommentedConfig:
         """
         return self.convert_cm_to_yaml(self.export())
 
-    def get_config(self, config: Dict[str, Any]) -> str:
+    def get_config(self, config: dict[str, Any]) -> str:
         """Export Configuration directly into YAML string format.
 
         :return: YAML string.
@@ -787,3 +788,28 @@ class CommentedConfig:
         yaml_data = stream.getvalue()
 
         return yaml_data
+
+
+def update_validation_schema_family(
+    sch: dict[str, Any], devices: list[str], family: Optional[str] = None
+) -> None:
+    """Update validation family schema to proper validate and show the families.
+
+    :param sch: The validation schema 'properties' where is as family as revision.
+    :param devices: List of supported devices.
+    :param family: Optional family name, if used the the template value will be
+        updated and the correct list of revisions will be used.
+    """
+    family_sch = sch["family"]
+
+    family_sch["enum"] = devices + list(
+        DatabaseManager().quick_info.devices.get_predecessors(devices).keys()
+    )
+    family_sch["enum_template"] = devices
+    if family:
+        family_sch["template_value"] = family
+        if "revision" in sch:
+            revision_sch = sch["revision"]
+            device = get_db(family).device
+            revision_sch["enum"] = device.revisions.revision_names(append_latest=True)
+            revision_sch["template_value"] = "latest"

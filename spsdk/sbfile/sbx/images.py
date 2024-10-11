@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
@@ -19,7 +19,7 @@ from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, Main
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import align_block, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -331,7 +331,7 @@ class SecureBinaryXCommands(BaseClass):
         super().__init__()
         self.block_count = 0
         self.final_hash = bytes(32)
-        self.commands: List[MainCmd] = []
+        self.commands: list[MainCmd] = []
 
     def add_command(self, command: MainCmd) -> None:
         """Add SBx command."""
@@ -344,12 +344,12 @@ class SecureBinaryXCommands(BaseClass):
         else:
             self.commands.insert(index, command)
 
-    def set_commands(self, commands: List[MainCmd]) -> None:
+    def set_commands(self, commands: list[MainCmd]) -> None:
         """Set all SBx commands at once."""
         self.commands = commands.copy()
 
     def load_from_config(
-        self, config: List[Dict[str, Any]], search_paths: Optional[List[str]] = None
+        self, config: list[dict[str, Any]], search_paths: Optional[list[str]] = None
     ) -> None:
         """Load configuration from dictionary.
 
@@ -365,7 +365,7 @@ class SecureBinaryXCommands(BaseClass):
                 )
             )
 
-    def get_cmd_blocks_to_export(self) -> List[bytes]:
+    def get_cmd_blocks_to_export(self) -> list[bytes]:
         """Export commands as bytes."""
         commands_bytes = b"".join([command.export() for command in self.commands])
         section_header = CmdSectionHeader(length=len(commands_bytes))
@@ -379,7 +379,7 @@ class SecureBinaryXCommands(BaseClass):
 
         return data_blocks
 
-    def process_cmd_blocks_to_export(self, data_blocks: List[bytes]) -> bytes:
+    def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
         """Process given data blocks for export."""
         self.block_count = len(data_blocks)
 
@@ -484,7 +484,7 @@ class SecureBinaryX(BaseClass):
     @classmethod
     def get_validation_schemas(
         cls, family: str, include_test_configuration: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
@@ -493,8 +493,11 @@ class SecureBinaryX(BaseClass):
         """
         mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
         sbx_sch_cfg = get_schema_file(DatabaseManager.SBX)
-
-        ret: List[Dict[str, Any]] = []
+        family_sch = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_sch["properties"], cls.get_supported_families(), family
+        )
+        ret: list[dict[str, Any]] = [family_sch]
         ret.extend(
             [
                 mbi_sch_cfg[x]
@@ -508,7 +511,6 @@ class SecureBinaryX(BaseClass):
                 sbx_sch_cfg[x]
                 for x in [
                     "sbx_output",
-                    "sbx_family",
                     "sbx",
                     "sbx_description",
                     "signing_cert_prv_key",
@@ -520,17 +522,11 @@ class SecureBinaryX(BaseClass):
         if include_test_configuration:
             ret.append(sbx_sch_cfg["sbx_test"])
 
-        # find family
-        for schema in ret:
-            if "properties" in schema and "family" in schema["properties"]:
-                schema["properties"]["family"]["enum"] = cls.get_supported_families()
-                schema["properties"]["family"]["template_value"] = family
-                break
         return ret
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "SecureBinaryX":
         """Creates an instance of SecureBinaryX from configuration.
 
@@ -654,7 +650,7 @@ class SecureBinaryX(BaseClass):
         return ret
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get the list of supported families by Device HSM.
 
         :return: List of supported families.
@@ -669,25 +665,22 @@ class SecureBinaryX(BaseClass):
         return families
 
     @classmethod
-    def generate_config_template(cls, family: str) -> Dict[str, str]:
+    def generate_config_template(cls, family: str) -> str:
         """Generate configuration for selected family.
 
         :param family: Family description.
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
-        ret: Dict[str, str] = {}
+        if family not in cls.get_supported_families():
+            raise SPSDKError(f"SBx does not support family {family}")
+        schemas = cls.get_validation_schemas(family)
+        schemas.append(get_schema_file(DatabaseManager.SBX)["sbx_output"])
 
-        if family in cls.get_supported_families():
-            schemas = cls.get_validation_schemas(family)
-            schemas.append(get_schema_file(DatabaseManager.SBX)["sbx_output"])
+        yaml_data = CommentedConfig(
+            f"Secure Binary X Configuration template for {family}.", schemas
+        ).get_template()
 
-            yaml_data = CommentedConfig(
-                f"Secure Binary X Configuration template for {family}.", schemas
-            ).get_template()
-
-            ret[f"sb_{family}_devhsm"] = yaml_data
-
-        return ret
+        return yaml_data
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "SecureBinaryX":

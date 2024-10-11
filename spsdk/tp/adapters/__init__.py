@@ -6,19 +6,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning adapters."""
 
-from typing import Dict, Type
+from typing import Type
 
 from spsdk.tp.adapters.tpdev_scard import TpDevSmartCard
 from spsdk.tp.adapters.tptarget_blhost import TpTargetBlHost
 from spsdk.tp.tp_intf import TpDevInterface, TpTargetInterface
 
 # Dict mapping TP device name to its adapter
-TP_DEVICES: Dict[str, Type[TpDevInterface]] = {
+TP_DEVICES: dict[str, Type[TpDevInterface]] = {
     TpDevSmartCard.NAME: TpDevSmartCard,
 }
 
 # Dict mapping TP target name to its adapter
-TP_TARGETS: Dict[str, Type[TpTargetInterface]] = {
+TP_TARGETS: dict[str, Type[TpTargetInterface]] = {
     TpTargetBlHost.NAME: TpTargetBlHost,
 }
 

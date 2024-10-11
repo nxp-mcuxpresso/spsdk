@@ -1,0 +1,27 @@
+@Library('shared-lib') _
+
+pipeline {
+    agent {
+        label 'linux-spsdk'
+    }
+
+    environment {
+        BB_AUTH_TOKEN = credentials("bitbucket-token")
+    }
+
+    stages {
+        stage ("Checkout") {
+            steps {
+    		    checkoutRepo("spsdk", "master")
+            }
+    	}
+        stage('Update') {
+            steps {
+                withVenv(
+        			'uv pip install requests click packaging pip',
+        			'python tools/req_update.py batch'
+    			)
+            }
+        }
+    }
+}

@@ -220,7 +220,7 @@ settings:
   # Description: Offset: 0x0000002C, Width: 32b; ISP MISC Configuration
   ISP_MISC_CFG:
     # --------------------------------------===== I2C_SLAVE_ADDR [Optional] =====---------------------------------------
-    # Description: Offset: 0b, Width: 8b, I2C slave addres.
+    # Description: Offset: 0b, Width: 8b, I2C slave address.
     # A 7-bit Address used for selecting our device on shared I2C bus system.
     # By default ROM uses 0x10 as slave address.
     I2C_SLAVE_ADDR: 0

@@ -1,0 +1,17 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mc56f81768
+
+# General MCU information
+info:
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x10000
+      external: false
+    ram:
+      start_int: 0x60000
+      size_int: 0x3000
+      external: false

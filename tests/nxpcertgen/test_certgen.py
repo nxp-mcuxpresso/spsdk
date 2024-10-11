@@ -8,7 +8,6 @@
 """
 import os
 from os import path
-from typing import List
 
 import pytest
 import yaml
@@ -35,7 +34,7 @@ def get_certificate(data_dir, cert_file_name: str) -> Certificate:
     return cert
 
 
-def get_certificates(data_dir, cert_file_names: List[str]) -> List[Certificate]:
+def get_certificates(data_dir, cert_file_names: list[str]) -> list[Certificate]:
     cert_list = [get_certificate(data_dir, cert_name) for cert_name in cert_file_names]
     return cert_list
 

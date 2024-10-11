@@ -176,8 +176,8 @@ Also you will need `swig compiler <http://www.swig.org>`_ which is a requirement
 .. note::
 
     On **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
-    (**brew install pcsc-lite**)
-    On **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcdcs libpcsclite-dev**)
+    (**brew install pcsc-lite swig**)
+    On **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcscd libpcsclite-dev swig**)
 
 .. code:: bash
 

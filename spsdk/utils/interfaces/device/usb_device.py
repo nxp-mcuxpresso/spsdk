@@ -7,7 +7,7 @@
 
 """Low level Hid device."""
 import logging
-from typing import Dict, List, Optional
+from typing import Optional
 
 import libusbsio
 from typing_extensions import Self
@@ -65,7 +65,7 @@ class UsbDevice(DeviceBase):
     def is_opened(self) -> bool:
         """Indicates whether device is open.
 
-        :return: True if device is open, False othervise.
+        :return: True if device is open, False otherwise.
         """
         return self._opened
 
@@ -163,9 +163,9 @@ class UsbDevice(DeviceBase):
     def scan(
         cls,
         device_id: Optional[str] = None,
-        usb_devices_filter: Optional[Dict[str, List[UsbId]]] = None,
+        usb_devices_filter: Optional[dict[str, list[UsbId]]] = None,
         timeout: Optional[int] = None,
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Scan connected USB devices.
 
         :param device_id: Device identifier <vid>, <vid:pid>, device/instance path, device name are supported
@@ -181,7 +181,7 @@ class UsbDevice(DeviceBase):
     @classmethod
     def enumerate(
         cls, usb_device_filter: USBDeviceFilter, timeout: Optional[int] = None
-    ) -> List[Self]:
+    ) -> list[Self]:
         """Get list of all connected devices which matches device_id.
 
         :param usb_device_filter: USBDeviceFilter object

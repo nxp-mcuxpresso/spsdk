@@ -28,10 +28,10 @@ def compare_bin_files(path: str, bin_data: bytes) -> None:
 class GetPassMock:
     """Mocks the get_pass functionality."""
 
-    PASSWORD = "test"
+    def __init__(self, passphrase: str) -> None:
+        self.passphrase = passphrase
 
-    @classmethod
-    def get_pass(cls, prompt=None, stream=None):
-        return cls.PASSWORD
+    def get_pass(self, prompt=None, stream=None):
+        return self.passphrase
 
     getpass = get_pass

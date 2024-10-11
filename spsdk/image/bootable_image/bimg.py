@@ -10,9 +10,11 @@
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
-from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
+from typing_extensions import Self
+
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError, SPSDKVerificationError
 from spsdk.image.bootable_image.segments import (
     BootableImageSegment,
     Segment,
@@ -24,7 +26,12 @@ from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.images import BinaryImage, BinaryPattern
 from spsdk.utils.misc import align, write_file
-from spsdk.utils.schema_validator import CommentedConfig, check_config
+from spsdk.utils.schema_validator import (
+    CommentedConfig,
+    check_config,
+    update_validation_schema_family,
+)
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -44,30 +51,20 @@ class BootableImage(BaseClass):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Chip silicon revision.
-        :raises SPSDKValueError: Invalid family.
         """
-        if family not in self.get_supported_families():
-            raise SPSDKValueError(f"Unsupported family: {family}")
         if mem_type not in self.get_supported_memory_types(family, revision):
             raise SPSDKValueError(f"Unsupported memory type: {mem_type.label}")
         self.family = family
         self.mem_type = mem_type
         self.revision = revision
-        bimg_descr: Dict[str, Any] = self.get_memory_type_config(family, mem_type, revision)
+        bimg_descr: dict[str, Any] = self.get_memory_type_config(family, mem_type, revision)
         self.image_pattern = bimg_descr.get("image_pattern", "zeros")
-        self._segments: List[Segment] = []
-        for segment_name, segment_offset in bimg_descr["segments"].items():
-            self._segments.append(
-                get_segment_class(BootableImageSegment.from_label(segment_name))(
-                    offset=segment_offset, family=family, mem_type=mem_type, revision=revision
-                )
-            )
-
+        self._segments: list[Segment] = self._get_segments(family, mem_type, revision)
         self._init_offset: int = 0
         self.set_init_offset(init_offset)
 
     @property
-    def segments(self) -> List[Segment]:
+    def segments(self) -> list[Segment]:
         """List of used segments."""
         return [seg for seg in self._segments if seg.is_present]
 
@@ -136,7 +133,7 @@ class BootableImage(BaseClass):
         :return: Segment offset
         """
 
-        def _get_segment_offset(segments: List[Segment], segment: Segment) -> int:
+        def _get_segment_offset(segments: list[Segment], segment: Segment) -> int:
             if segment.full_image_offset >= 0:
                 return segment.full_image_offset
 
@@ -149,7 +146,7 @@ class BootableImage(BaseClass):
                             "Cannot get dynamically offset of segment because"
                             " there is no any previous segment with static offset."
                         )
-                    assert prev_seg
+                    assert prev_seg is not None
                     return align(
                         _get_segment_offset(segments, prev_seg) + len(prev_seg),
                         segment.OFFSET_ALIGNMENT,
@@ -216,26 +213,28 @@ class BootableImage(BaseClass):
             raise
 
     @classmethod
-    def parse(
+    def _parse_all(
         cls,
         binary: bytes,
         family: Optional[str] = None,
         mem_type: Optional[MemoryType] = None,
         revision: str = "latest",
-    ) -> "BootableImage":
+        no_errors: bool = True,
+    ) -> list[Self]:
         """Parse binary into bootable image object.
 
         :param binary: Bootable image binary.
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Chip silicon revision.
+        :param no_errors: Do not accept any parsing errors.
         """
         if not family:
             raise SPSDKValueError("Family attribute must be specified.")
         mem_types = [mem_type] if mem_type else cls.get_supported_memory_types(family, revision)
         mem_types_str = ",".join([f"'{mem_type.description}'" for mem_type in mem_types])
         logger.debug(f"Parsing of bootable image for memory type(s): {mem_types_str}")
-        bimg_instances: List[BootableImage] = []
+        bimg_instances: list[Self] = []
         # first try to find the exact match as it is a full bootable image
         for memory_type in mem_types:
             logger.debug(
@@ -244,6 +243,8 @@ class BootableImage(BaseClass):
             try:
                 bimg = cls(family, memory_type, revision)
                 bimg._parse(binary)
+                if no_errors:
+                    bimg.verify().validate()
                 bimg_instances.append(bimg)
             except SPSDKError as e:
                 logger.debug(e)
@@ -252,8 +253,8 @@ class BootableImage(BaseClass):
         if not bimg_instances:
             logger.debug("The exact match has not been found")
             for memory_type in mem_types:
-                bimg = cls(family, memory_type, revision)
-                init_offsets = [seg.full_image_offset for seg in bimg._segments if seg.INIT_SEGMENT]
+                segments = cls._get_segments(family, memory_type, revision)
+                init_offsets = [seg.full_image_offset for seg in segments if seg.INIT_SEGMENT]
                 for init_offset in init_offsets:
                     logger.debug(
                         f"Parsing the image for memory type '{memory_type.description}' "
@@ -262,13 +263,37 @@ class BootableImage(BaseClass):
                     try:
                         bimg = cls(family, memory_type, revision, init_offset)
                         bimg._parse(binary)
+                        if no_errors:
+                            bimg.verify().validate()
                         bimg_instances.append(bimg)
                     except SPSDKError as e:
                         logger.debug(e)
                         continue
+
+        return bimg_instances
+
+    @classmethod
+    def parse(
+        cls,
+        binary: bytes,
+        family: Optional[str] = None,
+        mem_type: Optional[MemoryType] = None,
+        revision: str = "latest",
+    ) -> Self:
+        """Parse binary into bootable image object.
+
+        :param binary: Bootable image binary.
+        :param family: Chip family.
+        :param mem_type: Used memory type.
+        :param revision: Chip silicon revision.
+        """
+        bimg_instances = cls._parse_all(
+            binary=binary, family=family, mem_type=mem_type, revision=revision
+        )
+
         if not bimg_instances:
             raise SPSDKError(
-                f"The image parsing failed. The image is not matching any of memory types: {mem_types_str}"
+                "The image parsing failed. The image is not matching any of memory types."
             )
         if len(bimg_instances) > 1:
             mem_types_str = ", ".join(f'"{img.mem_type.description}"' for img in bimg_instances)
@@ -297,7 +322,7 @@ class BootableImage(BaseClass):
     @staticmethod
     def get_validation_schemas(
         family: str, mem_type: MemoryType, revision: str = "latest"
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get validation schema for the family.
 
         :param family: Chip family
@@ -307,15 +332,19 @@ class BootableImage(BaseClass):
         """
         bimg = BootableImage(family=family, mem_type=mem_type, revision=revision)
         sch_cfg = get_schema_file(DatabaseManager.BOOTABLE_IMAGE)
-        sch_cfg["family_rev"]["properties"]["family"]["template_value"] = family
-        sch_cfg["family_rev"]["properties"]["revision"]["enum"] = bimg.get_supported_revisions(
-            family
+        sch_family = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch_family["properties"], bimg.get_supported_families(), family
         )
-        sch_cfg["family_rev"]["properties"]["revision"]["template_value"] = revision
-        sch_cfg["family_rev"]["properties"]["memory_type"]["template_value"] = mem_type.label
-        schemas = [sch_cfg["family_rev"], sch_cfg["init_offset"]]
+        sch_cfg["memory_type"]["properties"]["memory_type"]["template_value"] = mem_type.label
+        schemas = [sch_family, sch_cfg["memory_type"], sch_cfg["init_offset"]]
         for segment in bimg._segments:
-            schemas.append(sch_cfg[segment.NAME.label])
+            try:
+                sch_name = sch_cfg[segment.NAME.label]
+            except KeyError:
+                logger.error(f"Cannot find schema for segment {segment.NAME}")
+                continue
+            schemas.append(sch_name)
         return schemas
 
     def store_config(self, output: str) -> None:
@@ -324,7 +353,7 @@ class BootableImage(BaseClass):
         :param output: Path to output folder to store bootable image configuration.
         """
         schemas = self.get_validation_schemas(self.family, self.mem_type, self.revision)
-        config: Dict[str, Union[str, int]] = {}
+        config: dict[str, Union[str, int]] = {}
         config["family"] = self.family
         config["revision"] = self.revision
         config["memory_type"] = self.mem_type.label
@@ -342,7 +371,7 @@ class BootableImage(BaseClass):
         )
 
     @staticmethod
-    def load_from_config(config: Dict, search_paths: Optional[List[str]] = None) -> "BootableImage":
+    def load_from_config(config: dict, search_paths: Optional[list[str]] = None) -> "BootableImage":
         """Load bootable image from configuration.
 
         :param config: Configuration of Bootable image.
@@ -409,13 +438,110 @@ class BootableImage(BaseClass):
         return self.image_info().export()
 
     @staticmethod
-    def get_validation_schemas_family() -> List[Dict[str, Any]]:
+    def pre_parse_verify(
+        data: bytes,
+        family: str,
+        mem_type: MemoryType,
+        revision: str = "latest",
+    ) -> Verifier:
+        """Pre-Parse binary T osee main issue before parsing.
+
+        :param data: Bootable image binary.
+        :param family: Chip family.
+        :param mem_type: Used memory type.
+        :param revision: Chip silicon revision.
+        :return: Verifier object of preparsed data.
+        """
+
+        def check_segments(bimg_obj: BootableImage, name: str) -> Verifier:
+            ret = Verifier(f"Pre-parsed Bootable Image at offset {hex(bimg_obj.init_offset)}")
+            all_ret.add_child(ret, name)
+
+            prev_offset = prev_size = 0
+            for segment in [seg for seg in bimg_obj._segments if not seg.excluded]:
+                offset = bimg_obj.get_segment_offset(segment)
+                # cover the case with variable offset
+                if segment.full_image_offset < 0:
+                    start_offset = align(prev_offset + prev_size, segment.OFFSET_ALIGNMENT)
+                    if start_offset >= len(data):
+                        continue
+                    offset = start_offset + segment.find_segment_offset(data[start_offset:])
+                if len(data) <= offset and segment.BOOT_HEADER:
+                    ret.add_record(
+                        "Length", VerifierResult.ERROR, "Insufficient length of input binary."
+                    )
+                    return ret
+                try:
+                    ret.add_child(segment.pre_parse_verify(data[offset:]))
+                    ret.validate()
+                except SPSDKVerificationError:
+                    return ret
+                prev_offset = offset
+                prev_size = len(segment)
+            return ret
+
+        all_ret = Verifier("Pre-parsed Bootable Images")
+        bimg = BootableImage(family, mem_type, revision, 0)
+        # check full image
+        full_ver = check_segments(bimg, "Whole Image pre-parse verification")
+        if not full_ver.has_errors:
+            return full_ver
+
+        init_segments = [seg for seg in bimg._segments if seg.INIT_SEGMENT]
+        for init_segment in init_segments:
+            bimg = BootableImage(family, mem_type, revision, init_segment.full_image_offset)
+            seg_ver = check_segments(bimg, f"Starting from {init_segment.NAME.label} segment")
+            if not seg_ver.has_errors:
+                return seg_ver
+        # in this case, everything fails, return information about all fails
+        return all_ret
+
+    def verify(self) -> Verifier:
+        """Get verifier object of segment.
+
+        :return: Verifier of current object.
+        """
+        ret = Verifier(
+            f"Bootable Image of {self.family} rev:{self.revision} for {self.mem_type} memory type"
+        )
+        ret.add_record_range("Header length", self.header_len)
+        ret.add_record_range("Initial offset", self.init_offset)
+
+        for seg in self._segments:
+            seg_ver = Verifier(f"Segment {seg.NAME}")
+            if seg.excluded:
+                seg_ver.add_record(
+                    "Availability", VerifierResult.WARNING, "The segment is excluded"
+                )
+            else:
+                seg_ver.add_record_range("Offset in image", self.get_segment_offset(seg))
+                seg_ver.add_child(seg.verify())
+
+            ret.add_child(seg_ver)
+
+        image_info = self.image_info()
+        try:
+            image_info.validate()
+            val = "Valid"
+            if logger.getEffectiveLevel() <= logging.INFO:
+                val = image_info.draw()
+            ret.add_record("Binary structure", VerifierResult.SUCCEEDED, val, raw=True)
+        except SPSDKError:
+            ret.add_record("Binary structure", VerifierResult.ERROR, image_info.draw(), raw=True)
+        return ret
+
+    @staticmethod
+    def get_validation_schemas_family() -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for Bootable Image supported families.
         """
+        sch_family = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch_family["properties"], BootableImage.get_supported_families()
+        )
         sch_cfg = get_schema_file(DatabaseManager.BOOTABLE_IMAGE)
-        return [sch_cfg["family_rev"]]
+        return [sch_family, sch_cfg["memory_type"]]
 
     @classmethod
     def generate_config_template(
@@ -442,7 +568,7 @@ class BootableImage(BaseClass):
         ).get_template()
 
     @classmethod
-    def get_supported_families(cls) -> List[str]:
+    def get_supported_families(cls) -> list[str]:
         """Get list of all supported families by bootable image.
 
         :return: List of families.
@@ -452,7 +578,7 @@ class BootableImage(BaseClass):
     @classmethod
     def get_supported_memory_types(
         cls, family: Optional[str] = None, revision: str = "latest"
-    ) -> List[MemoryType]:
+    ) -> list[MemoryType]:
         """Return list of supported memory types.
 
         :return: List of supported families.
@@ -463,37 +589,55 @@ class BootableImage(BaseClass):
                 MemoryType.from_label(memory)
                 for memory in database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types").keys()
             ]
-        mem_types = []
-        families = cls.get_supported_families()
-        for supported_family in families:
-            database = get_db(supported_family, revision)
-            mem_types.extend(
-                [
-                    MemoryType.from_label(memory)
-                    for memory in database.get_dict(
-                        DatabaseManager.BOOTABLE_IMAGE, "mem_types"
-                    ).keys()
-                ]
-            )
-        return list(set(mem_types))
 
-    @classmethod
+        return [
+            MemoryType.from_label(memory)
+            for memory in DatabaseManager().quick_info.features_data.get_mem_types(
+                DatabaseManager.BOOTABLE_IMAGE
+            )
+        ]
+
+    @staticmethod
     def get_memory_type_config(
-        cls, family: str, mem_type: MemoryType, revision: str = "latest"
-    ) -> Dict[str, Any]:
+        family: str, mem_type: MemoryType, revision: str = "latest"
+    ) -> dict[str, Any]:
         """Return dictionary with configuration for specific memory type.
 
+        :param family: Chip family name.
+        :param mem_type: CHip memory type to handle bootable area.
+        :param revision: Revision of chip.
         :raises SPSDKKeyError: If memory type does not exist in database
         :return: Dictionary with configuration.
         """
-        if mem_type not in cls.get_supported_memory_types(family):
+        if mem_type not in BootableImage.get_supported_memory_types(family):
             raise SPSDKKeyError(f"Memory type not supported: {mem_type.description}")
         database = get_db(family, revision)
         mem_types = database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types")
         return mem_types[mem_type.label]
 
     @staticmethod
-    def get_supported_revisions(family: str) -> List[str]:
+    def _get_segments(family: str, mem_type: MemoryType, revision: str = "latest") -> list[Segment]:
+        """Return list of used segments for specific memory type.
+
+        :param family: Chip family name.
+        :param mem_type: CHip memory type to handle bootable area.
+        :param revision: Revision of chip.
+        :return: List of segments for choose chip and memory type.
+        """
+        bimg_descr = BootableImage.get_memory_type_config(
+            family=family, mem_type=mem_type, revision=revision
+        )
+        segments: list[Segment] = []
+        for segment_name, segment_offset in bimg_descr["segments"].items():
+            segments.append(
+                get_segment_class(BootableImageSegment.from_label(segment_name))(
+                    offset=segment_offset, family=family, mem_type=mem_type, revision=revision
+                )
+            )
+        return segments
+
+    @staticmethod
+    def get_supported_revisions(family: str) -> list[str]:
         """Return list of supported revisions.
 
         :return: List of supported revisions.

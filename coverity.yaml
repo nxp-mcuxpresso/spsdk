@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+#
+# Copyright 2019-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+capture:
+  languages:
+    include: [python]
+  files:
+    include-regex: "spsdk|examples"
+    exclude-regex: "venv|tests|docs"
+
+analyze:
+  aggressiveness-level: high
+
+commit:
+  connect:
+    url: https://coverity2.nxp.com:8443
+    stream: spsdk_base
+    on-new-cert: distrust
+
+##############################################################
+# This section is not a part of regular Coverity configuration
+# Because of that, Coverity will show some warnings
+reports:
+  project-name: "SPSDK"
+  coverity-name: "SPSDK"
+  types: [syn-integrity, cov-integrity, cov-security]

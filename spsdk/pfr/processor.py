@@ -11,7 +11,6 @@ import ast
 import logging
 import re
 import sys
-from typing import Tuple
 
 if sys.version_info < (3, 9):
     from astunparse import unparse
@@ -62,7 +61,7 @@ class Processor:
         self.logger = logger.getChild("processor")
         self.transformer = MyTransformer(translator)
 
-    def process(self, condition: str) -> Tuple[bool, str]:
+    def process(self, condition: str) -> tuple[bool, str]:
         """Process individual condition from rules.
 
         :param condition: condition to quantify

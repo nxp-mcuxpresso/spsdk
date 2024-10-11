@@ -10,7 +10,7 @@
 import os
 from abc import abstractmethod
 from datetime import datetime, timezone
-from typing import Dict, List, Mapping, Optional, Type
+from typing import Mapping, Optional, Type
 
 from typing_extensions import Self
 
@@ -30,7 +30,7 @@ from spsdk.image.hab.hab_config import HabConfig
 from spsdk.image.images import BootImgRT
 from spsdk.image.secret import MAC
 from spsdk.image.segments import SegBDT, SegCSF, SegDCD, SegIVT2, SegXMCD, XMCDHeader
-from spsdk.utils.misc import align_block, find_file, get_abs_path, load_binary, write_file
+from spsdk.utils.misc import align, align_block, find_file, get_abs_path, load_binary, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
@@ -73,7 +73,7 @@ class HabSegmentBase:
 
     @classmethod
     @abstractmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -113,7 +113,7 @@ class IvtHabSegment(HabSegmentBase):
         return info
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the IVT HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -186,7 +186,7 @@ class BdtHabSegment(HabSegmentBase):
         return info
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the BDT HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -194,7 +194,7 @@ class BdtHabSegment(HabSegmentBase):
         :return: Instance of BDT HAB segment.
         """
         segment = SegBDT(app_start=config.options.start_address)
-        end_segments: Dict[int, Type[HabSegmentBase]] = {
+        end_segments: dict[int, Type[HabSegmentBase]] = {
             0: AppHabSegment,
             1: CsfHabSegment,
         }
@@ -252,7 +252,7 @@ class DcdHabSegment(HabSegmentBase):
         return info
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the DCD HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -318,7 +318,7 @@ class XmcdHabSegment(HabSegmentBase):
         return info
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the XMCD HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -399,7 +399,7 @@ class CsfHabSegment(HabSegmentBase):
         return info
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the CSF HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -413,7 +413,7 @@ class CsfHabSegment(HabSegmentBase):
             raise SPSDKSegmentNotPresent(f"Segment {cls.__name__} is not present")
 
         header = SecCsfHeader.load_from_config(config, search_paths=search_paths)
-        commands: List[SecCommandBase] = []
+        commands: list[SecCommandBase] = []
         for cmd_config in config.commands:
             if cmd_config.index in [SecCommand.HEADER.tag, SecCommand.INSTALL_NOCAK.tag]:
                 continue
@@ -490,7 +490,7 @@ class CsfHabSegment(HabSegmentBase):
         return csf_offset
 
     def update_signature(
-        self, image_data: bytes, blocks: List[ImageBlock], base_data_address: int
+        self, image_data: bytes, blocks: list[ImageBlock], base_data_address: int
     ) -> None:
         """Sign the HAB image and update the signature in CSF command.
 
@@ -514,14 +514,20 @@ class CsfHabSegment(HabSegmentBase):
         auth_csf = self.get_authenticate_csf_cmd()
         if auth_csf is None:
             raise SPSDKValueError("Authenticate CSF command not present.")
-        # create fake signature in order to update size of the image
-        auth_csf.update_signature(zulu=self.signature_timestamp, data=self.segment._export_base())
-        self.segment.update(True)
-        # now update the signature once again with "real" CSF signature
-        data = self.segment._export_base()
-        auth_csf.update_signature(zulu=self.signature_timestamp, data=data)
+        # In order to sign the CSF segment, a dummy signature is created first, so the data references are updated
+        # ECC keys create a signature with variable length (depending on r and s values), therefore
+        # we need to get a signature which does not change the CSF segment data references
+        updated = True
+        while updated:
+            assert auth_csf.cmd_data_reference is not None
+            auth_cfs_size = align(auth_csf.cmd_data_reference.size, 4)
+            auth_csf.update_signature(
+                zulu=self.signature_timestamp, data=self.segment._export_base()
+            )
+            if auth_cfs_size == align(auth_csf.cmd_data_reference.size, 4):
+                updated = False
 
-    def encrypt(self, image_data: bytes, blocks: List[ImageBlock]) -> bytes:
+    def encrypt(self, image_data: bytes, blocks: list[ImageBlock]) -> bytes:
         """Encrypt the HAB image.
 
         :param image_data: Padding image binary
@@ -579,7 +585,7 @@ class CsfHabSegment(HabSegmentBase):
 
     @staticmethod
     def get_dek_from_config(
-        config: HabConfig, search_paths: Optional[List[str]] = None
+        config: HabConfig, search_paths: Optional[list[str]] = None
     ) -> Optional[bytes]:
         """Get dek binary from configuration if exists, None otherwise."""
         if not config.commands.contains(SecCommand.INSTALL_SECRET_KEY):
@@ -606,7 +612,7 @@ class CsfHabSegment(HabSegmentBase):
 
     @staticmethod
     def get_nonce_from_config(
-        config: HabConfig, search_paths: Optional[List[str]] = None
+        config: HabConfig, search_paths: Optional[list[str]] = None
     ) -> Optional[bytes]:
         """Get nonce binary from configuration if exists, None otherwise."""
         if not config.commands.contains(SecCommand.DECRYPT_DATA):
@@ -655,7 +661,7 @@ class AppHabSegment(HabSegmentBase):
         return info
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[List[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
         """Load the APP HAB segment from HAB configuration.
 
         :param config: Hab configuration object
@@ -713,7 +719,7 @@ class AppHabSegment(HabSegmentBase):
         return int.from_bytes(data[4:8], "little")
 
 
-class HabSegments(List[HabSegmentBase]):
+class HabSegments(list[HabSegmentBase]):
     """Extension of segments list."""
 
     def get_segment(self, segment: HabSegment) -> HabSegmentBase:

@@ -8,7 +8,7 @@
 
 from enum import Enum as BuiltinEnum
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Mapping, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -16,7 +16,14 @@ from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import Endianness, align_block, load_binary, value_to_bytes, value_to_int
+from spsdk.utils.misc import (
+    Endianness,
+    align_block,
+    load_binary,
+    load_text,
+    value_to_bytes,
+    value_to_int,
+)
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
@@ -29,7 +36,7 @@ class MainCmd(BaseClass):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "MainCmd":
         """Load configuration from dictionary.
 
@@ -108,7 +115,7 @@ class BaseCmd(MainCmd):
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def header_parse(cls, cmd_tag: EnumCmdTag, data: bytes) -> Tuple[int, int]:
+    def header_parse(cls, cmd_tag: EnumCmdTag, data: bytes) -> tuple[int, int]:
         """Parse header command from bytes array.
 
         :param data: Input data as bytes array
@@ -164,7 +171,7 @@ class CmdLoadBase(BaseCmd):
         return msg
 
     @classmethod
-    def _extract_data(cls, data: bytes) -> Tuple[int, int, bytes, int, int]:
+    def _extract_data(cls, data: bytes) -> tuple[int, int, bytes, int, int]:
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         memory_id = 0
         if tag != cls.TAG:
@@ -205,7 +212,7 @@ class CmdLoadBase(BaseCmd):
     # pylint: disable=redundant-returns-doc
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> MainCmd:
         """Load configuration from dictionary.
 
@@ -257,7 +264,7 @@ class CmdErase(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdErase":
         """Load configuration from dictionary.
 
@@ -285,7 +292,7 @@ class CmdLoad(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> Union["CmdLoad", "CmdLoadHashLocking", "CmdLoadCmac"]:
         """Load configuration from dictionary.
 
@@ -351,7 +358,7 @@ class CmdExecute(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdExecute":
         """Load configuration from dictionary.
 
@@ -389,7 +396,7 @@ class CmdCall(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdCall":
         """Load configuration from dictionary.
 
@@ -416,7 +423,7 @@ class CmdProgFuses(CmdLoadBase):
         self.length //= 4
 
     @classmethod
-    def _extract_data(cls, data: bytes) -> Tuple[int, int, bytes, int, int]:
+    def _extract_data(cls, data: bytes) -> tuple[int, int, bytes, int, int]:
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         length *= 4
         memory_id = 0
@@ -443,7 +450,7 @@ class CmdProgFuses(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdProgFuses":
         """Load configuration from dictionary.
 
@@ -485,7 +492,7 @@ class CmdProgIfr(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdProgIfr":
         """Load configuration from dictionary.
 
@@ -528,7 +535,7 @@ class CmdLoadCmac(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdLoadCmac":
         """Load configuration from dictionary.
 
@@ -606,7 +613,7 @@ class CmdCopy(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdCopy":
         """Load configuration from dictionary.
 
@@ -653,7 +660,7 @@ class CmdLoadHashLocking(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdLoadHashLocking":
         """Load configuration from dictionary.
 
@@ -707,7 +714,9 @@ class CmdLoadKeyBlob(BaseCmd):
             raise SPSDKValueError(f"KeyWraps version {key_wraps_version} is not defined")
         return key_wraps[key_name.name].value
 
-    def __init__(self, offset: int, data: bytes, key_wrap_id: int) -> None:
+    def __init__(
+        self, offset: int, data: bytes, key_wrap_id: int, plain_input: bool = False
+    ) -> None:
         """Constructor for command.
 
         :param offset: Input offset
@@ -717,10 +726,21 @@ class CmdLoadKeyBlob(BaseCmd):
         super().__init__(cmd_tag=EnumCmdTag.LOAD_KEY_BLOB, address=offset, length=len(data))
         self.key_wrap_id = key_wrap_id
         self.data = data
+        self.plain_input = plain_input
 
     def __str__(self) -> str:
         """Get info of command."""
         return f"LOAD_KEY_BLOB: Offset=0x{self.address:08X}, Length={self.length}, Key wrap ID={self.key_wrap_id}"
+
+    @property
+    def length(self) -> int:
+        """Get data length."""
+        return len(self.data)
+
+    @length.setter
+    def length(self, value: int) -> None:
+        """Set data length."""
+        raise SPSDKError(f"Length property for {self.__class__.__name__} is read-only")
 
     def export(self) -> bytes:
         """Export command as bytes."""
@@ -752,7 +772,7 @@ class CmdLoadKeyBlob(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdLoadKeyBlob":
         """Load configuration from dictionary.
 
@@ -760,13 +780,22 @@ class CmdLoadKeyBlob(BaseCmd):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: Command object loaded from configuration.
         """
-        data = load_binary(config["file"], search_paths=search_paths)
         offset = value_to_int(config["offset"], 0)
         key_wrap_name = config["wrappingKeyId"]
         family = config["family"]
-
         key_wrap_id = cls.get_key_id(family, cls.KeyTypes[key_wrap_name])
-        return CmdLoadKeyBlob(offset=offset, data=data, key_wrap_id=key_wrap_id)
+        file = config["file"]
+        plain_input: str = config.get("plainInput", "bin")
+
+        if plain_input == "hex":
+            hex_data = load_text(path=file, search_paths=search_paths)
+            data = bytes.fromhex(hex_data)
+        else:
+            data = load_binary(path=file, search_paths=search_paths)
+
+        return CmdLoadKeyBlob(
+            offset=offset, data=data, key_wrap_id=key_wrap_id, plain_input=plain_input != "no"
+        )
 
 
 class CmdConfigureMemory(BaseCmd):
@@ -801,7 +830,7 @@ class CmdConfigureMemory(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdConfigureMemory":
         """Load configuration from dictionary.
 
@@ -854,7 +883,7 @@ class CmdFillMemory(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdFillMemory":
         """Load configuration from dictionary.
 
@@ -911,7 +940,7 @@ class CmdFwVersionCheck(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdFwVersionCheck":
         """Load configuration from dictionary.
 
@@ -948,7 +977,7 @@ class CmdReset(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdReset":
         """Load configuration from dictionary.
 
@@ -1004,7 +1033,7 @@ class CmdSectionHeader(MainCmd):
     # pylint: disable=redundant-returns-doc
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "CmdSectionHeader":
         """Load configuration from dictionary.
 

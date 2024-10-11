@@ -1,18 +1,6 @@
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-iee_family:
-  type: object
-  title: Basic Settings
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      enum: [place_holder]
-      template_value: rt1170
-  required: [family]
 
 iee_output:
   type: object

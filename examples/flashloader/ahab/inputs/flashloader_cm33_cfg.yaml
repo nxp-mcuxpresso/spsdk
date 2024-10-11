@@ -1,7 +1,7 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# =========================  Advanced High-Assurance Boot Configuration template for rt118x.  ==========================
+# =========================  Advanced High-Assurance Boot Configuration template for mimxrt1189.  ==========================
 
 # ======================================================================================================================
 #                                                 == General Options ==
@@ -9,8 +9,8 @@
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
 # default.
-# Possible options: <mx8ulp, mx93, mx95, rt118x>
-family: rt118x
+# Possible options: <mimx8ulp, mimx9352, mimx9596, mimxrt1189>
+family: mimxrt1189
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: latest

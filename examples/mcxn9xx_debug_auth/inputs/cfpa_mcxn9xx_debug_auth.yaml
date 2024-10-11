@@ -8,9 +8,9 @@
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Optional] =====-------------------------------------------
 # Description: MCU family name.
-# Possible options: <lpc550x, lpc551x, lpc552x, lpc553x, lpc55s0x, lpc55s1x, lpc55s2x, lpc55s3x, lpc55s6x, mcxn23x,
-# mcxn9xx, nhs52sxx>
-family: mcxn9xx
+# Possible options: <lpc5506, lpc5516, lpc5528, lpc5536, lpc55s06, lpc55s16, lpc55s28, lpc55s36, lpc55s69, mcxn236,
+# mcxn946, nhs52s04>
+family: mcxn946
 # -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
 # Description: If needed this could be used to specify silicon revision of device.
 revision: latest

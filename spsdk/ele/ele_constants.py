@@ -46,6 +46,15 @@ class MessageIDs(SpsdkSoftEnum):
     READ_SHADOW_FUSE = (0xF3, "READ_SHADOW_FUSE", "Read shadow fuse request.")
 
 
+class SocId(SpsdkSoftEnum):
+    """SOC Identification."""
+
+    MX8ULP = (0x084D, "MX8ULP", "i.MX8ULP")
+    RT1180 = (0x1180, "RT1180", "i.MXRT1180")
+    MX93 = (0x9300, "MX93", "i.MXRT93")
+    MX95 = (0x9500, "MX95", "i.MXRT95")
+
+
 class LifeCycle(SpsdkSoftEnum):
     """ELE life cycles."""
 
@@ -341,4 +350,20 @@ class EleCsalState(SpsdkSoftEnum):
         0x4,
         "ELE_CSAL_PAUSE",
         "EdgeLock secure enclave random context initialization is in 'pause' mode",
+    )
+
+
+class EleImemState(SpsdkSoftEnum):
+    """ELE IMEM state."""
+
+    ELE_IMEM_LOADED = (
+        0xCA,
+        "ELE_IMEM_LOADED",
+        "The IMEM is fully loaded and all ELE functionality can be used",
+    )
+    ELE_IMEM_LOST = (
+        0xFE,
+        "ELE_IMEM_LOST",
+        "Some IMEM regions have been lost during power down and fw "
+        "must be re-installed to use all ELE features",
     )

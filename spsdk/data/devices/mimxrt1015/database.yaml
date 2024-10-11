@@ -1,0 +1,123 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  purpose: i.MX RT Crossover MCUs
+  spsdk_predecessor_name: rt1015
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1015-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-500-mhz:i.MX-RT1015
+  memory_map:
+    itcm:
+      start_int: "0x0"
+      size_int: "0x20000"
+      external: false
+      non_xip_type: int_ram
+      warning_ranges:
+        - start_int: "0x10000"
+          size_int: "0x10000"
+          warning_msg: RAM above 0x10000 is not initialized by default
+    dtcm:
+      start_int: "0x20000000"
+      size_int: "0x20000"
+      external: false
+      non_xip_type: int_ram
+      warning_ranges:
+        - start_int: "0x20010000"
+          size_int: "0x10000"
+          warning_msg: RAM above 0x20010000 is not initialized by default
+    ocram:
+      start_int: "0x20200000"
+      size_int: "0x20000"
+      external: false
+      non_xip_type: int_ram
+    flexspi:
+      start_int: "0x60000000"
+      size_int: "0x10000000"
+      external: true
+      non_xip_type: none
+  isp:
+    rom:
+      protocol: sdp
+      usb:
+        vid: 0x1FC9
+        pid: 0x0145
+    flashloader:
+      protocol: mboot
+      usb:
+        vid: 0x15A2
+        pid: 0x0073
+
+features:
+  # ======== Fuses description section ========
+  fuses:
+    tool: blhost
+    no_verify: True
+    grouped_registers:
+      - uid: otfad_sw_gp2
+        name: SW_GP2
+        width: 128
+        reversed: True
+        reverse_subregs_order: True
+        config_as_hexstring: true
+        description: General purpose SW key.
+        sub_regs: [fuse41, fuse42, fuse43, fuse44]
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x0000_2000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_srk]
+    rot_type: "srk_table_hab"
+
+  # ======== HABv4 section ========
+  hab:
+    mem_types:
+      flexspi_nor:
+        initial_load_size: 0x2000
+      flexspi_nand:
+        initial_load_size: 0x1000
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+
+  # ======== BEE section ========
+  bee: {}
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      serial_downloader:
+        segments:
+          hab_container: 0x0
+      flexspi_nor:
+        segments:
+          fcb: 0x0000
+          hab_container: 0x1000
+      flexspi_nand:
+        segments:
+          hab_container: 0x400
+      recovery_spi_hab:
+        segments:
+          hab_container: 0x400
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [0]
+      flexspi_nand:
+        instances: [0]
+      spi_nor:
+        instances: [1, 2, 3, 4]

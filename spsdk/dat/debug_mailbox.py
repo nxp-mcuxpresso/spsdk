@@ -9,10 +9,11 @@
 import functools
 import logging
 from time import sleep
-from typing import Any, Dict, no_type_check
+from typing import Any, no_type_check
 
 from spsdk.debuggers.debug_probe import DebugProbe
 from spsdk.exceptions import SPSDKError, SPSDKIOError
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import Timeout
 
@@ -29,6 +30,8 @@ class DebugMailbox:
     def __init__(
         self,
         debug_probe: DebugProbe,
+        family: str,
+        revision: str = "latest",
         reset: bool = True,
         moredelay: float = 0.0,
         op_timeout: int = 1000,
@@ -36,19 +39,30 @@ class DebugMailbox:
         """Initialize DebugMailbox object.
 
         :param debug_probe: Debug probe instance.
+        :param family: Chip family.
+        :param revision: Chip family revision, defaults to 'latest'
         :param reset: Do reset of debug mailbox during initialization, defaults to True.
         :param moredelay: Time of extra delay after reset sequence, defaults to 0.0.
         :param op_timeout: Atomic operation timeout, defaults to 1000.
         :raises SPSDKIOError: Various kind of vulnerabilities during connection to debug mailbox.
         """
         # setup debug port / access point
-
-        self.debug_probe = debug_probe
+        self.family = family
+        self.revision = revision
         self.dbgmlbx_ap_ix = -1
+        self.non_standard_statuses = {}
+        if family:
+            db = get_db(family, revision)
+            self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
+            self.non_standard_statuses = db.get_dict(
+                DatabaseManager.DAT, "non_standard_statuses", {}
+            )
+        self.debug_probe = debug_probe
+
         self.reset = reset
         self.moredelay = moredelay
         # setup registers and register bitfields
-        self.registers: Dict[str, Dict[str, Any]] = REGISTERS
+        self.registers: dict[str, dict[str, Any]] = REGISTERS
         # set internal operation timeout
         self.op_timeout = op_timeout
 
@@ -100,10 +114,11 @@ class DebugMailbox:
 
         :return: IDR value of debug mailbox AP.
         """
-        idr = self.dbgmlbx_reg_read(addr=REGISTERS["IDR"]["address"])
-        if idr != REGISTERS["IDR"]["expected"]:
+        idr = self.dbgmlbx_reg_read(addr=self.registers["IDR"]["address"])
+        if idr != self.registers["IDR"]["expected"]:
             logger.warning(
-                f"The read IDR value({hex(idr)}) doesn't match the expected value: {hex(REGISTERS['IDR']['expected'])}"
+                f"The read IDR value({hex(idr)}) doesn't match the expected "
+                f"value: {hex(self.registers['IDR']['expected'])}"
             )
         return idr
 
@@ -170,24 +185,24 @@ class DebugMailbox:
 
         :param func: Decorated function.
         """
-        # TODO: Remove this "dirty" hack with task SPSDK-3299
-        # The actual order of AP indexes matters here as debug port stops responding
-        # on some devices when testing the AP with index 0 first
         POSSIBLE_DBGMLBX_AP_IX = [2, 0, 1, 3, 8]
 
         @functools.wraps(func)
         def wrapper(self: "DebugMailbox", *args, **kwargs):
             if self.dbgmlbx_ap_ix < 0:
                 # Try to find DEBUG MAILBOX AP
+                logger.warning(
+                    "The debug mailbox access port index is not specified, trying autodetection."
+                )
                 for i in POSSIBLE_DBGMLBX_AP_IX:
                     try:
                         idr = self.debug_probe.coresight_reg_read(
                             access_port=True,
                             addr=self.debug_probe.get_coresight_ap_address(
-                                access_port=i, address=REGISTERS["IDR"]["address"]
+                                access_port=i, address=self.registers["IDR"]["address"]
                             ),
                         )
-                        if idr == REGISTERS["IDR"]["expected"]:
+                        if idr == self.registers["IDR"]["expected"]:
                             self.dbgmlbx_ap_ix = i
                             logger.debug(
                                 f"Found debug mailbox access port at AP{i}, IDR: 0x{idr:08X}"
@@ -237,7 +252,7 @@ class DebugMailbox:
         )
 
 
-REGISTERS: Dict[str, Any] = {
+REGISTERS: dict[str, Any] = {
     # Control and Status Word (CSW) is used to control
     # the Debug Mailbox communication
     "CSW": {

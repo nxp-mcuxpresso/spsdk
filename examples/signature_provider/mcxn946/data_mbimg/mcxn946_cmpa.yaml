@@ -1,0 +1,25 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+description:
+  device: mcxn946
+  revision: latest
+  type: CMPA
+settings:
+  BOOT_CFG:
+    bitfields:
+      BOOT_SRC: FLEXSPI_FLASH_XIP
+  FLEXSPI_BOOT_CFG0:
+    bitfields:
+      FLEXSPI_AUTO_PROBE_EN: ENABLED
+  SECURE_BOOT_CFG:
+    bitfields:
+      SEC_BOOT_EN: SIGNED_IMAGES
+      ENF_CNSA: LIMITED_0b01
+  RoTK_USAGE:
+    bitfields:
+      RoTK0_Usage: USABLE
+      RoTK1_Usage: USABLE
+      RoTK2_Usage: KEY_SLOT_NOT_USED
+      RoTK3_Usage: KEY_SLOT_NOT_USED
+      SKIP_DICE: DISABLE_DICE

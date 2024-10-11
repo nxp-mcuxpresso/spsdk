@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Customer-specific Signature Provider."""
 
 import math
-from typing import List, Optional
+from typing import Optional
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -22,9 +22,9 @@ class SuperAwesomeSP(SignatureProvider):
     """Signature Provider based on a remote signing service."""
 
     # identifier of this signature provider; used in yaml configuration file
-    sp_type = "file_no_verify"
+    identifier = "file_no_verify"
 
-    def __init__(self, file_path: str, search_paths: Optional[List[str]] = None) -> None:
+    def __init__(self, file_path: str, search_paths: Optional[list[str]] = None) -> None:
         """Initialize the plain file signature provider.
 
         :param file_path: Path to private file

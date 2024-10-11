@@ -7,7 +7,7 @@
 """Utilities used in SmartCard."""
 
 import logging
-from typing import List, NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional
 
 from spsdk.apps.utils.utils import format_raw_data
 from spsdk.exceptions import SPSDKError
@@ -107,7 +107,7 @@ class AppletInfo(NamedTuple):
     card_connection: CardConnection
 
 
-def get_readers() -> List[Tuple[str, str]]:
+def get_readers() -> list[tuple[str, str]]:
     """Return list of all readers in the system.
 
     Each reader is represented by a tuple:
@@ -119,7 +119,7 @@ def get_readers() -> List[Tuple[str, str]]:
 
 def get_applet_infos(
     atr: str, applet: str, filter_id: Optional[int] = None, filter_reader: Optional[str] = None
-) -> List[AppletInfo]:
+) -> list[AppletInfo]:
     """Collets information about attached card readers.
 
     :param atr: Select the card's ATR (after reset value)

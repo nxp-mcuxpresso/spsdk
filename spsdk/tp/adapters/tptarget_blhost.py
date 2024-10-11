@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Target, ISP mode over BLHOST."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from spsdk.mboot.exceptions import McuBootError, StatusCode
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
@@ -29,7 +29,7 @@ class TpBlHostIntfDescription(TpIntfDescription):
         self,
         name: str,
         description: str,
-        settings: Optional[Dict],
+        settings: Optional[dict],
     ) -> None:
         """The BLHOST adapter for TPHOST interface description class.
 
@@ -40,7 +40,7 @@ class TpBlHostIntfDescription(TpIntfDescription):
         super().__init__(name, TpTargetBlHost, description, settings)
         self.interface: Optional[MbootProtocolBase] = None
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Returns dictionary with important fields for selection table."""
         ret = {}
         ret["name"] = self.name
@@ -92,7 +92,7 @@ class TpTargetBlHost(TpTargetInterface):
         BAUDRATE = "blhost_baudrate"
 
     @staticmethod
-    def _get_settings(settings: Optional[Dict] = None) -> Dict:
+    def _get_settings(settings: Optional[dict] = None) -> dict:
         """The function gets the important parameters for BLHOST from general settings.
 
         :param settings: General TPHOST target settings, defaults to None
@@ -106,13 +106,13 @@ class TpTargetBlHost(TpTargetInterface):
         return ret
 
     @classmethod
-    def get_connected_targets(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
+    def get_connected_targets(cls, settings: Optional[dict] = None) -> list[TpIntfDescription]:
         """Get all connected TP targets of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
         :return: List of all founded TP targets.
         """
-        ret: List[TpIntfDescription] = []
+        ret: list[TpIntfDescription] = []
         desc = cls._get_settings(settings)
 
         handle_usb = not desc["port"]
@@ -170,7 +170,7 @@ class TpTargetBlHost(TpTargetInterface):
         )
         if not self.buffer_address:
             db = get_db(family, "latest")
-            self.buffer_address = db.get_int(DatabaseManager.COMM_BUFFER, "buffer_address")
+            self.buffer_address = db.get_int(DatabaseManager.COMM_BUFFER, "address")
 
         self.buffer_size = (
             value_to_int(self.descriptor.settings.get("buffer_size", 0))
@@ -179,9 +179,7 @@ class TpTargetBlHost(TpTargetInterface):
         )
         if not self.buffer_size:
             db = get_db(family, "latest")
-            self.buffer_size = db.get_int(
-                DatabaseManager.COMM_BUFFER, "buffer_size", default=0x1000
-            )
+            self.buffer_size = db.get_int(DatabaseManager.COMM_BUFFER, "size", default=0x1000)
 
     @property
     def uses_uart(self) -> bool:
@@ -297,7 +295,7 @@ class TpTargetBlHost(TpTargetInterface):
         )
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls) -> list[dict[str, Any]]:
         """Return all additional validation schemas for interface.
 
         return: List of all additional validation schemas.

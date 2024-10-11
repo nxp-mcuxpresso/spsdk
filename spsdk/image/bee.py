@@ -9,7 +9,7 @@
 
 import logging
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from typing_extensions import Self
 
@@ -222,7 +222,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
         self.counter = counter if counter else random_bytes(12) + b"\x00\x00\x00\x00"
 
         # - FAC regions, 1 - 4
-        self.fac_regions: List[BeeFacRegion] = []
+        self.fac_regions: list[BeeFacRegion] = []
 
     def update(self) -> None:
         """Updates start and end address of the encryption region."""
@@ -590,7 +590,7 @@ class BeeNxp:
 
     def __init__(
         self,
-        headers: List[Optional[BeeRegionHeader]],
+        headers: list[Optional[BeeRegionHeader]],
         input_image: bytes,
         base_address: int,
     ):
@@ -623,19 +623,19 @@ class BeeNxp:
 
         return bytes(encrypted_data)
 
-    def export_headers(self) -> List[Optional[bytes]]:
+    def export_headers(self) -> list[Optional[bytes]]:
         """Export BEE headers.
 
         :return: BEE region headers
         """
-        headers: List[Optional[bytes]] = [None, None]
+        headers: list[Optional[bytes]] = [None, None]
         for idx, header in enumerate(self.headers):
             headers[idx] = header.export() if header else None
 
         return headers
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get all supported families for BEE.
 
         :return: List of supported families.
@@ -643,7 +643,7 @@ class BeeNxp:
         return get_families(DatabaseManager.BEE)
 
     @staticmethod
-    def get_validation_schemas() -> List[Dict[str, Any]]:
+    def get_validation_schemas() -> list[dict[str, Any]]:
         """Get list of validation schemas.
 
         :return: Validation list of schemas.
@@ -661,7 +661,7 @@ class BeeNxp:
         return CommentedConfig("BEE configuration template", val_schemas).get_template()
 
     @staticmethod
-    def check_overlaps(bee_headers: List[Optional[BeeRegionHeader]], start_addr: int) -> None:
+    def check_overlaps(bee_headers: list[Optional[BeeRegionHeader]], start_addr: int) -> None:
         """Check for overlaps in regions.
 
         :param bee_headers: List of BeeRegionHeader
@@ -678,7 +678,7 @@ class BeeNxp:
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "BeeNxp":
         """Converts the configuration into an BEE image object.
 
@@ -692,10 +692,10 @@ class BeeNxp:
         input_binary = load_binary(config["input_binary"], search_paths)
 
         engine_selection = config["engine_selection"]
-        bee_engines: List[Dict[str, Any]] = config["bee_engine"]
+        bee_engines: list[dict[str, Any]] = config["bee_engine"]
         base_address = value_to_int(config["base_address"])
 
-        bee_headers: List[Optional[BeeRegionHeader]] = [None, None]
+        bee_headers: list[Optional[BeeRegionHeader]] = [None, None]
 
         engine_selections = {"engine0": [0], "engine1": [1], "both": [0, 1]}
 
@@ -708,7 +708,7 @@ class BeeNxp:
             elif engine_idx >= len(bee_engines):
                 raise SPSDKError("The count of BEE engines is invalid")
             # BEE Configuration
-            bee_cfg: Optional[Dict[str, Any]] = bee_engines[engine_idx].get("bee_cfg")
+            bee_cfg: Optional[dict[str, Any]] = bee_engines[engine_idx].get("bee_cfg")
             if bee_cfg:
                 key = load_hex_string(bee_cfg["user_key"], expected_size=16)
                 bee_headers[header_idx] = BeeRegionHeader(prdb, key, kib)
@@ -726,7 +726,7 @@ class BeeNxp:
                 continue
 
             # BEE Binary configuration
-            bee_bin_cfg: Optional[Dict[str, Any]] = bee_engines[engine_idx].get("bee_binary_cfg")
+            bee_bin_cfg: Optional[dict[str, Any]] = bee_engines[engine_idx].get("bee_binary_cfg")
             if bee_bin_cfg:
                 key = load_hex_string(bee_bin_cfg["user_key"], expected_size=16)
                 bin_ehdr = load_binary(bee_bin_cfg["header_path"], search_paths)

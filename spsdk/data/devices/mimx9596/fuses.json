@@ -1,0 +1,1913 @@
+{
+    "cpu": "MIMX9596",
+    "groups": [
+        {
+            "group": {
+                "name": "BOOT_CFG",
+                "description": "Boot configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse24",
+                    "name": "BOOT_CFG0",
+                    "description": "Fuse 24 [799:768]",
+                    "index_int": "0x0018",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse24-bits-0-3",
+                            "name": "Boot_Mode_Fuses",
+                            "description": "Boot_Mode_Fuses",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "8",
+                                    "value": 8,
+                                    "description": "From internal fuses"
+                                },
+                                {
+                                    "name": "9",
+                                    "value": 9,
+                                    "description": "Serial Downloader USB1"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 10,
+                                    "description": "USDHC1 8-bit eMMC 5.1"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 11,
+                                    "description": "USDHC2 4-bit SD3.0"
+                                },
+                                {
+                                    "name": "12",
+                                    "value": 12,
+                                    "description": "FlxSPI Serial NOR"
+                                },
+                                {
+                                    "name": "13",
+                                    "value": 13,
+                                    "description": "FlexSPI  Serial NAND 2K page"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-4",
+                            "name": "Override_FlexSPI_NOR_Boot_Selection",
+                            "description": "Override_FlexSPI_NOR_Boot_Selection",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Do not override"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Override"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse24-bits-5-6",
+                            "name": "FlexSPI_NOR_Boot_Override_Selection",
+                            "description": "FlexSPI_NOR_Boot_Override_Selection",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "FlexSPI (HyperFlash 1.8V)"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "FlexSPI (Flash with 4B read)"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "Default Octal mode (Micron, Nice to have)"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "Default Octal mode (Mxic, Nice to have)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-7",
+                            "name": "FlexSPI_NAND_4K_Page_Selection",
+                            "description": "FlexSPI_NAND_4K_Page_Selection",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Not override the default selection (2K page)"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Override, 4K page is selected"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-8",
+                            "name": "uSDHC_Device_Type",
+                            "description": "uSDHC_Device_Type",
+                            "values": [
+                                {
+                                    "name": "eMMC",
+                                    "value": 0,
+                                    "description": "eMMC"
+                                },
+                                {
+                                    "name": "SD",
+                                    "value": 1,
+                                    "description": "SD"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-9",
+                            "name": "FLEXSPI_NOR_DATA_IOMUX_SION",
+                            "description": "FLEXSPI_NOR_DATA_IOMUX_SION",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse24-bits-10-11",
+                            "name": "FLEXSPI_NOR_FCB_OFFSET",
+                            "description": "FLEXSPI_NOR_FCB_OFFSET",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "0x400"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "0x600"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "0x800"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "0xa00"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse24-bits-12-14",
+                            "name": "FLEXSPI_AUTOPROBE_FREQ_SEL",
+                            "description": "FLEXSPI_AUTOPROBE_FREQ_SEL",
+                            "values": [
+                                {
+                                    "name": "000",
+                                    "value": 0,
+                                    "description": "100 MHz"
+                                },
+                                {
+                                    "name": "001",
+                                    "value": 1,
+                                    "description": "133 MHz"
+                                },
+                                {
+                                    "name": "010",
+                                    "value": 2,
+                                    "description": "166 MHz"
+                                },
+                                {
+                                    "name": "011",
+                                    "value": 3,
+                                    "description": "200 MHz"
+                                },
+                                {
+                                    "name": "100",
+                                    "value": 4,
+                                    "description": "80 MHz"
+                                },
+                                {
+                                    "name": "101",
+                                    "value": 5,
+                                    "description": "60 MHz"
+                                },
+                                {
+                                    "name": "110",
+                                    "value": 6,
+                                    "description": "100 MHz"
+                                },
+                                {
+                                    "name": "111",
+                                    "value": 7,
+                                    "description": "100 MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-15",
+                            "name": "FlexSPI_NOR_FCB_Check",
+                            "description": "FlexSPI_NOR_FCB_Check",
+                            "values": [
+                                {
+                                    "name": "Check",
+                                    "value": 0,
+                                    "description": "Check"
+                                },
+                                {
+                                    "name": "Ignore",
+                                    "value": 1,
+                                    "description": "Ignore"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-16",
+                            "name": "SD_Loopback_Clock_Source_Sel",
+                            "description": "SD_Loopback_Clock_Source_Sel",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Through SD pad"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Direct"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse24-bits-17-18",
+                            "name": "SD_Speed_Selection",
+                            "description": "SD_Speed_Selection",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "SD: Normal/SDR12 - eMMC: 4-bit"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "SD: High/SDR25 - eMMC: 8-bit"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "SD: SDR50 - eMMC: 4-bit DDR (eMMC 4.4)"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "SD: SD104 - eMMC: 8-bit DDR (eMMC 4.4)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-19",
+                            "name": "eMMC_Speed_Selection",
+                            "description": "eMMC_Speed_Selection",
+                            "values": [
+                                {
+                                    "name": "Normal",
+                                    "value": 0,
+                                    "description": "Normal Speed"
+                                },
+                                {
+                                    "name": "High",
+                                    "value": 1,
+                                    "description": "High Speed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-20",
+                            "name": "eMMC_fast_boot",
+                            "description": "eMMC_fast_boot",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-21",
+                            "name": "BT_FREQ_SEL_1",
+                            "description": "BT_FREQ_SEL_1",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "See BT_FREQ_SEL"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Overdrive boot mode voltage and clock"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-22",
+                            "name": "eMMC_voltage_selection",
+                            "description": "eMMC_voltage_selection",
+                            "values": [
+                                {
+                                    "name": "3.3V",
+                                    "value": 0,
+                                    "description": "3.3V"
+                                },
+                                {
+                                    "name": "1.8V",
+                                    "value": 0,
+                                    "description": "1.8V"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse24-bits-23-27",
+                            "name": "FlexSPI_NOR_Reset_Pin_selections",
+                            "description": "FlexSPI_NOR_Reset_Pin_selections"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-28",
+                            "name": "BT_FREQ_SEL",
+                            "description": "BT_FREQ_SEL",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Nominal Drive Boot voltage and clock"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Underdrive boot mode voltage and clock"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-29",
+                            "name": "BT_FUSE_SEL",
+                            "description": "BT_FUSE_SEL",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Boot fuses not programmed"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Boot fuses programmed yet"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-30",
+                            "name": "Force_Boot_from_Fuse",
+                            "description": "Force_Boot_from_Fuse",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Override",
+                                    "value": 1,
+                                    "description": "Override Boot_Mode pins by boot mode fuses"
+                                }                                
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-31",
+                            "name": "Force_Serial_Download",
+                            "description": "Force_Serial_Download"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse25",
+                    "name": "BOOT_CFG1",
+                    "description": "Fuse 25 [831:800]",
+                    "index_int": "0x0019",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-0",
+                            "name": "Fast_Boot_Acknowledge_Disable",
+                            "description": "Fast_Boot_Acknowledge_Disable",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Boot Ack Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Boot Ack Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-2",
+                            "name": "uSDHC_Power_On_Polarity",
+                            "description": "uSDHC_Power_On_Polarity",
+                            "values": [
+                                {
+                                    "name": "Low",
+                                    "value": 0,
+                                    "description": "Low"
+                                },
+                                {
+                                    "name": "High",
+                                    "value": 1,
+                                    "description": "High"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-3",
+                            "name": "uSDHC_Power_CycleDelay",
+                            "description": "uSDHC_Power_CycleDelay",
+                            "values": [
+                                {
+                                    "name": "5 ms",
+                                    "value": 0,
+                                    "description": "5 ms"
+                                },
+                                {
+                                    "name": "2.5 ms",
+                                    "value": 1,
+                                    "description": "2.5 ms"
+                                }
+                            ]
+
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse25-bits-4-5",
+                            "name": "uSDHC_Power_Cycle_Interval",
+                            "description": "uSDHC_Power_Cycle_Interval",
+                            "values": [
+                                {
+                                    "name": "20 ms",
+                                    "value": 0,
+                                    "description": "20 ms"
+                                },
+                                {
+                                    "name": "10 ms",
+                                    "value": 1,
+                                    "description": "10 ms"
+                                },
+                                {
+                                    "name": "5 ms",
+                                    "value": 2,
+                                    "description": "5 ms"
+                                },
+                                {
+                                    "name": "2.5 ms",
+                                    "value": 3,
+                                    "description": "2.5 ms"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse25-bits-6-7",
+                            "name": "SD_Calibration_Step",
+                            "description": "SD_Calibration_Step",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "1 delay cell"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "2 delay cell"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "3 delay cell"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "5 delay cell"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse25-bits-8-15",
+                            "name": "uSDHC_PAD_Settings_Low_bits",
+                            "description": "uSDHC_PAD_Settings_Low_bits\nThe override value for uSDHC pad settings (Lowest 8 bits)"
+
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse25-bits-16-19",
+                            "name": "uSDHC_PAD_Setting_High_bits",
+                            "description": "uSDHC_PAD_Setting_High_bits\nThe override value for uSDHC pad settings (High bits)"
+
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-20",
+                            "name": "Power_Cycle_Enable",
+                            "description": "Power_Cycle_Enable",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "No power cycle"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-21",
+                            "name": "uSDHC_Override_Pad_Settings",
+                            "description": "uSDHC_Override_Pad_Settings (using PAD_SETTINGS value)"
+
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-22",
+                            "name": "uSDHC_DLL_Enable",
+                            "description": "uSDHC_DLL_Enable",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disable DLL for SD/eMMC"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enable DLL for SD/eMMC"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 7,
+                            "id": "fuse25-bits-24-30",
+                            "name": "MMC_DLL_DLY",
+                            "description": "MMC_DLL_DLY"
+
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-31",
+                            "name": "uSDHC_DLL_Select",
+                            "description": "uSDHC_DLL_Select",
+                            "values": [
+                                {
+                                    "name": "Slave Mode",
+                                    "value": 0,
+                                    "description": "DLL Slave Mode"
+                                },
+                                {
+                                    "name": "Override",
+                                    "value": 1,
+                                    "description": "DLL Override Mode"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse26",
+                    "name": "BOOT_CFG2",
+                    "description": "Fuse 26 [863:832]",
+                    "index_int": "0x001A",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-0-1",
+                            "name": "FlexSPI_NAND_Column_Address_Width",
+                            "description": "FlexSPI_NAND_Column_Address_Width",
+                            "values": [
+                                {
+                                    "name": "12",
+                                    "value": 0,
+                                    "description": "12"
+                                },
+                                {
+                                    "name": "13",
+                                    "value": 1,
+                                    "description": "13"
+                                },
+                                {
+                                    "name": "14",
+                                    "value": 2,
+                                    "description": "14"
+                                },
+                                {
+                                    "name": "15",
+                                    "value": 3,
+                                    "description": "15"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-2-3",
+                            "name": "FlexSPI_NAND_CS_Interval",
+                            "description": "FlexSPI_NAND_CS_Interval",
+                            "values": [
+                                {
+                                    "name": "100 ns",
+                                    "value": 0,
+                                    "description": "100 ns"
+                                },
+                                {
+                                    "name": "200 ns",
+                                    "value": 1,
+                                    "description": "200 ns"
+                                },
+                                {
+                                    "name": "400 ns",
+                                    "value": 2,
+                                    "description": "400 ns"
+                                },
+                                {
+                                    "name": "50 ns",
+                                    "value": 3,
+                                    "description": "50 ns"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-4-5",
+                            "name": "FlexSPI_NAND_Search_Count",
+                            "description": "FlexSPI_NAND_Search_Count",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "2"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "2"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "4"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "8"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-6-7",
+                            "name": "FlexSPI_NAND_Search_Stride",
+                            "description": "FlexSPI_NAND_Search_Stride",
+                            "values": [
+                                {
+                                    "name": "64",
+                                    "value": 0,
+                                    "description": "64 pages"
+                                },
+                                {
+                                    "name": "128",
+                                    "value": 1,
+                                    "description": "128 pages"
+                                },
+                                {
+                                    "name": "256",
+                                    "value": 2,
+                                    "description": "256 pages"
+                                },
+                                {
+                                    "name": "32",
+                                    "value": 3,
+                                    "description": "32 pages"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse26-bits-8-15",
+                            "name": "FlexSPI_DLL_Value",
+                            "description": "FlexSPI_DLL_Value"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-16",
+                            "name": "SPI_Clock_Data_Phase_Control",
+                            "description": "SPI_Clock_Data_Phase_Control",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Tx on falling, Rx on rising"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Tx on rising, Rx on falling"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-17",
+                            "name": "SPI_SCLK_Active",
+                            "description": "SPI_SCLK_Active",
+                            "values": [
+                                {
+                                    "name": "Active low",
+                                    "value": 0,
+                                    "description": "Active low"
+                                },
+                                {
+                                    "name": "Active high",
+                                    "value": 1,
+                                    "description": "Active high"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-18",
+                            "name": "SPI_SS_Active",
+                            "description": "SPI_SS_Active",
+                            "values": [
+                                {
+                                    "name": "Active low",
+                                    "value": 0,
+                                    "description": "Active low"
+                                },
+                                {
+                                    "name": "Active high",
+                                    "value": 1,
+                                    "description": "Active high"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-19",
+                            "name": "Recovery_SPI_Addressing",
+                            "description": "Recovery_SPI_Addressing",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "3-bytes (24-bit)"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "2-bytes (16-bit)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-20",
+                            "name": "FLEXSPI_NOR_AUTO_PROBE_EN",
+                            "description": "FLEXSPI_NOR_AUTO_PROBE_EN",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Auto probe is disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Auto probe is enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse26-bits-21-23",
+                            "name": "FlexSPI_NAND_Busy_Bit_Offset_Override",
+                            "description": "FlexSPI_NAND_Busy_Bit_Offset_Override"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-24",
+                            "name": "Recovery_CS_Select",
+                            "description": "Recovery_CS_Select (SPI only)",
+                            "values": [
+                                {
+                                    "name": "CS0",
+                                    "value": 0,
+                                    "description": "CS0"
+                                },
+                                {
+                                    "name": "CS1",
+                                    "value": 1,
+                                    "description": "CS1"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bit-26-27",
+                            "name": "Recovery_Port_Select",
+                            "description": "Recovery_Port_Select In LP boot mode",
+                            "values": [
+                                {
+                                    "name": "LPSPI1",
+                                    "value": 0,
+                                    "description": "LPSPI1"
+                                },
+                                {
+                                    "name": "LPSPI2",
+                                    "value": 1,
+                                    "description": "LPSPI2"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse26-bit-28-31",
+                            "name": "FLEXSPI_DUMMY_CYCLE_SEL",
+                            "description": "FLEXSPI_DUMMY_CYCLE_SEL"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse27",
+                    "name": "BOOT_CFG3",
+                    "description": "Fuse 27 [895:864]",
+                    "index_int": "0x001B",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "id": "fuse27-bits-0-2",
+                            "name": "FlexSPI_NOR_Reset_Port",
+                            "description": "FlexSPI_NOR_Reset_Port",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Not reset boot device"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "GPIO port1"
+                                },
+                                {
+                                    "name": "2",
+                                    "value": 2,
+                                    "description": "GPIO port2"
+                                },
+                                {
+                                    "name": "3",
+                                    "value": 3,
+                                    "description": "GPIO port3"
+                                },
+                                {
+                                    "name": "4",
+                                    "value": 4,
+                                    "description": "GPIO port4"
+                                },
+                                {
+                                    "name": "5",
+                                    "value": 5,
+                                    "description": "GPIO port5"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse27-bits-3-4",
+                            "name": "FLEXSPI_NOR_AUTO_PROBE_TYPE",
+                            "description": "FLEXSPI_NOR_AUTO_PROBE_TYPE",
+                            "values": [
+                                {
+                                    "name": "00x",
+                                    "value": 0,
+                                    "description": "00x - QuadSPI/OctalSPI NOR auto probe"
+                                },
+                                {
+                                    "name": "01x",
+                                    "value": 1,
+                                    "description": "01x - MxicOctal"
+                                },
+                                {
+                                    "name": "10x",
+                                    "value": 2,
+                                    "description": "10x - MicronOctal"
+                                },
+                                {
+                                    "name": "11x",
+                                    "value": 3,
+                                    "description": "11x - AdestoOctal"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse27-bits-5-7",
+                            "name": "FLEXSPI_AUTO_PROBE_DATA_PAD",
+                            "description": "FLEXSPI_AUTO_PROBE_DATA_PAD",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "default auto probe"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "octal auto probe"
+                                },
+                                {
+                                    "name": "2",
+                                    "value": 2,
+                                    "description": "quad auto probe"
+                                },
+                                {
+                                    "name": "3",
+                                    "value": 3,
+                                    "description": "dual auto probe (not supported)"
+                                },
+                                {
+                                    "name": "4",
+                                    "value": 4,
+                                    "description": "single auto probe (not supported)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse27-bit-8",
+                            "name": "FLEXSPI_AUTO_PROBE_DDR_SUPPORT",
+                            "description": "FLEXSPI_AUTO_PROBE_DDR_SUPPORT",
+                            "values": [
+                                {
+                                    "name": "SDR",
+                                    "value": 0,
+                                    "description": "SDR"
+                                },
+                                {
+                                    "name": "DDR",
+                                    "value": 1,
+                                    "description": "DDR"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse27-bit-9",
+                            "name": "FLEXSPI_DUMMY_CYCLE_SEL1",
+                            "description": "FLEXSPI_DUMMY_CYCLE_SEL1",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse27-bit-10",
+                            "name": "EDMA_INIT_M7_TCM",
+                            "description": "EDMA_INIT_M7_TCM",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse32",
+                    "name": "BOOT_CFG8",
+                    "description": "Fuse 32 [1055:1024]",
+                    "index_int": "0x0020",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-1",
+                            "name": "BBNSM_EN",
+                            "description": "BBNSM_EN",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-2",
+                            "name": "SION_EN",
+                            "description": "SION_EN",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-3",
+                            "name": "CCM_CLKO_MUX",
+                            "description": "CCM_CLKO_MUX",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Default mux to CCM CLKO"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "MUX to GPIO"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-4",
+                            "name": "ROMCP_LOCK",
+                            "description": "ROMCP_LOCK",
+                            "values": [
+                                {
+                                    "name": "Not lock",
+                                    "value": 0,
+                                    "description": "Not lock"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse32-bits-8-15",
+                            "name": "Secondary_boot_offset",
+                            "description": "Secondary_boot_offset\nOffset = 1 MB*(2^n)\nn = 2 if fuse is 0;\nn = 0 if fuse is 2;\nsecondary boot flow is disabled if fuse value bigger than 10."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-17",
+                            "name": "M33_D_Cache_Disable",
+                            "description": "M33_D_Cache_Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-19",
+                            "name": "M33_Recovery_Disable",
+                            "description": "M33_Recovery_Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-20",
+                            "name": "M33_Recovery_Device",
+                            "description": "M33_Recovery_Device",
+                            "values": [
+                                {
+                                    "name": "uSDHC2",
+                                    "value": 0,
+                                    "description": "uSDHC2 SD Card"
+                                },
+                                {
+                                    "name": "LPSPI",
+                                    "value": 1,
+                                    "description": "LPSPI1/2"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-23",
+                            "name": "M33_WDOG_Enable",
+                            "description": "M33_WDOG_Enable",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-25",
+                            "name": "M33_I_Cache_Dis",
+                            "description": "M33_I_Cache_Dis",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enable M33 I-Cache during ROM Boot"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disable M33 I-Cache during ROM Boot"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse32-bits-26-27",
+                            "name": "WDOG_Timeout_Select",
+                            "description": "WDOG_Timeout_Select",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "32 s"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "16 s"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "8 s"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "4 s"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-29",
+                            "name": "USB_HID_EP1_Out_Disable",
+                            "description": "USB_HID_EP1_Out_Disable On all USB Inst",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "USB EP1 Transfer(EP1 Out enable)"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "USB EP0 Transfer(EP1 Out disable)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-30",
+                            "name": "PLL_LATE_EN",
+                            "description": "PLL_LATE_EN",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Configure PLLs before installing ROM patch"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Configure PLLs after install ROM patch"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-31",
+                            "name": "M33_TCM_MBIST_AT_BOOT_EN",
+                            "description": "M33_TCM_MBIST_AT_BOOT_EN",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse33",
+                    "name": "BOOT_CFG9",
+                    "description": "Fuse 33 [1087:1056]",
+                    "index_int": "0x0021",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-6",
+                            "name": "M33_TZ_WDOG_Enable",
+                            "description": "M33_TZ_WDOG_Enable (non-ROM)",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-8",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 5
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-24",
+                            "name": "ELE_SRAM_REN_PWRDN",
+                            "description": "ELE_SRAM_REN_PWRDN (non-ROM)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "64K retained"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "I/D-MEM not retained"
+                                }
+                            ]
+
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-25",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-28",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 3
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse34",
+                    "name": "BOOT_CFG10",
+                    "description": "Fuse 34 [1119:1088]",
+                    "index_int": "0x0022",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-2",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 27
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse35",
+                    "name": "BOOT_CFG11",
+                    "description": "Fuse 35 [1151:1120]",
+                    "index_int": "0x0023",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-0",
+                            "name": "USB2_SDP_Enable",
+                            "description": "USB2_SDP_Enable",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-1",
+                            "name": "USB1_SDP_Disable",
+                            "description": "USB1_SDP_Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 29
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "128-135",
+                "description": "Description is available in restricted data, see documentation for more details."
+            },
+            "registers": [
+                {
+                    "id": "fuse128",
+                    "name": "128",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0080",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse129",
+                    "name": "129",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0081",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse130",
+                    "name": "130",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0082",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse131",
+                    "name": "131",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0083",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse132",
+                    "name": "132",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0084",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse133",
+                    "name": "133",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0085",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse134",
+                    "name": "134",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0086",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse135",
+                    "name": "135",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0087",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "184-189: OTFAD",
+                "description": "OTFAD configuration."
+            },
+            "registers": [
+                {
+                    "id": "fuse184",
+                    "name": "OTFAD1_KEY3[31:0]",
+                    "description": "OTFAD1 key 3",
+                    "index_int": "0x00B8",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse185",
+                    "name": "OTFAD1_KEY2[31:0]",
+                    "description": "OTFAD1 key 2",
+                    "index_int": "0x00B9",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse186",
+                    "name": "OTFAD1_KEY1[31:0]",
+                    "description": "OTFAD1 key 1",
+                    "index_int": "0x00BA",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse187",
+                    "name": "OTFAD1_KEY0[31:0]",
+                    "description": "OTFAD1 key 0",
+                    "index_int": "0x00BB",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse188",
+                    "name": "Fuse_188",
+                    "description": "Fuse 188",
+                    "index_int": "0x00BC",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-3",
+                            "name": "OTFAD1_ENABLE",
+                            "description": "OTFAD1 enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-4",
+                            "name": "OTFAD1_DISABLE_OVERRIDE",
+                            "description": "OTFAD1 disable override",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-5",
+                            "name": "OTFAD1_KEY_BLOB_EN",
+                            "description": "OTFAD1 key blob enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-6",
+                            "name": "OTFAD1_KEY_SCRAMBLE_CRC_EN",
+                            "description": "OTFAD1 key scramble CRC enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-7",
+                            "name": "OTFAD1_KEY_SCRAMBLE_EN",
+                            "description": "OTFAD1 key scramble enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse188-bits-8-15",
+                            "name": "OTFAD1_KEY_SCRAMBLE_ALIGN",
+                            "description": "OTFAD1 keyscramble align"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-16",
+                            "name": "OTFAD1_RESTRICT_OTFAD_IPS",
+                            "description": "OTFAD1RESTRICTOTFAD IPS",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 15
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse189",
+                    "name": "OTFAD1_KEY_SCRAMBLE[31:0]",
+                    "description": "OTFAD1 key scramble",
+                    "index_int": "0x00BD",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "448-463: OEM_PQC_SRKH",
+                "description": "OEM_PQC_SRKH[511:0]"
+            },
+            "registers": [
+                {
+                    "id": "fuse448",
+                    "name": "OEM_PQC_SRKH0[31:0]",
+                    "description": "OEM PQC SRK HASH0",
+                    "index_int": "0x01C0",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse449",
+                    "name": "OEM_PQC_SRKH1[31:0]",
+                    "description": "OEM PQC SRK HASH1",
+                    "index_int": "0x01C1",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse450",
+                    "name": "OEM_PQC_SRKH2[31:0]",
+                    "description": "OEM PQC SRK HASH2",
+                    "index_int": "0x01C2",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse451",
+                    "name": "OEM_PQC_SRKH3[31:0]",
+                    "description": "OEM PQC SRK HASH3",
+                    "index_int": "0x01C3",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse452",
+                    "name": "OEM_PQC_SRKH4[31:0]",
+                    "description": "OEM PQC SRK HASH4",
+                    "index_int": "0x01C4",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse453",
+                    "name": "OEM_PQC_SRKH5[31:0]",
+                    "description": "OEM PQC SRK HASH5",
+                    "index_int": "0x01C5",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse454",
+                    "name": "OEM_PQC_SRKH6[31:0]",
+                    "description": "OEM PQC SRK HASH6",
+                    "index_int": "0x01C6",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse455",
+                    "name": "OEM_PQC_SRKH7[31:0]",
+                    "description": "OEM PQC SRK HASH7",
+                    "index_int": "0x01C7",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse456",
+                    "name": "OEM_PQC_SRKH8[31:0]",
+                    "description": "OEM PQC SRK HASH8",
+                    "index_int": "0x01C8",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse457",
+                    "name": "OEM_PQC_SRKH9[31:0]",
+                    "description": "OEM PQC SRK HASH9",
+                    "index_int": "0x01C9",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse458",
+                    "name": "OEM_PQC_SRKH10[31:0]",
+                    "description": "OEM PQC SRK HASH10",
+                    "index_int": "0x01CA",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse459",
+                    "name": "OEM_PQC_SRKH11[31:0]",
+                    "description": "OEM PQC SRK HASH11",
+                    "index_int": "0x01CB",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse460",
+                    "name": "OEM_PQC_SRKH12[31:0]",
+                    "description": "OEM PQC SRK HASH12",
+                    "index_int": "0x01CC",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse461",
+                    "name": "OEM_PQC_SRKH13[31:0]",
+                    "description": "OEM PQC SRK HASH13",
+                    "index_int": "0x01CD",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse462",
+                    "name": "OEM_PQC_SRKH14[31:0]",
+                    "description": "OEM PQC SRK HASH14",
+                    "index_int": "0x01CE",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse463",
+                    "name": "OEM_PQC_SRKH15[31:0]",
+                    "description": "OEM PQC SRK HASH15",
+                    "index_int": "0x01CF",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        }
+    ]
+}

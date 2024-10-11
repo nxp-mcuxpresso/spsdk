@@ -11,7 +11,7 @@
 from datetime import datetime, timezone
 from io import SEEK_CUR, SEEK_END, BufferedReader, BytesIO
 from struct import unpack_from
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.crypto_types import SPSDKEncoding
@@ -1004,7 +1004,7 @@ class BootImgRT(BootImgBase):
     @classmethod
     def _find_ivt_pos(
         cls, strm: Union[BufferedReader, BytesIO], size: Optional[int] = None
-    ) -> Tuple[Header, int, int]:
+    ) -> tuple[Header, int, int]:
         """Search IVT start position in the image; used by parser.
 
         :param strm: of image data; start seeking from current position
@@ -1757,22 +1757,22 @@ class BootImg3a(BootImgBase):
         self._plg = value
 
     @property
-    def ivt(self) -> List[SegIVT3a]:
+    def ivt(self) -> list[SegIVT3a]:
         """IVT."""
         return self._ivt
 
     @ivt.setter
-    def ivt(self, value: List) -> None:
+    def ivt(self, value: list) -> None:
         assert isinstance(value, list) and isinstance(value[0], SegIVT3a)
         self._ivt = value
 
     @property
-    def bdt(self) -> List[SegBDS3a]:
+    def bdt(self) -> list[SegBDS3a]:
         """BDT."""
         return self._bdt
 
     @bdt.setter
-    def bdt(self, value: List) -> None:
+    def bdt(self, value: list) -> None:
         assert isinstance(value, list) and isinstance(value[0], SegBDS3a)
         self._bdt = value
 
@@ -2138,12 +2138,12 @@ class BootImg3b(BootImgBase):
         self._plg = value
 
     @property
-    def ivt(self) -> List[SegIVT3b]:
+    def ivt(self) -> list[SegIVT3b]:
         """IVT."""
         return self._ivt
 
     @ivt.setter
-    def ivt(self, value: List) -> None:
+    def ivt(self, value: list) -> None:
         assert isinstance(value, list)
         if len(value) != self.COUNT_OF_CONTAINERS:
             raise SPSDKError("Invalid value of IVT")
@@ -2151,12 +2151,12 @@ class BootImg3b(BootImgBase):
         self._ivt = value
 
     @property
-    def bdt(self) -> List[SegBDS3b]:
+    def bdt(self) -> list[SegBDS3b]:
         """BDT."""
         return self._bdt
 
     @bdt.setter
-    def bdt(self, value: List) -> None:
+    def bdt(self, value: list) -> None:
         assert isinstance(value, list)
         if len(value) != self.COUNT_OF_CONTAINERS:
             raise SPSDKError("Invalid value of BDT")

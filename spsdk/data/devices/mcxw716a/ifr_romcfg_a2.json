@@ -1,0 +1,1454 @@
+{
+    "cpu": "MCXW716A",
+    "groups": [
+        {
+            "group": {
+                "name": "Block 00000-0000F",
+                "description": "Block 00000-0000F"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "FLW_Configuration",
+                    "description": "FLW Configuration",
+                    "offset_int": "0",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field000-bit0",
+                            "name": "RESTORE_FLW_FLAG",
+                            "description": "FLW Configuration",
+                            "values": [
+                                {
+                                    "name": "NORMAL",
+                                    "value": 0,
+                                    "description": "Normal, use specified mapping"
+                                },
+                                {
+                                    "name": "UNINITIALIZED",
+                                    "value": 1,
+                                    "description": "Dual Image Boot is uninitialized"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 7
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00001",
+                    "name": "Reserved 0x00001",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0001",
+                    "is_reserved": true,
+                    "reset_value_int": "0x00FFFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 24
+                },
+                {
+                    "id": "Reserved00004",
+                    "name": "Reserved 0x00004",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0004",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field008",
+                    "name": "FLW_REGION_ABASE",
+                    "description": "FLW region, the starting address of the alternative boot image",
+                    "offset_int": "0x0008",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field00C",
+                    "name": "FLW_REGION_BCNT",
+                    "description": "FLW region, the size of the alternative boot image in 32 KB blocks",
+                    "offset_int": "0x000C",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00010-0001F",
+                "description": "Block 00010-0001F"
+            },
+            "registers": [
+                {
+                    "id": "field010",
+                    "name": "CONFIGURE_NPX_FOR_NORMAL_BOOT",
+                    "description": "NPX configuration",
+                    "offset_int": "0x0010",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field010-bit0",
+                            "name": "USE_PRINCE",
+                            "description": "Configure NPX to use PRINCE",
+                            "values": [
+                                {
+                                    "name": "CONFIGURE_NPX",
+                                    "value": 0,
+                                    "description": "Configure NPX"
+                                },
+                                {
+                                    "name": "NOT_CONFIGURE_NPX",
+                                    "value": 1,
+                                    "description": "Not configure NPX"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field010-bit1",
+                            "name": "GLOBAL_LOCK",
+                            "description": "Global lock",
+                            "values": [
+                                {
+                                    "name": "ENABLE",
+                                    "value": 0,
+                                    "description": "Global lock enable"
+                                },
+                                {
+                                    "name": "DISABLE",
+                                    "value": 1,
+                                    "description": "Global lock disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field010-bit2",
+                            "name": "SYSTEM_LOCK",
+                            "description": "System lock",
+                            "values": [
+                                {
+                                    "name": "ENABLE",
+                                    "value": 0,
+                                    "description": "System lock enable"
+                                },
+                                {
+                                    "name": "DISABLE",
+                                    "value": 1,
+                                    "description": "System lock disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field010-bit3",
+                            "name": "GLOBAL_DECRYPTION",
+                            "description": "Global decryption",
+                            "values": [
+                                {
+                                    "name": "ENABLE",
+                                    "value": 0,
+                                    "description": "Global decryption enable"
+                                },
+                                {
+                                    "name": "DISABLE",
+                                    "value": 1,
+                                    "description": "Global decryption disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field010-bit4",
+                            "name": "GLOBAL_ENCRYPTION",
+                            "description": "Global encryption",
+                            "values": [
+                                {
+                                    "name": "ENABLE",
+                                    "value": 0,
+                                    "description": "Global encryption enable"
+                                },
+                                {
+                                    "name": "DISABLE",
+                                    "value": 1,
+                                    "description": "Global encryption disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        }
+                    ]
+                },
+                {
+                    "id": "field011",
+                    "name": "STICKY",
+                    "description": "NPX configuration",
+                    "offset_int": "0x0011",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field011-bit0",
+                            "name": "CONFIGURE_NPX_REQUIRED",
+                            "description": "Configure NPX required",
+                            "values": [
+                                {
+                                    "name": "REQUIRED",
+                                    "value": 0,
+                                    "description": "NPX config. required; ROM follows normal boot path"
+                                },
+                                {
+                                    "name": "NOT_REQUIRED",
+                                    "value": 1,
+                                    "description": "Not required, ROM follows Low-power wakeup path"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 7
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00012",
+                    "name": "Reserved 0x00012",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0012",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 16
+                },
+                {
+                    "id": "Reserved00014",
+                    "name": "Reserved 0x00014",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0014",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field018",
+                    "name": "NPX_REGIONS_VALID",
+                    "description": "NPX regions valid",
+                    "offset_int": "0x0018",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field01C",
+                    "name": "NPX_REGIONS_COUNT",
+                    "description": "NPX regions count",
+                    "offset_int": "0x001C",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00020-0002F",
+                "description": "Block 00020-0002F"
+            },
+            "registers": [
+                {
+                    "id": "field020",
+                    "name": "NPX_REGION_0_VALID",
+                    "description": "NPX region 0 valid",
+                    "offset_int": "0x0020",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field024",
+                    "name": "NPX_REGION_0_START_ADDRESS",
+                    "description": "NPX region 0 start address",
+                    "offset_int": "0x0024",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field028",
+                    "name": "NPX_REGION_0_END_ADDRESS",
+                    "description": "NPX region 0 end address",
+                    "offset_int": "0x0028",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field02C",
+                    "name": "NPX_REGION_1_VALID",
+                    "description": "NPX region 1 valid",
+                    "offset_int": "0x002C",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00030-0003F",
+                "description": "Block 00030-0003F"
+            },
+            "registers": [
+                {
+                    "id": "field030",
+                    "name": "NPX_REGION_1_START_ADDRESS",
+                    "description": "NPX region 1 start address",
+                    "offset_int": "0x0030",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field034",
+                    "name": "NPX_REGION_1_END_ADDRESS",
+                    "description": "NPX region 1 end address",
+                    "offset_int": "0x0034",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field038",
+                    "name": "NPX_REGION_2_VALID",
+                    "description": "NPX region 2 valid",
+                    "offset_int": "0x0038",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field03C",
+                    "name": "NPX_REGION_2_START_ADDRESS",
+                    "description": "NPX region 2 start address",
+                    "offset_int": "0x003C",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00040-0004F",
+                "description": "Block 00040-0004F"
+            },
+            "registers": [
+                {
+                    "id": "field040",
+                    "name": "NPX_REGION_2_END_ADDRESS",
+                    "description": "NPX region 2 end address",
+                    "offset_int": "0x0040",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field044",
+                    "name": "NPX_REGION_3_VALID",
+                    "description": "NPX region 3 valid",
+                    "offset_int": "0x0044",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field048",
+                    "name": "NPX_REGION_3_START_ADDRESS",
+                    "description": "NPX region 3 start address",
+                    "offset_int": "0x0048",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "field04C",
+                    "name": "NPX_REGION_3_END_ADDRESS",
+                    "description": "NPX region 3 end address",
+                    "offset_int": "0x004C",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00050-0005F",
+                "description": "Block 00050-0005F"
+            },
+            "registers": [
+                {
+                    "id": "field050",
+                    "name": "BOOT_CONFIGURATION",
+                    "description": "Boot configuration",
+                    "offset_int": "0x0050",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field050-bit0",
+                            "name": "ENABLE_ISP_OR_NOT",
+                            "description": "Enable ISP",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "BOOT_CFG pin enabled"
+                                },
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "BOOT_CFG pin disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0x0003",
+                            "id": "field050-bits1-2",
+                            "name": "BOOT_SPEED",
+                            "description": "Boot speed",
+                            "values": [
+                                {
+                                    "name": "NORMAL_BOOT_32_MHZ",
+                                    "value": 0,
+                                    "description": "Normal Boot (32MHz)"
+                                },
+                                {
+                                    "name": "FAST_BOOT_96_MHZ",
+                                    "value": 2,
+                                    "description": "Fast Boot (96 MHz)"
+                                },
+                                {
+                                    "name": "NORM_BOOT_DFLT1",
+                                    "value": 1,
+                                    "description": "Normal Boot (default)"
+                                },
+                                {
+                                    "name": "NORM_BOOT_DFLT2",
+                                    "value": 3,
+                                    "description": "Normal Boot (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00051",
+                    "name": "Reserved 0x00051",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0051",
+                    "is_reserved": true,
+                    "reset_value_int": "0x00FFFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 24
+                },
+                {
+                    "id": "Reserved00054",
+                    "name": "Reserved 0x00054",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0054",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00058",
+                    "name": "Reserved 0x00058",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0058",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0005C",
+                    "name": "Reserved 0x0005C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x005C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00060-0006F",
+                "description": "Block 00060-0006F"
+            },
+            "registers": [
+                {
+                    "id": "field060",
+                    "name": "SECURE_BOOT_FAILURE_OPTIONS",
+                    "description": "Secure Boot Failure Options",
+                    "offset_int": "0x0060",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field060-bit0",
+                            "name": "SECURE_BOOT_FAILURE_MODE",
+                            "description": "Secure Boot failure mode",
+                            "values": [
+                                {
+                                    "name": "INFINITE_SLEEP",
+                                    "value": 0,
+                                    "description": "Infinite sleep"
+                                },
+                                {
+                                    "name": "SERIAL_DOWNLOAD",
+                                    "value": 1,
+                                    "description": "Serial download"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field060-bit1",
+                            "name": "SECURE_BOOT_FAILURE_ALERT_PIN",
+                            "description": "Secure Boot failure alert pin",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Secure Boot failure alert pin is enabled"
+                                },
+                                {
+                                    "name": "DISABLED",
+                                    "value": 1,
+                                    "description": "Secure Boot failure alert pin is disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        }
+                    ]
+                },
+                {
+                    "id": "field061",
+                    "name": "SECURE_BOOT_FAILURE_ALERT_PIN_SELECTION",
+                    "description": "Secure Boot Failure Alert Pin Selection",
+                    "offset_int": "0x0061",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 5,
+                            "reset_value_int": "0x001F",
+                            "id": "field061-bits0-4",
+                            "name": "PIN_SELECTION",
+                            "description": "Pin selection",
+                            "values": [
+                                {
+                                    "name": "PIN_0",
+                                    "value": 0,
+                                    "description": "Pin 0"
+                                },
+                                {
+                                    "name": "PIN_1",
+                                    "value": 1,
+                                    "description": "Pin 1"
+                                },
+                                {
+                                    "name": "PIN_2",
+                                    "value": 2,
+                                    "description": "Pin 2"
+                                },
+                                {
+                                    "name": "PIN_3",
+                                    "value": 3,
+                                    "description": "Pin 3"
+                                },
+                                {
+                                    "name": "PIN_4",
+                                    "value": 4,
+                                    "description": "Pin 4"
+                                },
+                                {
+                                    "name": "PIN_5",
+                                    "value": 5,
+                                    "description": "Pin 5"
+                                },
+                                {
+                                    "name": "PIN_6",
+                                    "value": 6,
+                                    "description": "Pin 6"
+                                },
+                                {
+                                    "name": "PIN_7",
+                                    "value": 7,
+                                    "description": "Pin 7"
+                                },
+                                {
+                                    "name": "PIN_8",
+                                    "value": 8,
+                                    "description": "Pin 8"
+                                },
+                                {
+                                    "name": "PIN_9",
+                                    "value": 9,
+                                    "description": "Pin 9"
+                                },
+                                {
+                                    "name": "PIN_10",
+                                    "value": 10,
+                                    "description": "Pin 10"
+                                },
+                                {
+                                    "name": "PIN_11",
+                                    "value": 11,
+                                    "description": "Pin 11"
+                                },
+                                {
+                                    "name": "PIN_12",
+                                    "value": 12,
+                                    "description": "Pin 12"
+                                },
+                                {
+                                    "name": "PIN_13",
+                                    "value": 13,
+                                    "description": "Pin 13"
+                                },
+                                {
+                                    "name": "PIN_14",
+                                    "value": 14,
+                                    "description": "Pin 14"
+                                },
+                                {
+                                    "name": "PIN_15",
+                                    "value": 15,
+                                    "description": "Pin 15"
+                                },
+                                {
+                                    "name": "PIN_16",
+                                    "value": 16,
+                                    "description": "Pin 16"
+                                },
+                                {
+                                    "name": "PIN_17",
+                                    "value": 17,
+                                    "description": "Pin 17"
+                                },
+                                {
+                                    "name": "PIN_18",
+                                    "value": 18,
+                                    "description": "Pin 18"
+                                },
+                                {
+                                    "name": "PIN_19",
+                                    "value": 19,
+                                    "description": "Pin 19"
+                                },
+                                {
+                                    "name": "PIN_20",
+                                    "value": 20,
+                                    "description": "Pin 20"
+                                },
+                                {
+                                    "name": "PIN_21",
+                                    "value": 21,
+                                    "description": "Pin 21"
+                                },
+                                {
+                                    "name": "PIN_22",
+                                    "value": 22,
+                                    "description": "Pin 22"
+                                },
+                                {
+                                    "name": "PIN_23",
+                                    "value": 23,
+                                    "description": "Pin 23"
+                                },
+                                {
+                                    "name": "PIN_24",
+                                    "value": 24,
+                                    "description": "Pin 24"
+                                },
+                                {
+                                    "name": "PIN_25",
+                                    "value": 25,
+                                    "description": "Pin 25"
+                                },
+                                {
+                                    "name": "PIN_26",
+                                    "value": 26,
+                                    "description": "Pin 26"
+                                },
+                                {
+                                    "name": "PIN_27",
+                                    "value": 27,
+                                    "description": "Pin 27"
+                                },
+                                {
+                                    "name": "PIN_28",
+                                    "value": 28,
+                                    "description": "Pin 28"
+                                },
+                                {
+                                    "name": "PIN_29",
+                                    "value": 29,
+                                    "description": "Pin 29"
+                                },
+                                {
+                                    "name": "PIN_30",
+                                    "value": 30,
+                                    "description": "Pin 30"
+                                },
+                                {
+                                    "name": "PIN_31",
+                                    "value": 31,
+                                    "description": "Pin 31"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "reset_value_int": "0x0007",
+                            "id": "field061-bits5-7",
+                            "name": "PORT_SELECTION",
+                            "description": "Port Selection",
+                            "values": [
+                                {
+                                    "name": "PORTA",
+                                    "value": 0,
+                                    "description": "Port A"
+                                },
+                                {
+                                    "name": "PORTB",
+                                    "value": 1,
+                                    "description": "Port B"
+                                },
+                                {
+                                    "name": "PORTC",
+                                    "value": 2,
+                                    "description": "Port C"
+                                },
+                                {
+                                    "name": "PORTD",
+                                    "value": 3,
+                                    "description": "Port D"
+                                },
+                                {
+                                    "name": "PORTE",
+                                    "value": 4,
+                                    "description": "Port E"
+                                },
+                                {
+                                    "name": "Reserved_5",
+                                    "value": 5,
+                                    "description": "RESERVED"
+                                },
+                                {
+                                    "name": "Reserved_6",
+                                    "value": 6,
+                                    "description": "RESERVED"
+                                },
+                                {
+                                    "name": "Reserved_7",
+                                    "value": 7,
+                                    "description": "RESERVED"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00062",
+                    "name": "Reserved 0x00062",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0062",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 16
+                },
+                {
+                    "id": "Reserved00064",
+                    "name": "Reserved 0x00064",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0064",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00068",
+                    "name": "Reserved 0x00068",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0068",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0006C",
+                    "name": "Reserved 0x0006C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x006C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00070-0007F",
+                "description": "Block 00070-0007F"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00070",
+                    "name": "Reserved 0x00070",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0070",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00074",
+                    "name": "Reserved 0x00074",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0074",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00078",
+                    "name": "Reserved 0x00078",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0078",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0007C",
+                    "name": "Reserved 0x0007C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x007C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00080-0008F",
+                "description": "Block 00080-0008F"
+            },
+            "registers": [
+                {
+                    "id": "field080",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS3",
+                    "description": "Boot Image Base Address 3",
+                    "offset_int": "0x0080",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00084",
+                    "name": "Reserved 0x00084",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0084",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00088",
+                    "name": "Reserved 0x00088",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0088",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0008C",
+                    "name": "Reserved 0x0008C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x008C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00090-0009F",
+                "description": "Block 00090-0009F"
+            },
+            "registers": [
+                {
+                    "id": "field090",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS2",
+                    "description": "Boot Image Base Address 2",
+                    "offset_int": "0x0090",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00094",
+                    "name": "Reserved 0x00094",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0094",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00098",
+                    "name": "Reserved 0x00098",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0098",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0009C",
+                    "name": "Reserved 0x0009C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x009C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 000A0-000AF",
+                "description": "Block 000A0-000AF"
+            },
+            "registers": [
+                {
+                    "id": "field0A0",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS1",
+                    "description": "Boot Image Base Address 1",
+                    "offset_int": "0x00A0",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000A4",
+                    "name": "Reserved 0x000A4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00A4",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000A8",
+                    "name": "Reserved 0x000A8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00A8",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000AC",
+                    "name": "Reserved 0x000AC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00AC",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 000B0-000BF",
+                "description": "Block 000B0-000BF"
+            },
+            "registers": [
+                {
+                    "id": "field0B0",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS0",
+                    "description": "Boot Image Base Address 0",
+                    "offset_int": "0x00B0",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000B4",
+                    "name": "Reserved 0x000B4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B4",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000B8",
+                    "name": "Reserved 0x000B8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B8",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000BC",
+                    "name": "Reserved 0x000BC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00BC",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 000C0-000CF",
+                "description": "Block 000C0-000CF"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000C0",
+                    "name": "Reserved 0x000C0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C0",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000C4",
+                    "name": "Reserved 0x000C4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C4",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000C8",
+                    "name": "Reserved 0x000C8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C8",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000CC",
+                    "name": "Reserved 0x000CC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00CC",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 000D0-000DF",
+                "description": "Block 000D0-000DF"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000D0",
+                    "name": "Reserved 0x000D0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D0",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000D4",
+                    "name": "Reserved 0x000D4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D4",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000D8",
+                    "name": "Reserved 0x000D8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D8",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000DC",
+                    "name": "Reserved 0x000DC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00DC",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 000E0-000EF",
+                "description": "Block 000E0-000EF"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000E0",
+                    "name": "Reserved 0x000E0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E0",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000E4",
+                    "name": "Reserved 0x000E4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E4",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000E8",
+                    "name": "Reserved 0x000E8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E8",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000EC",
+                    "name": "Reserved 0x000EC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00EC",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 000F0-000FF",
+                "description": "Block 000F0-000FF"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000F0",
+                    "name": "Reserved 0x000F0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F0",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000F4",
+                    "name": "Reserved 0x000F4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F4",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000F8",
+                    "name": "Reserved 0x000F8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F8",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved000FC",
+                    "name": "Reserved 0x000FC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00FC",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00100-0010F",
+                "description": "Block 00100-0010F"
+            },
+            "registers": [
+                {
+                    "id": "field100",
+                    "name": "PERIPHERALS_ENABLE",
+                    "description": "Peripherals Enable",
+                    "offset_int": "0x0100",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field100-bit0",
+                            "name": "LPUART1_PERIPHERAL_FOR_ISP",
+                            "description": "LPUART1 peripheral for ISP",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "LPUART1 disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "LPUART1 enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field100-bit1",
+                            "name": "LPI2C1_PERIPHERAL_FOR_ISP",
+                            "description": "LPI2C1 peripheral for ISP",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "LPI2C1 disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "LPI2C1 enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0x0001",
+                            "id": "field100-bit2",
+                            "name": "LPSPI1_PERIPHERAL_FOR_ISP",
+                            "description": "LPSPI1 peripheral for ISP",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "LPSPI1 disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "LPSPI1 enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00101",
+                    "name": "Reserved 0x00101",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0101",
+                    "is_reserved": true,
+                    "reset_value_int": "0x00FFFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 24
+                },
+                {
+                    "id": "field104",
+                    "name": "PERIPHERAL_DETECTION_TIMEOUT",
+                    "description": "Peripheral Detection Timeout",
+                    "offset_int": "0x0104",
+                    "reset_value_int": "0xFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 16
+                },
+                {
+                    "id": "Reserved00106",
+                    "name": "Reserved 0x00106",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0106",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 16
+                },
+                {
+                    "id": "field108",
+                    "name": "I2C_SLAVE_ADDRESS",
+                    "description": "I2C Slave Address",
+                    "offset_int": "0x0108",
+                    "reset_value_int": "0x00FF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8
+                },
+                {
+                    "id": "Reserved00109",
+                    "name": "Reserved 0x00109",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0109",
+                    "is_reserved": true,
+                    "reset_value_int": "0x00FFFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 24
+                },
+                {
+                    "id": "Reserved0010C",
+                    "name": "Reserved 0x0010C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x010C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00110-0011F",
+                "description": "Block 00110-0011F"
+            },
+            "registers": [
+                {
+                    "id": "field110",
+                    "name": "ELE_LOADABLE_FW_ENTRY_ADDRESS",
+                    "description": "ELE loadable firmware resides address",
+                    "offset_int": "0x0110",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00114",
+                    "name": "Reserved 0x00114",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0114",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00118",
+                    "name": "Reserved 0x00118",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0118",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0011C",
+                    "name": "Reserved 0x0011C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x011C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00120-0012F",
+                "description": "Block 00120-0012F"
+            },
+            "registers": [
+                {
+                    "id": "field120",
+                    "name": "SECURE_HASH_BASED_IMAGE_VERIFICATION",
+                    "description": "Secure Hash based image verification feature",
+                    "offset_int": "0x0120",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "reset_value_int": "0xFFFFFFFF",
+                            "id": "field120-bits0-31",
+                            "name": "SECURE_HASH_BASED_IMAGE_VERIFICATION_CONFIG",
+                            "description": "Secure Hash based image verification feature",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 4294967295,
+                                    "description": "Disabled (ECDSA based verification will be used)."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1213415752,
+                                    "description": "Enabled ('HASH')."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00124",
+                    "name": "Reserved 0x00124",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0124",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved00128",
+                    "name": "Reserved 0x00128",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0128",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                },
+                {
+                    "id": "Reserved0012C",
+                    "name": "Reserved 0x0012C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x012C",
+                    "is_reserved": true,
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes"
+                }
+            ]
+        }
+    ]
+}

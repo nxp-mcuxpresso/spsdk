@@ -195,7 +195,10 @@ def test_usb_match_linux_nxp(filter_usb_id: str, vid: str, pid: str, path: str, 
 
 @pytest.mark.parametrize(
     "filter_usb_id, vid, pid, path, expected",
-    [("kw45xx", "0x1FC9", "0x0143", b"//", True), ("Nonsense", "0x1FC9", "0x0143", b"//", False)],
+    [
+        ("lpc55s36", "0x1FC9", "0x0025", b"//", True),
+        ("Nonsense", "0x1FC9", "0x0025", b"//", False),
+    ],
 )
 def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch("platform.system", MagicMock(return_value="Windows")):
@@ -209,7 +212,10 @@ def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expe
 
 @pytest.mark.parametrize(
     "filter_usb_id, vid, pid, path, expected",
-    [("kw45xx", "0x1FC9", "0x0143", b"//", True), ("Nonsense", "0x1FC9", "0x0143", b"//", False)],
+    [
+        ("lpc55s36", "0x1FC9", "0x0025", b"//", True),
+        ("Nonsense", "0x1FC9", "0x0025", b"//", False),
+    ],
 )
 def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch("platform.system", MagicMock(return_value="Darwin")):
@@ -223,7 +229,10 @@ def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expe
 
 @pytest.mark.parametrize(
     "filter_usb_id, vid, pid, path, expected",
-    [("kw45xx", "0x1FC9", "0x0143", b"0:0", True), ("Nonsense", "0x1FC9", "0x0143", b"0:0", False)],
+    [
+        ("lpc55s36", "0x1FC9", "0x0025", b"0:0", True),
+        ("Nonsense", "0x1FC9", "0x0025", b"0:0", False),
+    ],
 )
 def test_device_name_linux(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch("platform.system", MagicMock(return_value="Linux")):

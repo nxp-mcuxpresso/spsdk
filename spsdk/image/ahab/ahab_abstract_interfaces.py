@@ -9,7 +9,7 @@
 
 from dataclasses import dataclass
 from struct import calcsize, unpack
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -111,8 +111,8 @@ class HeaderContainer(Container):
     'version'.
     """
 
-    TAG: Union[int, List[int]] = 0x00
-    VERSION: Union[int, List[int]] = 0x00
+    TAG: Union[int, list[int]] = 0x00
+    VERSION: Union[int, list[int]] = 0x00
 
     def __init__(self, tag: int, length: int, version: int):
         """Class object initialized.
@@ -127,7 +127,7 @@ class HeaderContainer(Container):
         self._parsed_header: Optional[HeaderContainerData] = None
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, (HeaderContainer, HeaderContainerInversed)):
+        if isinstance(other, (HeaderContainer, HeaderContainerInverted)):
             if (
                 self.tag == other.tag
                 and self.length == other.length
@@ -231,7 +231,7 @@ class HeaderContainer(Container):
         return ret
 
     @classmethod
-    def parse_head(cls, binary: bytes) -> Tuple[int, int, int]:
+    def parse_head(cls, binary: bytes) -> tuple[int, int, int]:
         """Parse binary data to get head members.
 
         :param binary: Binary data.
@@ -273,14 +273,14 @@ class HeaderContainer(Container):
         return ret
 
 
-class HeaderContainerInversed(HeaderContainer):
+class HeaderContainerInverted(HeaderContainer):
     """A container with first byte defined as header - tag, length and version.
 
     It same as "HeaderContainer" only the tag/length/version are in reverse order in binary form.
     """
 
     @classmethod
-    def parse_head(cls, binary: bytes) -> Tuple[int, int, int]:
+    def parse_head(cls, binary: bytes) -> tuple[int, int, int]:
         """Parse binary data to get head members.
 
         :param binary: Binary data.

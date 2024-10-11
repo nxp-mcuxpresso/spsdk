@@ -9,7 +9,6 @@
 import logging
 import os
 import sys
-from typing import List
 
 import click
 
@@ -39,8 +38,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PublicKeyEcc
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
-from spsdk.tp.data_container import Container
-from spsdk.tp.data_container.payload_types import PayloadType
+from spsdk.tp.data_container import AuthenticationType, Container, PayloadType
 from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface, TpTargetInterface
 from spsdk.tp.tphost import TrustProvisioningHost
@@ -95,9 +93,9 @@ def main(log_level: int) -> int:
 )
 def load(
     tp_device: str,
-    tp_device_parameter: List[str],
+    tp_device_parameter: list[str],
     tp_target: str,
-    tp_target_parameter: List[str],
+    tp_target_parameter: list[str],
     family: str,
     firmware: str,
     prov_firmware: str,
@@ -175,7 +173,7 @@ def load(
 )
 def load_tpfw(
     tp_target: str,
-    tp_target_parameter: List[str],
+    tp_target_parameter: list[str],
     family: str,
     prov_firmware: str,
     timeout: int,
@@ -235,7 +233,7 @@ def get_template(
     template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 
-    click.echo(f"The configuration template created. {output}")
+    click.echo(f"The TPHost template for {family} has been saved into {output} YAML file")
 
 
 @main.command(name="verify", no_args_is_help=True)
@@ -345,7 +343,7 @@ def verify(
 )
 def check_log_owner(
     tp_device: str,
-    tp_device_parameter: List[str],
+    tp_device_parameter: list[str],
     timeout: int,
     config: str,
     audit_log: str,
@@ -402,7 +400,7 @@ def check_log_owner(
     "-k",
     "--key-flags",
     type=INT(),
-    default=0x01,
+    default="1",
     help="OEM Key Flags. Default: 0x01",
 )
 @click.option(
@@ -414,7 +412,7 @@ def check_log_owner(
 )
 def get_tp_response(
     tp_target: str,
-    tp_target_parameter: List[str],
+    tp_target_parameter: list[str],
     family: str,
     timeout: int,
     config: str,
@@ -474,18 +472,18 @@ def get_tp_response(
 @click.option(
     "-t",
     "--tp-response",
-    help="TP Response from MCU.",
+    help="TP Response from MCU, or NXP_DEV_CERT from IFR memory.",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
 )
-# pylint: disable=broad-except  # true source of potential error is not known in advance
+# pylint: disable=broad-except,line-too-long  # true source of potential error is not known in advance
 def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
     """Check Chain-of-Trust in Trust Provisioning.
 
     \b
     Root and intermediate certificates are provided from NXP.
-    TP_RESPONSE can be obtained from `tphost load` using `--save-debug-data` flag.
-    Default file name for TP_RESPONSE is `x_tp_response.bin`.
+    TP_RESPONSE can be obtained from `tphost get-tp-response`, or you can use NXP_DEV_CERT from IFR memory using a debugger.
+    Please note that using the NXP_DEV_CERT has only limited Chain-Of-Trust checking capability (it doesn't attest the device's private key).
     """
     overall_result = True
 
@@ -530,7 +528,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
         overall_result = False
     click.echo(message)
 
-    message = "Extracting NXP_DIE_ID_Devattest_CERT..."
+    message = "Extracting NXP_DIE_ID_CERT..."
     try:
         nxp_die_cert_data = tp_response_container.get_entry(
             PayloadType.NXP_DIE_ID_AUTH_CERT
@@ -543,13 +541,19 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
     click.echo(message)
 
     assert nxp_die_cert
-    message = "Validating NXP_DIE_ID_Devattest_CERT signature..."
+    message = "Validating NXP_DIE_ID_CERT signature..."
     if nxp_die_cert.validate(nxp_prod_puk.export(SPSDKEncoding.DER)):
         message += "OK"
     else:
         message += "FAILED!"
         overall_result = False
     click.echo(message)
+
+    if tp_response_container.get_auth_type() != AuthenticationType.ECDSA_256:
+        # This is not a full Prove Genuinity response, skip further checks
+        if overall_result is False:
+            raise SPSDKAppError()
+        return
 
     message = "Validating TP_RESPONSE signature..."
     try:

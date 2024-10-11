@@ -19,6 +19,7 @@ from libusbsio import LIBUSBSIO
 from PyInstaller.building.build_main import BUNDLE, COLLECT, EXE, MERGE, PYZ, Analysis
 from PyInstaller.compat import is_darwin
 from PyInstaller.config import CONF
+from PyInstaller.utils.hooks import copy_metadata
 
 
 def create_resource_symlinks(app_dir: str, symlink_list: List[Tuple[str, str, str]]) -> None:
@@ -41,6 +42,9 @@ def create_resource_symlinks(app_dir: str, symlink_list: List[Tuple[str, str, st
 
 USE_BLOCK_CIPHER = None
 datas = []
+
+# setuptools_scm checks the version of setuptools and if not satisfied, it complains in console
+datas.extend(copy_metadata("setuptools", recursive=False))
 
 # exclude imports and make them available outside of the executable
 # smartcard is LGPL so make it external outside of the executable so it can be replaced
@@ -73,7 +77,6 @@ def create_runtime_hook_entry_points(
     hook_ep_packages: Dict[str, List[str]] = {}
     import importlib
     from importlib_metadata import entry_points
-
 
     for ep_package in ep_packages:
         for entry_point in importlib.metadata.entry_points(group=ep_package):
@@ -109,7 +112,9 @@ for k, v in entries.items():
 
 # add library for cmsis_pack_manager
 cmsis_mod_dir = os.path.dirname(cmsis_pack_manager.__file__)
-shared_binaries = [(cmsis_mod_dir + "/cmsis_pack_manager/*.so", "cmsis_pack_manager/cmsis_pack_manager/")]
+shared_binaries = [
+    (cmsis_mod_dir + "/cmsis_pack_manager/*.so", "cmsis_pack_manager/cmsis_pack_manager/")
+]
 
 # add library for libusbsio
 usblib = LIBUSBSIO()
@@ -119,16 +124,34 @@ shared_binaries.append(
     (usblib._dllpath, os.path.dirname(usblib._dllpath[usblib._dllpath.find("libusbsio") :]))
 )
 
+# optionally add libraries for PQC
+try:
+    import spsdk_pqc
+
+    spsdk_pqc_dir = os.path.dirname(spsdk_pqc.__file__)
+    shared_binaries.append((spsdk_pqc_dir + "/*.so", "spsdk_pqc"))
+
+except ImportError:
+    pass
+
+# add libuuu libraries
+try:
+    import libuuu
+    uuudll = libuuu.LibUUU().DLL
+    shared_binaries.append((uuudll, "libuuu/lib"))
+except OSError:
+    pass
+
 datas.extend([("spsdk/data", "spsdk/data")])
 
 
 # Additional PyOCD resources
-SEQUENCE_LARK = 'sequences.lark'
+SEQUENCE_LARK = "sequences.lark"
 
 with importlib.resources.files("pyocd.debug.sequences") as package_path:
     resource_path = package_path / SEQUENCE_LARK
 
-datas.extend([(resource_path, 'pyocd/debug/sequences')])
+datas.extend([(resource_path, "pyocd/debug/sequences")])
 
 
 def analyze(sources: List[str]) -> Analysis:
@@ -195,7 +218,8 @@ a_nxpmemcfg = analyze(["spsdk/apps/nxpmemcfg.py"])
 a_nxpwpc = analyze(["spsdk/apps/nxpwpc.py"])
 a_el2go = analyze(["spsdk/apps/el2go.py"])
 a_dk6prog = analyze(["spsdk/apps/dk6prog.py"])
-
+a_lpcprog = analyze(["spsdk/apps/lpcprog.py"])
+a_nxpdice = analyze(["spsdk/apps/nxpdice.py"])
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
 MERGE(
@@ -214,8 +238,10 @@ MERGE(
     (a_nxpcrypto, "nxpcrypto", "nxpcrypto"),
     (a_nxpmemcfg, "nxpmemcfg", "nxpmemcfg"),
     (a_nxpwpc, "nxpwpc", "nxpwpc"),
-    (a_el2go, "el2go", "el2go"),
+    (a_el2go, "el2go-host", "el2go-host"),
     (a_dk6prog, "dk6prog", "dk6prog"),
+    (a_lpcprog, "lpcprog", "lpcprog"),
+    (a_nxpdice, "lnxpdice", "lnxpdice"),
 )
 
 
@@ -239,8 +265,10 @@ exe_ifr = executable(a_ifr, "ifr", "tools/pyinstaller/ifr_version_info.txt")
 exe_nxpcrypto = executable(a_nxpcrypto, "nxpcrypto", "tools/pyinstaller/nxpcrypto_version_info.txt")
 exe_nxpmemcfg = executable(a_nxpmemcfg, "nxpmemcfg", "tools/pyinstaller/nxpmemcfg_version_info.txt")
 exe_nxpwpc = executable(a_nxpwpc, "nxpwpc", "tools/pyinstaller/nxpwpc_version_info.txt")
-exe_el2go = executable(a_el2go, "el2go", "tools/pyinstaller/el2go_version_info.txt")
+exe_el2go = executable(a_el2go, "el2go-host", "tools/pyinstaller/el2go_version_info.txt")
 exe_dk6prog = executable(a_dk6prog, "dk6prog", "tools/pyinstaller/dk6prog_version_info.txt")
+exe_lpcprog = executable(a_lpcprog, "lpcprog", "tools/pyinstaller/lpcprog_version_info.txt")
+exe_nxpdice = executable(a_nxpdice, "nxpdice", "tools/pyinstaller/nxpdice_version_info.txt")
 
 # collect all bundles together
 coll_apps = COLLECT(
@@ -312,6 +340,12 @@ coll_apps = COLLECT(
     a_dk6prog.binaries,
     a_dk6prog.zipfiles,
     a_dk6prog.datas,
+    a_lpcprog.binaries,
+    a_lpcprog.zipfiles,
+    a_lpcprog.datas,
+    a_lpcprog.binaries,
+    a_lpcprog.zipfiles,
+    a_lpcprog.datas,
     strip=False,
     upx=True,
     upx_exclude=[],

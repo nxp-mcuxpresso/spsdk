@@ -73,10 +73,24 @@ def test_nxpimage_hab_export_unsigned(
         assert ref_binary == new_binary
 
 
-@patch("spsdk.crypto.keys.getpass", GetPassMock)
+@patch("spsdk.crypto.keys.getpass", GetPassMock("test"))
 @pytest.mark.parametrize(
     "configuration, app_name, config_files",
     [
+        (
+            "rt1040_srk_revoke_uid",
+            "flashloader.srec",
+            [
+                "config.bd",
+            ],
+        ),
+        (
+            "rt1040_srk_revoke_command",
+            "flashloader.srec",
+            [
+                "config.bd",
+            ],
+        ),
         (
             "rt1050_xip_image_iar_authenticated",
             "led_blinky_xip_srec_iar.srec",
@@ -176,7 +190,6 @@ def test_nxpimage_hab_export_unsigned(
 def test_nxpimage_hab_export_authenticated_rsa(
     cli_runner: CliRunner, tmpdir, hab_data_dir, configuration, app_name, config_files
 ):
-    GetPassMock.PASSWORD = "test"
     config_dir = os.path.join(hab_data_dir, "export", configuration)
     for config_file in config_files:
         with use_working_directory(tmpdir):
@@ -194,7 +207,7 @@ def test_nxpimage_hab_export_authenticated_rsa(
             assert ref_binary == new_binary
 
 
-@patch("spsdk.crypto.keys.getpass", GetPassMock)
+@patch("spsdk.crypto.keys.getpass", GetPassMock("test"))
 @pytest.mark.parametrize(
     "config_file",
     ["config_pk_encrypted.bd", "config_pk.bd", "config_sp.bd", "config_pk_autodetect.bd"],
@@ -363,6 +376,7 @@ def test_nxpimage_hab_parse_and_export(configuration, hab_data_dir):
     ref_hab = load_binary(ref_hab_file)
     hab = HabContainer.parse(ref_hab)
     assert hab.export() == ref_hab
+    assert len(hab) == len(ref_hab)
 
 
 def test_nxpimage_hab_export_secret_key_generated(cli_runner: CliRunner, tmpdir, hab_data_dir):

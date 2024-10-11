@@ -8,11 +8,7 @@
 """SerialBuspalProxy serves as patch replacement for serial.Serial class."""
 
 import logging
-from typing import (  # pylint: disable=unused-import  # Type is necessary for Mypy
-    Dict,
-    Optional,
-    Type,
-)
+from typing import Optional, Type  # pylint: disable=unused-import  # Type is necessary for Mypy
 
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.buspal import I2cModeCommand, SpiModeCommand
@@ -31,7 +27,7 @@ class SerialBuspalProxy(SerialProxy):
     frame_header: int
 
     @classmethod
-    def init_buspal_proxy(cls, target: str, data: Dict[bytes, bytes]) -> "Type[SerialProxy]":
+    def init_buspal_proxy(cls, target: str, data: dict[bytes, bytes]) -> "Type[SerialProxy]":
         """Initialized response dictionary of write and read bytes.
 
         :param target: BUSPAL target type

@@ -11,7 +11,7 @@
 from abc import ABC
 from datetime import datetime
 from struct import pack, unpack_from
-from typing import Any, Iterable, Iterator, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Iterable, Iterator, Mapping, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -275,7 +275,7 @@ class CmdWriteData(CmdBase):
         self,
         numbytes: int = 4,
         ops: EnumWriteOps = EnumWriteOps.WRITE_VALUE,
-        data: Optional[Iterable[Tuple[int, int]]] = None,
+        data: Optional[Iterable[tuple[int, int]]] = None,
     ) -> None:
         """Initialize Write Data command.
 
@@ -290,7 +290,7 @@ class CmdWriteData(CmdBase):
         if ops not in EnumWriteOps:
             raise SPSDKError("Incorrect type of operation")
         super().__init__(CmdTag.WRT_DAT, ((int(ops.tag) & 0x3) << 3) | (numbytes & 0x7))
-        self._data: List[List[int]] = []
+        self._data: list[list[int]] = []
         if data is not None:
             assert isinstance(data, (list, tuple))
             for address, value in data:
@@ -302,13 +302,13 @@ class CmdWriteData(CmdBase):
     def __len__(self) -> int:
         return len(self._data)
 
-    def __getitem__(self, key: int) -> List[int]:
+    def __getitem__(self, key: int) -> list[int]:
         return self._data[key]
 
-    def __setitem__(self, key: int, value: List[int]) -> None:
+    def __setitem__(self, key: int, value: list[int]) -> None:
         self._data[key] = value
 
-    def __iter__(self) -> Iterator[List[int]]:
+    def __iter__(self) -> Iterator[list[int]]:
         return self._data.__iter__()
 
     def __str__(self) -> str:
@@ -330,7 +330,7 @@ class CmdWriteData(CmdBase):
         self._data.append([address, value])
         self._header.length += 8
 
-    def pop(self, index: int) -> List[int]:
+    def pop(self, index: int) -> list[int]:
         """Pop of Write data command."""
         if index < 0 or index >= len(self._data):
             raise SPSDKError("Length of data is incorrect")
@@ -617,7 +617,7 @@ class CmdInitialize(CmdBase):
         self._header.param = value.tag
 
     def __init__(
-        self, engine: EnumEngine = EnumEngine.ANY, data: Optional[List[int]] = None
+        self, engine: EnumEngine = EnumEngine.ANY, data: Optional[list[int]] = None
     ) -> None:
         """Initialize the initialize command."""
         if engine not in EnumEngine:
@@ -713,7 +713,9 @@ class CmdInitialize(CmdBase):
 class CmdUnlockAbstract(CmdBase, ABC):
     """Abstract unlock engine command; the command depends on engine type."""
 
-    def __init__(self, engine: EnumEngine = EnumEngine.ANY, features: int = 0, uid: int = 0):
+    def __init__(
+        self, engine: EnumEngine = EnumEngine.ANY, features: Union[int, SpsdkEnum] = 0, uid: int = 0
+    ):
         """Constructor.
 
         :param engine: to be unlocked
@@ -721,7 +723,7 @@ class CmdUnlockAbstract(CmdBase, ABC):
         :param uid: Unique ID required by some engine/feature combinations
         """
         super().__init__(CmdTag.UNLK, engine.tag, length=8)
-        self.features = features
+        self.features = features if isinstance(features, int) else features.tag
         self.uid = uid
         if self._need_uid:
             self._header.length += 8
@@ -800,15 +802,19 @@ class CmdUnlockAbstract(CmdBase, ABC):
         return raw_data
 
 
+class UnlockSNVSFeatures(SpsdkEnum):
+    """Enum definition for Unlock SNVS features."""
+
+    LP_SWR = (1, "LP SWR", "Leaves LP SW reset unlocked")
+    ZMK_WRITE = (2, "ZMK WRITE", "Leaves Zeroisable Master Key write unlocked.")
+
+
 class CmdUnlockSNVS(CmdUnlockAbstract):
     """Command Unlock Secure Non-Volatile Storage (SNVS) Engine."""
 
-    # mask unlock LP_SWR
-    FEATURE_UNLOCK_LP_SWR = 1
-    # mask unlock ZMK_WRITE
-    FEATURE_UNLOCK_ZMK_WRITE = 2
+    FEATURES = UnlockSNVSFeatures
 
-    def __init__(self, features: int = 0) -> None:
+    def __init__(self, features: Union[int, UnlockSNVSFeatures] = 0) -> None:
         """Constructor.
 
         :param features: mask of FEATURE_UNLOCK_* constants
@@ -818,12 +824,12 @@ class CmdUnlockSNVS(CmdUnlockAbstract):
     @property
     def unlock_lp_swr(self) -> bool:
         """Leave LP SW reset unlocked."""
-        return self.features & CmdUnlockSNVS.FEATURE_UNLOCK_LP_SWR != 0
+        return self.features & UnlockSNVSFeatures.LP_SWR.tag != 0
 
     @property
     def unlock_zmk_write(self) -> bool:
         """Leave Zero is able Master Key write unlocked."""
-        return self.features & CmdUnlockSNVS.FEATURE_UNLOCK_ZMK_WRITE != 0
+        return self.features & UnlockSNVSFeatures.ZMK_WRITE.tag != 0
 
     def __str__(self) -> str:
         """Text description of the command."""
@@ -835,17 +841,20 @@ class CmdUnlockSNVS(CmdUnlockAbstract):
         return msg
 
 
+class UnlockCAAMFeatures(SpsdkEnum):
+    """Enum definition for Unlock SNVS features."""
+
+    MID = (1, "MID", "Leaves Job Ring and DECO master ID registers unlocked")
+    RNG = (2, "RNG", "Leave RNG uninitialized.")
+    MFG = (4, "MFG", "Keep manufacturing protection private key in CAAM internal memory.")
+
+
 class CmdUnlockCAAM(CmdUnlockAbstract):
     """Command Unlock for Cryptographic Acceleration and Assurance Module ."""
 
-    # Leave Job Ring and DECO Master IP unlocked
-    FEATURE_UNLOCK_MID = 1
-    # Leave RNG uninitialized
-    FEATURE_UNLOCK_RNG = 2
-    # Keep manufacturing protection key in internal memory
-    FEATURE_UNLOCK_MFG = 4
+    FEATURES = UnlockCAAMFeatures
 
-    def __init__(self, features: int = 0):
+    def __init__(self, features: Union[int, UnlockCAAMFeatures] = 0):
         """Initialize.
 
         :param features: mask of FEATURE_UNLOCK_x constants, defaults to 0
@@ -855,17 +864,17 @@ class CmdUnlockCAAM(CmdUnlockAbstract):
     @property
     def unlock_mid(self) -> bool:
         """Leave Job Ring and DECO master ID registers unlocked."""
-        return self.features & self.FEATURE_UNLOCK_MID != 0
+        return self.features & UnlockCAAMFeatures.MID.tag != 0
 
     @property
     def unlock_rng(self) -> bool:
         """Leave RNG un-instantiated."""
-        return self.features & self.FEATURE_UNLOCK_RNG != 0
+        return self.features & UnlockCAAMFeatures.RNG.tag != 0
 
     @property
     def unlock_mfg(self) -> bool:
         """Leave Zero is able Master Key write unlocked."""
-        return self.features & self.FEATURE_UNLOCK_MFG != 0
+        return self.features & UnlockCAAMFeatures.MFG.tag != 0
 
     def __str__(self) -> str:
         """Text description of the command."""
@@ -878,19 +887,21 @@ class CmdUnlockCAAM(CmdUnlockAbstract):
         return msg
 
 
+class UnlockOCOTPFeatures(SpsdkEnum):
+    """Enum definition for Unlock SNVS features."""
+
+    FIELD_RETURN = (1, "FIELD RETURN", "Leave Field Return activation unlocked.")
+    SRK_REVOKE = (2, "SRK REVOKE", "Leave SRK revocation unlocked.")
+    SCS = (4, "SCS", "Leave SCS register unlocked.")
+    JTAG = (8, "JTAG", "Unlock JTAG using SCS HAB_JDE bit.")
+
+
 class CmdUnlockOCOTP(CmdUnlockAbstract):
     """Command Unlock for On-Chip One-time programable memory (fuses)."""
 
-    # Leave Field Return activation unlocked.
-    FEATURE_UNLOCK_FLD_RTN = 1
-    # Leave SRK revocation unlocked.
-    FEATURE_UNLOCK_SRK_RVK = 2
-    # Leave SCS register unlocked.
-    FEATURE_UNLOCK_SCS = 4
-    # Unlock JTAG using SCS HAB_JDE bit.
-    FEATURE_UNLOCK_JTAG = 8
+    FEATURES = UnlockOCOTPFeatures
 
-    def __init__(self, features: int = 0, uid: int = 0):
+    def __init__(self, features: Union[int, UnlockOCOTPFeatures] = 0, uid: int = 0):
         """Initialize.
 
         :param features: mask of FEATURE_UNLOCK_x constants, defaults to 0
@@ -906,22 +917,22 @@ class CmdUnlockOCOTP(CmdUnlockAbstract):
     @property
     def unlock_fld_rtn(self) -> bool:
         """Leave Field Return activation unlocked."""
-        return self.features & self.FEATURE_UNLOCK_FLD_RTN != 0
+        return self.features & UnlockOCOTPFeatures.FIELD_RETURN.tag != 0
 
     @property
     def unlock_srk_rvk(self) -> bool:
         """Leave SRK revocation unlocked."""
-        return self.features & self.FEATURE_UNLOCK_SRK_RVK != 0
+        return self.features & UnlockOCOTPFeatures.SRK_REVOKE.tag != 0
 
     @property
     def unlock_csc(self) -> bool:
         """Leave SCS register unlocked."""
-        return self.features & self.FEATURE_UNLOCK_SCS != 0
+        return self.features & UnlockOCOTPFeatures.SCS.tag != 0
 
     @property
     def unlock_jtag(self) -> bool:
         """Unlock JTAG using SCS HAB_JDE bit."""
-        return self.features & self.FEATURE_UNLOCK_JTAG != 0
+        return self.features & UnlockOCOTPFeatures.JTAG.tag != 0
 
     def __str__(self) -> str:
         """Text description of the command."""
@@ -957,6 +968,15 @@ class CmdUnlock(CmdUnlockAbstract):
         msg += f"UID:      {self.uid}\n"
         msg += "-" * 60 + "\n"
         return msg
+
+
+UNLOCK_COMMANDS_MAPPING: Mapping[
+    EnumEngine, Type[Union[CmdUnlockCAAM, CmdUnlockSNVS, CmdUnlockOCOTP]]
+] = {
+    EnumEngine.CAAM: CmdUnlockCAAM,
+    EnumEngine.SNVS: CmdUnlockSNVS,
+    EnumEngine.OCOTP: CmdUnlockOCOTP,
+}
 
 
 class CmdInstallKey(CmdBase):
@@ -1281,7 +1301,7 @@ class CmdAuthData(CmdBase):
         self.private_key = private_key
         self.signature_provider = signature_provider
         self._header.length = CmdHeader.SIZE + 8
-        self._blocks: List[Tuple[int, int]] = []  # list of (start-address, size)
+        self._blocks: list[tuple[int, int]] = []  # list of (start-address, size)
         self._signature: Optional[SignatureOrMAC] = None
         if private_key and signature_provider:
             raise SPSDKValueError(
@@ -1378,16 +1398,16 @@ class CmdAuthData(CmdBase):
     def __len__(self) -> int:
         return len(self._blocks)
 
-    def __getitem__(self, key: int) -> Tuple[int, int]:
+    def __getitem__(self, key: int) -> tuple[int, int]:
         return self._blocks[key]
 
-    def __setitem__(self, key: int, value: Tuple[int, int]) -> None:
+    def __setitem__(self, key: int, value: tuple[int, int]) -> None:
         assert isinstance(value, (list, tuple))
         if len(value) != 2:
             raise SPSDKError("Incorrect length")
         self._blocks[key] = value
 
-    def __iter__(self) -> Iterator[Union[Tuple[Any, ...], List[Any]]]:
+    def __iter__(self) -> Iterator[Union[tuple[Any, ...], list[Any]]]:
         return self._blocks.__iter__()
 
     def __str__(self) -> str:
@@ -1414,7 +1434,7 @@ class CmdAuthData(CmdBase):
         )
         self._header.length += 8
 
-    def pop(self, index: int) -> Tuple[int, int]:
+    def pop(self, index: int) -> tuple[int, int]:
         """Pop of Authenticate data command."""
         if index < 0 or index >= len(self._blocks):
             raise SPSDKError("Incorrect length of blocks")

@@ -11,7 +11,7 @@ import math
 import os
 import re
 import textwrap
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import colorama
 
@@ -111,7 +111,7 @@ class BinaryImage:
 
         if parent:
             assert isinstance(parent, BinaryImage)
-        self.sub_images: List["BinaryImage"] = []
+        self.sub_images: list["BinaryImage"] = []
 
     @property
     def size(self) -> int:
@@ -459,7 +459,7 @@ class BinaryImage:
         return align_block(ret, self.alignment, self.pattern)
 
     @staticmethod
-    def get_validation_schemas() -> List[Dict[str, Any]]:
+    def get_validation_schemas() -> list[dict[str, Any]]:
         """Get validation schemas list to check a supported configuration.
 
         :return: Validation schemas.
@@ -468,7 +468,7 @@ class BinaryImage:
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        config: dict[str, Any], search_paths: Optional[list[str]] = None
     ) -> "BinaryImage":
         """Converts the configuration option into an Binary Image object.
 
@@ -484,7 +484,7 @@ class BinaryImage:
         regions = config.get("regions")
         if regions:
             for i, region in enumerate(regions):
-                binary_file: Dict = region.get("binary_file")
+                binary_file: dict = region.get("binary_file")
                 if binary_file:
                     offset = binary_file.get("offset", ret.aligned_length(ret.alignment))
                     name = binary_file.get("name", binary_file["path"])
@@ -497,7 +497,7 @@ class BinaryImage:
                             search_paths=search_paths,
                         )
                     )
-                binary_block: Dict = region.get("binary_block")
+                binary_block: dict = region.get("binary_block")
                 if binary_block:
                     size = binary_block["size"]
                     offset = binary_block.get("offset", ret.aligned_length(ret.alignment))
@@ -573,7 +573,7 @@ class BinaryImage:
         offset: int = 0,
         description: Optional[str] = None,
         pattern: Optional[BinaryPattern] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
         alignment: int = 1,
         load_bin: bool = True,
     ) -> "BinaryImage":

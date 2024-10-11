@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Device Commands."""
 from struct import unpack_from
-from typing import Dict, Type, Union
+from typing import Type, Union
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -374,7 +374,7 @@ def parse_cmd_response(data: bytes, frame_type: int) -> Union[
     :param frame_type: Frame Type
     :return: De-serialized object from data
     """
-    known_response: Dict[ResponseTag, Type[CmdResponse]] = {
+    known_response: dict[ResponseTag, Type[CmdResponse]] = {
         ResponseTag.RESET: GenericResponse,
         ResponseTag.EXECUTE: GenericResponse,
         ResponseTag.SET_BAUD: GenericResponse,

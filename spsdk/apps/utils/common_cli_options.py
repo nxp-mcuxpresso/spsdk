@@ -11,20 +11,148 @@ import functools
 import logging
 import os
 import sys
-from gettext import gettext
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+import textwrap
+from copy import deepcopy
+from gettext import gettext, ngettext
+from typing import Any, Callable, Optional, Sequence, TypeVar, Union, cast
 
 import click
+import colorama
 from click_command_tree import _build_command_tree, _CommandWrapper
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.interface_helper import load_interface_config
+from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
 from spsdk.sdp.protocol.base import SDPProtocolBase
+from spsdk.utils.database import DatabaseManager
 
 FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
+logger = logging.getLogger(__name__)
+
+
+class FamilyChoice(click.Choice):
+    """The SPSDK modification of Click Choice type.
+
+    It supports solid checking, but modified help prints.
+    """
+
+    name = "choice"
+    MAX_FAMILIES_TO_PRINT = 4
+
+    def __repr__(self) -> str:
+        return f"Family Choice({list(self.choices)})"
+
+    def __init__(self, choices: Sequence[str]) -> None:
+        """Constructor of SPSDK Family Choice click type.
+
+        :param choices: List of families to choice from.
+        """
+        self.predecessor_choices = DatabaseManager().quick_info.devices.get_predecessors(
+            list(choices)
+        )
+        super().__init__(choices, False)
+
+    def to_info_dict(self) -> dict[str, Any]:
+        """Just prepare the dict with base info."""
+        info_dict = super().to_info_dict()
+        info_dict["choices"] = self.choices
+        if self.predecessor_choices:
+            info_dict["predecessor_choices"] = self.predecessor_choices
+        info_dict["case_sensitive"] = self.case_sensitive
+        return info_dict
+
+    def get_metavar(self, param: click.Parameter) -> str:
+        """Prepare the help string.
+
+        :param param: Input click parameter object.
+        :return: Help string.
+        """
+        if len(self.choices) > self.MAX_FAMILIES_TO_PRINT:
+            choices_str = (
+                "|".join(self.choices[: self.MAX_FAMILIES_TO_PRINT])
+                + "..., and more. Use 'get-families' command to show all."
+            )
+        else:
+            choices_str = "|".join(self.choices)
+
+        # Use curly braces to indicate a required argument.
+        if param.required and param.param_type_name == "argument":
+            return f"{{{choices_str}}}"
+
+        # Use square braces to indicate an option or optional argument.
+        return f"[{choices_str}]"
+
+    def convert(
+        self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> Any:
+        """Normalize user input."""
+        # Match through normalization and case sensitivity
+        # first do token_normalize_func, then lowercase
+        # preserve original `value` to produce an accurate message in
+        # `self.fail`
+        normed_value = value
+        all_choices = list(self.choices)
+        if self.predecessor_choices:
+            all_choices += list(self.predecessor_choices.keys())
+        normed_choices = {choice: choice for choice in all_choices}
+
+        if ctx is not None and ctx.token_normalize_func is not None:
+            normed_value = ctx.token_normalize_func(value)
+            normed_choices = {
+                ctx.token_normalize_func(normed_choice): original
+                for normed_choice, original in normed_choices.items()
+            }
+
+        if not self.case_sensitive:
+            normed_value = normed_value.casefold()
+            normed_choices = {
+                normed_choice.casefold(): original
+                for normed_choice, original in normed_choices.items()
+            }
+
+        if normed_value in normed_choices:
+            if normed_value in self.predecessor_choices:
+                new_value = self.predecessor_choices[normed_value]
+                logger.warning(
+                    f"The obsolete device name '{normed_value}' "
+                    f"has been translated to current one: '{new_value}')"
+                )
+                normed_value = new_value
+
+            return normed_choices[normed_value]
+
+        choices_str = ", ".join(map(repr, self.choices))
+        self.fail(
+            ngettext(
+                "{value!r} is not {choice}.",
+                "{value!r} is not one of {choices}.",
+                len(self.choices),
+            ).format(value=value, choice=choices_str, choices=choices_str),
+            param,
+            ctx,
+        )
+
+
+def move_cmd_to_grp(
+    org_grp: click.Group, grp: click.Group, name: str, new_name: Optional[str] = None
+) -> None:
+    """Move the command to new group from the main and make it depreciated.
+
+    :param org_grp: Original group with depreciated place
+    :param grp: TArget group where the command should be moved
+    :param name: Name of original command
+    :param new_name: Optional new name of command, defaults to None
+    """
+    cmd = org_grp.commands[name]
+    moved_cmd = deepcopy(cmd)
+    new_name = new_name or name
+    moved_cmd.name = new_name
+    grp.add_command(moved_cmd, new_name)
+    cmd.hidden = True
+    cmd.deprecated = True
 
 
 def port_option(baud_rate: int = 57600) -> Callable[[FC], FC]:
@@ -121,12 +249,23 @@ def lpcusbsio_option() -> Callable[[FC], FC]:
         - speed_kHz ... SPI clock in kHz (default 1000)
         - polarity ... SPI CPOL option (default=1)
         - phase ... SPI CPHA option (default=1)
+        - nirq_port ... nIRQ port number (default None)
+        - nirq_pin ... nIRQ pin number (default None)
 
         \b
         i2c[index][,address,speed_kHz]
         - index ... optional index of I2C peripheral. Example: "i2c1" (default=0)
         - address ... I2C device address (default 0x10)
         - speed_kHz ... I2C clock in kHz (default 100)
+        - nirq_port ... nIRQ port number (default None)
+        - nirq_pin ... nIRQ pin number (default None)
+
+        \b
+        Following types of interface configuration formats are supported:
+        - string with coma separated arguments i.e. spi1,0,15,1000,1
+        - string with coma separated keyword arguments (the order may not be maintained) i.e.spi1,port=0,speed_kHz=1000,nirq_port=1,nirq_pin=7
+        - string with combination of coma separated arguments and keyword arguments i.e.spi1,0,15,nirq_port=1,nirq_pin=7
+
         """,
     )
 
@@ -217,13 +356,13 @@ def spsdk_use_json_option(options: FC) -> FC:
 
 
 def timeout_option(
-    timeout: int,
+    timeout: int = 5000,
     use_long_form_only: bool = False,
 ) -> Callable[[FC], FC]:
     """Get the timeout option.
 
     :param use_long_form_only: Use long version only
-    :param timeout: Default timeout in miliseconds
+    :param timeout: Default timeout in milliseconds
 
     :return: click decorator
     """
@@ -279,7 +418,7 @@ def spsdk_plugin_option(options: FC) -> FC:
 
 
 def spsdk_family_option(
-    families: List[str],
+    families: list[str],
     required: bool = True,
     default: Optional[str] = None,
     help: Optional[str] = None,  # pylint: disable=redefined-builtin
@@ -314,7 +453,7 @@ def spsdk_family_option(
         wrapper = click.option(
             "-f",
             f"--{FAMILY_OPTION}",
-            type=click.Choice(choices=families, case_sensitive=False),
+            type=FamilyChoice(choices=families),
             default=default,
             required=False,  # will be validated in the wrapper method
             help=help or "Select the chip family.",
@@ -480,7 +619,7 @@ def spsdk_sdp_interface(
             kwargs["interface"] = interface
             return func(*args, **kwargs)
 
-        interface_options: Dict[Callable, Tuple[bool, Dict]] = {
+        interface_options: dict[Callable, tuple[bool, dict]] = {
             interface_plugin_option: (plugin, {}),
             usb_option: (usb, {"identify_by_family": identify_by_family}),
             port_option: (port, {"baud_rate": SdpUARTInterface.default_baudrate}),
@@ -506,6 +645,7 @@ def spsdk_mboot_interface(
     timeout: int = 5000,
     identify_by_family: bool = False,
     use_long_timeout_form: bool = False,
+    required: bool = True,
 ) -> Callable:
     """Click decorator handling Mboot interface.
 
@@ -549,13 +689,19 @@ def spsdk_mboot_interface(
                 "plugin": plugin,
                 "timeout": timeout,
             }
-            interface_params = load_interface_config(cli_params)
-            interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
-            interface = interface_cls.scan_single(**interface_params.get_scan_args())
-            kwargs["interface"] = interface
+            try:
+                interface_params = load_interface_config(cli_params)
+                interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
+                interface = interface_cls.scan_single(**interface_params.get_scan_args())
+                kwargs["interface"] = interface
+            except SPSDKAppError:
+                if required:
+                    raise
+                kwargs["interface"] = None
+
             return func(*args, **kwargs)
 
-        interface_options: Dict[Callable, Tuple[bool, Dict]] = {
+        interface_options: dict[Callable, tuple[bool, dict]] = {
             interface_plugin_option: (plugin, {}),
             buspal_option: (buspal, {}),
             can_option: (can, {}),
@@ -574,8 +720,114 @@ def spsdk_mboot_interface(
     return decorator
 
 
-class CommandsTreeGroup(click.Group):
-    """Custom help formatter, overrides click.Group standard formatter.
+class GetFamiliesCommand(click.Command):
+    """Shows the full families information for commands in this group."""
+
+    def __init__(self) -> None:
+        """Constructor of get families command."""
+        super().__init__(
+            name="get-families",
+            help="Shows the full family info for commands in this group.",
+            callback=self.handle_families_info,
+        )
+
+        self.group_family_param: Optional[click.Parameter] = None
+        self.cmd_family_params: dict[str, click.Parameter] = {}
+
+    def add_cmd(self, family_param: click.Parameter, cmd_name: Optional[str] = None) -> None:
+        """Add the command or group family choices parameter.
+
+        :param family_param: Mandatory family choices parameters
+        :param cmd_name: If None the the family choices are for the parent group,
+            when name is specified it should be for the command name, defaults to None
+        """
+        if cmd_name is None:
+            self.group_family_param = family_param
+        else:
+            if len(self.params) == 0:
+                self.params.append(
+                    click.Option(
+                        param_decls=["-c", "--cmd-name"],
+                        type=click.Choice([], case_sensitive=False),
+                        help="Choose the command name to get full information about NXP families support.",
+                    )
+                )
+            self.cmd_family_params[cmd_name] = family_param
+            choice = cast(click.Choice, self.params[0].type)
+            cast(list, choice.choices).append(cmd_name)
+
+    def handle_families_info(self, cmd_name: Optional[str] = None) -> None:
+        """Show the supported families."""
+
+        def print_families(family_param: click.Parameter) -> None:
+            if isinstance(family_param.type, (FamilyChoice, click.Choice)):
+                click.echo(colorama.Fore.GREEN + "Supported families:" + colorama.Fore.RESET)
+                sorted_choices = DatabaseManager().quick_info.sort_devices_to_groups(
+                    list(family_param.type.choices)
+                )
+                for purpose, devices in sorted_choices.items():
+                    click.echo(f"{colorama.Fore.MAGENTA} - {purpose}:{colorama.Fore.RESET}")
+                    for line in textwrap.wrap(", ".join(devices)):
+                        click.echo(f"    {line}")
+
+                if isinstance(family_param.type, FamilyChoice):
+                    click.echo(
+                        colorama.Fore.YELLOW + "\nObsolete predecessor families names "
+                        "(Warning: Those names will be removed in some following version of SPSDK):"
+                        + colorama.Fore.RESET
+                    )
+                    for line in textwrap.wrap(", ".join(family_param.type.predecessor_choices)):
+                        click.echo(f"    {line}")
+
+        if cmd_name:
+            click.echo(f"Shown families for command '{cmd_name}':")
+            print_families(self.cmd_family_params[cmd_name])
+            return
+
+        if self.group_family_param:
+            click.echo("Shown families for this group of commands:")
+            print_families(self.group_family_param)
+            return
+        click.echo(
+            f"Missing option '-c'/'--cmd-name' with this possible options: [{', '.join(self.cmd_family_params.keys())}]"
+        )
+
+
+class SpsdkClickGroup(click.Group):
+    """SPSDK Click group, overrides click.Group standard class.
+
+    To check and add additional command get-families
+
+    :param click: click.Group
+    """
+
+    def __init__(self, **attrs: Any) -> None:
+        """SPSDK Click group descriptor."""
+        super().__init__(**attrs)
+        self.get_families: Optional[GetFamiliesCommand] = None
+        if "params" in attrs:
+            params: list[click.Parameter] = attrs["params"]
+            for param in params:
+                if param.name == "family":
+                    self.get_families = GetFamiliesCommand()
+                    self.get_families.add_cmd(param, None)
+                    self.add_command(self.get_families)
+                    break
+
+    def add_command(self, cmd: click.Command, name: Optional[str] = None) -> None:
+        """Overload add command method, to check commands if contains family option."""
+        super().add_command(cmd, name)
+        name = name or cmd.name
+        for param in cmd.params:
+            if param.name == "family":
+                if self.get_families is None:
+                    self.get_families = GetFamiliesCommand()
+                    self.add_command(self.get_families)
+                self.get_families.add_cmd(param, name)
+
+
+class CommandsTreeGroup(SpsdkClickGroup):
+    """Custom help formatter, overrides SPSDK click group standard formatter.
 
     Provides command section in help as command tree
 
@@ -598,12 +850,12 @@ class CommandsTreeGroup(click.Group):
 
 def _get_tree(
     command: _CommandWrapper,
-    rows: Optional[List] = None,
+    rows: Optional[list] = None,
     depth: int = 0,
     is_last_item: bool = False,
     is_last_parent: bool = False,
     parent_prefix: str = "",
-) -> Sequence[Tuple[str, str]]:
+) -> Sequence[tuple[str, str]]:
     """Generate tree of commands to be used with Click HelpFormatter.
 
     :param command: command wrapper
@@ -647,7 +899,7 @@ def _get_tree(
     return rows
 
 
-def is_click_help(ctx: click.Context, argv: List[str]) -> bool:
+def is_click_help(ctx: click.Context, argv: list[str]) -> bool:
     """Is help command?
 
     :param ctx: Click content
@@ -655,13 +907,13 @@ def is_click_help(ctx: click.Context, argv: List[str]) -> bool:
     :return: True if this command is just for help, False otherwise
     """
 
-    def check_commands(argv: List[str], cmd: click.Command) -> bool:
+    def check_commands(argv: list[str], cmd: click.Command) -> bool:
         if len(argv) == 0:
             return cmd.no_args_is_help
 
         if not hasattr(ctx.command, "commands"):
             return False
-        commands: Dict[str, click.Command] = ctx.command.commands
+        commands: dict[str, click.Command] = ctx.command.commands
         for x in range(len(argv)):
             if argv[x] in commands:
                 return check_commands(argv[x + 1 :], commands[argv[x]])
@@ -670,6 +922,8 @@ def is_click_help(ctx: click.Context, argv: List[str]) -> bool:
 
     if ctx is None or argv is None:
         return False
+    if "get-families" in argv[1:]:
+        return True
     if "--help" in argv[1:]:
         return True
     if ctx.command.name and not ctx.command.name in argv[0]:

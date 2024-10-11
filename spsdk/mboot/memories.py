@@ -8,7 +8,7 @@
 
 """Various types of memory identifiers used in the MBoot module."""
 
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from spsdk.utils.misc import size_fmt
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -183,7 +183,7 @@ class FlashRegion(MemoryRegion):
 class ExtMemRegion(MemoryRegion):
     """External memory regions."""
 
-    def __init__(self, mem_id: int, raw_values: Optional[List[int]] = None) -> None:
+    def __init__(self, mem_id: int, raw_values: Optional[list[int]] = None) -> None:
         """Initialize the external memory region object.
 
         :param mem_id: ID of the external memory

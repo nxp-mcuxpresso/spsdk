@@ -14,7 +14,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 import click
 import requests
@@ -123,7 +123,7 @@ class RequirementsRecord:
         return str(self.original)
 
 
-class RequirementsList(List[RequirementsRecord]):
+class RequirementsList(list[RequirementsRecord]):
     """List of requirements class."""
 
     def get_record(self, name: str) -> RequirementsRecord:
@@ -154,7 +154,7 @@ class RequirementsList(List[RequirementsRecord]):
         return RequirementsList.from_lines(req_lines=req_lines)
 
     @staticmethod
-    def from_lines(req_lines: List[str]) -> "RequirementsList":
+    def from_lines(req_lines: list[str]) -> "RequirementsList":
         """Get Requirements from text lines."""
         req_lines = [line for line in req_lines if not line.startswith(("-", "#"))]
         result = RequirementsList([RequirementsRecord.from_str(req) for req in req_lines])
@@ -194,12 +194,26 @@ def finalize_file(
         main_reqs = f.readlines()
     with open(path, "w") as f:
         for req_line in main_reqs:
-            if req_line.startswith(("#", "-")):
+            # omit pip as pip itself is by design not shown in 'pip list'
+            if req_line.startswith(("#", "-")) or req_line.startswith("pip"):
                 f.write(req_line)
                 continue
             req = RequirementsRecord.from_str(req_line=req_line)
             req.max_version = requirements.get_record(req.name).act_version
             f.write(req.to_str(include_max_version=True, use_next_version=use_next_version) + "\n")
+
+
+def get_token(token: Optional[str]) -> str:
+    """Get token value from input token(as a value or path to a file) or environment variable."""
+    if not token:
+        token = os.environ.get("BB_AUTH_TOKEN")
+    if not token:
+        raise ValueError("Token must be specified as argument or as env variable")
+    token = os.path.expanduser(os.path.expandvars(token))
+    if os.path.isfile(token):
+        with open(token) as f:
+            return f.readline()
+    return token
 
 
 @click.group("req-update", no_args_is_help=True)
@@ -319,8 +333,7 @@ def branch(branch_name: str) -> None:
 )
 def pull_request(auth_token_path: str, src_branch: str, dest_branch: str) -> None:
     """Create pull request."""
-    with open(auth_token_path or os.environ["BB_AUTH_TOKEN"]) as f:
-        token = f.readline()
+    token = get_token(auth_token_path)
 
     if not src_branch:
         src_branch = subprocess.check_output(

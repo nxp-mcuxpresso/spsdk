@@ -8,25 +8,100 @@
 """Low level usbsio device."""
 import logging
 import re
-from typing import List, Optional, Union
+from dataclasses import dataclass
+from typing import Optional, Union
 
 import libusbsio
 from libusbsio.libusbsio import LIBUSBSIO
+from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase
-from spsdk.utils.misc import value_to_int
+from spsdk.utils.misc import Timeout, value_to_int
 from spsdk.utils.usbfilter import USBDeviceFilter
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class UsbSioConfig:
+    """UsbSio configuration."""
+
+    usb_config: Optional[str]
+    port_num: int
+    interface_args: list
+    interface_kwargs: dict
+
+    @classmethod
+    def from_config_string(cls, config: str, interface: str) -> Self:
+        """Parse the configuration string to UsbSioConfig object."""
+        i = config.rfind(interface)
+        if i < 0:
+            raise SPSDKValueError(f"The configuration string must contain'{interface}'")
+        # parse usb config(if exists)
+        usb_config = config[:i] or None
+        if usb_config:
+            if usb_config.startswith("usb"):
+                usb_config = usb_config.replace("usb", "", 1)
+            usb_config = usb_config.strip(",")
+        args, kwargs = cls._split_interface_config(config[i:])
+        # first argument is always interface identifier with optional port number
+        interface_identifier = args.pop(0)
+        port_num_match = re.match(rf"^{interface}(?P<index>\d*)", interface_identifier)
+        if not port_num_match:
+            raise SPSDKValueError(
+                f"The configuration string should be in format '{interface}<port_number>'."
+                f"Got '{interface_identifier}'."
+            )
+        port_num = value_to_int(port_num_match.group("index"), 0)
+        return cls(
+            usb_config=usb_config,
+            port_num=port_num,
+            interface_args=args,
+            interface_kwargs=kwargs,
+        )
+
+    @staticmethod
+    def _split_interface_config(interface_config: str) -> tuple[list, dict]:
+        """Convert the string configuration to the arguments and keyword arguments."""
+
+        def _cast_arg(arg: str) -> Union[str, int]:
+            """Cast the string argument to the type expected in object initialization."""
+            try:
+                return value_to_int(arg)
+            except SPSDKError:
+                return arg
+
+        args = []
+        kwargs = {}
+        cfg = interface_config.split(",")
+        for param in cfg:
+            # a keyword argument
+            if "=" in param:
+                kwarg_parts = param.split("=")
+                if len(kwarg_parts) != 2:
+                    raise SPSDKValueError(f"Keyword argument: {param} must have format 'key=value'")
+                kwargs[kwarg_parts[0].lower()] = _cast_arg(kwarg_parts[1])
+            else:
+                if kwargs:
+                    raise SPSDKError("All arguments must be before keyword arguments.")
+                args.append(_cast_arg(param))
+        return (args, kwargs)
+
+
 class UsbSioDevice(DeviceBase):
     """USBSIO device class."""
 
+    INTERFACE = ""  # to be defined by the child class
+
     def __init__(
-        self, dev: int = 0, config: Optional[str] = None, timeout: Optional[int] = None
+        self,
+        dev: int = 0,
+        port_num: int = 0,
+        nirq_port: Optional[int] = None,
+        nirq_pin: Optional[int] = None,
+        timeout: Optional[int] = None,
     ) -> None:
         """Initialize the Interface object.
 
@@ -40,11 +115,24 @@ class UsbSioDevice(DeviceBase):
 
         # work with the global LIBUSBSIO instance
         self.dev_ix = dev
+        self.port_num = port_num
         self.sio = self._get_usbsio()
         self._timeout = timeout or 5000
+        self.nirq_port = nirq_port
+        self.nirq_pin = nirq_pin
+        if self.is_nirq_enabled:
+            self._config_nirq_pin()
 
-        # store USBSIO configuration and version
-        self.config = config
+    def _config_nirq_pin(self) -> None:
+        assert self.nirq_port is not None
+        assert self.nirq_pin is not None
+        self.sio.GPIO_ConfigIOPin(self.nirq_port, self.nirq_pin, 0x100)
+        self.sio.GPIO_SetPortInDir(self.nirq_port, 1 << (self.nirq_pin - 1))
+        if self.sio.GPIO_GetPin(self.nirq_port, self.nirq_pin) == 0:
+            logger.warning(
+                "The logical low has been detected on nIRQ pin."
+                "Please check if nIRQ is enabled with command 'blhost -l <interface_config> get-property 28'"
+            )
 
     def open(self) -> None:
         """Open the interface."""
@@ -92,24 +180,111 @@ class UsbSioDevice(DeviceBase):
             if not self.sio.IsAnyPortOpen():
                 self.sio.Close()
 
+    @classmethod
+    def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
+        """Scan connected USB-SIO bridge devices.
+
+        :param config: Configuration string identifying spi or i2c SIO interface
+                        and could filter out USB devices
+        :param timeout: Read timeout in milliseconds, defaults to 5000
+        :return: List of matching UsbSio devices
+        :raises SPSDKError: When libusbsio library error or if no bridge device found
+        :raises SPSDKValueError: Invalid configuration detected.
+        """
+        assert cls.INTERFACE  # overriden by child class
+        devices: list[Self] = []
+        sio = cls._get_usbsio()
+        usbsio_config = UsbSioConfig.from_config_string(config, cls.INTERFACE)
+        usbsio_config.interface_kwargs["timeout"] = timeout or 5000
+
+        usbsio_ports = cls.get_usbsio_devices(usbsio_config.usb_config)
+        for usbsio_port in usbsio_ports:
+            if not sio.Open(usbsio_port):
+                raise SPSDKError(f"Cannot open libusbsio bridge {usbsio_port}.")
+            available_port = {"i2c": sio.GetNumI2CPorts, "spi": sio.GetNumSPIPorts}[cls.INTERFACE]()
+            if usbsio_config.port_num not in list(range(available_port)):
+                logger.warning(
+                    f"Given port {usbsio_config.port_num} is not amongst available ports: "
+                    f"{','.join(list(str(n) for n in range(available_port)))}"
+                )
+                sio.Close()
+                continue
+            try:
+                devices.append(
+                    cls(
+                        usbsio_port,
+                        usbsio_config.port_num,
+                        *usbsio_config.interface_args,
+                        **usbsio_config.interface_kwargs,
+                    )
+                )
+            except TypeError as e:
+                raise SPSDKValueError(
+                    f"Could not instantiate '{cls.INTERFACE}' device from given configuration: {e}"
+                ) from e
+            sio.Close()
+        return devices
+
     def __str__(self) -> str:
         """Return string containing information about the interface."""
         class_name = self.__class__.__name__
-        config = f":'{self.config}'" if self.config else ""
-        return f"libusbsio interface ({class_name}){config}"
+        return f"libusbsio interface ({class_name})"
+
+    def wait_for_nirq_state(self, state: int) -> None:
+        """Wait until the nIRQ GPIO pin gets into desired state.
+
+        :param state: Expected state
+        """
+        if state not in [0, 1]:
+            raise SPSDKValueError("State must be either 0 or 1.")
+        if not self.is_nirq_enabled:
+            raise SPSDKError("The nIRQ functionality is disabled. nIRQ pin must be defined.")
+        timeout = Timeout(self.timeout, "ms")
+        while not timeout.overflow():
+            assert self.nirq_port is not None
+            assert self.nirq_pin is not None
+            nirq_state = self.sio.GPIO_GetPin(self.nirq_port, self.nirq_pin)
+            if nirq_state == state:
+                return
+        raise SPSDKError(
+            "The nIRQ pin has not been triggered on time. Try to increase the timeout."
+        )
+
+    @property
+    def is_nirq_enabled(self) -> bool:
+        """Is nIRQ functionality enabled."""
+        return self.nirq_pin is not None and self.nirq_port is not None
 
     @staticmethod
-    def get_interface_cfg(config: str, interface: str) -> str:
-        """Return part of interface config.
+    def _process_interface_config(
+        interface_config: str, timeout: Optional[int] = None
+    ) -> tuple[list, dict]:
+        """Convert the string configuration to the arguments and keyword arguments."""
 
-        :param config: Full config of LIBUSBSIO
-        :param interface: Name of interface to find.
-        :return: Part with interface config.
-        """
-        i = config.rfind(interface)
-        if i < 0:
-            return ""
-        return config[i:]
+        def _cast_arg(arg: str) -> Union[str, int]:
+            """Cast the string argument to the type expected in object initialization."""
+            try:
+                return value_to_int(arg)
+            except SPSDKError:
+                return arg
+
+        args = []
+        kwargs = {}
+        cfg = interface_config.split(",")
+        for param in cfg:
+            # a keyword argument
+            if "=" in param:
+                kwarg_parts = param.split("=")
+                if len(kwarg_parts) != 2:
+                    raise SPSDKValueError(f"Keyword argument: {param} must have format 'key=value'")
+                kwargs[kwarg_parts[0].lower()] = _cast_arg(kwarg_parts[1])
+            else:
+                if kwargs:
+                    raise SPSDKError("All arguments must be before keyword arguments.")
+                args.append(_cast_arg(param))
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        return (args, kwargs)
 
     @staticmethod
     def _get_usbsio() -> LIBUSBSIO:
@@ -128,85 +303,16 @@ class UsbSioDevice(DeviceBase):
             raise SPSDKError(str(e)) from e
 
     @classmethod
-    def scan(
-        cls, config: Optional[str] = None, timeout: Optional[int] = None
-    ) -> List[Union["UsbSioSPIDevice", "UsbSioI2CDevice"]]:
-        """Scan connected USB-SIO bridge devices.
-
-        :param config: Configuration string identifying spi or i2c SIO interface
-                        and could filter out USB devices
-        :param timeout: Read timeout in milliseconds, defaults to 5000
-        :return: List of matching UsbSio devices
-        :raises SPSDKError: When libusbsio library error or if no bridge device found
-        :raises SPSDKValueError: Invalid configuration detected.
-        """
-        timeout = timeout or 5000
-        cfg = config.split(",") if config else []
-        re_spi = re.compile(r"^spi(?P<index>\d*)")
-        re_i2c = re.compile(r"^i2c(?P<index>\d*)")
-        spi = None
-        i2c = None
-        for cfg_part in cfg:
-            match_i2c = re_i2c.match(cfg_part.lower())
-            if match_i2c:
-                i2c = value_to_int(match_i2c.group("index"), 0)
-            match_spi = re_spi.match(cfg_part.lower())
-            if match_spi:
-                spi = value_to_int(match_spi.group("index"), 0)
-        if i2c is not None and spi is not None:
-            raise SPSDKValueError(
-                f"Cannot be specified spi and i2c together in configuration: {cfg}"
-            )
-        intf_specified = i2c is not None or spi is not None
-
-        port_indexes = cls.get_usbsio_devices(config)
-        sio = cls._get_usbsio()
-        devices: List[Union["UsbSioSPIDevice", "UsbSioI2CDevice"]] = []
-        for port in port_indexes:
-            if not sio.Open(port):
-                raise SPSDKError(f"Cannot open libusbsio bridge {port}.")
-            i2c_ports = sio.GetNumI2CPorts()
-            if i2c_ports:
-                if i2c is not None:
-                    devices.append(
-                        UsbSioI2CDevice(dev=port, port=i2c, config=config, timeout=timeout)
-                    )
-                elif not intf_specified:
-                    devices.extend(
-                        [
-                            UsbSioI2CDevice(dev=port, port=p, timeout=timeout)
-                            for p in range(i2c_ports)
-                        ]
-                    )
-            spi_ports = sio.GetNumSPIPorts()
-            if spi_ports:
-                if spi is not None:
-                    devices.append(
-                        UsbSioSPIDevice(dev=port, port=spi, config=config, timeout=timeout)
-                    )
-                elif not intf_specified:
-                    devices.extend(
-                        [
-                            UsbSioSPIDevice(dev=port, port=p, timeout=timeout)
-                            for p in range(spi_ports)
-                        ]
-                    )
-            if sio.Close() < 0:
-                raise SPSDKError(f"Cannot close libusbsio bridge {port}.")
-
-        return devices
-
-    @classmethod
-    def get_usbsio_devices(cls, config: Optional[str] = None) -> List[int]:
+    def get_usbsio_devices(cls, usb_config: Optional[str] = None) -> list[int]:
         """Returns list of ports indexes of USBSIO devices.
 
         It could be filtered by standard SPSDK USB filters.
 
-        :param config: Could contain USB filter configuration, defaults to None
+        :param usb_config: Could contain USB filter configuration, defaults to None
         :return: List of port indexes of founded USBSIO device
         """
 
-        def _filter_usb(sio: LIBUSBSIO, ports: List[int], flt: str) -> List[int]:
+        def _filter_usb(sio: LIBUSBSIO, ports: list[int], flt: str) -> list[int]:
             """Filter the  LIBUSBSIO device.
 
             :param sio: LIBUSBSIO instance.
@@ -220,7 +326,7 @@ class UsbSioDevice(DeviceBase):
             for port in ports:
                 info = sio.GetDeviceInfo(port)
                 if not info:
-                    raise SPSDKError(f"Cannot retrive information from LIBUSBSIO device {port}.")
+                    raise SPSDKError(f"Cannot retrieve information from LIBUSBSIO device {port}.")
                 dev_info = {
                     "vendor_id": info.vendor_id,
                     "product_id": info.product_id,
@@ -232,7 +338,6 @@ class UsbSioDevice(DeviceBase):
                     break
             return port_indexes
 
-        cfg = config.split(",") if config else []
         port_indexes = []
 
         sio = UsbSioDevice._get_usbsio()
@@ -243,8 +348,8 @@ class UsbSioDevice(DeviceBase):
         port_indexes.extend(list(range(sio.GetNumPorts())))
 
         # filter out the USB devices
-        if cfg and cfg[0] == "usb":
-            port_indexes = _filter_usb(sio, port_indexes, cfg[1])
+        if usb_config:
+            port_indexes = _filter_usb(sio, port_indexes, usb_config)
 
         return port_indexes
 
@@ -252,16 +357,19 @@ class UsbSioDevice(DeviceBase):
 class UsbSioSPIDevice(UsbSioDevice):
     """USBSIO SPI interface."""
 
+    INTERFACE = "spi"
+
     def __init__(
         self,
-        config: Optional[str] = None,
         dev: int = 0,
-        port: int = 0,
+        port_num: int = 0,
         ssel_port: int = 0,
         ssel_pin: int = 15,
         speed_khz: int = 1000,
         cpol: int = 1,
         cpha: int = 1,
+        nirq_port: Optional[int] = None,
+        nirq_pin: Optional[int] = None,
         timeout: int = 5000,
     ) -> None:
         """Initialize the UsbSioSPI Interface object.
@@ -277,41 +385,21 @@ class UsbSioSPIDevice(UsbSioDevice):
         :param timeout: read timeout in milliseconds, defaults to 5000
         :raises SPSDKError: When port configuration cannot be parsed
         """
-        super().__init__(dev=dev, config=config, timeout=timeout)
-
-        # default configuration taken from parameters (and their default values)
-        self.spi_port = port
+        super().__init__(
+            dev=dev, port_num=port_num, nirq_port=nirq_port, nirq_pin=nirq_pin, timeout=timeout
+        )
         self.spi_sselport = ssel_port
         self.spi_sselpin = ssel_pin
         self.spi_speed_khz = speed_khz
         self.spi_cpol = cpol
         self.spi_cpha = cpha
 
-        # values can be also overridden by a configuration string
-        if config:
-            # config format: spi[,<port>,<pin>,<speed>,<cpol>,<cpha>]
-            cfg = self.get_interface_cfg(config, "spi").split(",")
-            try:
-                self.spi_sselport = int(cfg[1], 0)
-                self.spi_sselpin = int(cfg[2], 0)
-                self.spi_speed_khz = int(cfg[3], 0)
-                self.spi_cpol = int(cfg[4], 0)
-                self.spi_cpha = int(cfg[5], 0)
-            except IndexError:
-                pass
-            except Exception as e:
-                raise SPSDKError(
-                    "Cannot parse lpcusbsio SPI parameters.\n"
-                    "Expected: spi[,<port>,<pin>,<speed_kHz>,<cpol>,<cpha>]\n"
-                    f"Given:    {config}"
-                ) from e
-
     def open(self) -> None:
         """Open the interface."""
         super().open()
 
         self.port: LIBUSBSIO.SPI = self.sio.SPI_Open(
-            portNum=self.spi_port,
+            portNum=self.port_num,
             busSpeed=self.spi_speed_khz * 1000,
             cpol=self.spi_cpol,
             cpha=self.spi_cpha,
@@ -364,13 +452,16 @@ class UsbSioSPIDevice(UsbSioDevice):
 class UsbSioI2CDevice(UsbSioDevice):
     """USBSIO I2C interface."""
 
+    INTERFACE = "i2c"
+
     def __init__(
         self,
-        config: Optional[str] = None,
         dev: int = 0,
-        port: int = 0,
+        port_num: int = 0,
         address: int = 0x10,
         speed_khz: int = 100,
+        nirq_port: Optional[int] = None,
+        nirq_pin: Optional[int] = None,
         timeout: int = 5000,
     ) -> None:
         """Initialize the UsbSioI2C Interface object.
@@ -383,35 +474,18 @@ class UsbSioI2CDevice(UsbSioDevice):
         :param timeout: read timeout in milliseconds, defaults to 5000
         :raises SPSDKError: When port configuration cannot be parsed
         """
-        super().__init__(dev=dev, config=config, timeout=timeout)
-
-        # default configuration taken from parameters (and their default values)
-        self.i2c_port = port
+        super().__init__(
+            dev=dev, port_num=port_num, nirq_port=nirq_port, nirq_pin=nirq_pin, timeout=timeout
+        )
         self.i2c_address = address
         self.i2c_speed_khz = speed_khz
-
-        # values can be also overridden by a configuration string
-        if config:
-            # config format: i2c[,<address>,<speed>]
-            cfg = self.get_interface_cfg(config, "i2c").split(",")
-            try:
-                self.i2c_address = int(cfg[1], 0)
-                self.i2c_speed_khz = int(cfg[2], 0)
-            except IndexError:
-                pass
-            except Exception as e:
-                raise SPSDKError(
-                    "Cannot parse lpcusbsio I2C parameters.\n"
-                    "Expected: i2c[,<address>,<speed_kHz>]\n"
-                    f"Given:    {config}"
-                ) from e
 
     def open(self) -> None:
         """Open the interface."""
         super().open()
 
         self.port: LIBUSBSIO.I2C = self.sio.I2C_Open(
-            clockRate=self.i2c_speed_khz * 1000, portNum=self.i2c_port
+            clockRate=self.i2c_speed_khz * 1000, portNum=self.port_num
         )
         if not self.port:
             raise SPSDKError("Cannot open lpcusbsio I2C interface.\n")

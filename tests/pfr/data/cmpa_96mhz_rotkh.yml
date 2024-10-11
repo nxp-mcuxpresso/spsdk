@@ -1,10 +1,10 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 # NXP lpc55s6x PFR CMPA configuration
 description: # The PFR CMPA configuration description.
-  device: lpc55s6x # The NXP device name.
+  device: lpc55s69 # The NXP device name.
   revision: a1 # The NXP device revision.
   type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
   version: 1.9.1 # The SPSDK tool version.

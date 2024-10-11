@@ -9,7 +9,7 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
-from typing import Any, Dict
+from typing import Any
 
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
@@ -28,7 +28,7 @@ class DebugProbeVirtual(DebugProbe):
 
     UNIQUE_SERIAL = "Virtual_DebugProbe_SPSDK"
 
-    def __init__(self, hardware_id: str, options: Dict = None) -> None:
+    def __init__(self, hardware_id: str, options: dict = None) -> None:
         """The Virtual class initialization.
 
         The Virtual initialization function for SPSDK library to support various DEBUG PROBES.
@@ -37,15 +37,15 @@ class DebugProbeVirtual(DebugProbe):
 
         self.opened = False
         self.connected = False
-        self.virtual_memory: Dict[Any, Any] = {}
-        self.virtual_memory_substituted: Dict[Any, Any] = {}
-        self.coresight_ap: Dict[Any, Any] = {}
-        self.coresight_ap_substituted: Dict[Any, Any] = {}
-        self.coresight_dp: Dict[Any, Any] = {}
+        self.virtual_memory: dict[Any, Any] = {}
+        self.virtual_memory_substituted: dict[Any, Any] = {}
+        self.coresight_ap: dict[Any, Any] = {}
+        self.coresight_ap_substituted: dict[Any, Any] = {}
+        self.coresight_dp: dict[Any, Any] = {}
         self.coresight_ap_write_exception = 0
         self.coresight_dp_write_exception = 0
         self.coresight_mem_read_exception = 0
-        self.coresight_dp_substituted: Dict[Any, Any] = {}
+        self.coresight_dp_substituted: dict[Any, Any] = {}
 
         if options is not None:
             if "exc" in options.keys():
@@ -71,7 +71,7 @@ class DebugProbeVirtual(DebugProbe):
         logger.debug("The SPSDK Virtual Interface has been initialized")
 
     @classmethod
-    def get_connected_probes(cls, hardware_id: str = None, options: Dict = None) -> list:
+    def get_connected_probes(cls, hardware_id: str = None, options: dict = None) -> list:
         """Get all connected probes over Virtual.
 
         This functions returns the list of all connected probes in system by Virtual package.
@@ -122,7 +122,7 @@ class DebugProbeVirtual(DebugProbe):
         self.connected = False
         self.opened = False
 
-    def _get_requested_value(self, values: Dict, subs_values: Dict, addr: Any) -> int:
+    def _get_requested_value(self, values: dict, subs_values: dict, addr: Any) -> int:
         """Method to return back the requested value.
 
         :param values: The dictionary with already loaded values.
@@ -258,7 +258,7 @@ class DebugProbeVirtual(DebugProbe):
         self.coresight_ap_substituted.clear()
         self.virtual_memory_substituted.clear()
 
-    def set_virtual_memory_substitute_data(self, substitute_data: Dict) -> None:
+    def set_virtual_memory_substitute_data(self, substitute_data: dict) -> None:
         """Set the virtual memory read substitute data.
 
         :param substitute_data: Dictionary of list of substitute data.
@@ -267,7 +267,7 @@ class DebugProbeVirtual(DebugProbe):
             substitute_data[key].reverse()
         self.virtual_memory_substituted = substitute_data
 
-    def set_coresight_dp_substitute_data(self, substitute_data: Dict) -> None:
+    def set_coresight_dp_substitute_data(self, substitute_data: dict) -> None:
         """Set the virtual memory read substitute data.
 
         :param substitute_data: Dictionary of list of substitute data.
@@ -276,7 +276,7 @@ class DebugProbeVirtual(DebugProbe):
             substitute_data[key].reverse()
         self.coresight_dp_substituted = substitute_data
 
-    def set_coresight_ap_substitute_data(self, substitute_data: Dict) -> None:
+    def set_coresight_ap_substitute_data(self, substitute_data: dict) -> None:
         """Set the coresight AP read substitute data.
 
         :param substitute_data: Dictionary of list of substitute data.
@@ -307,7 +307,7 @@ class DebugProbeVirtual(DebugProbe):
         """
         self.coresight_mem_read_exception = count
 
-    def _load_subs_from_param(self, arg: str) -> Dict:
+    def _load_subs_from_param(self, arg: str) -> dict:
         """Get the substituted values from input arguments.
 
         :param arg: Input string arguments with substitute values.

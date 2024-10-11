@@ -10,7 +10,7 @@
 import base64
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import click
 
@@ -33,14 +33,14 @@ def export_images(filepath: str, output_dir: str) -> None:
     :param output_dir: Relative path to store exported files.
     """
     jupiter = json.loads(load_text(filepath))
-    jupiter_cells: List[Dict[str, Any]] = jupiter["cells"]
+    jupiter_cells: list[dict[str, Any]] = jupiter["cells"]
     img_store_path = os.path.join(os.path.dirname(filepath), output_dir)
     for c_id, cell in enumerate(jupiter_cells):
         if cell.get("cell_type") == "markdown":
-            attachments: Optional[Dict[str, Dict[str, str]]] = cell.get("attachments")
+            attachments: Optional[dict[str, dict[str, str]]] = cell.get("attachments")
             if attachments:
                 assert attachments
-                att_solved: List[str] = []
+                att_solved: list[str] = []
                 for k, v in attachments.items():
                     new_location = os.path.join(img_store_path, f"{c_id}_{k}")
                     # Store the picture from attachment to external PNG file

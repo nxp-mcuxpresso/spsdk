@@ -7,17 +7,18 @@
 # Script for generation of table
 import itertools
 import os
-from typing import Dict, List
-from typing import Optional
+from typing import Dict, List, Optional
 
-from pytablewriter import RstGridTableWriter, MarkdownTableWriter
+import requests
+from pytablewriter import MarkdownTableWriter, RstGridTableWriter
 
 from spsdk.apps.nxpimage import main as nxpimage_main
+from spsdk.apps.nxpele import main as nxpele_main
 from spsdk.exceptions import SPSDKValueError
 from spsdk.image.mbi.mbi import MAP_AUTHENTICATIONS, MAP_IMAGE_TARGETS, create_mbi_class
-from spsdk.utils.database import DatabaseManager, get_db, get_families, Device
+from spsdk.mboot.error_codes import StatusCode
+from spsdk.utils.database import DatabaseManager, Device, get_db, get_families
 from spsdk.utils.misc import get_key_by_val
-import requests
 
 TARGET = 0
 AUTHENTICATION = 1
@@ -30,7 +31,8 @@ OTHER_FEATURES_TABLE_FILE = os.path.join(TABLE_DIR, "other_features_table.inc")
 DEVICES_TABLE_FILE = os.path.join(TABLE_DIR, "devices_table.inc")
 DEVICES_TABLE_FILE_README = os.path.join(TABLE_DIR, "devices_table_readme.inc")
 LIST_OF_SUPPORTED_DEVICES = os.path.join(DOC_PATH, "devices_list.rst")
-
+MBOOT_ERROR_CODES = os.path.join(TABLE_DIR, "mboot_error_codes.inc")
+NXPELE_COMMANDS_TABLE = os.path.join(TABLE_DIR, "nxpele_commands_table.inc")
 
 ROT_TYPE_MAPPING = {
     "srk_table_ahab": "SRK AHAB",
@@ -40,7 +42,13 @@ ROT_TYPE_MAPPING = {
     "srk_table_hab": "SRK HAB",
 }
 
-IGNORED_FEATURES = ["comm_buffer", "sbx", "fuses", "signing"]  # features to be ignored in the table.
+IGNORED_FEATURES = [
+    "comm_buffer",
+    "sbx",
+    "fuses",
+    "signing",
+    "fastboot",
+]  # features to be ignored in the table.
 
 NXPIMAGE_FEATURES_MAPPING = {
     "mbi": "Master Boot Image (MBI)",
@@ -59,7 +67,8 @@ OTHER_FEATURES_MAPPING = {
     "ele": "nxpele",
     "memcfg": "nxpmemcfg",
     "wpc": "nxpwpc",
-    "el2go_tp": "el2go",
+    "el2go_tp": "el2go-host",
+    "dice": "nxpdice",
 }
 ALL_FEATURES_MAPPING = {**NXPIMAGE_FEATURES_MAPPING, **OTHER_FEATURES_MAPPING}
 SUPPORTED_CHAR = "\u2705"
@@ -164,7 +173,7 @@ def generate_table(
     """Generate RST/MD table to file using pytablewriter
 
     :param header: table header
-    :param values: values to be writter
+    :param values: values to be written
     :param title: table title
     :param use_markdown: use markdown format
     """
@@ -193,7 +202,7 @@ def write_table(
     """Write RST table to file using pytablewriter
 
     :param header: table header
-    :param values: values to be writter
+    :param values: values to be written
     :param title: table title
     :param file_name: file name of the file with table
     :param use_markdown: use markdown format
@@ -330,19 +339,18 @@ def generate_features_table(
     families = sorted(
         [
             family
-            for family in DatabaseManager().db.devices
-            if DatabaseManager().db.devices.get(family.name).info.use_in_doc
-        ],
-        key=lambda x: x.name,
+            for family in DatabaseManager().quick_info.devices.devices
+            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc
+        ]
     )
 
     for device in families:
         submatrix = []
-        submatrix.append(device.name)
+        submatrix.append(device)
         for feature in feature_list:
-            if feature in device.features_list:
+            if feature in DatabaseManager().quick_info.devices.devices.get(device).features_list:
                 if feature == DatabaseManager.CERT_BLOCK:
-                    db = get_db(device.name)
+                    db = get_db(device)
                     rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
                     submatrix.append(ROT_TYPE_MAPPING.get(rot_type, rot_type))
                 else:
@@ -379,24 +387,25 @@ def generate_devices_table(
     devices = sorted(
         [
             family
-            for family in DatabaseManager().db.devices
-            if DatabaseManager().db.devices.get(family.name).info.use_in_doc
-        ],
-        key=lambda x: x.name,
+            for family in DatabaseManager().quick_info.devices.devices
+            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc
+        ]
     )
 
     for device in devices:
         submatrix = []
         if add_internal_links:
-            submatrix.append(device.name)
+            submatrix.append(device)
         else:
-            submatrix.append(create_internal_reference(device.name, use_markdown))
-        submatrix.append(device.info.purpose)
-        if is_link_accessible(device.info.web):
-            submatrix.append(get_link("Link to nxp.com", device.info.web, use_markdown))
+            submatrix.append(create_internal_reference(device, use_markdown))
+        info = DatabaseManager().quick_info.devices.devices.get(device).info
+        submatrix.append(info.purpose)
+        if is_link_accessible(info.web):
+            submatrix.append(get_link("Link to nxp.com", info.web, use_markdown))
         else:
-            submatrix.append(device.name)
-        submatrix.append(device.latest_rev)
+            submatrix.append(device)
+
+        submatrix.append(DatabaseManager().db.devices.get(device).latest_rev)
 
         value_matrix.append(submatrix)
 
@@ -416,10 +425,10 @@ def generate_devices_list(
     devices = sorted(
         [
             family
-            for family in DatabaseManager().db.devices
-            if DatabaseManager().db.devices.get(family.name).info.use_in_doc
+            for family in DatabaseManager().quick_info.devices.devices
+            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc
         ],
-        key=lambda x: x.info.purpose,
+        key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose,
     )
 
     lines = [
@@ -428,7 +437,9 @@ def generate_devices_list(
         "============================\n",
     ]
 
-    for category, devices in itertools.groupby(devices, key=lambda x: x.info.purpose):
+    for category, devices in itertools.groupby(
+        devices, key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose
+    ):
         lines.extend(
             [
                 "========================================================\n",
@@ -436,20 +447,21 @@ def generate_devices_list(
                 "========================================================\n",
             ]
         )
-        devices = sorted(devices, key=lambda x: x.name)
+        devices = sorted(devices)
         for device in devices:
-            lines.append(f"\n{device.name}\n")
+            lines.append(f"\n{device}\n")
             lines.append("--------------------------\n")
             # lines.append(f"\nDevice category: {device.info.purpose}\n")
-            lines.append(f"\nLatest revision: {device.latest_rev}\n")
+            device_full = DatabaseManager().db.devices.get(device)
+            lines.append(f"\nLatest revision: {device_full.latest_rev}\n")
             lines.append(
-                f"\nAll supported chip revisions: {', '.join(device.revisions.revision_names())}\n"
+                f"\nAll supported chip revisions: {', '.join(device_full.revisions.revision_names())}\n"
             )
-            lines.append(f"\nWeblink: {get_link(device.name, device.info.web, False)}\n\n")
+            lines.append(f"\nWeblink: {get_link(device, device_full.info.web, False)}\n\n")
             lines.append(
                 generate_feature_table(
-                    device,
-                    DatabaseManager().db.get_feature_list(),
+                    device_full,
+                    DatabaseManager().quick_info.features_data.get_all_features,
                     "",
                     ALL_FEATURES_MAPPING,
                     use_markdown=False,
@@ -462,12 +474,38 @@ def generate_devices_list(
         f.writelines(lines)
 
 
+def generate_nxpele_commands_table() -> None:
+    """Generate table with nxpele commands."""
+    commands = nxpele_main.commands.keys()
+    value_matrix = [
+        [command, nxpele_main.commands[command].__doc__.split("\n")[0]] for command in commands
+    ]
+    write_table(
+        ["Command", "Description"],
+        value_matrix,
+        "NXP EdgeLock Enclave - available commands",
+        file_name=NXPELE_COMMANDS_TABLE,
+        use_markdown=False,
+    )
+
+
+def generate_mboot_error_codes():
+    """Generate table with mboot error codes."""
+    print("Processing Mboot error codes")
+    header = ["Error code", "Name", "Description"]
+    value_matrix = []
+    for code in StatusCode:
+        value_matrix.append([code.tag, code.name, code.description])
+
+    write_table(header, value_matrix, "Mboot error codes", MBOOT_ERROR_CODES, use_markdown=False)
+
+
 def main():
     generate_mbi_table()
 
     nxpimage_features = [
         feature
-        for feature in DatabaseManager().db.get_feature_list()
+        for feature in DatabaseManager().quick_info.features_data.get_all_features
         if is_nxpimage_subcommand(feature)
     ]
     generate_features_table(
@@ -477,7 +515,7 @@ def main():
         table_file=NXPIMAGE_FEATURES_TABLE_FILE,
     )
     generate_features_table(
-        features=DatabaseManager().db.get_feature_list(),
+        features=DatabaseManager().quick_info.features_data.get_all_features,
         heading="Other apps supported devices",
         features_mapping=OTHER_FEATURES_MAPPING,
         table_file=OTHER_FEATURES_TABLE_FILE,
@@ -493,6 +531,8 @@ def main():
     )
 
     generate_devices_list(LIST_OF_SUPPORTED_DEVICES)
+    generate_nxpele_commands_table()
+    generate_mboot_error_codes()
 
 
 def setup(app):

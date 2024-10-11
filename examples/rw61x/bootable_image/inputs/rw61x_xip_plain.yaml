@@ -1,14 +1,14 @@
 # Copyright 2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ===========  Master Boot Image Configuration template for rw61x, Plain Image (either XIP or Load-to-RAM).  ===========
+# ===========  Master Boot Image Configuration template for rw612, Plain Image (either XIP or Load-to-RAM).  ===========
 
 # ======================================================================================================================
 #                                                  == Basic Settings ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: MCU family name.
-family: rw61x
+family: rw612
 # --------------------------------------===== Application target [Required] =====---------------------------------------
 # Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
 # Possible options: <xip, load-to-ram>
@@ -22,7 +22,8 @@ outputImageAuthenticationType: plain
 masterBootOutputFile: ../workspace/outputs/mbi.bin
 # ------------------------------------===== Plain application image [Required] =====------------------------------------
 # Description: The input application image to by modified to Master Boot Image.
-inputImageFile: ../inputs/rw610_ext_xip_hello_world_loop.s19
+# inputImageFile: ../inputs/rw610_ext_xip_hello_world_loop.s19
+inputImageFile: ../inputs/rw612_xip_blinky.bin
 # --------------------------------===== Loading address of application [Required] =====---------------------------------
 # Description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
 outputImageExecutionAddress: 0x08001000

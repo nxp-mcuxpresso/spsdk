@@ -11,7 +11,7 @@
 import logging
 from dataclasses import dataclass
 from struct import pack
-from typing import Any, List
+from typing import Any
 
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
 from spsdk.sdp.exceptions import SdpConnectionError
@@ -66,15 +66,15 @@ class SDPS:
         self.family: str = family
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Get supported devices.
 
         :return: List of supported devices
         """
         return [
-            dev.name
-            for dev in DatabaseManager().db.devices
-            if dev.info.isp.is_protocol_supported("sdps")
+            dev
+            for dev, quick_info in DatabaseManager().quick_info.devices.devices.items()
+            if quick_info.info.isp.is_protocol_supported("sdps")
         ]
 
     @property
@@ -90,14 +90,16 @@ class SDPS:
     @property
     def family(self) -> str:
         """Device name."""
-        return self._name
+        return self._family
 
     @family.setter
     def family(self, value: str) -> None:
         """Device name setter."""
-        if value not in self.get_supported_families():
+        devices = self.get_supported_families()
+        devices += list(DatabaseManager().quick_info.devices.get_predecessors(devices).keys())
+        if value not in devices:
             raise SPSDKValueError(f"Device family is not supported {value}")
-        self._name = value
+        self._family = value
 
     def __enter__(self) -> "SDPS":
         self.open()

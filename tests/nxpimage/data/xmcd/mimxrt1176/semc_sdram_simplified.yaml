@@ -1,0 +1,32 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  XMCD converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189']
+revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']
+mem_type: semc_sdram # [Required], Memory type; Specify type of memory used by XMCD description; Possible options:['flexspi_ram', 'semc_sdram']
+config_type: simplified # [Required], Configuration type; Specify type of configuration used by XMCD description; Possible options:['simplified', 'full']
+xmcd_settings: # [Required], rt117x
+  header:  # [Optional]
+    bitfields:  # [Required]
+      configurationBlockSize: 13  # [Optional], configurationBlockSize; Configuration block size including XMCD header itself
+      configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED # [Optional], configurationBlockType; Configuration block type: 0 - Simplified, 1 - Full
+      instance: 0 # [Optional], instance; SoC defined instances
+      memoryInterface: XMCD_MEMORY_INTERFACE_SEMC # [Optional], memoryInterface; Memory interface: 0 - FlexSPI, 1 - SEMC
+      version: 0 # [Optional], Version, fixed value 0x0
+      tag: 12 # [Optional], Tag, fixed value 0xC
+  magicNumber: # [Optional], magicNumber; Magic number: Fixed to 0xA1
+    value: '0xa1'  # [Required], magicNumber; Magic number: Fixed to 0xA1
+  version: # [Optional], Version: Set to 1 for this implementation
+    value: '0x01'  # [Required], Version: Set to 1 for this implementation
+  configOption: # [Optional], configOption; Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
+    value: '0x00'  # [Required], configOption; Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
+  clkMhz: # [Optional], clkMhz; Set the working frequency in the unit of MHz
+    value: '0xc6'  # [Required], clkMhz; Set the working frequency in the unit of MHz
+  sdramSizeKb: # [Optional], sdramSizeKb; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+    value: '0x00010000'  # [Required], sdramSizeKb; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  portSize: # [Optional], portSize; Port size of SDRAM
+    value: '0x02'  # [Required], portSize; Port size of SDRAM

@@ -1,0 +1,3275 @@
+{
+    "cpu": "MCXN946",
+    "groups": [
+        {
+            "group": {
+                "name": "Locks",
+                "description": "Boot configuration locks"
+            },
+            "registers": [
+                {
+                    "id": "fuse0",
+                    "name": "LOCKS",
+                    "description": "Boot Configuration Locks",
+                    "index_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 9
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-9-11",
+                            "name": "BOOT_CFG_LOCK[2:0]",
+                            "description": "Boot config lock\nConfigures the locking of EFUSE bits for fuse #3, #4, #5, #6, #7 and fuses #11 - #22. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WriteLocked",
+                                    "value": 1,
+                                    "description": "Locked for programming [WP]"
+                                },
+                                {
+                                    "name": "ReadLocked",
+                                    "value": 4,
+                                    "description": "Locked for reading [RP]"
+                                },
+                                {
+                                    "name": "ReadWriteLocked",
+                                    "value": 5,
+                                    "description": "Locked for reading and programming [RP+WP]"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-12-14",
+                            "name": "PRINCE_CFG_LOCK[2:0]",
+                            "description": "Prince Config Lock\nConfigures the locking EFUSE bits for fuses #23 - #31. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WriteLocked",
+                                    "value": 1,
+                                    "description": "Locked for programming [WP]"
+                                },
+                                {
+                                    "name": "ReadLocked",
+                                    "value": 4,
+                                    "description": "Locked for reading [RP]"
+                                },
+                                {
+                                    "name": "ReadWriteLocked",
+                                    "value": 5,
+                                    "description": "Locked for reading and programming [RP+WP]"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-18-20",
+                            "name": "CUST_LOCK0[2:0]",
+                            "description": "CUST Lock 0\nConfigures the locking of EFUSE bits for fuses #43, #44, #45 and #46. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WriteLocked",
+                                    "value": 1,
+                                    "description": "Locked for programming [WP]"
+                                },
+                                {
+                                    "name": "ReadLocked",
+                                    "value": 4,
+                                    "description": "Locked for reading [RP]"
+                                },
+                                {
+                                    "name": "ReadWriteLocked",
+                                    "value": 5,
+                                    "description": "Locked for reading and programming [RP+WP]"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-21-23",
+                            "name": "CUST_LOCK1[2:0]",
+                            "description": "CUST Lock 1\nConfigures the locking of EFUSE bits for fuses #47, #48, #49 and #50. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WriteLocked",
+                                    "value": 1,
+                                    "description": "Locked for programming [WP]"
+                                },
+                                {
+                                    "name": "ReadLocked",
+                                    "value": 4,
+                                    "description": "Locked for reading [RP]"
+                                },
+                                {
+                                    "name": "ReadWriteLocked",
+                                    "value": 5,
+                                    "description": "Locked for reading and programming [RP+WP]"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-24-26",
+                            "name": "CUST_LOCK2[2:0]",
+                            "description": "CUST Lock 2\nConfigures the locking of EFUSE bits for fuses #51, #52, #53 and #54. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WriteLocked",
+                                    "value": 1,
+                                    "description": "Locked for programming [WP]"
+                                },
+                                {
+                                    "name": "ReadLocked",
+                                    "value": 4,
+                                    "description": "Locked for reading [RP]"
+                                },
+                                {
+                                    "name": "ReadWriteLocked",
+                                    "value": 5,
+                                    "description": "Locked for reading and programming [RP+WP]"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-27-29",
+                            "name": "CUST_LOCK3[2:0]",
+                            "description": "CUST Lock 3\nConfigures the locking EFUSE bits for fuses #55 - #62. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WriteLocked",
+                                    "value": 1,
+                                    "description": "Locked for programming [WP]"
+                                },
+                                {
+                                    "name": "ReadLocked",
+                                    "value": 4,
+                                    "description": "Locked for reading [RP]"
+                                },
+                                {
+                                    "name": "ReadWriteLocked",
+                                    "value": 5,
+                                    "description": "Locked for reading and programming [RP+WP]"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Configurations",
+                "description": "Boot configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse1",
+                    "name": "LIFE_CYCLE",
+                    "description": "Life cycle state, debug setting, and ROTK setting",
+                    "index_int": "0x0001",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse1-bits-0-7",
+                            "name": "LIFECYCLE[7:0]",
+                            "description": "Life cycle state.\nThis field can be used to advance life cycle state. Below are the allowed values for this field. Use of other values may lead to bricked state.",
+                            "values": [
+                                {
+                                    "name": "BLANK",
+                                    "value": 0,
+                                    "description": "Blank"
+                                },
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Develop  state"
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Develop 2  state"
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field state"
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "In-field locked state"
+                                },
+                                {
+                                    "name": "FIELD_RETURN_OEM",
+                                    "value": 31,
+                                    "description": "Field return OEM state"
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "Failure Analysis state"
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-8",
+                            "name": "NIDEN_dis",
+                            "description": "Disable Non-secure non-invasive debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-9",
+                            "name": "DBGEN_dis",
+                            "description": "Disable Non-secure invasive debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-10",
+                            "name": "SPIDEN_dis",
+                            "description": "Disable Secure invasive debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-11",
+                            "name": "SPNIDEN_dis",
+                            "description": "Disable Secure non-invasive debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-12",
+                            "name": "CPU1_NIDEN_dis",
+                            "description": "Disable CPU1 non-invasive debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-13",
+                            "name": "CPU1_DBG_dis",
+                            "description": "Disable CPU1 invasive debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-14",
+                            "name": "DSP_DBGEN_dis",
+                            "description": "Disable DSP debug.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-15",
+                            "name": "ISP_CMD_dis",
+                            "description": "Disable Enter ISP Debug mailbox command.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-16",
+                            "name": "FA_CMD_dis",
+                            "description": "Disable Set FA mode  Debug mailbox command.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-17",
+                            "name": "ME_CMD_dis",
+                            "description": "Disable Mass erase Debug mailbox command.",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disabled permanently"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-18",
+                            "name": "UUID_CHECK_ENF",
+                            "description": "Enforce UUID checking during debug authentication",
+                            "values": [
+                                {
+                                    "name": "Check CMPA",
+                                    "value": 0,
+                                    "description": "Check CMPA.CC_SOCU_xxx fields."
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Always enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-20",
+                            "name": "RoTK0_dis",
+                            "description": "Revoke Root of Trust key 0.",
+                            "values": [
+                                {
+                                    "name": "Check CFPA",
+                                    "value": 0,
+                                    "description": "Check CFPA."
+                                },
+                                {
+                                    "name": "Revoke",
+                                    "value": 1,
+                                    "description": "Key is revoked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-21",
+                            "name": "RoTK1_dis",
+                            "description": "Revoke Root of Trust key 1.",
+                            "values": [
+                                {
+                                    "name": "Check CFPA",
+                                    "value": 0,
+                                    "description": "Check CFPA."
+                                },
+                                {
+                                    "name": "Revoke",
+                                    "value": 1,
+                                    "description": "Key is revoked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-22",
+                            "name": "RoTK2_dis",
+                            "description": "Revoke Root of Trust key 2.",
+                            "values": [
+                                {
+                                    "name": "Check CFPA",
+                                    "value": 0,
+                                    "description": "Check CFPA."
+                                },
+                                {
+                                    "name": "Revoke",
+                                    "value": 1,
+                                    "description": "Key is revoked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse1-bit-23",
+                            "name": "RoTK3_dis",
+                            "description": "Revoke Root of Trust key 3.",
+                            "values": [
+                                {
+                                    "name": "Check CFPA",
+                                    "value": 0,
+                                    "description": "Check CFPA."
+                                },
+                                {
+                                    "name": "Revoke",
+                                    "value": 1,
+                                    "description": "Key is revoked."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse1-bits-24-31",
+                            "name": "LIFECYCLE_DP[7:0]",
+                            "description": "Duplicate of the LIFECYCLE fuse value.",
+                            "values": [
+                                {
+                                    "name": "BLANK",
+                                    "value": 0,
+                                    "description": "Blank"
+                                },
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Develop  state"
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Develop 2  state"
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field state"
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "In-field locked state"
+                                },
+                                {
+                                    "name": "FIELD_RETURN_OEM",
+                                    "value": 31,
+                                    "description": "Field return OEM state"
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "Failure Analysis state"
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked state"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse2",
+                    "name": "KEY_REVOKE",
+                    "description": "Image key revoke and PRINCE, PUF, and NXP provisioning firmware setting",
+                    "index_int": "0x0002",
+                    "individual_write_lock": "none",
+                    "reg_width": 24,
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse2-bits-0-7",
+                            "name": "DBG_KEY_REVOKE[7:0]",
+                            "description": "Debug key revoke.\nThis field is combined with \nCFPA.DBG_REVOKE_VU and CMPA.VENDOR_USAGE fields to form a 32-bit value which is compared with vendor usage field in debug credential certificate.  Only if the values match debug access is granted.\nCC_VENDOR_USAGE = { CMPA.VENDOR_USAGE[31:16], \nCFPA.DBG_REVOKE_VU[15:8], \n(CFPA.DBG_REVOKE_VU[7:0] | OTP.DBG_KEY_REVOKE[7:0]) }"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse2-bits-8-15",
+                            "name": "IMAGE_KEY_REVOKE[7:0]",
+                            "description": "Image signing key revoke.\nThis field is combined with \nCFPA.IMAGE_KEY_REVOKE field to form a 32-bit value which is compared with IskCertificate.constraints field during image authentication. If the values don't match image authentication fails.\nISK_CONSTRAINT[31:0] = {CFPA.IMAGE_KEY_REVOKE_VU[23:0],  OTP.IMAGE_KEY_REVOKE[7:0] }"
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse2-bit-20",
+                            "name": "PUF_ENROLL_DIS",
+                            "description": "Block PUF enrollment.",
+                            "values": [
+                                {
+                                    "name": "Allow",
+                                    "value": 0,
+                                    "description": "Allow PUF enroll operation"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable PUF enroll operation"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse2-bit-23",
+                            "name": "DIS_NXP_FW",
+                            "description": "Block NXP signed SB3 loading.",
+                            "values": [
+                                {
+                                    "name": "Allow",
+                                    "value": 0,
+                                    "description": "Allow NXP signed SB3 FW"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable NXP signed SB3 FW"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse3",
+                    "name": "BOOT_CFG",
+                    "description": "ISP pin selection setting and boot configuration setting",
+                    "index_int": "0x0003",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-0",
+                            "name": "Boot_FlexSPI_Dis",
+                            "description": "FlexSPI boot disable.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "FlexSPI boot is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "FlexSPI boot is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-1",
+                            "name": "Boot_flash_Dis",
+                            "description": "Disable boot from internal flash.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Boot from internal flash enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Boot from internal flash disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-2",
+                            "name": "Boot_IFR0_Dis",
+                            "description": "Disable boot from IFR0 (as SBL).",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Boot from IFR0 enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Boot from IFR0 disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-5",
+                            "name": "Rec_Boot_SPI_Dis",
+                            "description": "Disable recovery boot from external 1-bit SPI flash connected to FlexComm ports.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-6",
+                            "name": "Rec_Boot_IFR0_Dis",
+                            "description": "Disable recovery boot from IFR0 area( 0x0100_8000 to 0x0100_FFFF). ",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-7",
+                            "name": "PinSel_SPI_Rec_Boot_Dis",
+                            "description": "Disable logic related to forcing  recovery boot based on ISP pin state.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Enable"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-8",
+                            "name": "ISP_UART_Dis",
+                            "description": "Disable UART interface in ISP mode.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "UART ISP is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "UART ISP is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-9",
+                            "name": "ISP_I2C_Dis",
+                            "description": "Disable I2C interface in ISP mode.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "I2C ISP is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "I2C ISP is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-10",
+                            "name": "ISP_SPI_Dis",
+                            "description": "Disable SPI interface in ISP mode.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "SPI ISP is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "SPI ISP is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-11",
+                            "name": "ISP_USB0_Dis",
+                            "description": "Disable USB0 interface in ISP mode.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "USB0 ISP is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "USB0 ISP is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-12",
+                            "name": "ISP_USB1_Dis",
+                            "description": "Disable USB0 interface in ISP mode",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "USB0 ISP is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "USB0 ISP is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-13",
+                            "name": "ISP_CAN_Dis",
+                            "description": "Disable CAN interface in ISP mode.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "CAN ISP is enabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "CAN ISP is disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse3-bits-16-17",
+                            "name": "ISP_DISABLE[1:0]",
+                            "description": "Disable ISP mode entry points.\nISP mode can be entered through pin assertion, debug mailbox command, image verification failure and ROM API invocation",
+                            "values": [
+                                {
+                                    "name": "Allow",
+                                    "value": 0,
+                                    "description": "All entry point allowed."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Entry by ISP Pin assertion disabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 2,
+                                    "description": "Entry by ISP Pin assertion and debug mailbox command disabled."
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 3,
+                                    "description": "Entry by ISP Pin assertion and debug mailbox command disabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse3-bits-22-23",
+                            "name": "BOOT_SPEED[1:0]",
+                            "description": "Boot speed. Selects the core frequency and voltage to use during ROM execution.",
+                            "values": [
+                                {
+                                    "name": "CMPA_BOOT_SPEED",
+                                    "value": 0,
+                                    "description": "Use value from CMPA.BOOT_SPEED"
+                                },
+                                {
+                                    "name": "72MHz FRO",
+                                    "value": 1,
+                                    "description": "72 MHz FRO @ 1.1V"
+                                },
+                                {
+                                    "name": "144MHz FRO",
+                                    "value": 2,
+                                    "description": "144 MHz FRO @ 1.2V"
+                                },
+                                {
+                                    "name": "150MHz PLL",
+                                    "value": 3,
+                                    "description": "150 MHz PLL @ 1.2V"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse3-bits-24-28",
+                            "name": "FLASH_REMAP_SZ[4:0]",
+                            "description": "Flash remap size.\n FLASH_REMAP_SZ defines the size of the secondary boot image\n (the range of flash addresses that will be remapped)in internal flash, where remapped\naddress end = (FLASH_REMAP_SZ + 1) * 32 KB. For example, if FLASH_REMAP_SZ = 2,\nthen the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0\nwhen remap is active. Set this field to 0  if you do not want to use the flash remap feature"
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse3-bits-29-31",
+                            "name": "OEM_BANK1_IFR0_USAGE[2:0]",
+                            "description": "Defines flash protection of Bank1_IFR0 area based  on usage.\nNote, if the SBL / Recovery image size is more than IFR0 size of 32KB then sectors from user flash can be associated for extended image size using CMPA.REC_IMG_EXT0/1.",
+                            "values": [
+                                {
+                                    "name": "000",
+                                    "value": 0,
+                                    "description": "Not determined by ROM (MBC fields are modified by OEM code)"
+                                },
+                                {
+                                    "name": "001",
+                                    "value": 1,
+                                    "description": "Used as OEM Root of Trust image, in other words secondary boot loader (OEM_SBL). MBC protection bits set as RWXL = 1010. Updatable by OEM code later."
+                                },
+                                {
+                                    "name": "010",
+                                    "value": 2,
+                                    "description": "Used as OEM_SBL. MBC protection bits set as RWXL = 1011."
+                                },
+                                {
+                                    "name": "011",
+                                    "value": 3,
+                                    "description": "Used as OEM_SBL. MBC protection bits set as RWXL = 0011."
+                                },
+                                {
+                                    "name": "100",
+                                    "value": 4,
+                                    "description": "Used as OEM recovery boot image with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 1010 on ROM exiting to user image."
+                                },
+                                {
+                                    "name": "101",
+                                    "value": 5,
+                                    "description": "Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 1011 on ROM exiting to user image."
+                                },
+                                {
+                                    "name": "110",
+                                    "value": 6,
+                                    "description": "Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 0011 on ROM exiting to user image."
+                                },
+                                {
+                                    "name": "111",
+                                    "value": 7,
+                                    "description": "Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 0001 on ROM exiting to user image."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse4",
+                    "name": "FLEXSPI_BOOT_CFG0",
+                    "description": "FlexSPI Boot Configuration 0",
+                    "index_int": "0x0004",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse4-bit-0",
+                            "name": "FLEXSPI_AUTO_PROBE_EN",
+                            "description": "Quad/Octal-SPI flash auto probe feature enable",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse4-bits-1-3",
+                            "name": "FLEXSPI_PROBE_TYPE[2:0]",
+                            "description": "Quad/Octal-SPI flash probe type.\nNote, this field is used when FLEXSPI_AUTO_PROBE_EN is set.",
+                            "values": [
+                                {
+                                    "name": "QuadSPI NOR",
+                                    "value": 0,
+                                    "description": "QuadSpi NOR"
+                                },
+                                {
+                                    "name": "Macronix Octal",
+                                    "value": 1,
+                                    "description": "Macronix Octal FLASH"
+                                },
+                                {
+                                    "name": "Micron Octal",
+                                    "value": 2,
+                                    "description": "Micron Octal FLASH"
+                                },
+                                {
+                                    "name": "Adesto Octal",
+                                    "value": 3,
+                                    "description": "Adesto Octal FLASH"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 4,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 5,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 7,
+                                    "description": "Reserved"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse4-bits-4-6",
+                            "name": "FLEXSPI_FLASH_TYPE[2:0]",
+                            "description": "Define typical Serial NOR Flash types\nThis field is always used irrespective of FLEXSPI_AUTO_PROBE_EN value.",
+                            "values": [
+                                {
+                                    "name": "QSPI_ADDR_3B",
+                                    "value": 0,
+                                    "description": "QSPI_ADDR_3B"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 1,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "HYPER_1V8",
+                                    "value": 2,
+                                    "description": "HYPER_1V8"
+                                },
+                                {
+                                    "name": "HYPER_3V3",
+                                    "value": 3,
+                                    "description": "HYPER_3V3"
+                                },
+                                {
+                                    "name": "FlexSPI_DDR_MXIC",
+                                    "value": 4,
+                                    "description": "FlexSPI_DDR_MXIC"
+                                },
+                                {
+                                    "name": "FlexSPI_DDR_MICRON",
+                                    "value": 5,
+                                    "description": "FlexSPI_DDR_MICRON"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 7,
+                                    "description": "Reserved"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse4-bits-7-10",
+                            "name": "FLEXSPI_DUMMY_CYCLES[3:0]",
+                            "description": "Quad/Octal-SPI dummy cycles for read command.\nIf a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash's SFDP information.\nNote: this field is only used if FLEXSPI_AUTO_PROBE_EN is set."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse4-bits-11-13",
+                            "name": "FLEXSPI_FREQUENCY[2:0]",
+                            "description": "Q/O-SPI flash interface frequency.\nNote, this field is used when FLEXSPI_AUTO_PROBE_EN is set.",
+                            "values": [
+                                {
+                                    "name": "75Mhz",
+                                    "value": 0,
+                                    "description": "75Mhz"
+                                },
+                                {
+                                    "name": "60Mhz",
+                                    "value": 1,
+                                    "description": "60Mhz"
+                                },
+                                {
+                                    "name": "50Mhz",
+                                    "value": 2,
+                                    "description": "50Mhz"
+                                },
+                                {
+                                    "name": "100Mhz",
+                                    "value": 3,
+                                    "description": "100Mhz"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 4,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 5,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 7,
+                                    "description": "Reserved"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse4-bit-14",
+                            "name": "FLEXSPI_RESET_ENABLE",
+                            "description": "Use O/QSPI_RESET_PIN to reset the flash device.",
+                            "values": [
+                                {
+                                    "name": "NO_RESET",
+                                    "value": 0,
+                                    "description": "NO_RESET(O/QSPI device reset pin is not connected or available.)"
+                                },
+                                {
+                                    "name": "EN_RESET",
+                                    "value": 1,
+                                    "description": "EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse4-bits-15-17",
+                            "name": "FLEXSPI_RESET_GPIO_PORT[2:0]",
+                            "description": "When FLEXSPI_RESET_ENABLE = 1, this field determines the GPIO  port number to use for O/QSPI reset function."
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse4-bits-18-22",
+                            "name": "FLEXSPI_RESET_GPIO_PIN[4:0]",
+                            "description": "GPIO  pin number to use for O/QSPI reset function."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse4-bits-23-24",
+                            "name": "FLEXSPI_HOLD_TIME[1:0]",
+                            "description": "Delay after reset before accessing Quad/Octal-SPI flash devices.\nNote, for POR in addition to this wait time FLEXSPI_PWR_HOLD_TIME is added.",
+                            "values": [
+                                {
+                                    "name": "500us",
+                                    "value": 0,
+                                    "description": "Wait for 500 microseconds."
+                                },
+                                {
+                                    "name": "1ms",
+                                    "value": 1,
+                                    "description": "Wait for 1 millisecond."
+                                },
+                                {
+                                    "name": "3ms",
+                                    "value": 2,
+                                    "description": "Wait for 3 milliseconds."
+                                },
+                                {
+                                    "name": "10ms",
+                                    "value": 3,
+                                    "description": "Wait for 10 milliseconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse4-bits-25-28",
+                            "name": "FLEXSPI_PWR_HOLD_TIME[3:0]",
+                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field.",
+                            "values": [
+                                {
+                                    "name": "No delay",
+                                    "value": 0,
+                                    "description": "No delay"
+                                },
+                                {
+                                    "name": "100us",
+                                    "value": 1,
+                                    "description": "Waits additional 100 microseconds."
+                                },
+                                {
+                                    "name": "500us",
+                                    "value": 2,
+                                    "description": "Waits additional 500 microseconds."
+                                },
+                                {
+                                    "name": "1ms",
+                                    "value": 3,
+                                    "description": "Waits additional 1 millisecond."
+                                },
+                                {
+                                    "name": "10ms",
+                                    "value": 4,
+                                    "description": "Waits additional 10 milliseconds."
+                                },
+                                {
+                                    "name": "20ms",
+                                    "value": 5,
+                                    "description": "Waits additional 20 milliseconds."
+                                },
+                                {
+                                    "name": "40ms",
+                                    "value": 6,
+                                    "description": "Waits additional 40 milliseconds."
+                                },
+                                {
+                                    "name": "60ms",
+                                    "value": 7,
+                                    "description": "Waits additional 60 milliseconds."
+                                },
+                                {
+                                    "name": "80ms",
+                                    "value": 8,
+                                    "description": "Waits additional 80 milliseconds."
+                                },
+                                {
+                                    "name": "100ms",
+                                    "value": 9,
+                                    "description": "Waits additional 100 milliseconds."
+                                },
+                                {
+                                    "name": "120ms",
+                                    "value": 10,
+                                    "description": "Waits additional 120 milliseconds."
+                                },
+                                {
+                                    "name": "140ms",
+                                    "value": 11,
+                                    "description": "Waits additional 140 milliseconds."
+                                },
+                                {
+                                    "name": "160ms",
+                                    "value": 12,
+                                    "description": "Waits additional 160 milliseconds."
+                                },
+                                {
+                                    "name": "180ms",
+                                    "value": 13,
+                                    "description": "Waits additional 180 milliseconds."
+                                },
+                                {
+                                    "name": "200ms",
+                                    "value": 14,
+                                    "description": "Waits additional 200 milliseconds."
+                                },
+                                {
+                                    "name": "220ms",
+                                    "value": 15,
+                                    "description": "Waits additional 220 milliseconds."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse4-bit-31",
+                            "name": "PORT_SEL",
+                            "description": "Defines which FlexSPI portA/B is used for boot.",
+                            "values": [
+                                {
+                                    "name": "Port A",
+                                    "value": 0,
+                                    "description": "Port A"
+                                },
+                                {
+                                    "name": "Port B",
+                                    "value": 1,
+                                    "description": "Port B"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse5",
+                    "name": "FLEXSPI_BOOT_CFG1",
+                    "description": "FlexSPI Boot Configuration 1",
+                    "index_int": "0x0005",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "reg_width": 24,
+                    "bitfields": [
+                        {
+                            "width": 7,
+                            "id": "fuse5-bits-0-6",
+                            "name": "FLEXSPI_DELAY_CELL_NUM[6:0]",
+                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS). \nThe value provided here is loaded into the FLEXSPIn_DLLnCR."
+                        },
+                        {
+                            "width": 10,
+                            "id": "fuse5-bits-7-16",
+                            "name": "FLEXSPI_IMAGE_OFFSET[9:0]",
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset. \nThis allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. \nFlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. \nIf this field is left blank boot ROM will not enable FlexSPI remap feature. \nThe physical flash offset is computed as below:\nphysical offset = FLEXSPI_IMAGE_OFFSET * 256KByte"
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse5-bits-17-20",
+                            "name": "FLEXSPI_REMAP_IMAGE_SIZE[3:0]",
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped\nNOTE: FlexSPI remap size cannot exceed the start address of boot image 1.  \nb'0000   Remap size = FLEXSPI_IMAGE_OFFSET * 256KByte\n\"   SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field. \nb'0001   SIZE_1MB Size of remapped area is 1MByte.                            \nb'0010   SIZE_2MB Size of remapped area is 2MByte.                            \nb'0011   SIZE_3MB Size of remapped area is 3MByte.                           \nb'0100   SIZE_4MB Size of remapped area is 4MByte.\nb'0101   SIZE_5MB Size of remapped area is 5MByte.                            \nb'0110   SIZE_6MB Size of remapped area is 6MByte.                            \nb'0111   SIZE_7MB Size of remapped area is 7MByte.                            \nb'1000   SIZE_8MB Size of remapped area is 8MByte.                            \nb'1001   SIZE_9MB Size of remapped area is 9MByte.                            \nb'1010   SIZE_10MB Size of remapped area is 10MByte.                         \nb'1011   SIZE_11MB Size of remapped area is 11MByte.                         \nb'1100   SIZE_12MB Size of remapped area is 12MByte.                         \nb'1101   SIZE_256KB Size of remapped area is 256KByte.                       \nb'1110   SIZE_512KB Size of remapped area is 512KByte.                      \nb'1111  SIZE_768KB Size of remapped area is 768KByte."
+                        },
+                        {
+                            "width": 3
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse6",
+                    "name": "SECURE_BOOT_CFG",
+                    "description": "Secure Boot Configuration 0",
+                    "index_int": "0x0006",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-0-1",
+                            "name": "SEC_BOOT_EN[1:0]",
+                            "description": "Secure boot enforcement. \nThis field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign).\nThe Image type field in header indicates the type of verification data (checksum or signature) included in it. \nPlain < CRC32 < CMAC < ECDSA",
+                            "values": [
+                                {
+                                    "name": "ALL_IMAGES",
+                                    "value": 0,
+                                    "description": "All Image types are allowed."
+                                },
+                                {
+                                    "name": "CRC32_IMAGES",
+                                    "value": 1,
+                                    "description": "Only CRC32 or signed (CMAC or ECDSA) images are allowed."
+                                },
+                                {
+                                    "name": "SIGNED_IMAGES",
+                                    "value": 2,
+                                    "description": "Only Signed (CMAC or ECDSA) images are allowed."
+                                },
+                                {
+                                    "name": "ECDSA_SIGNED",
+                                    "value": 3,
+                                    "description": "Only ECDSA signed images are allowed."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-3-4",
+                            "name": "LP_SEC_BOOT[1:0]",
+                            "description": "Secure boot option for low-power wake from power-down & deep-powerdown.\nFor CFPA/CMPA do CRC check always.",
+                            "values": [
+                                {
+                                    "name": "COLD_BOOT",
+                                    "value": 0,
+                                    "description": "Same as cold boot"
+                                },
+                                {
+                                    "name": "CHECK_CRC32",
+                                    "value": 1,
+                                    "description": "CRC check for  CFPA/CMPA & CRC32 check of active image"
+                                },
+                                {
+                                    "name": "CHECK_JUMP",
+                                    "value": 2,
+                                    "description": "CRC check for  CFPA/CMPA & jump to vector address specified in CFPA."
+                                },
+                                {
+                                    "name": "CHECK_CMAC",
+                                    "value": 3,
+                                    "description": "CRC check for  CFPA/CMPA & CMAC check of active image"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-8-9",
+                            "name": "ENF_CNSA[1:0]",
+                            "description": "Enforce CNSA suite approved algorithms for secure boot, secure update and debug authentication.\nNote, CMAC image authentication is only allowed in 2b'00 setting.  ",
+                            "values": [
+                                {
+                                    "name": "ALL_ALLOWED",
+                                    "value": 0,
+                                    "description": "All algorithm allowed."
+                                },
+                                {
+                                    "name": "LIMITED",
+                                    "value": 1,
+                                    "description": "Only ECC P-384 keys, SHA384 & AES256 algorithms are used."
+                                },
+                                {
+                                    "name": "LIMITED",
+                                    "value": 2,
+                                    "description": "Only ECC P-384 keys, SHA384 & AES256 algorithms are used."
+                                },
+                                {
+                                    "name": "LIMITED",
+                                    "value": 3,
+                                    "description": "Only ECC P-384 keys, SHA384 & AES256 algorithms are used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-10-11",
+                            "name": "ENF_TZM_PRESET[1:0]",
+                            "description": "TrustZone-M mode.",
+                            "values": [
+                                {
+                                    "name": "IGNORE",
+                                    "value": 0,
+                                    "description": "Ignored."
+                                },
+                                {
+                                    "name": "ENFORCE",
+                                    "value": 1,
+                                    "description": "Enforce preset TZM data in image manifest."
+                                },
+                                {
+                                    "name": "ENFORCE",
+                                    "value": 2,
+                                    "description": "Enforce preset TZM data in image manifest."
+                                },
+                                {
+                                    "name": "ENFORCE",
+                                    "value": 3,
+                                    "description": "Enforce preset TZM data in image manifest."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-12-13",
+                            "name": "ITRC_ZEROIZE[1:0]",
+                            "description": "RAM zeroize on ITRC event.\nZeroize long-term storage RAM (RAMA) on subsequent boot when Intrusion & Tamper control signals an intrusion event (ITRC_OUT3).\nNote, when ITRC is re-configured in application then ITRC_OUT4 (CHIP_RESET) should be triggered with at least same events as ITRC_OUT3 (RAM_ZEROIZE).",
+                            "values": [
+                                {
+                                    "name": "NO_ACTION",
+                                    "value": 0,
+                                    "description": "No action."
+                                },
+                                {
+                                    "name": "PKC_RAM_ON_ITRC",
+                                    "value": 1,
+                                    "description": "Always Zeroize PKC  RAM on ITRC event only."
+                                },
+                                {
+                                    "name": "PKC_RAMA_ON_ITRC",
+                                    "value": 2,
+                                    "description": "Zeroize PKC & RAMA on ITRC event only."
+                                },
+                                {
+                                    "name": "PKC_RAMA_ALL_RESET",
+                                    "value": 3,
+                                    "description": "Always Zeroize PKC & RAMA on all reset boot."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-14-15",
+                            "name": "ACTIVE_IMG_PROT[1:0]",
+                            "description": "Protection of active image. \nThis field defines protection of flash area occupied by the active image. Only applicable to internal flash.",
+                            "values": [
+                                {
+                                    "name": "FLASH_ACL_PROTECTION",
+                                    "value": 0,
+                                    "description": "Protection is defined using the CFPA FLASH_ACL settings."
+                                },
+                                {
+                                    "name": "WITH_STICKY_LOCK",
+                                    "value": 1,
+                                    "description": "Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL settings are ignored."
+                                },
+                                {
+                                    "name": "NO_STICKY_LOCK",
+                                    "value": 2,
+                                    "description": "Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL settings are ignored."
+                                },
+                                {
+                                    "name": "XOM_PROTECTION",
+                                    "value": 3,
+                                    "description": "XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL settings are ignored."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-16-17",
+                            "name": "FIPS_SHA_STEN[1:0]",
+                            "description": "Enable self-test for SHA2 block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-18-19",
+                            "name": "FIPS_AES_STEN[1:0]",
+                            "description": "Enable self-test for AES block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-20-21",
+                            "name": "FIPS_ECDSA_STEN[1:0]",
+                            "description": "Enable self-test for ECDSA block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-22-23",
+                            "name": "FIPS_DRBG_STEN[1:0]",
+                            "description": "Enable self-test for DRBG block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-24-25",
+                            "name": "FIPS_CMAC_STEN[1:0]",
+                            "description": "Enable self-test for CMAC block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-26-27",
+                            "name": "FIPS_KDF_STEN[1:0]",
+                            "description": "Enable self-test for KDF block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse6-bits-28-29",
+                            "name": "FIPS_PUF_STEN[1:0]",
+                            "description": "Enable self-test for PUF block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDE",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "FAILURE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot."
+                                },
+                                {
+                                    "name": "FAILURE ISP",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery."
+                                },
+                                {
+                                    "name": "FAILURE_ENF_POWER",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse7",
+                    "name": "RoTK_USAGE",
+                    "description": "Secure Boot Configuration 1",
+                    "index_int": "0x0007",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "reg_width": 24,
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "id": "fuse7-bits-0-2",
+                            "name": "RoTK0_Usage[2:0]",
+                            "description": "RoT key 0 usage properties.",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA,  image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA."
+                                },
+                                {
+                                    "name": "IMG_FW_UPDATE_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as  FW update image  key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse7-bits-3-5",
+                            "name": "RoTK1_Usage[2:0]",
+                            "description": "RoT key 1 usage properties.",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA,  image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA."
+                                },
+                                {
+                                    "name": "IMG_FW_UPDATE_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as  FW update image  key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse7-bits-6-8",
+                            "name": "RoTK2_Usage[2:0]",
+                            "description": "RoT key 2 usage properties.",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA,  image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_FW_IMG",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA."
+                                },
+                                {
+                                    "name": "IMG_FW_UPDATE_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as  FW update image  key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse7-bits-9-11",
+                            "name": "RoTK3_Usage[2:0]",
+                            "description": "RoT key 3 usage properties.",
+                            "values": [
+                                {
+                                    "name": "USABLE",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA,  image and FW key."
+                                },
+                                {
+                                    "name": "DEBUG",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only."
+                                },
+                                {
+                                    "name": "IMG_BOOT_FW",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only."
+                                },
+                                {
+                                    "name": "DEBUG_BOOT_FW_IMG",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA."
+                                },
+                                {
+                                    "name": "IMG_FW_UPDATE_KEY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only."
+                                },
+                                {
+                                    "name": "BOOT_IMAGE_KEY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only."
+                                },
+                                {
+                                    "name": "FW_UPDATE_IMG_KEY",
+                                    "value": 6,
+                                    "description": "Usable as  FW update image  key only."
+                                },
+                                {
+                                    "name": "KEY_SLOT_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-12",
+                            "name": "SKIP_DICE",
+                            "description": "Skip DICE computation.",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Enable DICE"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable DICE"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-13",
+                            "name": "DICE_INC_NXP_CFG",
+                            "description": "Include NXP area (IFR1) containing specific part configuration data defined during chip manufacturing process in DICE computation.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "INCLUDED",
+                                    "value": 1,
+                                    "description": "included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse7-bit-14",
+                            "name": "DICE_INC_CUST_CFG",
+                            "description": "Include data from CMPA page (512 bytes) in DICE computation.",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "INCLUDED",
+                                    "value": 1,
+                                    "description": "included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse7-bits-24-25",
+                            "name": "NPX_LOCK_CTX0[1:0]",
+                            "description": "Lock on-chip flash NPX PRINCE context 0 settings.\nFlash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap.",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 1,
+                                    "description": "Region is locked. But no erase check."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 2,
+                                    "description": "Region is locked. Erase check enabled."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 3,
+                                    "description": "Region is locked. Erase check enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse7-bits-26-27",
+                            "name": "NPX_LOCK_CTX1[1:0]",
+                            "description": "Lock on-chip flash NPX PRINCE context 1 settings.\nFlash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap.",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 1,
+                                    "description": "Region is locked. But no erase check."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 2,
+                                    "description": "Region is locked. Erase check enabled."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 3,
+                                    "description": "Region is locked. Erase check enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse7-bits-28-29",
+                            "name": "NPX_LOCK_CTX2[1:0]",
+                            "description": "Lock on-chip flash NPX PRINCE context 2 settings.\nFlash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap.",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 1,
+                                    "description": "Region is locked. But no erase check."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 2,
+                                    "description": "Region is locked. Erase check enabled."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 3,
+                                    "description": "Region is locked. Erase check enabled."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse7-bits-30-31",
+                            "name": "NPX_LOCK_CTX3[1:0]",
+                            "description": "Lock on-chip flash NPX PRINCE context 3 settings.\nFlash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap.",
+                            "values": [
+                                {
+                                    "name": "NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 1,
+                                    "description": "Region is locked. But no erase check."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 2,
+                                    "description": "Region is locked. Erase check enabled."
+                                },
+                                {
+                                    "name": "LOCKED",
+                                    "value": 3,
+                                    "description": "Region is locked. Erase check enabled."
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ROTKH",
+                "description": "Root of trust keys configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse11",
+                    "name": "ROTKH0",
+                    "description": "Root of Trust Keys Table Hash 0 (ROTKH[31:0])",
+                    "index_int": "0x000B",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse11-bits-0-31",
+                            "name": "ROTKH[31:0]",
+                            "description": "Root of Trust Keys Table Hash 0 (ROTKH[31:0])\nSHA384 ROTKH[383:352] / SHA56 ROTKH[255:224]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse12",
+                    "name": "ROTKH1",
+                    "description": "Root of Trust Keys Table Hash 1 (ROTKH[63:32])",
+                    "index_int": "0x000C",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse12-bits-0-31",
+                            "name": "ROTKH[63:32]",
+                            "description": "Root of Trust Keys Table Hash 1 (ROTKH[63:32])\nSHA384 ROTKH[351:320] / SHA56 ROTKH[223:192]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse13",
+                    "name": "ROTKH2",
+                    "description": "Root of Trust Keys Table Hash 2 (ROTKH[95:64])",
+                    "index_int": "0x000D",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse13-bits-0-31",
+                            "name": "ROTKH[95:64]",
+                            "description": "Root of Trust Keys Table Hash 2 (ROTKH[95:64])\nSHA384 ROTKH[319:288] / SHA56 ROTKH[191:160]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse14",
+                    "name": "ROTKH3",
+                    "description": "Root of Trust Keys Table Hash 3 (ROTKH[127:96])",
+                    "index_int": "0x000E",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse14-bits-0-31",
+                            "name": "ROTKH[127:96]",
+                            "description": "Root of Trust Keys Table Hash 3 (ROTKH[127:96])\nSHA384 ROTKH[287:256] / SHA56 ROTKH[159:128]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse15",
+                    "name": "ROTKH4",
+                    "description": "Root of Trust Keys Table Hash 4 (ROTKH[159:128])",
+                    "index_int": "0x000F",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse15-bits-0-31",
+                            "name": "ROTKH[159:128]",
+                            "description": "Root of Trust Keys Table Hash 4 (ROTKH[159:128])\nSHA384 ROTKH[255:224] / SHA56 ROTKH[127:96]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse16",
+                    "name": "ROTKH5",
+                    "description": "Root of Trust Keys Table Hash 5 (ROTKH[191:160])",
+                    "index_int": "0x0010",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse16-bits-0-31",
+                            "name": "ROTKH[191:160]",
+                            "description": "Root of Trust Keys Table Hash 5 (ROTKH[191:160])\nSHA384 ROTKH[223:192] / SHA56 ROTKH[95:64]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse17",
+                    "name": "ROTKH6",
+                    "description": "Root of Trust Keys Table Hash 6 (ROTKH[232:192])",
+                    "index_int": "0x0011",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse17-bits-0-31",
+                            "name": "ROTKH[232:192]",
+                            "description": "Root of Trust Keys Table Hash 6 (ROTKH[232:192])\nSHA384 ROTKH[191:160] / SHA56 ROTKH[63:32]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse18",
+                    "name": "ROTKH7",
+                    "description": "Root of Trust Keys Table Hash 7 (ROTKH[255:224])",
+                    "index_int": "0x0012",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse18-bits-0-31",
+                            "name": "ROTKH[255:224]",
+                            "description": "Root of Trust Keys Table Hash 7 (ROTKH[255:224])\nSHA384 ROTKH[159:128 / SHA56 ROTKH[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse19",
+                    "name": "ROTKH8",
+                    "description": "Root of Trust Keys Table Hash 8 (ROTKH[287:256])",
+                    "index_int": "0x0013",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse19-bits-0-31",
+                            "name": "ROTKH[287:256]",
+                            "description": "Root of Trust Keys Table Hash 8 (ROTKH[287:256])\nSHA384 ROTKH[127:96] / 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse20",
+                    "name": "ROTKH9",
+                    "description": "Root of Trust Keys Table Hash 9 (ROTKH[319:288])",
+                    "index_int": "0x0014",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse20-bits-0-31",
+                            "name": "ROTKH[319:288]",
+                            "description": "Root of Trust Keys Table Hash 9 (ROTKH[319:288])\nSHA384 ROTKH[95:64] / 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse21",
+                    "name": "ROTKH10",
+                    "description": "Root of Trust Keys Table Hash 10 (ROTKH[351:320])",
+                    "index_int": "0x0015",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse21-bits-0-31",
+                            "name": "ROTKH[351:320]",
+                            "description": "Root of Trust Keys Table Hash 10 (ROTKH[351:320])\nSHA384 ROTKH[63:32] / 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse22",
+                    "name": "ROTKH11",
+                    "description": "Root of Trust Keys Table Hash 11 (ROTKH[383:352])",
+                    "index_int": "0x0016",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse22-bits-0-31",
+                            "name": "ROTKH[383:352]",
+                            "description": "Root of Trust Keys Table Hash 11 (ROTKH[383:352])\nSHA384 ROTKH[31:0] / 0"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PRINCE",
+                "description": "Prince Context configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse23",
+                    "name": "NPX_CTX0_WD0",
+                    "description": "Bitmap mask for NPX Prince context 0 (sectors 0 - 31)",
+                    "index_int": "0x0017",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse23-bits-0-31",
+                            "name": "NPX_CTX0_WD0",
+                            "description": "Bitmap mask for NPX Prince context 0 (sectors 0 - 31)\nROM copies this value to NPX->VMAPCTX0_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV. NPX_CTX0_WD0[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse24",
+                    "name": "NPX_CTX0_WD1",
+                    "description": "Bitmap mask for NPX Prince context 0 (sectors 32 - 63)",
+                    "index_int": "0x0018",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse24-bits-0-31",
+                            "name": "NPX_CTX0_WD1",
+                            "description": "Bitmap mask for NPX Prince context 0 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX0_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV. NPX_CTX0_WD1[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse25",
+                    "name": "NPX_CTX1_WD0",
+                    "description": "Bitmap mask for NPX Prince context 1 (sectors 0 - 31)",
+                    "index_int": "0x0019",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse25-bits-0-31",
+                            "name": "NPX_CTX1_WD0",
+                            "description": "Bitmap mask for NPX Prince context 1 (sectors 0 - 31)\nROM copies this value to NPX->VMAPCTX1_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV. NPX_CTX1_WD0[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse26",
+                    "name": "NPX_CTX1_WD1",
+                    "description": "Bitmap mask for NPX Prince context 1 (sectors 32 - 63)",
+                    "index_int": "0x001A",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse26-bits-0-31",
+                            "name": "NPX_CTX1_WD1",
+                            "description": "Bitmap mask for NPX Prince context 1 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX1_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV. NPX_CTX1_WD1[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse27",
+                    "name": "NPX_CTX2_WD0",
+                    "description": "Bitmap mask for NPX Prince context 2 (sectors 0 - 31)",
+                    "index_int": "0x001B",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse27-bits-0-31",
+                            "name": "NPX_CTX2_WD0",
+                            "description": "Bitmap mask for NPX Prince context 2 (sectors 0 - 31)\nROM copies this value to NPX->VMAPCTX2_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV. NPX_CTX2_WD0[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse28",
+                    "name": "NPX_CTX2_WD1",
+                    "description": "Bitmap mask for NPX Prince context 2 (sectors 32 - 63)",
+                    "index_int": "0x001C",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse28-bits-0-31",
+                            "name": "NPX_CTX2_WD1",
+                            "description": "Bitmap mask for NPX Prince context 2 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX2_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV. NPX_CTX2_WD1[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse29",
+                    "name": "NPX_CTX3_WD0",
+                    "description": "Bitmap mask for NPX Prince context 3 (sectors 0 - 31)",
+                    "index_int": "0x001D",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse29-bits-0-31",
+                            "name": "NPX_CTX3_WD0",
+                            "description": "Bitmap mask for NPX Prince context 3 (sectors 0 - 31)\nROM copies this value to NPX->VMAPCTX3_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV. NPX_CTX3_WD0[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse30",
+                    "name": "NPX_CTX3_WD1",
+                    "description": "Bitmap mask for NPX Prince context 3 (sectors 32 - 63)",
+                    "index_int": "0x001E",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse30-bits-0-31",
+                            "name": "NPX_CTX3_WD1",
+                            "description": "Bitmap mask for NPX Prince context 3 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX3_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV. NPX_CTX3_WD1[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse31",
+                    "name": "IPED_CTX_CRC32",
+                    "description": "CRC value of the IPED regions start and end address setting",
+                    "index_int": "0x001F",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse31-bits-0-31",
+                            "name": "IPED_CTX_CRC32",
+                            "description": "CRC value of the IPED regions start and end address setting\nUser has to program CRC32 of IPED context configuration data present in CMPA (0x0100_40B0 - 0x0100_40EF) to have ROM do integrity check of IPED configuration data before using. This check is done only when this field is non-zero.IPED_CTX_CRC32[31:0]"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CUST",
+                "description": "Customer fuses configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse43",
+                    "name": "GP0",
+                    "description": "General Purpose Fuse 0 (GP0[31:0])",
+                    "index_int": "0x002B",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00040000",
+                        "read_lock_int": "0x00100000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse43-bits-0-31",
+                            "name": "GP0[31:0]",
+                            "description": "General Purpose Fuse 0 (GP0[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse44",
+                    "name": "GP1",
+                    "description": "General Purpose Fuse 1 (GP1[31:0])",
+                    "index_int": "0x002C",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00040000",
+                        "read_lock_int": "0x00100000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse44-bits-0-31",
+                            "name": "GP1[31:0]",
+                            "description": "General Purpose Fuse 1 (GP1[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse45",
+                    "name": "GP2",
+                    "description": "General Purpose Fuse 2 (GP2[31:0])",
+                    "index_int": "0x002D",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00040000",
+                        "read_lock_int": "0x00100000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse45-bits-0-31",
+                            "name": "GP2[31:0]",
+                            "description": "General Purpose Fuse 2 (GP2[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse46",
+                    "name": "GP3",
+                    "description": "General Purpose Fuse 3 (GP3[31:0])",
+                    "index_int": "0x002E",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00040000",
+                        "read_lock_int": "0x00100000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse46-bits-0-31",
+                            "name": "GP3[31:0]",
+                            "description": "General Purpose Fuse 3 (GP3[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse47",
+                    "name": "GP4",
+                    "description": "General Purpose Fuse 4 (GP4[31:0])",
+                    "index_int": "0x002F",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse47-bits-0-31",
+                            "name": "GP4[31:0]",
+                            "description": "General Purpose Fuse 4 (GP4[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse48",
+                    "name": "GP5",
+                    "description": "General Purpose Fuse 5 (GP5[31:0])",
+                    "index_int": "0x0030",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse48-bits-0-31",
+                            "name": "GP5[31:0]",
+                            "description": "General Purpose Fuse 5 (GP5[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse49",
+                    "name": "GP6",
+                    "description": "General Purpose Fuse 6 (GP6[31:0])",
+                    "index_int": "0x0031",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse49-bits-0-31",
+                            "name": "GP6[31:0]",
+                            "description": "General Purpose Fuse 6 (GP6[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse50",
+                    "name": "GP7",
+                    "description": "General Purpose Fuse 7 (GP7[31:0])",
+                    "index_int": "0x0032",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x00200000",
+                        "read_lock_int": "0x00800000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse50-bits-0-31",
+                            "name": "GP7[31:0]",
+                            "description": "General Purpose Fuse 7 (GP7[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse51",
+                    "name": "GP8",
+                    "description": "General Purpose Fuse 8 (GP8[31:0])",
+                    "index_int": "0x0033",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x04000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse51-bits-0-31",
+                            "name": "GP8[31:0]",
+                            "description": "General Purpose Fuse 8 (GP8[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse52",
+                    "name": "GP9",
+                    "description": "General Purpose Fuse 9 (GP9[31:0])",
+                    "index_int": "0x0034",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x04000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse52-bits-0-31",
+                            "name": "GP9[31:0]",
+                            "description": "General Purpose Fuse 9 (GP9[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse53",
+                    "name": "GP10",
+                    "description": "General Purpose Fuse 10 (GP10[31:0])",
+                    "index_int": "0x0035",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x04000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse53-bits-0-31",
+                            "name": "GP10[31:0]",
+                            "description": "General Purpose Fuse 10 (GP10[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse54",
+                    "name": "GP11",
+                    "description": "General Purpose Fuse 11 (GP11[31:0])",
+                    "index_int": "0x0036",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x01000000",
+                        "read_lock_int": "0x04000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse54-bits-0-31",
+                            "name": "GP11[31:0]",
+                            "description": "General Purpose Fuse 11 (GP11[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse55",
+                    "name": "GP12",
+                    "description": "General Purpose Fuse 12 (GP12[31:0])",
+                    "index_int": "0x0037",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse55-bits-0-31",
+                            "name": "GP12[31:0]",
+                            "description": "General Purpose Fuse 12 (GP12[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse56",
+                    "name": "GP13",
+                    "description": "General Purpose Fuse 13 (GP13[31:0])",
+                    "index_int": "0x0038",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse56-bits-0-31",
+                            "name": "GP13[31:0]",
+                            "description": "General Purpose Fuse 13 (GP13[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse57",
+                    "name": "GP14",
+                    "description": "General Purpose Fuse 14 (GP14[31:0])",
+                    "index_int": "0x0039",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse57-bits-0-31",
+                            "name": "GP14[31:0]",
+                            "description": "General Purpose Fuse 14 (GP14[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse58",
+                    "name": "GP15",
+                    "description": "General Purpose Fuse 15 (GP15[31:0])",
+                    "index_int": "0x003A",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse58-bits-0-31",
+                            "name": "GP15[31:0]",
+                            "description": "General Purpose Fuse 15 (GP15[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse59",
+                    "name": "GP16",
+                    "description": "General Purpose Fuse 16 (GP16[31:0])",
+                    "index_int": "0x003B",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse59-bits-0-31",
+                            "name": "GP16[31:0]",
+                            "description": "General Purpose Fuse 16 (GP16[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse60",
+                    "name": "GP17",
+                    "description": "General Purpose Fuse 17 (GP17[31:0])",
+                    "index_int": "0x003C",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse60-bits-0-31",
+                            "name": "GP17[31:0]",
+                            "description": "General Purpose Fuse 17 (GP17[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse61",
+                    "name": "GP18",
+                    "description": "General Purpose Fuse 18 (GP18[31:0])",
+                    "index_int": "0x003D",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse61-bits-0-31",
+                            "name": "GP18[31:0]",
+                            "description": "General Purpose Fuse 18 (GP18[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse62",
+                    "name": "GP19",
+                    "description": "General Purpose Fuse 19 (GP19[31:0])",
+                    "index_int": "0x003E",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x08000000",
+                        "read_lock_int": "0x20000000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse62-bits-0-31",
+                            "name": "GP19[31:0]",
+                            "description": "General Purpose Fuse 19 (GP19[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse63",
+                    "name": "GP20",
+                    "description": "General Purpose Fuse 20 (GP20[31:0])",
+                    "index_int": "0x003F",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse63-bits-0-31",
+                            "name": "GP20[31:0]",
+                            "description": "General Purpose Fuse 20 (GP20[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse64",
+                    "name": "GP21",
+                    "description": "General Purpose Fuse 21 (GP21[31:0])",
+                    "index_int": "0x0040",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse64-bits-0-31",
+                            "name": "GP21[31:0]",
+                            "description": "General Purpose Fuse 21 (GP21[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse65",
+                    "name": "GP22",
+                    "description": "General Purpose Fuse 22 (GP22[31:0])",
+                    "index_int": "0x0041",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse65-bits-0-31",
+                            "name": "GP22[31:0]",
+                            "description": "General Purpose Fuse 22 (GP22[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse66",
+                    "name": "GP23",
+                    "description": "General Purpose Fuse 23 (GP23[31:0])",
+                    "index_int": "0x0042",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse66-bits-0-31",
+                            "name": "GP23[31:0]",
+                            "description": "General Purpose Fuse 23 (GP23[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse67",
+                    "name": "GP24",
+                    "description": "General Purpose Fuse 24 (GP24[31:0])",
+                    "index_int": "0x0043",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse67-bits-0-31",
+                            "name": "GP24[31:0]",
+                            "description": "General Purpose Fuse 24 (GP24[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse68",
+                    "name": "GP25",
+                    "description": "General Purpose Fuse 25 (GP25[31:0])",
+                    "index_int": "0x0044",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse68-bits-0-31",
+                            "name": "GP25[31:0]",
+                            "description": "General Purpose Fuse 25 (GP25[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse69",
+                    "name": "GP26",
+                    "description": "General Purpose Fuse 26 (GP26[31:0])",
+                    "index_int": "0x0045",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse69-bits-0-31",
+                            "name": "GP26[31:0]",
+                            "description": "General Purpose Fuse 26 (GP26[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse70",
+                    "name": "GP27",
+                    "description": "General Purpose Fuse 27 (GP27[31:0])",
+                    "index_int": "0x0046",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse70-bits-0-31",
+                            "name": "GP27[31:0]",
+                            "description": "General Purpose Fuse 27 (GP27[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse71",
+                    "name": "GP28",
+                    "description": "General Purpose Fuse 28(GP28[31:0])",
+                    "index_int": "0x0047",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse71-bits-0-31",
+                            "name": "GP28[31:0]",
+                            "description": "General Purpose Fuse 28(GP28[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse72",
+                    "name": "GP29",
+                    "description": "General Purpose Fuse 29 (GP29[31:0])",
+                    "index_int": "0x0048",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse72-bits-0-31",
+                            "name": "GP29[31:0]",
+                            "description": "General Purpose Fuse 29 (GP29[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse73",
+                    "name": "GP30",
+                    "description": "General Purpose Fuse 30 (GP30[31:0])",
+                    "index_int": "0x0049",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse73-bits-0-31",
+                            "name": "GP30[31:0]",
+                            "description": "General Purpose Fuse 30 (GP30[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse74",
+                    "name": "GP31",
+                    "description": "General Purpose Fuse 31 (GP31[31:0])",
+                    "index_int": "0x004A",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse74-bits-0-31",
+                            "name": "GP31[31:0]",
+                            "description": "General Purpose Fuse 31 (GP31[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse75",
+                    "name": "GP32",
+                    "description": "General Purpose Fuse 32 (GP32[31:0])",
+                    "index_int": "0x004B",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse75-bits-0-31",
+                            "name": "GP32[31:0]",
+                            "description": "General Purpose Fuse 32 (GP32[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse76",
+                    "name": "GP33",
+                    "description": "General Purpose Fuse 33 (GP33[31:0])",
+                    "index_int": "0x004C",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse76-bits-0-31",
+                            "name": "GP33[31:0]",
+                            "description": "General Purpose Fuse 33 (GP33[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse77",
+                    "name": "GP34",
+                    "description": "General Purpose Fuse 34 (GP34[31:0])",
+                    "index_int": "0x004D",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse77-bits-0-31",
+                            "name": "GP34[31:0]",
+                            "description": "General Purpose Fuse 34 (GP34[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse78",
+                    "name": "GP35",
+                    "description": "General Purpose Fuse 35 (GP35[31:0])",
+                    "index_int": "0x004E",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse78-bits-0-31",
+                            "name": "GP35[31:0]",
+                            "description": "General Purpose Fuse 35 (GP35[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse79",
+                    "name": "GP36",
+                    "description": "General Purpose Fuse 36 (GP36[31:0])",
+                    "index_int": "0x004F",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse79-bits-0-31",
+                            "name": "GP36[31:0]",
+                            "description": "General Purpose Fuse 36 (GP36[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse80",
+                    "name": "GP37",
+                    "description": "General Purpose Fuse 37 (GP37[31:0])",
+                    "index_int": "0x0050",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse80-bits-0-31",
+                            "name": "GP37[31:0]",
+                            "description": "General Purpose Fuse 37 (GP37[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse81",
+                    "name": "GP38",
+                    "description": "General Purpose Fuse 38 (GP38[31:0])",
+                    "index_int": "0x0051",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse81-bits-0-31",
+                            "name": "GP38[31:0]",
+                            "description": "General Purpose Fuse 38 (GP38[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

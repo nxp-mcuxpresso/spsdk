@@ -8,7 +8,7 @@
 """Custom enum extension."""
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Callable, Optional, Type, Union, cast
 
 from typing_extensions import Self
 
@@ -34,7 +34,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         return hash((self.tag, self.label, self.description))
 
     @classmethod
-    def labels(cls) -> List[str]:
+    def labels(cls) -> list[str]:
         """Get list of labels of all enum members.
 
         :return: List of all labels
@@ -42,7 +42,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         return [value.label for value in cls.__members__.values()]
 
     @classmethod
-    def tags(cls) -> List[int]:
+    def tags(cls) -> list[int]:
         """Get list of tags of all enum members.
 
         :return: List of all tags
@@ -129,13 +129,15 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         :raises SPSDKKeyError: If enum with given label is not found
         :return: Found enum member
         """
+        if not isinstance(label, str):
+            raise SPSDKKeyError("Label must be string")
         for item in cls.__members__.values():
             if item.label.upper() == label.upper():
                 return item
         raise SPSDKKeyError(f"There is no {cls.__name__} item with label {label} defined")
 
     @classmethod
-    def create_from_dict(cls, name: str, config: Dict[str, Union[Tuple, List]]) -> Type[Self]:
+    def create_from_dict(cls, name: str, config: dict[str, Union[tuple, list]]) -> Type[Self]:
         """Create the Enum in runtime from the Dictionary where is instead.
 
         :param name: Name of new Class

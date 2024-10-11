@@ -10,7 +10,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Iterator, Optional
 
 from typing_extensions import Self
 
@@ -40,7 +40,11 @@ from spsdk.utils.misc import (
     value_to_int,
     write_file,
 )
-from spsdk.utils.schema_validator import CommentedConfig, check_config
+from spsdk.utils.schema_validator import (
+    CommentedConfig,
+    check_config,
+    update_validation_schema_family,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +192,7 @@ class BootImageV20(BaseClass):
             timestamp=advanced_params.timestamp,
         )
         self._cert_section: Optional[CertSectionV2] = None
-        self._boot_sections: List[BootSectionV2] = []
+        self._boot_sections: list[BootSectionV2] = []
         # Generate nonce
         if self._header.nonce is None:
             nonce = bytearray(random_bytes(16))
@@ -534,7 +538,7 @@ class BootImageV21(BaseClass):
             padding=advanced_params.padding,
         )
         self._cert_block: Optional[CertBlockV1] = None
-        self.boot_sections: List[BootSectionV2] = []
+        self.boot_sections: list[BootSectionV2] = []
         # ...
         for section in sections:
             self.add_boot_section(section)
@@ -839,7 +843,7 @@ class BootImageV21(BaseClass):
         return obj
 
     @staticmethod
-    def get_supported_families() -> List[str]:
+    def get_supported_families() -> list[str]:
         """Return list of supported families.
 
         :return: List of supported families.
@@ -847,7 +851,7 @@ class BootImageV21(BaseClass):
         return get_families(DatabaseManager.SB21)
 
     @classmethod
-    def get_commands_validation_schemas(cls, family: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_commands_validation_schemas(cls, family: Optional[str] = None) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Device family filter, if None all commands are returned.
@@ -855,12 +859,12 @@ class BootImageV21(BaseClass):
         """
         sb2_sch_cfg = get_schema_file(DatabaseManager.SB21)
 
-        schemas: List[Dict[str, Any]] = [sb2_sch_cfg["sb2_sections"]]
+        schemas: list[dict[str, Any]] = [sb2_sch_cfg["sb2_sections"]]
         if family:
             db = get_db(family, "latest")
             # remove unused command for current family
             supported_commands = db.get_list(DatabaseManager.SB21, "supported_commands")
-            list_of_commands: List[Dict] = schemas[0]["properties"]["sections"]["items"][
+            list_of_commands: list[dict] = schemas[0]["properties"]["sections"]["items"][
                 "properties"
             ]["commands"]["items"]["oneOf"]
 
@@ -875,7 +879,7 @@ class BootImageV21(BaseClass):
         return schemas
 
     @classmethod
-    def get_validation_schemas(cls, family: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: Optional[str] = None) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Device family
@@ -883,12 +887,14 @@ class BootImageV21(BaseClass):
         """
         sb2_schema = get_schema_file(DatabaseManager.SB21)
         mbi_schema = get_schema_file(DatabaseManager.MBI)
-
-        schemas: List[Dict[str, Any]] = []
-        schemas.extend([mbi_schema[x] for x in ["signature_provider", "cert_block_v1"]])
-        schemas.extend(
-            [sb2_schema[x] for x in ["sb2_output", "sb2_family", "common", "sb2", "sb2_test"]]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_schema["properties"], cls.get_supported_families(), family
         )
+
+        schemas: list[dict[str, Any]] = [family_schema]
+        schemas.extend([mbi_schema[x] for x in ["signature_provider", "cert_block_v1"]])
+        schemas.extend([sb2_schema[x] for x in ["sb2_output", "common", "sb2", "sb2_test"]])
 
         add_keyblob = True
 
@@ -900,16 +906,6 @@ class BootImageV21(BaseClass):
         if add_keyblob:
             schemas.append(sb2_schema["keyblobs"])
         schemas.extend(cls.get_commands_validation_schemas(family))
-
-        # find family
-        for schema in schemas:
-            if "properties" in schema and "family" in schema["properties"]:
-                if family:
-                    schema["properties"]["family"]["template_value"] = family
-                schema["properties"]["family"]["enum"] = cls.get_supported_families()
-                if family:
-                    schema["properties"]["family"]["template_value"] = family
-                break
 
         return schemas
 
@@ -932,8 +928,8 @@ class BootImageV21(BaseClass):
     def parse_sb21_config(
         cls,
         config_path: str,
-        external_files: Optional[List[str]] = None,
-    ) -> Dict[Any, Any]:
+        external_files: Optional[list[str]] = None,
+    ) -> dict[Any, Any]:
         """Create lexer and parser, load the BD file content and parse it.
 
         :param config_path: Path to configuration file either BD or YAML formatted.
@@ -956,7 +952,7 @@ class BootImageV21(BaseClass):
         return parsed_conf
 
     @classmethod
-    def get_advanced_params(cls, config: Dict[str, Any]) -> SBV2xAdvancedParams:
+    def get_advanced_params(cls, config: dict[str, Any]) -> SBV2xAdvancedParams:
         """Get advanced test params from configuration.
 
         :param config: Input standard configuration.
@@ -980,13 +976,13 @@ class BootImageV21(BaseClass):
     @classmethod
     def load_from_config(
         cls,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         key_file_path: Optional[str] = None,
         signature_provider: Optional[SignatureProvider] = None,
-        signing_certificate_file_paths: Optional[List[str]] = None,
-        root_key_certificate_paths: Optional[List[str]] = None,
+        signing_certificate_file_paths: Optional[list[str]] = None,
+        root_key_certificate_paths: Optional[list[str]] = None,
         rkth_out_path: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> "BootImageV21":
         """Creates an instance of BootImageV21 from configuration.
 

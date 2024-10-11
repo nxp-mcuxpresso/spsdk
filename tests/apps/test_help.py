@@ -37,7 +37,7 @@ def test_spsdk_apps_subcommands_help_without_help_option(cli_runner: CliRunner):
     devscan = spsdk_apps.main.commands.pop("nxpdevscan")
     run_help(cli_runner, devscan, help_option=True)
     for name, command in spsdk_apps.main.commands.items():
-        if name == "clear-cache":
+        if name in ["utils", "get-families"]:
             continue
         logging.debug(f"running help for {name}")
         run_help(cli_runner, command, help_option=False)

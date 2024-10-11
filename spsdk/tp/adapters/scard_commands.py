@@ -8,7 +8,7 @@
 
 import logging
 from struct import pack
-from typing import Optional, Tuple
+from typing import Optional
 
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import Endianness
@@ -381,7 +381,7 @@ class FinalizeFileSystem(SmartCardAPDU):
         super().__init__(cla=0x80, ins=0x44, p1=0x00, p2=0x00)
 
 
-def int_to_p1p2(param: int) -> Tuple[int, int]:
+def int_to_p1p2(param: int) -> tuple[int, int]:
     """Converts integer into the bytes (p1, p2)."""
     p1 = (param >> 8) & 0xFF
     p2 = param & 0xFF

@@ -1,0 +1,12 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+uuid: 64ab1f94598d21118c31a5ead40bc5e4
+die_prk: die_prk.pem
+die_puk: die_puk.pem
+dice_ca_puk:
+dice_ca_prk:
+rtf:
+had:
+version:
+challenge:

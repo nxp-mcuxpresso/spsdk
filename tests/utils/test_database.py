@@ -7,14 +7,22 @@
 
 
 import os
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils import database
-from spsdk.utils.database import Database, DatabaseManager, SPSDKErrorMissingDevice, UsbId
-from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
+from spsdk.utils.database import (
+    Database,
+    DatabaseManager,
+    DevicesQuickInfo,
+    MemBlock,
+    QuickDatabase,
+    SPSDKErrorMissingDevice,
+    UsbId,
+)
+
 from spsdk.utils.misc import Endianness, load_text
 from spsdk.utils.registers import Registers
 
@@ -24,8 +32,7 @@ class SPSDK_TestDatabase:
 
     _instance = None
     _db: Optional[Database] = None
-    _db_hash: int = 0
-    _db_cache_file_name = ""
+    _quick_info: Optional[DevicesQuickInfo] = None
 
     @property
     def db(self) -> Database:
@@ -33,6 +40,13 @@ class SPSDK_TestDatabase:
         db = type(self)._db
         assert isinstance(db, Database)
         return db
+
+    @property
+    def quick_info(self) -> QuickDatabase:
+        """Get quick info Database."""
+        quick_info = type(self)._quick_info
+        assert isinstance(quick_info, QuickDatabase)
+        return quick_info
 
     """List all SPSDK supported features"""
     FEATURE1 = "feature1"
@@ -43,7 +57,8 @@ class SPSDK_TestDatabase:
 @pytest.fixture
 def mock_test_database(monkeypatch, data_dir):
     """Change the SPSDK Database"""
-    SPSDK_TestDatabase._db = Database(os.path.join(data_dir, "test_db"))
+    SPSDK_TestDatabase._db = Database(os.path.join(data_dir, "test_db"), complete_load=True)
+    SPSDK_TestDatabase._quick_info = QuickDatabase.create(SPSDK_TestDatabase._db)
     # SPSDK_TestDatabase._instance = DatabaseManager()
     monkeypatch.setattr(database, "DatabaseManager", SPSDK_TestDatabase)
 
@@ -55,6 +70,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
         os.path.join(data_dir, "test_db"),
         restricted_data_path=os.path.join(data_dir, "test_restricted_db"),
     )
+    SPSDK_TestDatabase._quick_info = QuickDatabase.create(SPSDK_TestDatabase._db)
     SPSDK_TestDatabase._instance = SPSDK_TestDatabase()
     monkeypatch.setattr(database, "DatabaseManager", SPSDK_TestDatabase)
 
@@ -66,7 +82,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature1",
-            "atrribute_int1",
+            "attribute_int1",
             1,
             None,
         ),  # Standard loaded defaults; integer
@@ -74,7 +90,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature1",
-            "atrribute_str1",
+            "attribute_str1",
             "Database text",
             None,
         ),  # Standard loaded defaults; String
@@ -82,7 +98,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature1",
-            "atrribute_boolT",
+            "attribute_boolT",
             True,
             None,
         ),  # Standard loaded defaults; Boolean True
@@ -90,7 +106,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature1",
-            "atrribute_boolF",
+            "attribute_boolF",
             False,
             None,
         ),  # Standard loaded defaults; Boolean False
@@ -98,7 +114,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature1",
-            "atrribute_dict",
+            "attribute_dict",
             {"dict_attribute_int": 1, "dict_attribute_str": "Dict text"},
             None,
         ),  # Standard loaded defaults; dict
@@ -106,7 +122,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature1",
-            "atrribute_list",
+            "attribute_list",
             [1, 2, 3],
             None,
         ),  # Standard loaded defaults; list
@@ -114,7 +130,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature2",
-            "atrribute_int1",
+            "attribute_int1",
             3,
             None,
         ),  # Overloaded device value test
@@ -122,7 +138,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev2",
             "feature2",
-            "atrribute_int1",
+            "attribute_int1",
             4,
             None,
         ),  # Overloaded device overloaded revision value test
@@ -130,7 +146,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature3",
-            "atribute__int1",
+            "attribute__int1",
             10,
             None,
         ),  # Non existing default
@@ -142,12 +158,12 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             10,
             10,
         ),  # Non existing key with default value
-        ("dev1_alias", "rev1", "feature1", "atrribute_int1", 1, None),  # Alias device loaded
+        ("dev1_alias", "rev1", "feature1", "attribute_int1", 1, None),  # Alias device loaded
         (
             "dev1_alias",
             "new_rev",
             "feature1",
-            "atrribute_int1",
+            "attribute_int1",
             1,
             None,
         ),  # Alias device new revision
@@ -160,17 +176,17 @@ def test_get_device_value(mock_test_database, device, revision, feature, key, va
 
 
 @pytest.mark.parametrize(
-    "feature,devices,sub_keys,invalid",
+    "feature,devices,sub_feature,invalid",
     [
         ("feature1", ["dev1", "dev1_alias", "dev2"], None, False),
         ("feature2", ["dev1", "dev1_alias", "dev2"], None, True),
         ("feature2", ["dev1", "dev1_alias"], None, False),
         ("feature3", ["dev1", "dev1_alias"], None, False),
-        ("feature1", ["dev2"], ["sub_feature1"], False),
+        ("feature1", ["dev2"], "sub_feature1", False),
     ],
 )
-def test_supported_devices(mock_test_database, feature, devices: List[str], sub_keys, invalid):
-    dev_list = database.get_families(feature, sub_keys)
+def test_supported_devices(mock_test_database, feature, devices: list[str], sub_feature, invalid):
+    dev_list = database.get_families(feature, sub_feature)
     dev_list.sort()
     devices.sort()
     assert (dev_list == devices) != invalid
@@ -319,3 +335,28 @@ def test_addons_data(data_dir):
     with pytest.raises(SPSDKValueError):
         load_text(r_dev1.get_file_path("feature1", "addons_file"))
     load_text(a_dev1.get_file_path("feature1", "addons_file"))
+
+
+@pytest.mark.parametrize(
+    "full_name,name,core,instance,security",
+    [
+        ("flexspi", "flexspi", None, None, None),
+        ("flexspi0", "flexspi", None, 0, None),
+        ("flexspi_ns", "flexspi", None, None, False),
+        ("flexspi1_s", "flexspi", None, 1, True),
+        ("cm4_flexspi2_ns", "flexspi", "cm4", 2, False),
+        ("a55_flexspi", "flexspi", "a55", None, None),
+    ],
+)
+def test_mem_block_names(full_name, name, core, instance, security):
+    """Simple test of memory block parsing."""
+    p_core, p_name, p_instance, p_security = MemBlock.parse_name(full_name)
+    assert p_core == core
+    assert p_name == name
+    assert p_instance == instance
+    assert p_security == security
+
+    # Do reverse test to make full name from the elements
+    assert full_name == MemBlock.create_name(
+        block_name=name, core=core, instance=instance, secure_access=security
+    )

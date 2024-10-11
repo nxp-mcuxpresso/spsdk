@@ -9,21 +9,26 @@
 
 
 import logging
-from typing import List, Optional
+import struct
+from typing import Any, Optional
 
 from libusbsio import LIBUSBSIO_Exception, usbsio
+from serial import SerialException
 from serial.tools.list_ports import comports
 
-from spsdk.exceptions import SPSDKConnectionError, SPSDKError
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKPermissionError
 from spsdk.mboot.interfaces.sdio import MbootSdioInterface
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
 from spsdk.sdp.sdp import SDP
+from spsdk.uboot.spsdk_uuu import SPSDKUUU
+from spsdk.uboot.uboot import UbootSerial
 from spsdk.utils.devicedescription import (
     SDIODeviceDescription,
     SIODeviceDescription,
     UartDeviceDescription,
     USBDeviceDescription,
+    UUUDeviceDescription,
     convert_usb_path,
     get_usb_device_name,
 )
@@ -41,7 +46,7 @@ NXP_SDIO_DEVICE_PATHS = [
 logger = logging.getLogger(__name__)
 
 
-def search_nxp_sdio_devices() -> List[SDIODeviceDescription]:
+def search_nxp_sdio_devices() -> list[SDIODeviceDescription]:
     """Searches all NXP SDIO devices based on their device path.
 
     :return: list of SDIODeviceDescription corresponding to NXP devices
@@ -64,7 +69,7 @@ def search_nxp_sdio_devices() -> List[SDIODeviceDescription]:
     return nxp_sdio_devices
 
 
-def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> List[USBDeviceDescription]:
+def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> list[USBDeviceDescription]:
     """Searches all NXP USB devices based on their Vendor ID.
 
     :extend_vid_list: list of VIDs, to extend the default NXP VID list (int)
@@ -108,20 +113,78 @@ def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> List[USBDe
     return nxp_usb_devices
 
 
-def search_nxp_uart_devices() -> List[UartDeviceDescription]:
+def search_uuu_usb_devices() -> list[UUUDeviceDescription]:
+    """Searches all UUU compatible USB devices.
+
+    :return: list of USBDeviceDescription corresponding to UUU devices
+    """
+    uuu = SPSDKUUU()
+    devices = []
+
+    def usb_device_callback(
+        path: bytes, chip: bytes, pro: bytes, vid: int, pid: int, bcd: int, serial_no: bytes, p: Any
+    ) -> int:
+        """Callback function for uuu_for_each_devices.
+
+        :param path: The path to the USB device.
+        :param chip: The chip of the USB device.
+        :param pro: The product of the USB device.
+        :param vid: The vendor ID of the USB device.
+        :param pid: The product ID of the USB device.
+        :param bcd: BDC.
+        :param serial_no: The serial number of the USB device.
+        :param p: A pointer to additional data.
+        :return: 0 on success.
+        """
+        description = UUUDeviceDescription(
+            path.decode("utf-8"),
+            chip.decode("utf-8"),
+            pro.decode("utf-8"),
+            vid,
+            pid,
+            bcd,
+            serial_no.decode("utf-8"),
+        )
+
+        devices.append(description)
+        return 0
+
+    uuu.for_each_devices(usb_device_callback)
+    return devices
+
+
+def search_nxp_uart_devices(
+    scan: bool = True, all_devices: bool = True, scan_uboot: bool = True
+) -> list[UartDeviceDescription]:
     """Returns a list of all NXP devices connected via UART.
 
+    :scan: whether to scan for mboot and SDP devices
+    :all_devices: whether to return all devices or only NXP devices
+    :scan_uboot: whether to scan for U-Boot console devices
     :retval: list of UartDeviceDescription devices from devicedescription module
     """
     retval = []
 
-    # Get all available COM ports on target PC
-    ports = [port.device for port in comports()]
+    if all_devices:
+        # Get all available COM ports on target PC
+        ports = comports()
+    else:
+        # Get only NXP devices
+        ports = [port for port in comports() if port.vid in NXP_USB_DEVICE_VIDS]
+
+    if not scan:
+        return [
+            UartDeviceDescription(
+                name=port.device,
+                dev_type=("NXP UART device" if port.vid in NXP_USB_DEVICE_VIDS else "UART device"),
+            )
+            for port in ports
+        ]
 
     # Iterate over every com port we have and check, whether mboot or sdp responds
     for port in ports:
-        if MbootUARTInterface.scan(port=port, timeout=50):
-            uart_dev = UartDeviceDescription(name=port, dev_type="mboot device")
+        if MbootUARTInterface.scan(port=port.device, timeout=50):
+            uart_dev = UartDeviceDescription(name=port.device, dev_type="mboot device")
             retval.append(uart_dev)
             continue
 
@@ -131,15 +194,34 @@ def search_nxp_uart_devices() -> List[UartDeviceDescription]:
         # ping command must be sent.
         # So we create an SDP interface and try to read the status code. If
         # we get a response, we are connected to an SDP device.
+        sdp_com = None
         try:
-            device = SerialDevice(port=port, timeout=50)
+            device = SerialDevice(port=port.device, timeout=50)
             sdp_com = SDP(SdpUARTInterface(device))
             if sdp_com.read_status() is not None:
-                uart_dev = UartDeviceDescription(name=port, dev_type="SDP device")
+                uart_dev = UartDeviceDescription(name=port.device, dev_type="SDP device")
                 retval.append(uart_dev)
-        except SPSDKConnectionError as e:
+                continue
+        except (SPSDKConnectionError, SPSDKPermissionError, struct.error) as e:
             logger.debug(
                 f"Exception {type(e).__name__} occurred while reading status via SDP. \
+Arguments: {e.args}"
+            )
+        finally:
+            if isinstance(sdp_com, SDP):
+                sdp_com.close()
+        # Another option is U-Boot console interface
+        if not scan_uboot:
+            continue
+        try:
+            logger.debug(f"Checking if port {port.device} is U-boot serial console")
+            uboot = UbootSerial(port=port.device, timeout=1, interrupt_autoboot=False)
+            if uboot.is_serial_console_open():
+                uart_dev = UartDeviceDescription(name=port.device, dev_type="U-Boot console")
+                retval.append(uart_dev)
+        except (SPSDKConnectionError, SPSDKPermissionError, SerialException) as e:
+            logger.debug(
+                f"Exception {type(e).__name__} occurred while trying to find U-Boot console. \
 Arguments: {e.args}"
             )
 
@@ -164,7 +246,7 @@ Arguments: {e.args}"
 #     return retval
 
 
-def search_libusbsio_devices() -> List[SIODeviceDescription]:
+def search_libusbsio_devices() -> list[SIODeviceDescription]:
     """Returns a list of all LIBUSBSIO devices.
 
     :retval: list of UartDeviceDescription devices from devicedescription module
