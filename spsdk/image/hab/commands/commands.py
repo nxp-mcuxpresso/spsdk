@@ -507,35 +507,40 @@ class SecUnlock(SecCommandBase):
         super().__init__(cmd)
 
     @classmethod
-    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> Self:
+    def load_from_config(cls, config: HabConfig, search_paths: Optional[list[str]] = None) -> list[Self]:
         """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
         :raises SPSDKKeyError: Unknown engine.
+        :return: List of command instances
         """
-        command_params = config.commands.get_command_params(SecCommand.UNLOCK)
-        cls.check_config_section_params(command_params)
+        cmds = []
+        for command in config.commands:
+            if command.index == SecCommand.UNLOCK.tag:
+                command_params = command.params
+                cls.check_config_section_params(command_params)
 
-        unlock_engine = EnumEngine.from_label(command_params["Unlock_Engine"])
-        if unlock_engine not in UNLOCK_COMMANDS_MAPPING:
-            raise SPSDKKeyError(f"Unknown engine {unlock_engine}")
-        klass = UNLOCK_COMMANDS_MAPPING[unlock_engine]
-        kwargs = {}
-        unlock_features: str = command_params.get("Unlock_Features")
-        if unlock_features is not None:
-            # features may be defined as single feature of coma separated list of features
-            features = [
-                klass.FEATURES.from_label(feature.strip()).tag
-                for feature in unlock_features.split(",")
-            ]
-            kwargs["features"] = cls.calc_features_value(features)
-        unlock_uid: str = command_params.get("Unlock_UID")
-        if unlock_uid:
-            uids = [int(uid.strip(), 0) for uid in unlock_uid.split(",")]
-            kwargs["uid"] = cls.calc_uid(uids)
-        cmd = klass(**kwargs)
-        return cls(cmd)
+                unlock_engine = EnumEngine.from_label(command_params["Unlock_Engine"])
+                if unlock_engine not in UNLOCK_COMMANDS_MAPPING:
+                    raise SPSDKKeyError(f"Unknown engine {unlock_engine}")
+                klass = UNLOCK_COMMANDS_MAPPING[unlock_engine]
+                kwargs = {}
+                unlock_features: str = command_params.get("Unlock_Features")
+                if unlock_features is not None:
+                    # features may be defined as single feature or comma-separated list of features
+                    features = [
+                        klass.FEATURES.from_label(feature.strip()).tag
+                        for feature in unlock_features.split(",")
+                    ]
+                    kwargs["features"] = cls.calc_features_value(features)
+                unlock_uid: str = command_params.get("Unlock_UID")
+                if unlock_uid:
+                    uids = [int(uid.strip(), 0) for uid in unlock_uid.split(",")]
+                    kwargs["uid"] = cls.calc_uid(uids)
+                cmd = klass(**kwargs)
+                cmds.append(cls(cmd))
+        return cmds
 
     @classmethod
     def calc_features_value(cls, features: List[int]) -> int:

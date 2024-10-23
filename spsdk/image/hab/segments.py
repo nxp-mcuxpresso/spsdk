@@ -420,7 +420,8 @@ class CsfHabSegment(HabSegmentBase):
             command_class = COMMANDS_MAPPING.get(SecCommand.from_tag(cmd_config.index))
             if not command_class:
                 raise SPSDKValueError(f"Command with index does not exist {cmd_config.index}")
-            commands.append(command_class.load_from_config(config, search_paths=search_paths))
+            cmd_objs = command_class.load_from_config(config, search_paths=search_paths)
+            commands.extend(cmd_objs if isinstance(cmd_objs, list) else [cmd_objs])
         segment = SegCSF(enabled=True, version=header.version)
         for command in commands:
             segment.append_command(command.cmd)
