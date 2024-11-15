@@ -20,7 +20,7 @@ line_length = 100
 [tool.mypy]
 disallow_untyped_defs = true
 ignore_missing_imports = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 
 [tool.pytest.ini_options]
 junit_family = "xunit1"
@@ -41,6 +41,15 @@ relative_files = true
 convention = "google"
 add_ignore = "D105,D301"
 match = '(?!test_|__version__).*\.py'
+
+[tool.bandit]
+# B101: Use of assert
+# B110: Try, Except, Pass detected
+# B301: pickle
+# B403: import pickle
+# B404: import subprocess
+# B603: subprocess without shell=True
+skips = ["B101", "B110", "B301", "B403", "B404", "B603"]
 
 [tool.setuptools_scm]
 version_file = "spsdk/__version__.py"
@@ -73,8 +82,7 @@ full-file-test = 0
 
 [tool.checker_jupiter]
 [tool.checker_jupiter.exceptions]
-"examples/init_notebook.ipynb" = [2]
-"examples/general/sdps.ipynb" = [1]
+"examples/sdp/mx815_write_file.ipynb" = [1]
 "examples/imx93/imx93_ahab_uboot.ipynb" = [10]
 "examples/imx93/imx93_signed_ahab_uboot.ipynb" = [10]
 
@@ -106,6 +114,7 @@ root_package = "spsdk"
 "LGPL-2.0" = ["GPL-2.0-or-later"]
 "LGPL-2.1" = ["LGPL-2.1-or-later"]
 "ISC" = ["ISC license"]
+"Unlincense" = ["The Unlicense"]
 
 [tool.nxp_codecheck]
 # Reports output directory
@@ -114,122 +123,29 @@ output_directory = "reports"
 default_check_paths = ["spsdk", "tools"]
 jupyter_check_paths = ["examples"]
 
-# *********************************** Checker list ***********************************
-[[tool.nxp_codecheck.checkers]]
-name = "PYTEST"
-method = "check_pytest"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-kwargs = { disable_xdist = false }
+checkers = [
+    { "pytest" = { timeout = 1200 } },
+    { "gitcov" = { info_only = true } },
+    "pylint",
+    "mypy",
+    "dependencies",
+    "pydocstyle",
+    { "radon_c" = { info_only = true } },
+    "radon_d",
+    { "black" = { timeout = 120 } },
+    "isort",
+    "copyright",
+    "py_headers",
+    { "cyclic" = { info_only = true, check_paths = [
+        "spsdk",
+    ] } },
+    { "cspell" = { info_only = true } },
+    { "bandit" = { info_only = true } },
+    "black_nb",
+    "isort_nb",
+    "jupyter",
+]
 
-[[tool.nxp_codecheck.checkers]]
-name = "GITCOV"
-method = "check_gitcov"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = true
-dependencies = ["PYTEST"]
-[[tool.nxp_codecheck.checkers]]
-name = "PYLINT"
-method = "check_pylint"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-[[tool.nxp_codecheck.checkers]]
-name = "MYPY"
-method = "check_mypy"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-[[tool.nxp_codecheck.checkers]]
-name = "DEPENDENCIES"
-method = "check_dependencies"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-fixer = "fix_dependencies"
-[[tool.nxp_codecheck.checkers]]
-name = "PYDOCSTYLE"
-method = "check_pydocstyle"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-[[tool.nxp_codecheck.checkers]]
-name = "RADON_C"
-method = "check_radon"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = true
-kwargs = { min_rank = "C" }
-[[tool.nxp_codecheck.checkers]]
-name = "RADON_D"
-method = "check_radon"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-kwargs = { min_rank = "D" }
-[[tool.nxp_codecheck.checkers]]
-name = "BLACK"
-method = "check_black"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = []
-fixer = "fix_black"
-[[tool.nxp_codecheck.checkers]]
-name = "ISORT"
-method = "check_isort"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = []
-fixer = "fix_isort"
-[[tool.nxp_codecheck.checkers]]
-name = "COPYRIGHT"
-method = "check_copyright_year"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = []
-fixer = "fix_copyright_year"
-[[tool.nxp_codecheck.checkers]]
-name = "PY_HEADERS"
-method = "check_py_file_headers"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = []
-fixer = "fix_py_file_headers"
-[[tool.nxp_codecheck.checkers]]
-name = "CYCLIC"
-method = "check_cyclic_imports"
-check_paths = ["spsdk"]
-info_only = false
-dependencies = []
-[[tool.nxp_codecheck.checkers]]
-name = "BANDIT"
-info_only = true
-[[tool.nxp_codecheck.checkers]]
-name = "CSPELL"
-method = "check_cspell"
-check_paths = ["**/*.{txt,py,md,yaml,rst,json}"]
-info_only = true
-# ************************** Jupyter notebooks checks *********************************
-[[tool.nxp_codecheck.checkers]]
-name = "BLACK_NB"
-method = "check_black_nb"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = ["BLACK", "MYPY", "ISORT"]
-inherit_failure = false
-fixer = "fix_black_nb"
-jyputer_notebook_checker = true
-[[tool.nxp_codecheck.checkers]]
-name = "ISORT_NB"
-method = "check_isort_nb"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = ["BLACK_NB"]
-inherit_failure = false
-fixer = "fix_isort_nb"
-jyputer_notebook_checker = true
-[[tool.nxp_codecheck.checkers]]
-name = "JUPYTER"
-method = "check_jupyter_outputs"
-# check_paths = [] # The default check paths could be overrides by local settings
-info_only = false
-dependencies = ["BLACK_NB", "ISORT_NB"]
-inherit_failure = false
-jyputer_notebook_checker = true
 
 [tool.release-tools]
 
@@ -251,10 +167,10 @@ scr_file = "SW_Content_Register_SPSDK.txt"
 test_cmd = "spsdk --version"
 
 [tool.release-tools.test_artifacts_collector.jenkins_jobs]
-spsdk_full_test_scope_macos = { artifact_regex = ".*results.xml"}
-spsdk_full_test_scope_ubuntu = { artifact_regex = ".*results.xml"}
-spsdk_full_test_scope_win10 = { artifact_regex = ".*results.xml"}
-spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml"}
+spsdk_full_test_scope_macos = { artifact_regex = ".*results.xml" }
+spsdk_full_test_scope_ubuntu = { artifact_regex = ".*results.xml" }
+spsdk_full_test_scope_win10 = { artifact_regex = ".*results.xml" }
+spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
 
 [tool.release-tools.blackduck.env]
 PROTEX_PROJECT_ID = "c_spsdk_automation_19733"

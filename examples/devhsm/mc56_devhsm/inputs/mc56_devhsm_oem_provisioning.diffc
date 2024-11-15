@@ -1,0 +1,16 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/devhsm_template.yaml
+user_cfg: inputs/oem_provisioning.yaml
+custom_command: "%! nxpdevhsm -v get-template -f mwct20d2 -o workspace/devhsm_template.yaml --force"
+
+comments:
+  image_type: "Set to OEM_PROVISIONING for initial provisioning"
+  containerOutputFile: "Add path to the output file for the container"
+  signingCertificatePrivateKeyFile: "Key is not required for OEM_PROVISIONING"
+  erase: "Erase flash before programming"
+  load: "Program the image"
+  reset: "Reset the device after programming"

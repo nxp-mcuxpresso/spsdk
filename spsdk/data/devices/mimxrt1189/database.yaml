@@ -165,8 +165,8 @@ features:
     container_types: [1] # Supported container types
     core_ids:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
-      CORTEX_M7:  [2, "cortex-m7", "Cortex M7"]
-      ELE:  [6, "ele", "EdgeLock Enclave"]
+      CORTEX_M7: [2, "cortex-m7", "Cortex M7"]
+      ELE: [6, "ele", "EdgeLock Enclave"]
     image_types:
       application:
         EXECUTABLE: [0x03, executable, Executable Image]
@@ -178,6 +178,8 @@ features:
 
     image_types_mapping:
       ele: [6]
+
+    allow_empty_hash: True
 
   # ======== FCB section ========
   fcb:

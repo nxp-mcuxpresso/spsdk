@@ -204,6 +204,7 @@ def check_config(
     """
     custom_formatters: dict[str, Callable[[str], bool]] = {
         "dir": lambda x: bool(find_dir(x, search_paths=search_paths, raise_exc=False)),
+        "dir_name": lambda x: os.path.basename(x.replace("\\", "/")) not in ("", None),
         "file": lambda x: bool(find_file(x, search_paths=search_paths, raise_exc=False)),
         "file_name": lambda x: os.path.basename(x.replace("\\", "/")) not in ("", None),
         "optional_file": lambda x: not x
@@ -241,7 +242,8 @@ def check_config(
 
             validator_file.validate(config_to_check, formats)
         else:
-            assert validator is not None
+            if validator is None:
+                raise SPSDKError("Validator is not defined")
             validator(config_to_check)
     except fastjsonschema.JsonSchemaValueException as exc:
         message = _print_validation_fail_reason(exc, formats)
@@ -365,16 +367,20 @@ class CommentedConfig:
         :return: CMap or CSeq base configuration object
         :raises SPSDKError: In case of invalid data pattern.
         """
-        assert block.get("type") == "object"
+        if block.get("type") != "object":
+            raise SPSDKError(f"block type is not 'object' but {block.get('type')}")
+
         self.indent += 1
 
-        assert "properties" in block.keys()
+        if "properties" not in block:
+            raise SPSDKError("Block doesn't contain properties")
 
         cfg_m = CMap()
         for key in self._get_schema_block_keys(block):
-            assert (
-                key in block["properties"].keys()
-            ), f"Missing key ({key}, in block properties. Block title: {block.get('title', 'Unknown')})"
+            if key not in block["properties"]:
+                raise SPSDKError(
+                    f"Missing key ({key}, in block properties. Block title: {block.get('title', 'Unknown')})"
+                )
 
             # Skip the record in case that custom value key is defined,
             # but it has None value as a mark to not use this record
@@ -389,7 +395,8 @@ class CommentedConfig:
 
             cfg_m[key] = value_to_add
             required = self.get_property_optional_required(key, block).description
-            assert required
+            if not required:
+                raise SPSDKError(f"Required property is not defined for {key}")
             self._add_comment(
                 cfg_m,
                 val_p,
@@ -410,8 +417,10 @@ class CommentedConfig:
         :return: CS base configuration object
         :raises SPSDKError: In case of invalid data pattern.
         """
-        assert block.get("type") == "array"
-        assert "items" in block.keys()
+        if block.get("type") != "array":
+            raise SPSDKError(f"block type is not 'array' but {block.get('type')}")
+        if "items" not in block:
+            raise SPSDKError("Block doesn't contain items")
         self.indent += 1
         val_i: dict = block["items"]
 
@@ -451,7 +460,8 @@ class CommentedConfig:
         if cust_val:
             if isinstance(cust_val, dict) and check_type(one_of, "object"):
                 properties = one_of.get("properties")
-                assert properties, "non-empty properties must be defined"
+                if not properties:
+                    raise SPSDKError("Properties must be defined")
                 if all([key in properties for key in cust_val.keys()]):
                     return True
 
@@ -540,9 +550,8 @@ class CommentedConfig:
         """
 
         def get_custom_or_template() -> Any:
-            assert (
-                custom_value or "template_value" in block.keys()
-            ), f"Template value not provided in {block}"
+            if not (custom_value or "template_value" in block.keys()):
+                raise SPSDKError("Custom value or template_value must be defined")
             return (
                 custom_value
                 if (custom_value is not None)
@@ -558,13 +567,12 @@ class CommentedConfig:
             schema_type = block.get("type")
             if not schema_type:
                 raise SPSDKError(f"Type not available in block: {block}")
-            assert schema_type, f"Type not available in block: {block}"
 
             if schema_type == "object":
-                assert (custom_value is None) or isinstance(custom_value, dict)
+                assert isinstance(custom_value, (dict, type(None)))
                 ret = self._create_object_block(block, custom_value)
             elif schema_type == "array":
-                assert (custom_value is None) or isinstance(custom_value, list)
+                assert isinstance(custom_value, (list, type(None)))
                 ret = self._create_array_block(block, custom_value)
             else:
                 ret = get_custom_or_template()
@@ -737,7 +745,7 @@ class CommentedConfig:
             cfg.yaml_set_start_comment(title)
             for title, info in block_list.items():
                 description = info["description"]
-                assert isinstance(description, str) or description is None
+                assert isinstance(description, (str, type(None)))
 
                 first_key = None
                 for info_key in info["properties"]:

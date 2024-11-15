@@ -220,7 +220,7 @@ class CmdLoadBase(BaseCmd):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: Command object loaded from configuration.
         """
-        assert False
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 class CmdErase(BaseCmd):

@@ -568,7 +568,7 @@ class SecureBinary31(BaseClass):
             local_file_key=signing_key_path,
             search_paths=search_paths,
         )
-        assert signature_provider
+        assert isinstance(signature_provider, SignatureProvider)
 
         pck = None
         if is_encrypted:

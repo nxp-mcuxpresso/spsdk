@@ -1,86 +1,88 @@
-[
-    {
-        "req_id": "0.0",
-        "desc": "Something about SECURE DICE or whatever",
-        "msg": "You need to enable something and disable something other",
-        "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CMPA.SECURE_BOOT_CFG.SKIP_DICE == 0"
-    },
-    {
-        "req_id": "0.1",
-        "desc": "Something about SECURE DICE or whatever",
-        "msg": "You need to enable something and disable something other",
-        "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and UTIL.hasDigestSet() == False"
-    },
-    {
-        "req_id": "0.2",
-        "desc": "Example of incorrectly written condition",
-        "msg": "Should we even display this?!",
-        "cond": "no[one(_would(write[this.right?"
-    },
-    {
-        "req_id": "0.3",
-        "desc": "Example of an unknown keyword/operator",
-        "msg": "Should we even display this?!",
-        "cond": "CMPA.NONEXISTING.REGISTER != 0"
-    },
-    {
-        "req_id": "1.1",
-        "desc": "Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN and DCFG_CC_SOCU_NS_DFLT (CFPA) before CC_SOCU_PIN and CC_SOCU_DFLT (CMPA) contains any valid (non-zero) configuration.",
-        "msg": "The CMPA.CC_SOCU_PIN[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is set.",
-        "cond": "(CMPA.CC_SOCU_PIN & 0x3FF) == 0 and ((CFPA.DCFG_CC_SOCU_PIN & 0x2FF) ^ 0) != 0"
-    },
-    {
-        "req_id": "1.2",
-        "desc": "Inverse value (upper 16 bits) of CC_SOCU_PIN/DFLT must be always valid. Only exception are blank devices where CC_SOCU_xxx contains all zeros.",
-        "msg": "Inverse values are generated automatically based on configuration. Not tested.",
-        "cond": "0 != 0"
-    },
-    {
-        "req_id": "1.3",
-        "desc": "Inverse value (upper 16 bits) of DCFG_CC_SOCU_NS_PIN/DFLT must be always valid. Only exception are blank devices where CC_SOCU_xxx contains all zeros.",
-        "msg": "Inverse values are generated automatically based on configuration. Not tested.",
-        "cond": "0 != 0"
-    },
-    {
-        "req_id": "1.4",
-        "desc": "Do not write invalid PIN/DFLT configuration in CMPA area. Setting PIN bit to 0 and DFLT bit to 1 for given feature is not allowed",
-        "msg": "Invalid bit combination. If CMPA.CC_SOCU_PIN[0:9] is 0, CMPA.CC_SOCU_DFLT[0:9] can't be set to 1!",
-        "cond": "(CMPA.CC_SOCU_PIN & 0x3FF) == 0 and ((CMPA.CC_SOCU_DFLT & 0x3FF) ^ 0) != 0"
-    },
-    {
-        "req_id": "1.5",
-        "desc": "Do not write invalid PIN/DFLT configuration in CFPA area. Setting PIN bit to 0 and DFLT bit to 1 for given feature is not allowed",
-        "msg": "Invalid bit combination. If CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is 0, CFPA.DCFG_CC_SOCU_DFLT_PIN[0:9] can't be set to 1!",
-        "cond": "(CFPA.DCFG_CC_SOCU_PIN & 0x2FF) == 0 and ((CFPA.DCFG_CC_SOCU_DFLT & 0x2FF) ^ 0) != 0"
-    },
-    {
-        "req_id": "1.6",
-        "desc": "Bits in DCFG_CC_SOCU_NS_PIN must be all cleared or all set",
-        "msg": "CFPA.DCFG_CC_SOCU_NS_PIN[0:9] must be either all 0 or all 1!",
-        "cond": "(CFPA.DCFG_CC_SOCU_PIN & 0x2FF) != 0 and (CFPA.DCFG_CC_SOCU_PIN & 0x2FF) != 0x2FF"
-    },
-    {
-        "req_id": "1.7",
-        "desc": "Bits in CC_SOCU_PIN must be all cleared or all set",
-        "msg": "The CMPA.CC_SOCU_PIN[0:9] must be either all 0 or all 1!",
-        "cond": "(CMPA.CC_SOCU_PIN & 0x3FF) != 0 and (CMPA.CC_SOCU_PIN & 0x3FF) != 0x3FF"
-    },
-    {
-        "req_id": "2.1",
-        "desc": "This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader is allowed to write anything to this field.",
-        "msg": "The CMPA_PROG_IN_PROGRESS must be set to 0!",
-        "cond": "CFPA.CMPA_PROG_IN_PROGRESS != 0"
-    },
-    {
-        "req_id": "3.1",
-        "desc": "Dice feature is enabled by default (SKIP_DICE = 0). This feature becomes active as soon as secure boot is enabled. In case that valid UDS keycode is not present in PFR Key Store Area, secure boot will always fail.",
-        "msg": "Secure boot is enabled (SEC_BOOT_EN) and while DICE is not being skipped. Either skip DICE or make sure a valid UDS key code is set.",
-        "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CMPA.SECURE_BOOT_CFG.SKIP_DICE == 0 and UTIL.isUDSKeyCodeValid == False"
-    },
-    {
-        "req_id": "4.1",
-        "desc": "By default (blank device), the RoTKx_EN values are set to 0b00 which means invalid. When secure boot is enabled (SEC_BOOT_EN != 0) there must be at least one RoTKx_EN which is set to 0b01 (enabled) to allow device to boot successfully.",
-        "msg": "Secure boot is enabled. Make sure at least one Root of Trust Key Enable bit is set.",
-        "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CFPA.ROTKH_REVOKE.RoTK3_EN == 0 and CFPA.ROTKH_REVOKE.RoTK2_EN == 0 and CFPA.ROTKH_REVOKE.RoTK1_EN == 0 and CFPA.ROTKH_REVOKE.RoTK0_EN == 0"
-    }
-]
+{
+    "rules": [
+        {
+            "req_id": "0.0",
+            "desc": "Something about SECURE DICE or whatever",
+            "msg": "You need to enable something and disable something other",
+            "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CMPA.SECURE_BOOT_CFG.SKIP_DICE == 0"
+        },
+        {
+            "req_id": "0.1",
+            "desc": "Something about SECURE DICE or whatever",
+            "msg": "You need to enable something and disable something other",
+            "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and UTIL.hasDigestSet() == False"
+        },
+        {
+            "req_id": "0.2",
+            "desc": "Example of incorrectly written condition",
+            "msg": "Should we even display this?!",
+            "cond": "no[one(_would(write[this.right?"
+        },
+        {
+            "req_id": "0.3",
+            "desc": "Example of an unknown keyword/operator",
+            "msg": "Should we even display this?!",
+            "cond": "CMPA.NONEXISTING.REGISTER != 0"
+        },
+        {
+            "req_id": "1.1",
+            "desc": "Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN and DCFG_CC_SOCU_NS_DFLT (CFPA) before CC_SOCU_PIN and CC_SOCU_DFLT (CMPA) contains any valid (non-zero) configuration.",
+            "msg": "The CMPA.CC_SOCU_PIN[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is set.",
+            "cond": "(CMPA.CC_SOCU_PIN & 0x3FF) == 0 and ((CFPA.DCFG_CC_SOCU_PIN & 0x2FF) ^ 0) != 0"
+        },
+        {
+            "req_id": "1.2",
+            "desc": "Inverse value (upper 16 bits) of CC_SOCU_PIN/DFLT must be always valid. Only exception are blank devices where CC_SOCU_xxx contains all zeros.",
+            "msg": "Inverse values are generated automatically based on configuration. Not tested.",
+            "cond": "0 != 0"
+        },
+        {
+            "req_id": "1.3",
+            "desc": "Inverse value (upper 16 bits) of DCFG_CC_SOCU_NS_PIN/DFLT must be always valid. Only exception are blank devices where CC_SOCU_xxx contains all zeros.",
+            "msg": "Inverse values are generated automatically based on configuration. Not tested.",
+            "cond": "0 != 0"
+        },
+        {
+            "req_id": "1.4",
+            "desc": "Do not write invalid PIN/DFLT configuration in CMPA area. Setting PIN bit to 0 and DFLT bit to 1 for given feature is not allowed",
+            "msg": "Invalid bit combination. If CMPA.CC_SOCU_PIN[0:9] is 0, CMPA.CC_SOCU_DFLT[0:9] can't be set to 1!",
+            "cond": "(CMPA.CC_SOCU_PIN & 0x3FF) == 0 and ((CMPA.CC_SOCU_DFLT & 0x3FF) ^ 0) != 0"
+        },
+        {
+            "req_id": "1.5",
+            "desc": "Do not write invalid PIN/DFLT configuration in CFPA area. Setting PIN bit to 0 and DFLT bit to 1 for given feature is not allowed",
+            "msg": "Invalid bit combination. If CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is 0, CFPA.DCFG_CC_SOCU_DFLT_PIN[0:9] can't be set to 1!",
+            "cond": "(CFPA.DCFG_CC_SOCU_PIN & 0x2FF) == 0 and ((CFPA.DCFG_CC_SOCU_DFLT & 0x2FF) ^ 0) != 0"
+        },
+        {
+            "req_id": "1.6",
+            "desc": "Bits in DCFG_CC_SOCU_NS_PIN must be all cleared or all set",
+            "msg": "CFPA.DCFG_CC_SOCU_NS_PIN[0:9] must be either all 0 or all 1!",
+            "cond": "(CFPA.DCFG_CC_SOCU_PIN & 0x2FF) != 0 and (CFPA.DCFG_CC_SOCU_PIN & 0x2FF) != 0x2FF"
+        },
+        {
+            "req_id": "1.7",
+            "desc": "Bits in CC_SOCU_PIN must be all cleared or all set",
+            "msg": "The CMPA.CC_SOCU_PIN[0:9] must be either all 0 or all 1!",
+            "cond": "(CMPA.CC_SOCU_PIN & 0x3FF) != 0 and (CMPA.CC_SOCU_PIN & 0x3FF) != 0x3FF"
+        },
+        {
+            "req_id": "2.1",
+            "desc": "This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader is allowed to write anything to this field.",
+            "msg": "The CMPA_PROG_IN_PROGRESS must be set to 0!",
+            "cond": "CFPA.CMPA_PROG_IN_PROGRESS != 0"
+        },
+        {
+            "req_id": "3.1",
+            "desc": "Dice feature is enabled by default (SKIP_DICE = 0). This feature becomes active as soon as secure boot is enabled. In case that valid UDS keycode is not present in PFR Key Store Area, secure boot will always fail.",
+            "msg": "Secure boot is enabled (SEC_BOOT_EN) and while DICE is not being skipped. Either skip DICE or make sure a valid UDS key code is set.",
+            "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CMPA.SECURE_BOOT_CFG.SKIP_DICE == 0 and UTIL.isUDSKeyCodeValid == False"
+        },
+        {
+            "req_id": "4.1",
+            "desc": "By default (blank device), the RoTKx_EN values are set to 0b00 which means invalid. When secure boot is enabled (SEC_BOOT_EN != 0) there must be at least one RoTKx_EN which is set to 0b01 (enabled) to allow device to boot successfully.",
+            "msg": "Secure boot is enabled. Make sure at least one Root of Trust Key Enable bit is set.",
+            "cond": "CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CFPA.ROTKH_REVOKE.RoTK3_EN == 0 and CFPA.ROTKH_REVOKE.RoTK2_EN == 0 and CFPA.ROTKH_REVOKE.RoTK1_EN == 0 and CFPA.ROTKH_REVOKE.RoTK0_EN == 0"
+        }
+    ]
+}

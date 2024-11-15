@@ -4,9 +4,13 @@
 # Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module to manage used databases in SPSDK."""
+"""Module to manage and interact with databases used in SPSDK.
 
-import atexit
+This module provides utilities and classes for handling various databases
+used throughout the Secure Provisioning SDK (SPSDK). It includes functionality
+for loading, caching, and accessing device-specific data, features, and revisions.
+"""
+
 import logging
 import os
 import pickle
@@ -14,18 +18,20 @@ import re
 import shutil
 import textwrap
 from copy import deepcopy
-from typing import Any, Iterator, Optional, Tuple, Union
+from typing import Any, Iterator, Optional, Union
 
-import platformdirs
 import prettytable
+from filelock import FileLock
 from typing_extensions import Self
 
 import spsdk
 from spsdk import (
     SPSDK_ADDONS_DATA_FOLDER,
     SPSDK_CACHE_DISABLED,
+    SPSDK_CACHE_FOLDER,
     SPSDK_DATA_FOLDER,
     SPSDK_DEBUG_DB,
+    SPSDK_PLATFORM_DIRS,
     SPSDK_RESTRICTED_DATA_FOLDER,
     version,
 )
@@ -45,30 +51,54 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 logger = logging.getLogger(__name__)
 
 
+def get_spsdk_cache_dirname() -> str:
+    """Get database cache folder name.
+
+    Returns the path specified by SPSDK_CACHE_FOLDER if set and valid.
+    Otherwise, returns the default user cache directory for SPSDK.
+
+    Raises:
+        SPSDKValueError: If SPSDK_CACHE_FOLDER is set but not a valid absolute path.
+
+    Returns:
+        str: The path to the SPSDK cache directory.
+    """
+    if SPSDK_CACHE_FOLDER:
+        if not os.path.isabs(SPSDK_CACHE_FOLDER):
+            raise SPSDKValueError(f"Invalid SPSDK_CACHE_FOLDER path: {SPSDK_CACHE_FOLDER}")
+        return SPSDK_CACHE_FOLDER
+
+    return SPSDK_PLATFORM_DIRS.user_cache_dir
+
+
 class SPSDKErrorMissingDevice(SPSDKError):
-    """Missing device in database."""
+    """Exception raised when a device is missing from the database."""
 
     def __init__(
         self, desc: Optional[str] = None, missing_device_name: Optional[str] = None
     ) -> None:
-        """Initialize the base SPSDK Exception."""
+        """Initialize the SPSDKErrorMissingDevice exception.
+
+        :param desc: Description of the error.
+        :param missing_device_name: Name of the missing device.
+        """
         super().__init__()
         self.description = desc
         self.dev_name = missing_device_name
 
 
 class Features:
-    """Features dataclass represents a single device revision."""
+    """Represents a single device revision with its features."""
 
     def __init__(
         self, name: str, is_latest: bool, device: "Device", features: dict[str, dict[str, Any]]
     ) -> None:
-        """Constructor of revision.
+        """Initialize a Features instance.
 
-        :param name: Revision name
-        :param is_latest: Mark if this revision is latest.
-        :param device: Reference to its device
-        :param features: Features
+        :param name: Revision name.
+        :param is_latest: Flag indicating if this revision is the latest.
+        :param device: Reference to its device.
+        :param features: Dictionary of features.
         """
         self.name = name
         self.is_latest = is_latest
@@ -76,12 +106,12 @@ class Features:
         self.features = features
 
     def check_key(self, feature: str, key: Union[list[str], str]) -> bool:
-        """Check if the key exist in database.
+        """Check if the key exists in the database.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :raises SPSDKValueError: Unsupported feature
-        :return: True if exist False otherwise
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :raises SPSDKValueError: If the feature is unsupported.
+        :return: True if the key exists, False otherwise.
         """
         if feature not in self.features:
             raise SPSDKValueError(f"Unsupported feature: '{feature}'")
@@ -99,14 +129,13 @@ class Features:
         return key in db_dict
 
     def get_value(self, feature: str, key: Union[list[str], str], default: Any = None) -> Any:
-        """Get value.
+        """Get a value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :raises SPSDKValueError: Unsupported feature
-        :raises SPSDKValueError: Unavailable item in feature
-        :return: Value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :raises SPSDKValueError: If the feature is unsupported or the item is unavailable.
+        :return: Value from the feature dictionary.
         """
         if feature not in self.features:
             raise SPSDKValueError(f"Unsupported feature: '{feature}'")
@@ -132,12 +161,12 @@ class Features:
     def get_bool(
         self, feature: str, key: Union[list[str], str], default: Optional[bool] = None
     ) -> bool:
-        """Get Boolean value.
+        """Get a boolean value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :return: Boolean value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :return: Boolean value from the feature dictionary.
         """
         val = self.get_value(feature, key, default)
         return value_to_bool(val)
@@ -145,12 +174,12 @@ class Features:
     def get_int(
         self, feature: str, key: Union[list[str], str], default: Optional[int] = None
     ) -> int:
-        """Get Integer value.
+        """Get an integer value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :return: Integer value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :return: Integer value from the feature dictionary.
         """
         val = self.get_value(feature, key, default)
         return value_to_int(val)
@@ -158,12 +187,12 @@ class Features:
     def get_str(
         self, feature: str, key: Union[list[str], str], default: Optional[str] = None
     ) -> str:
-        """Get String value.
+        """Get a string value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :return: String value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :return: String value from the feature dictionary.
         """
         val = self.get_value(feature, key, default)
         assert isinstance(val, str)
@@ -172,12 +201,12 @@ class Features:
     def get_list(
         self, feature: str, key: Union[list[str], str], default: Optional[list] = None
     ) -> list[Any]:
-        """Get List value.
+        """Get a list value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :return: List value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :return: List value from the feature dictionary.
         """
         val = self.get_value(feature, key, default)
         assert isinstance(val, list)
@@ -186,12 +215,12 @@ class Features:
     def get_dict(
         self, feature: str, key: Union[list[str], str], default: Optional[dict] = None
     ) -> dict:
-        """Get Dictionary value.
+        """Get a dictionary value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :return: Dictionary value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :return: Dictionary value from the feature dictionary.
         """
         val = self.get_value(feature, key, default)
         assert isinstance(val, dict)
@@ -204,26 +233,29 @@ class Features:
         default: Optional[str] = None,
         just_standard_lib: bool = False,
     ) -> str:
-        """Get File path value.
+        """Get a file path value from the feature dictionary.
 
-        :param feature: Feature name
-        :param key: Item key or key path in list like ['grp1', 'grp2', 'key']
-        :param default: Default value in case of missing key
-        :param just_standard_lib: Use just standard library files (no restricted data, neither addons), defaults False.
-        :return: File path value from the feature
+        :param feature: Feature name.
+        :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
+        :param default: Default value if the key is missing.
+        :param just_standard_lib: Use only standard library files (no restricted data or addons).
+        :return: File path value for the device.
         """
         file_name = self.get_str(feature, key, default)
         return self.device.create_file_path(file_name, just_standard_lib)
 
 
 class Revisions(list[Features]):
-    """List of device revisions."""
+    """List of device revisions.
+
+    This class extends the built-in list to store and manage device revision Features.
+    """
 
     def revision_names(self, append_latest: bool = False) -> list[str]:
-        """Get list of revisions.
+        """Get a list of revision names.
 
-        :param append_latest: Add to list also "latest" string
-        :return: List of all supported device version.
+        :param append_latest: If True, append "latest" to the list of revision names.
+        :return: List of all supported device revision names.
         """
         ret = [rev.name for rev in self]
         if append_latest:
@@ -235,8 +267,9 @@ class Revisions(list[Features]):
 
         If name is not specified, or equal to 'latest', then the latest revision is returned.
 
-        :param name: The revision name.
-        :return: The Revision object.
+        :param name: The revision name to retrieve.
+        :return: The Features object for the specified revision.
+        :raises SPSDKValueError: If the requested revision is not supported.
         """
         if name is None or name == "latest":
             revision = find_first(self, lambda rev: rev.is_latest)
@@ -248,40 +281,59 @@ class Revisions(list[Features]):
 
 
 class UsbId:
-    """Usb identifier for given device."""
+    """USB identifier for a given device."""
 
     def __init__(self, vid: Optional[int] = None, pid: Optional[int] = None) -> None:
-        """Constructor of USB ID class.
+        """Initialize a USB ID instance.
 
-        :param vid: USB Vid
-        :param pid: USB Pid
+        :param vid: USB Vendor ID
+        :param pid: USB Product ID
         """
         self.vid = vid
         self.pid = pid
 
     def __str__(self) -> str:
+        """Return a string representation of the USB ID.
+
+        :return: String in the format '[0xPID:0xVID]'
+        """
         return f"[0x{self.pid:04X}:0x{self.vid:04X}]"
 
     def __eq__(self, obj: Any) -> bool:
+        """Check equality with another object.
+
+        :param obj: Object to compare with
+        :return: True if obj is a UsbId instance with matching vid and pid, False otherwise
+        """
         return isinstance(obj, self.__class__) and self.vid == obj.vid and self.pid == obj.pid
 
     def update(self, usb_config: dict) -> None:
-        """Update the object from configuration."""
+        """Update the USB ID from a configuration dictionary.
+
+        :param usb_config: Dictionary containing 'vid' and/or 'pid' keys
+        """
         self.vid = usb_config.get("vid", self.vid)
         self.pid = usb_config.get("pid", self.pid)
 
     @classmethod
     def load(cls, usb_config: dict) -> Self:
-        """Load from configuration."""
+        """Create a UsbId instance from a configuration dictionary.
+
+        :param usb_config: Dictionary containing 'vid' and/or 'pid' keys
+        :return: New UsbId instance
+        """
         return cls(vid=usb_config.get("vid", None), pid=usb_config.get("pid", None))
 
     def is_valid(self) -> bool:
-        """Returns True if all the properties are set, False otherwise."""
+        """Check if the USB ID is valid.
+
+        :return: True if both vid and pid are set, False otherwise
+        """
         return self.vid is not None and self.pid is not None
 
 
 class Bootloader:
-    """Bootloader."""
+    """Represents a bootloader with its protocol and interface details."""
 
     def __init__(
         self,
@@ -290,12 +342,13 @@ class Bootloader:
         usb_id: UsbId,
         protocol_params: dict,
     ) -> None:
-        """Constructor of bootloader class.
+        """Initialize a Bootloader instance.
 
-        :param protocol: Protocol name
+        :param protocol: Name of the bootloader protocol (e.g., 'mboot', 'sdp', 'sdps', 'lpc')
         :param interfaces: List of supported interfaces
-        :param usb_id: Usb ID
-        :param params: Protocol parameters
+        :param usb_id: USB identifier for the bootloader
+        :param protocol_params: Dictionary of protocol-specific parameters
+        :raises SPSDKValueError: If an invalid protocol value is provided
         """
         if protocol and protocol not in ["mboot", "sdp", "sdps", "lpc"]:
             raise SPSDKValueError(f"Invalid protocol value: {protocol}")
@@ -305,6 +358,10 @@ class Bootloader:
         self.protocol_params = protocol_params
 
     def __str__(self) -> str:
+        """Return a string representation of the Bootloader.
+
+        :return: Formatted string with bootloader details
+        """
         ret = ""
         ret += f"Protocol:     {self.protocol or 'Not specified'}\n"
         ret += f"Interfaces:   {self.interfaces}"
@@ -314,7 +371,11 @@ class Bootloader:
 
     @classmethod
     def load(cls, config: dict) -> Self:
-        """Load from configuration."""
+        """Create a Bootloader instance from a configuration dictionary.
+
+        :param config: Dictionary containing bootloader configuration
+        :return: New Bootloader instance
+        """
         return cls(
             protocol=config.get("protocol", None),
             interfaces=config.get("interfaces", []),
@@ -323,7 +384,10 @@ class Bootloader:
         )
 
     def update(self, config: dict) -> None:
-        """Update the object from configuration."""
+        """Update the Bootloader instance from a configuration dictionary.
+
+        :param config: Dictionary containing updated bootloader configuration
+        """
         self.protocol = config.get("protocol", self.protocol)
         self.interfaces = config.get("interfaces", self.interfaces)
         self.protocol_params = config.get("protocol_params", self.protocol_params)
@@ -356,15 +420,19 @@ class MemBlock:
     SECURITY = ["s", "ns"]
 
     def __init__(self, name: str, desc: dict[str, Any]) -> None:
-        """Constructor on one memory block.
+        """Initialize a MemBlock instance.
 
-        :param name: Name of memory block
-        :param desc: description of memory block
+        :param name: Name of the memory block
+        :param desc: Dictionary containing the memory block description
         """
         self.name = name
         self.description = desc
 
     def __str__(self) -> str:
+        """Return a string representation of the MemBlock.
+
+        :return: Formatted string with memory block details
+        """
         ret = self.name + ":\n"
         ret += f"  Base:     0x{self.base_address:08X}\n"
         ret += f"  Size:     {size_fmt(self.size,use_kibibyte=True)}\n"
@@ -373,21 +441,30 @@ class MemBlock:
 
     @property
     def base_address(self) -> int:
-        """Base address of block."""
+        """Get the base address of the memory block.
+
+        :return: Base address as an integer
+        """
         return value_to_int(self.description["start_int"])
 
     @property
     def size(self) -> int:
-        """Size of block."""
+        """Get the size of the memory block.
+
+        :return: Size in bytes as an integer
+        """
         return value_to_int(self.description["size_int"])
 
     @property
     def external(self) -> bool:
-        """Mark that this is external memory."""
+        """Check if this is an external memory block.
+
+        :return: True if external, False otherwise
+        """
         return value_to_bool(self.description.get("external", False))
 
     @classmethod
-    def parse_name(cls, name: str) -> Tuple[Optional[str], str, Optional[int], Optional[bool]]:
+    def parse_name(cls, name: str) -> tuple[Optional[str], str, Optional[int], Optional[bool]]:
         """Parse name to base elements.
 
         :param name: Name of the memory block.
@@ -417,9 +494,8 @@ class MemBlock:
             ix_2nd = name.find("_", ix + 1)
             raw_name = name[ix + 1 : ix_2nd]
             raw_security = name[ix_2nd + 1 :]
-            assert (
-                raw_security in cls.SECURITY
-            ), f"Invalid security flag in memory block name: {raw_security}"
+            if raw_security not in cls.SECURITY:
+                raise SPSDKError(f"Invalid security flag in memory block name: {raw_security}")
         else:
             raise SPSDKError(f"Database memory block parse name failed on: {name}")
         regex = re.compile(r"(?P<value>[a-zA-Z]+)(?P<instance>\d+)?")
@@ -1037,7 +1113,6 @@ class DevicesQuickInfo:
         """
         if self.devices == {}:
             return []
-        assert self.devices
         return self.devices[dev_name].features_list
 
     def get_devices_with_feature(
@@ -1211,10 +1286,11 @@ class Database:
                 db_cache_file_name = self.get_cache_filename(path)
                 if os.path.exists(db_cache_file_name):
                     try:
-                        with open(db_cache_file_name, mode="rb") as f:
-                            loaded_db_data = pickle.load(f, encoding="utf-8")
-                            if not isinstance(loaded_db_data, type(self)):
-                                raise SPSDKError("Invalid cache file type.")
+                        with FileLock(db_cache_file_name + ".lock", timeout=10):
+                            with open(db_cache_file_name, mode="rb") as f:
+                                loaded_db_data = pickle.load(f, encoding="utf-8")
+                        if not isinstance(loaded_db_data, type(self)):
+                            raise SPSDKError("Invalid cache file type.")
                         db_hash = self.hash_db_data(
                             cached_configs=list(loaded_db_data.cfg_cache.keys()),
                             path=path,
@@ -1237,6 +1313,7 @@ class Database:
                         UnicodeDecodeError,
                         FileNotFoundError,
                         pickle.PickleError,
+                        MemoryError,
                     ) as exc:
                         logger.error(f"Fail during load of database cache: {str(exc)}")
                         if os.path.exists(db_cache_file_name):
@@ -1266,12 +1343,31 @@ class Database:
             if db_hash != self.db_hash:
                 try:
                     db_cache_file_name = self.get_cache_filename(self.path)
-                    os.path.dirname(db_cache_file_name)
-                    os.makedirs(os.path.dirname(db_cache_file_name), exist_ok=True)
-                    with open(db_cache_file_name, mode="wb") as f:
-                        self.db_hash = db_hash
-                        pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-                        logger.debug(f"Created database data cache: {db_cache_file_name}")
+                    cache_dir = os.path.dirname(db_cache_file_name)
+                    if not os.path.exists(cache_dir):
+                        os.makedirs(cache_dir, exist_ok=True)
+                    self.db_hash = db_hash
+                    with FileLock(db_cache_file_name + ".lock", timeout=10):
+                        # 1. try to load the already existing cache file
+                        if os.path.exists(db_cache_file_name):
+                            with open(db_cache_file_name, mode="rb") as f:
+                                cached_data = pickle.load(f, encoding="utf-8")
+                            assert isinstance(cached_data, Database.DatabaseData)
+                            # In case that the current database data has been updated by other parallel process
+                            # Load it and merge together
+                            if cached_data.db_hash != self.db_hash:
+                                for rec in cached_data.cfg_cache.keys():
+                                    if rec not in self.cfg_cache:
+                                        self.cfg_cache[rec] = cached_data.cfg_cache[rec]
+                            self.db_hash = self.hash_db_data(
+                                cached_configs=list(self.cfg_cache.keys()),
+                                path=self.path,
+                                restricted_data_path=self.restricted_data_path,
+                                addons_data_path=self.addons_data_path,
+                            )
+                        with open(db_cache_file_name, mode="wb") as f:
+                            pickle.dump(self, f, pickle.DEFAULT_PROTOCOL)
+                    logger.debug(f"Created database data cache: {db_cache_file_name}")
                 except Exception as exc:
                     self.db_hash = b""
                     logger.debug(f"Cannot store database data cache: {str(exc)}")
@@ -1292,9 +1388,7 @@ class Database:
                 + str(spsdk.version)
                 + ".cache"
             )
-            cache_path = platformdirs.user_cache_dir(
-                appname="spsdk", version=spsdk.SPSDK_VERSION_BASE
-            )
+            cache_path = get_spsdk_cache_dirname()
             return os.path.join(cache_path, cache_name)
 
         @staticmethod
@@ -1316,7 +1410,6 @@ class Database:
             def hash_file(file: str) -> None:
                 stat = os.stat(file)
                 hash_obj.update_int(stat.st_mtime_ns)
-                hash_obj.update_int(stat.st_ctime_ns)
                 hash_obj.update_int(stat.st_size)
 
             hash_obj = Hash(EnumHashAlgorithm.SHA1)
@@ -1363,10 +1456,6 @@ class Database:
 
         # optional Database hash that could be used for identification of consistency
         self.db_hash = bytes()
-
-    def on_close(self) -> None:
-        """On close method. It should be called before destruction of the class."""
-        self._data.make_cache()
 
     @property
     def devices(self) -> Devices:
@@ -1470,6 +1559,7 @@ class Database:
             except SPSDKError as exc:
                 raise SPSDKError(f"Invalid configuration file. {str(exc)}") from exc
             self._data.cfg_cache[abs_path] = cfg
+            self._data.make_cache()
 
         return deepcopy(self._data.cfg_cache[abs_path])
 
@@ -1481,10 +1571,10 @@ class Database:
 
 
 class FeaturesEnum(SpsdkEnum):
-    """Enum of all spsdk database features."""
+    """Enumeration of all SPSDK database features."""
 
-    FUSES = (0, "fuses", "One Time Program fuses")
-    BLHOST = (1, "blhost", "BLHOST application / mBoot ISP protocol")
+    FUSES = (0, "fuses", "One-Time Programmable fuses")
+    BLHOST = (1, "blhost", "BLHOST application / mBoot In-System Programming protocol")
     COMM_BUFFER = (2, "comm_buffer", "Communication buffer in RAM memory")
     CERT_BLOCK = (3, "cert_block", "Certification Block")
     DAT = (4, "dat", "Debug Authentication Protocol")
@@ -1519,34 +1609,31 @@ class FeaturesEnum(SpsdkEnum):
 
 
 class DatabaseManager:
-    """Main SPSDK database manager."""
+    """Main SPSDK database manager implementing singleton pattern."""
 
     _instance = None
     _db: Optional[Database] = None
     _quick_info: Optional[QuickDatabase] = None
 
     @staticmethod
-    def get_cache_dirname() -> str:
-        """Get database cache folder name."""
-        return platformdirs.user_cache_dir(appname="spsdk", version=spsdk.SPSDK_VERSION_BASE)
-
-    @staticmethod
     def clear_cache() -> None:
-        """Clear SPSDK cache."""
-        path = DatabaseManager.get_cache_dirname()
+        """Clear SPSDK cache directory."""
+        path = get_spsdk_cache_dirname()
         if not os.path.exists(path):
-            logger.error(f"Cache dir '{path}' does not exist, nothing to clear.")
+
+            logger.error(f"Cache directory '{path}' does not exist, nothing to clear.")
             return
         try:
             shutil.rmtree(path)
         except (PermissionError, OSError) as exc:
-            logger.error(f"Cannot clear cache dir '{path}': {str(exc)}")
+
+            logger.error(f"Cannot clear cache directory '{path}': {str(exc)}")
 
     @staticmethod
     def get_restricted_data() -> Optional[str]:
-        """Get restricted data folder, if applicable.
+        """Get restricted data folder path, if applicable.
 
-        :return: Optional restricted data folder.
+        :return: Optional restricted data folder path.
         """
         if SPSDK_RESTRICTED_DATA_FOLDER is None:
             return None
@@ -1556,12 +1643,13 @@ class DatabaseManager:
                 os.path.join(SPSDK_RESTRICTED_DATA_FOLDER, "metadata.yaml")
             )["version"]
         except SPSDKError:
-            logger.error("The Restricted data has invalid folder of METADATA")
+
+            logger.error("The Restricted data has invalid folder or METADATA")
             return None
         major, minor = rd_version.split(".", maxsplit=2)
         if int(major) != version.major or int(minor) != version.minor:
             logger.error(
-                f"The restricted data version is no equal to SPSDK current version: {rd_version} != {str(version)}"
+                f"The restricted data version does not match SPSDK current version: {rd_version} != {str(version)}"
             )
             return None
         database_path = os.path.join(SPSDK_RESTRICTED_DATA_FOLDER, "data")
@@ -1572,16 +1660,19 @@ class DatabaseManager:
 
     @classmethod
     def _get_quick_info_db_path(cls) -> str:
-        """Get quick info db filename.
+        """Get quick info database filename.
 
         :return: Database cache file name.
         """
-        cache_folder = cls.get_cache_dirname()
+        cache_folder = get_spsdk_cache_dirname()
         return os.path.join(cache_folder, f"db_quick_info_{spsdk.version}.cache")
 
     @classmethod
     def _get_quick_info_db(cls) -> QuickDatabase:
-        """Get database and count with cache."""
+        """Get database and handle caching.
+
+        :return: QuickDatabase instance.
+        """
         restricted_data = DatabaseManager.get_restricted_data()
 
         if SPSDK_CACHE_DISABLED:
@@ -1591,27 +1682,29 @@ class DatabaseManager:
         db_hash = DatabaseManager.get_quick_info_hash(
             [SPSDK_DATA_FOLDER, restricted_data, SPSDK_ADDONS_DATA_FOLDER]
         )
-        logger.debug(f"Current database finger print hash: {db_hash.hex()}")
-        cache_folder = cls.get_cache_dirname()
+
+        logger.debug(f"Current database fingerprint hash: {db_hash.hex()}")
+        cache_folder = get_spsdk_cache_dirname()
         db_cache_file_name = cls._get_quick_info_db_path()
         if os.path.exists(db_cache_file_name):
             try:
-                with open(db_cache_file_name, mode="rb") as f:
-                    loaded_db = pickle.load(f)
-                    assert isinstance(loaded_db, QuickDatabase)
-                    if db_hash == loaded_db.db_hash:
-                        logger.debug(f"Loaded database from cache: {db_cache_file_name}")
-                        return loaded_db
-                    # if the hash is not same clear cache and make a new one
-                    logger.warning(
-                        f"Existing cached quick DB ({db_cache_file_name}) has invalid hash. It will be erased."
-                    )
-                DatabaseManager.clear_cache()
+                with FileLock(db_cache_file_name + ".lock", timeout=10):
+                    with open(db_cache_file_name, mode="rb") as f:
+                        loaded_db = pickle.load(f, encoding="utf-8")
+                assert isinstance(loaded_db, QuickDatabase)
+                if db_hash == loaded_db.db_hash:
+                    logger.debug(f"Loaded database from cache: {db_cache_file_name}")
+                    return loaded_db
+                # if the hash is not same clear cache and make a new one
+                logger.error(
+                    f"Existing cached quick DB ({db_cache_file_name}) has invalid hash. It will be erased."
+                )
             except (
                 SPSDKError,
                 UnicodeDecodeError,
                 FileNotFoundError,
                 pickle.PickleError,
+                MemoryError,
             ) as exc:
                 logger.error(f"Cannot load database cache: {str(exc)}")
 
@@ -1619,9 +1712,10 @@ class DatabaseManager:
         quick_info.db_hash = db_hash
         try:
             os.makedirs(cache_folder, exist_ok=True)
-            with open(db_cache_file_name, mode="wb") as f:
-                pickle.dump(quick_info, f, pickle.DEFAULT_PROTOCOL)
-                logger.debug(f"Created quick database cache: {db_cache_file_name}")
+            with FileLock(db_cache_file_name + ".lock", timeout=10):
+                with open(db_cache_file_name, mode="wb") as f:
+                    pickle.dump(quick_info, f, pickle.DEFAULT_PROTOCOL)
+            logger.debug(f"Created quick database cache: {db_cache_file_name}")
         except Exception as exc:
             logger.debug(f"Cannot store database cache: {str(exc)}")
         return quick_info
@@ -1634,7 +1728,9 @@ class DatabaseManager:
         if cls._instance:
             return cls._instance
         spsdk_logger.install(
-            level=logging.DEBUG if SPSDK_DEBUG_DB else logging.WARNING, logger=logger
+            level=logging.DEBUG if SPSDK_DEBUG_DB else logging.WARNING,
+            logger=logger,
+            create_debug_logger=False,
         )
         cls._instance = super(DatabaseManager, cls).__new__(cls)
         cls._quick_info = cls._get_quick_info_db()
@@ -1642,11 +1738,15 @@ class DatabaseManager:
 
     @staticmethod
     def get_quick_info_hash(paths: list[Optional[str]]) -> bytes:
-        """Get the real databases hash."""
+        """Calculate the hash of the real databases.
+
+        :param paths: List of paths to database folders.
+        :return: Calculated hash as bytes.
+        """
 
         def hash_file(file: str) -> None:
             stat = os.stat(file)
-            hash_obj.update_int(stat.st_mtime_ns + stat.st_ctime_ns + stat.st_size)
+            hash_obj.update_int(stat.st_mtime_ns + stat.st_size)
 
         hash_obj = Hash(EnumHashAlgorithm.SHA1)
         # Hash this file
@@ -1673,9 +1773,10 @@ class DatabaseManager:
 
     @classmethod
     def get_db(cls, complete_load: bool = False) -> Database:
-        """Get database, and solve the first time use.
+        """Get database, and handle the first time use.
 
-        :param complete_load: The database will be complete loaded when is True.
+        :param complete_load: If True, the database will be completely loaded.
+        :return: Database instance.
         """
         if cls._db is None:
             cls._db = Database(
@@ -1688,14 +1789,14 @@ class DatabaseManager:
 
     @property
     def db(self) -> Database:
-        """Get Database."""
+        """Get Database instance."""
         db = self.get_db()
         assert isinstance(db, Database)
         return db
 
     @property
     def quick_info(self) -> QuickDatabase:
-        """Get quick info Database."""
+        """Get quick info Database instance."""
         quick_info = type(self)._quick_info
         assert isinstance(quick_info, QuickDatabase)
         return quick_info
@@ -1736,16 +1837,6 @@ class DatabaseManager:
     NXPUUU = FeaturesEnum.NXPUUU.label
 
 
-@atexit.register
-def on_delete() -> None:
-    """Delete method of SPSDK database.
-
-    The exit method is used to update cache in case it has been changed.
-    """
-    if DatabaseManager._db:
-        DatabaseManager._db.on_close()
-
-
 def get_db(
     device: str,
     revision: str = "latest",
@@ -1771,9 +1862,9 @@ def get_device(device: str) -> Device:
 def get_families(feature: str, sub_feature: Optional[str] = None) -> list[str]:
     """Get the list of all family names that supports requested feature.
 
-    :param feature: Name of feature
+    :param feature: Name of feature.
     :param sub_feature: Optional sub feature name to specify the more precise selection.
-    :returns: List of devices that supports requested feature.
+    :return: List of devices that supports requested feature.
     """
     return DatabaseManager().quick_info.devices.get_devices_with_feature(feature, sub_feature)
 
@@ -1792,7 +1883,7 @@ def get_common_data_file_path(path: str) -> str:
 
     The method counts also with restricted data source and any other addons.
 
-    :param path: Relative path in common data folder
+    :param path: Relative path in common data folder.
     :raises SPSDKValueError: Non existing file path.
     :return: Final absolute path to data file.
     """
@@ -1800,5 +1891,8 @@ def get_common_data_file_path(path: str) -> str:
 
 
 def get_whole_db() -> Database:
-    """Get loaded main Database."""
+    """Get loaded main Database.
+
+    :return: The loaded main Database object.
+    """
     return DatabaseManager().db

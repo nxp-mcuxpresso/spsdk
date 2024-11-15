@@ -31,7 +31,7 @@ from spsdk.exceptions import (
     SPSDKValueError,
 )
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
-from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
+from spsdk.image.ahab.ahab_srk import SRKRecord, SRKRecordV2, SRKTable
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import Endianness, value_to_int
 from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
@@ -925,7 +925,7 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
     def __init__(self, certificate: AhabCertificate) -> None:
         """Constructor for EdgeLock Enclave version 2 debug credential class."""
         self.certificate = certificate
-        assert certificate.public_key_0
+        assert isinstance(certificate.public_key_0, SRKRecordV2)
         super().__init__(
             version=ProtocolVersion("2.0"),  # Dummy version - is not used in DC data
             socc=0,

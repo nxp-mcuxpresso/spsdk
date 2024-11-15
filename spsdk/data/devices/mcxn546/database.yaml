@@ -7,7 +7,6 @@ alias: mcxn946
 # General MCU information
 info:
   # Web page of MCU representative
-  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-w-series-microcontrollers/mcx-w71x-secure-and-ultra-low-power-mcus-for-matter-thread-zigbee-and-bluetooth-le:MCX-W71X
   isp:
     rom:
       protocol: mboot

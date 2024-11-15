@@ -80,6 +80,8 @@ features:
   # ======== HABv4 section ========
   hab:
     mem_types:
+      serial_downloader:
+        initial_load_size: 0x400
       flexspi_nor:
         initial_load_size: 0x2000
       flexspi_nand:

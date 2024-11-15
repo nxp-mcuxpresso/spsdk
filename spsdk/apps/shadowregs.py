@@ -27,7 +27,13 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_revision_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
-from spsdk.debuggers.utils import PROBES, DebugProbe, load_all_probe_types, open_debug_probe
+from spsdk.debuggers.utils import (
+    PROBES,
+    DebugProbe,
+    get_test_address,
+    load_all_probe_types,
+    open_debug_probe,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.shadowregs.shadowregs import ShadowRegisters, enable_debug
 from spsdk.utils.database import DatabaseManager, get_db, get_families
@@ -45,6 +51,14 @@ class DebugProbeCfg:
     interface: Optional[str] = None
     serial_no: Optional[str] = None
     debug_probe_params: Optional[dict] = None
+
+    def set_test_address(self, test_address: int) -> None:
+        """Set if not already sets, the test address for AHB access.
+
+        :param test_address: New overriding address.
+        """
+        if self.debug_probe_params is not None and not "test_address" in self.debug_probe_params:
+            self.debug_probe_params["test_address"] = test_address
 
 
 @contextlib.contextmanager
@@ -148,6 +162,11 @@ def main(
         par_splitted = par.split("=")
         probe_user_params[par_splitted[0]] = par_splitted[1]
 
+    debug_probe_cfg = DebugProbeCfg(
+        interface=interface, serial_no=serial_no, debug_probe_params=probe_user_params
+    )
+    debug_probe_cfg.set_test_address(get_test_address(family, revision))
+
     if not is_click_help(ctx, sys.argv):
         if not family:
             click.echo("Missing family option !")
@@ -155,9 +174,7 @@ def main(
         ctx.obj = {
             "family": family,
             "revision": revision or "latest",
-            "debug_probe_cfg": DebugProbeCfg(
-                interface=interface, serial_no=serial_no, debug_probe_params=probe_user_params
-            ),
+            "debug_probe_cfg": debug_probe_cfg,
         }
 
     return 0

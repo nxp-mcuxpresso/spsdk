@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cfpa_lpc55s6x.yaml
+user_cfg: workspace/cfpa_parsed.yaml
+custom_command: "%! pfr get-template -t cfpa -f lpc55s69 -o workspace/cfpa_lpc55s6x.yaml --force"
+
+comments:
+  VERSION: "This is important, after each update this bitfield must be incremented"
+  RoTK0_EN: "Enable Root of Trust Key 0"

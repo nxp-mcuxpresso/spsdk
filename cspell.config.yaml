@@ -17,3 +17,8 @@ ignorePaths:
   - "/project-words.txt"
   - "approved_packages.json"
   - "reports/**"
+  - "build/**"
+  - "dist/**"
+  - "*egg-info/**"
+  - "tests/utils/data/file_special.txt"
+  - "spsdk/__version__.py"

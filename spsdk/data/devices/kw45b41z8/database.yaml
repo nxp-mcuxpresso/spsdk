@@ -54,6 +54,12 @@ info:
       interfaces: ["uart", "can", "spi", "i2c"]
 
 features:
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x3000_4000
+    size: 0x1000
+
   # ======== Fuses description section ========
   fuses: {}
 
@@ -164,7 +170,7 @@ features:
     el2go_name: KW
     prov_method: fw_data_split
     use_additional_data: true
-    fw_read_address: 0x2000_0000
+    fw_read_address: 0x3001_0000
     ignored_otp_ranges: [31, 32]
     validation_method: max_so_size=1024
 

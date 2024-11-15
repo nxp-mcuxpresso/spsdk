@@ -18,7 +18,7 @@ with open("README.md", "r") as f:
 
 extras_require = {
     "tp": ["pyscard==2.0.2"],
-    "examples": ["flask", "requests", "ipython", "notebook"],
+    "examples": ["flask", "requests", "ipython", "notebook", "ipywidgets"],
     "dk6": ["pyftdi", "pylibftdi", "ftd2xx"],
     "oscca": ["asn1tools>=0.160,<1", "gmssl>=3.2,<4"],
     "can": ["python-can<4.4"],

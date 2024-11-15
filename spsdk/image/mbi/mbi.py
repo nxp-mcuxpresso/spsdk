@@ -81,7 +81,6 @@ def create_mbi_class(name: str, family: str, revision: str = "latest") -> Type["
     base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [MasterBootImage]
     for mixin in class_descr["mixins"]:
         mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
-        assert mixin_cls
         if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
             for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
                 if not member in members:
@@ -294,7 +293,8 @@ class MasterBootImage:
 
         for base in self._get_mixins():
             for member in base.NEEDED_MEMBERS:
-                assert hasattr(self, member), f"{member} is missing"
+                if not hasattr(self, member):
+                    raise SPSDKValueError(f"Missing member {member} in {self.__class__.__name__}")
 
     @property
     def total_len(self) -> int:
@@ -425,8 +425,6 @@ class MasterBootImage:
 
         if mbi_cls_type is None:
             raise SPSDKParsingError("Unsupported MBI type detected.")
-
-        assert mbi_cls_type
         mbi_cls = mbi_cls_type()
         mbi_cls.family = family
         mbi_cls.dek = dek
@@ -486,7 +484,7 @@ class MasterBootImage:
                 authentication = mbi_class[2]
                 break
 
-        assert target and authentication
+        assert isinstance(target, str) and isinstance(authentication, str)
 
         cfg_values["family"] = self.family
         cfg_values["revision"] = self.revision

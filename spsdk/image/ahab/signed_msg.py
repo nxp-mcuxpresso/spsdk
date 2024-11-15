@@ -34,6 +34,7 @@ from spsdk.image.ahab.ahab_data import (
     create_chip_config,
 )
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
+from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
@@ -253,7 +254,8 @@ class Message(Container):
         :return: Message object.
         """
         command = config.get("command")
-        assert command and len(command) == 1
+        if not (isinstance(command, dict) and len(command) == 1):
+            raise SPSDKError(f"Invalid config field command: {command}")
         msg_cls = cls.get_message_class(list(command.keys())[0])
         return msg_cls.load_from_config(config, search_paths=search_paths)
 
@@ -286,7 +288,7 @@ class Message(Container):
 
         :return: Configuration dictionary.
         """
-        assert self.unique_id
+        assert isinstance(self.unique_id, bytes)
         cfg: dict[str, Any] = {}
         cfg["cert_version"] = self.cert_ver
         cfg["cert_permission"] = self.permissions
@@ -308,7 +310,7 @@ class Message(Container):
         for var in globals():
             obj = globals()[var]
             if isclass(obj) and issubclass(obj, Message) and obj is not Message:
-                assert issubclass(obj, Message)
+                assert issubclass(obj, Message)  # pylint: disable=assert-instance
                 if MessageCommands.from_label(cmd) == obj.TAG:
                     return obj  # type: ignore
 
@@ -1524,7 +1526,7 @@ class SignedMessageContainer(AHABContainerBase):
         :return: Offset in bytes of Signature block.
         """
         # Constant size of Container header + Image array Entry table
-        assert self.message
+        assert isinstance(self.message, Message)
         return calcsize(self.format()) + len(self.message)
 
     def __len__(self) -> int:
@@ -1559,7 +1561,7 @@ class SignedMessageContainer(AHABContainerBase):
             self.length = len(self)
             # 2. Sign the image header
             if self.flag_srk_set != FlagsSrkSet.NONE:
-                assert self.signature_block.signature
+                assert isinstance(self.signature_block.signature, ContainerSignature)
                 self.signature_block.signature.sign(self.get_signature_data())
         else:
             # 0. Update length
@@ -1587,7 +1589,7 @@ class SignedMessageContainer(AHABContainerBase):
             self.encrypt_iv if self.encrypt_iv else bytes(32),
         )
         # Add Message Header + Message Payload
-        assert self.message
+        assert isinstance(self.message, Message)
         signed_message += self.message.export()
         # Add Signature Block
         if self.signature_block:
@@ -1668,7 +1670,7 @@ class SignedMessageContainer(AHABContainerBase):
         cfg = self._create_config(0, data_path)
         cfg["output"] = "N/A"
 
-        assert self.message
+        assert isinstance(self.message, Message)
         cfg["message"] = self.message.create_config()
 
         return cfg
@@ -1705,7 +1707,7 @@ class SignedMessageContainer(AHABContainerBase):
 
         :return: Signed Message Info object.
         """
-        assert self.message
+        assert isinstance(self.message, Message)
         ret = BinaryImage(
             name="Signed Message",
             size=len(self),
@@ -1884,7 +1886,7 @@ class SignedMessage:
         try:
             return cls._parse_signed_message_type(data).pre_parse_verify(data)
         except SPSDKError as exc:
-            ver = Verifier("Signed messagee")
+            ver = Verifier("Signed message")
             ver.add_record("Container type", VerifierResult.ERROR, str(exc))
             return ver
 
@@ -1904,7 +1906,7 @@ class SignedMessage:
         :param data_path: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        assert self.signed_msg_container
+        assert isinstance(self.signed_msg_container, SignedMessageContainer)
         cfg = self.signed_msg_container.create_config(data_path)
         cfg["family"] = self.chip_config.family
         cfg["revision"] = self.chip_config.revision
@@ -1982,7 +1984,7 @@ class SignedMessage:
 
     @property
     def srk_count(self) -> int:
-        """Get  count of used SRK's."""
+        """Get  count of used SRKs."""
         if self.signed_msg_container:
             return self.signed_msg_container.srk_count
         return 0

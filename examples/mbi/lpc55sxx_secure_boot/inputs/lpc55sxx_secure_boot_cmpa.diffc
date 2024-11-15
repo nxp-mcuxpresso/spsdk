@@ -1,0 +1,10 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cmpa_lpc55s6x.yaml
+user_cfg: inputs/cmpa_lpc55s6x.yaml
+custom_command: "%! pfr get-template -t cmpa -f lpc55s69 -o workspace/cmpa_lpc55s6x.yaml --force"
+
+comments:
+  SEC_BOOT_EN: "Enable the secure boot"
+  SKIP_DICE: "Skip DICE"
+  ROTKH: "This is the most important part, we must specify ROTKH from the certificate block"

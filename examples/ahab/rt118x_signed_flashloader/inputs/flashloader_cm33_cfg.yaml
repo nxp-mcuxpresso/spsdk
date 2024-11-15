@@ -1,0 +1,124 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==============================================  AHAB converted config.  ==============================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimx8ulp, mimx9131, mimx9352, mimx9596, mimxrt1181, mimxrt1182, mimxrt1187, mimxrt1189>
+family: mimxrt1189
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, b0, latest>
+revision: latest
+# -----------------------------------------===== Target memory [Optional] =====-----------------------------------------
+# Description: Target memory for AHAB container
+# Possible options: <serial_downloader, standard, nand_2k, nand_4k>
+target_memory: serial_downloader
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output AHAB file name
+output: ../workspace/flashloader_cm33_ahab.bin
+# ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
+# Description: The order of containers in the list defines the order in AHAB.
+containers:
+  # -
+  #   # -----------------------------------===== Binary AHAB container [Required] =====-----------------------------------
+  #   # Description: Binary Container format to add to AHAB image, Typically it could be used to add ELE Firmware.
+  #   binary_container:
+  #     # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
+  #     # Description: The binary file that contains AHAB "my_binary_container.bin
+  #     path: mxrt1180b0-ahab-container.img
+  -
+    # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
+    # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
+    # container.
+    container:
+      # --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
+      # Description: Defines which set is used to authenticate the container.
+      # Possible options: <none, oem, nxp>
+      srk_set: oem
+      # ---------------------------------===== Used SRK [Conditionally required] =====----------------------------------
+      # Description: Which key from SRK set is being used.
+      used_srk_id: 0
+      # -------------------------------------===== SRK revoke mask [Optional] =====-------------------------------------
+      # Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit
+      # 1 = revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
+      srk_revoke_mask: "0x00"
+      # --------------------------------------===== Fuse version [Optional] =====---------------------------------------
+      # Description: The value must be equal or greater than the version stored in fuses to allow loading this
+      # container.
+      fuse_version: 0
+      # ------------------------------------===== Software version [Optional] =====-------------------------------------
+      # Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same
+      # Fuse version field.
+      sw_version: 0
+      # -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
+      # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
+      # must not have been revoked.
+      signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem
+
+      # ================================================================================================================
+      #                     == Configuration of AHAB Container images (array of multiple images) ==
+      # ================================================================================================================
+      # ---------------------------------------===== Image array [Required] =====---------------------------------------
+      # Description: Array of image entries.
+      images:
+        -
+          # -------------------------------------===== Image path [Optional] =====--------------------------------------
+          # Description: Path to image binary (absolute/relative). In case that only Image Array entry without any data
+          # image is needed, Just do not use the image path. In case that the image size in container should be aligned
+          # differently then SPSDK do (4 bytes for ELE images, 1 byte otherwise), there is hidden option
+          # 'image_size_alignment' where could be override image size by any custom value.
+          image_path: inputs/flashloader_cm33_exe.bin
+          # ---------------------------===== Image offset in AHAB container [Optional] =====----------------------------
+          # Description: Offset in bytes from start of container header to beginning of the image. Zero value means
+          # automatic placing the image with proper alignment after previous one, this is recommended for
+          # serial_downloader mode. In case of XiP type of AHAB image, the load_address and entry_point must correspond
+          # to this values. Example of setting of load_address - AHAB_IMAGE_ADDRESS+IMAGE_OFFSET=LOAD_ADDRESS. The
+          # Booting core images must be located after the other ones
+          image_offset: 0
+          # ------------------------------===== Image destination address [Required] =====------------------------------
+          # Description: Address the image is written to in memory (absolute address in system memory).
+          load_address: '0x304a0000'
+          # ----------------------------------===== Image entry point [Required] =====----------------------------------
+          # Description: Image entry point (absolute address). Valid only for executable image types.
+          entry_point: '0x304a0000'
+          # -------------------------------------===== Image type [Required] =====--------------------------------------
+          # Description: Kind of image.
+          # Possible options: <executable, data, provisioning_image, provisioning_data, ele>
+          image_type: executable
+          # ---------------------------------------===== Core ID [Required] =====---------------------------------------
+          # Description: Defines the core the image is dedicated for. Not all cores are supported for all families.
+          # Possible options: <cortex-m33, cortex-m7, ele>
+          core_id: cortex-m33
+          # ----------------------------------===== Image encryption [Required] =====-----------------------------------
+          # Description: Determines, whether image is encrypted or not.
+          is_encrypted: false
+          # ----------------------------------===== Images HASH type [Optional] =====-----------------------------------
+          # Description: HASH type of image.
+          # Possible options: <sha256, sha384, sha512, sm3>
+          hash_type: sha512
+
+      # ================================================================================================================
+      #                                      == Configuration of AHAB SRK table ==
+      # ================================================================================================================
+      # ---------------------------------===== SRK Table [Conditionally required] =====---------------------------------
+      # Description: SRK (Super Root key) table definition.
+      srk_table:
+        # ----------------------------------------===== CA Flag [Optional] =====----------------------------------------
+        # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+        flag_ca: false
+        # ------------------------------===== Super Root Key (SRK) table [Required] =====-------------------------------
+        # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing
+        # algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
+        # sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096,
+        # dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new
+        # type of AHAB container
+        srk_array:
+          - ../../_data/keys/ecc256/srk0_ecc256.pub
+          - ../../_data/keys/ecc256/srk1_ecc256.pub
+          - ../../_data/keys/ecc256/srk2_ecc256.pub
+          - ../../_data/keys/ecc256/srk3_ecc256.pub

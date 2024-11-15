@@ -60,14 +60,6 @@ Some applications communicate with NXP devices connected to the host PC. Details
 Application Overview
 --------------------
 
-SPSDK applications are used for various functions and not all applications are valid for all NXP MCU device portfolios. The table mapping particular applications to a specific device is below.
-
-
-
-.. include:: ../_prebuild/features_table.inc
-
-.. include:: ../_prebuild/other_features_table.inc
-
 
 :ref:`blhost`
 =============
@@ -270,6 +262,15 @@ It allows user to:
 
     shadowregs --help
 
+
+:ref:`nxpuuu`
+=================
+
+The nxpuuu CLI application is designed for image deployment based on the libUUU (universal update utility). This guide provides instructions on how to use the various commands available in the application.
+
+.. code:: bash
+
+    nxpuuu --help
 
 -------------------------------
 Deleted/deprecated applications

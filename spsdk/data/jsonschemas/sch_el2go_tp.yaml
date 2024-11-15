@@ -41,6 +41,15 @@ el2go_tp:
       title: Product 12NC
       description: Product 12NC registered in EdgeLock 2GO
       template_value: 123456789012
+    domains:
+      type: array
+      title: Secure Objects Domains
+      description: List of the EdgeLock 2GO Secure Objects Domains to download.
+      items:
+        type: string
+        enum: [RTP, MATTER]
+        template_value: [RTP, MATTER]
+      enum_template: [RTP, MATTER]
     delay:
       type: number
       title: Delay between EdgeLock 2GO's API calls

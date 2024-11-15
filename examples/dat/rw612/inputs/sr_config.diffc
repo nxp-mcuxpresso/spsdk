@@ -1,0 +1,19 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/sr_config.yaml
+user_cfg: inputs/sr_config.yaml
+custom_command: "%! shadowregs -f rw612 get-template -o workspace/sr_config.yaml --force"
+
+comments:
+  PRIMARY_BOOT_SOURCE: The primary source is updated to select the FlexSPI as primary boot device
+  SECURE_BOOT_EN: Secure boot is changed to enable Debug authentication protocol functionality and also show that functionality on real example
+  DICE_SKIP: DICE is skipped to be sure that it doesn't influence that DAT example
+  PINNED_ISPCMDEN_NS: The debug mailbox 'switch to ISP mode' command is enabled also in locked state (to simplify example)
+  DFLT_ISPCMDEN: The debug mailbox 'switch to ISP mode' command is enabled also in locked state (to simplify example)
+  LCS: Life cycle of chip is temporary moved to 'In-field' to properly enable DAT on chip
+  LCS_REDUNDANT: Life cycle of chip is temporary moved to 'In-field' to properly enable DAT on chip
+  RKTH: RKTH value is specified to allow boot ROM validate the used public RoT keys. The value has been gotten from `nxpdebugmbox dat dc export` command. But there is alternative to get when signed MBI is generated or use `nxpcrypto rot calculate-hash` command.
+

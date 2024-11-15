@@ -73,13 +73,20 @@ class SmartCardAPDU:
         :param data: A sequence of bytes in the data field of the command
         :param le: Maximum of bytes expected in the data field of the response to the command
         """
-        assert cla in [0x00, 0x80]
-        assert ins < 256
-        assert p1 < 256
-        assert p2 < 256
-        assert le < 65535
+        if cla not in [0x00, 0x80]:
+            raise SPSDKTpError("CLA must be 0x00 or 0x80")
+        if ins > 255:
+            raise SPSDKTpError("INS must be less than 256")
+        if p1 > 255:
+            raise SPSDKTpError("P1 must be less than 256")
+        if p2 > 255:
+            raise SPSDKTpError("P2 must be less than 256")
+        if le > 65535:
+            raise SPSDKTpError("LE must be less than 65536")
+
         if data:
-            assert len(data) < 65535
+            if len(data) > 65535:
+                raise SPSDKTpError("Data length must be less than 65536")
 
         self.cla = cla
         self.ins = ins

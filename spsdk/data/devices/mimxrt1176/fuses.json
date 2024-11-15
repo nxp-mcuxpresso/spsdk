@@ -1534,8 +1534,8 @@
                         {
                             "width": 2,
                             "id": "fuse23-bit-6",
-                            "name": "SD_PWR_CYCLE_SELETION",
-                            "description": "SD_PWR_CYCLE_SELETION",
+                            "name": "SD_PWR_CYCLE_SELECTION",
+                            "description": "SD_PWR_CYCLE_SELECTION",
                             "values": [
                                 {
                                     "name": "20ms",

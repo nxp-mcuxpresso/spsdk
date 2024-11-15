@@ -107,6 +107,7 @@ features:
     core_ids: {}
     image_types: {}
     image_types_mapping: {}
+    allow_empty_hash: False # Some chips allow empty image hash in OEM Open LC
     # image_types: Keep it here as a template for new NPI
     #     CSF: [0x01, csf, CSF Image]
     #     SCD: [0x02, scd, SCD Image]
@@ -249,27 +250,45 @@ features:
         region_number: 0x09
         ow_counts_rule: OptionSize
         runtime_instance: True
+        mem_type: nor
+        interfaces: [octal_spi, quad_spi, hyper_flash]
+        instances: []
+      xspi_nor:
+        reg_spec: ../../common/memcfg/opt_word_flexspi_nor.json
+        region_number: 0x0b
+        ow_counts_rule: OptionSize
+        runtime_instance: True
+        mem_type: nor
+        interfaces: [octal_spi, quad_spi, hyper_flash]
         instances: []
       flexspi_nand:
         reg_spec: ../../common/memcfg/opt_word_flexspi_nand.json
         region_number: 0x101
         ow_counts_rule: OptionSize
         runtime_instance: True
+        mem_type: nand
+        interfaces: [quad_spi]
         instances: []
       semc_nor:
         reg_spec: ../../common/memcfg/opt_word_semc_nor.json
         region_number: 0x08
         ow_counts_rule: AcTimingMode
+        mem_type: nor
+        interfaces: [parallel]
         instances: []
       semc_nand:
         reg_spec: ../../common/memcfg/opt_word_semc_nand.json
         region_number: 0x100
         ow_counts_rule: All
+        mem_type: nand
+        interfaces: [parallel]
         instances: []
       spi_nor:
         reg_spec: ../../common/memcfg/opt_word_spi_nor.json
         region_number: 0x110
         ow_counts_rule: OptionSize
+        mem_type: nor
+        interfaces: [spi]
         instances: []
       # spi_nand:
       #   region_number: 0x101
@@ -278,11 +297,15 @@ features:
         reg_spec: ../../common/memcfg/opt_word_mmc.json
         region_number: 0x121
         ow_counts_rule: All
+        mem_type: sd
+        interfaces: [instance_0, instance_1, instance_2, instance_3]
         instances: []
       sd:
         reg_spec: ../../common/memcfg/opt_word_sd.json
         region_number: 0x120
         ow_counts_rule: All
+        mem_type: sd
+        interfaces: [instance_0, instance_1, instance_2, instance_3]
         instances: []
     # XIP Memories in internal memory address range
     # mem_region_internal = 0x0  # Internal memory (include all on chip memory)

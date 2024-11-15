@@ -1,0 +1,1281 @@
+{
+    "cpu": "MIMX9131",
+    "groups": [
+        {
+            "group": {
+                "name": "0-9: LOCK_CFG",
+                "description": "Locks configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse0",
+                    "name": "LOCK_CFG0",
+                    "description": "LOCK_CFG0.",
+                    "index_int": "0x0000",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-0-2",
+                            "name": "BOOT_CFG_LOCK",
+                            "description": "BOOT_CFG_LOCK[2:0]."
+                        },
+                        {
+                            "width": 9
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse0-bits-12-14",
+                            "name": "LOCK_CFG_LOCK",
+                            "description": "LOCK_CFG_LOCK[2:0]."
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse1",
+                    "name": "LOCK_CFG1",
+                    "description": "BOOT_CFG1.",
+                    "index_int": "0x0001",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse1-bits-4-6",
+                            "name": "COM_DEVICE_ID0_LOCK",
+                            "description": "COM_DEVICE_ID0_LOCK[2:0]."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse1-bits-7-9",
+                            "name": "COM_DEVICE_ID1_LOCK",
+                            "description": "COM_DEVICE_ID1_LOCK[2:0]."
+                        },
+                        {
+                            "width": 7
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse2",
+                    "name": "LOCK_CFG2",
+                    "description": "LOCK_CFG2.",
+                    "index_int": "0x0002",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "id": "fuse2-bits-0-2",
+                            "name": "OEM_SW_CFG_LOCK",
+                            "description": "OEM_SW_CFG_LOCK[2:0]."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse2-bits-3-5",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 9
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse2-bit-15",
+                            "name": "BOOT2_CFG_LOCK_0",
+                            "description": "BOOT2_CFG_LOCK_0[0]."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse3",
+                    "name": "LOCK_CFG3",
+                    "description": "LOCK_CFG3.",
+                    "index_int": "0x0003",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 15
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse3-bit-15",
+                            "name": "BOOT2_CFG_LOCK_1",
+                            "description": "BOOT2_CFG_LOCK_1[1]."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse4",
+                    "name": "LOCK_CFG4",
+                    "description": "LOCK_CFG4.",
+                    "index_int": "0x0004",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse4-bits-6-8",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse4-bits-12-14",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse4-bit-15",
+                            "name": "BOOT2_CFG_LOCK_2",
+                            "description": "BOOT2_CFG_LOCK_2[2]."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse9",
+                    "name": "LOCK_CFG9",
+                    "description": "LOCK_CFG9.",
+                    "index_int": "0x0009",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse9-bits-3-5",
+                            "name": "GPR2_LOCK",
+                            "description": "GPR2_LOCK[2:0]."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse9-bits-6-8",
+                            "name": "GPR3_LOCK",
+                            "description": "GPR3_LOCK[2:0]."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse9-bits-9-11",
+                            "name": "GPR4_LOCK",
+                            "description": "GPR4_LOCK[2:0]."
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "24-34: BOOT_CFG",
+                "description": "Boot configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse24",
+                    "name": "BOOT_CFG0",
+                    "description": "BOOT_CFG0.",
+                    "index_int": "0x0018",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse24-bits-0-3",
+                            "name": "Boot_Mode_Fuses",
+                            "description": "Boot_Mode_Fuses."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-4",
+                            "name": "Override_FlexSPI_NOR_Boot_Selection",
+                            "description": "Override_FlexSPI_NOR_Boot_Selection."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse24-bits-5-6",
+                            "name": "FlexSPI_NOR_Boot_Override_Selection",
+                            "description": "FlexSPI_NOR_Boot_Override_Selection."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-7",
+                            "name": "FlexSPI_NAND_4K_Page_Selection",
+                            "description": "."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-8",
+                            "name": "uSDHC_Device_Type",
+                            "description": "uSDHC_Device_Type."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-9",
+                            "name": "FLEXSPI_NOR_DATA_IOMUX_SION_EN",
+                            "description": "FLEXSPI_NOR_DATA_IOMUX_SION_EN."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse24-bits-10-11",
+                            "name": "FLEXSPI_NOR_FCB_OFFSET",
+                            "description": "FLEXSPI_NOR_FCB_OFFSET."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse24-bits-12-14",
+                            "name": "FLEXSPI_AUTOPROBE_FEQ_SEL",
+                            "description": "FLEXSPI_AUTOPROBE_FEQ_SEL."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-15",
+                            "name": "FLEXSPI_FCB_COPY_FLAG",
+                            "description": "FLEXSPI_FCB_COPY_FLAG."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-16",
+                            "name": "SD_Loopback_Clock_Source_Sel",
+                            "description": "SD_Loopback_Clock_Source_Sel."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse24-bits-17-18",
+                            "name": "SD_Speed_Selection",
+                            "description": "SD_Speed_Selection."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-19",
+                            "name": "eMMC_Speed_Selection",
+                            "description": "eMMC_Speed_Selection."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-20",
+                            "name": "eMMC_fast_boot",
+                            "description": "eMMC_fast_boot."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-22",
+                            "name": "eMMC_voltage_selection",
+                            "description": "eMMC_voltage_selection."
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse24-bits-23-27",
+                            "name": "FlexSPI_NOR_Reset_Pin_selections",
+                            "description": "FlexSPI_NOR_Reset_Pin_selections."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-28",
+                            "name": "BT_FREQ_SEL",
+                            "description": "BT_FREQ_SEL."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-29",
+                            "name": "BT_FUSE_SEL",
+                            "description": "BT_FUSE_SEL."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-30",
+                            "name": "Force_Boot_from_Fuse",
+                            "description": "Force_Boot_from_Fuse."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse24-bit-31",
+                            "name": "Force_Serial_Download",
+                            "description": "Force_Serial_Download."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse25",
+                    "name": "BOOT_CFG1",
+                    "description": "BOOT_CFG1.",
+                    "index_int": "0x0019",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-0",
+                            "name": "Fast_Boot_Acknowledge_Disable",
+                            "description": "Fast_Boot_Acknowledge_Disable."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-2",
+                            "name": "uSDHC_Power_On_Polarity",
+                            "description": "uSDHC_Power_On_Polarity."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-3",
+                            "name": "uSDHC_Power_Cycle_Delay",
+                            "description": "uSDHC_Power_Cycle_Delay."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse25-bits-4-5",
+                            "name": "uSDHC_Power_Cycle_Interval",
+                            "description": "uSDHC_Power_Cycle_Interval."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse25-bits-6-7",
+                            "name": "SD_Calibration_Step",
+                            "description": "SD_Calibration_Step."
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse25-bits-8-15",
+                            "name": "uSDHC_PAD_Settings_Low_bits",
+                            "description": "uSDHC_PAD_Settings_Low_bits."
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse25-bits-16-19",
+                            "name": "uSDHC_PAD_Settings_High_bits",
+                            "description": "uSDHC_PAD_Settings_High_bits."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-20",
+                            "name": "Power_Cycle_Enable",
+                            "description": "Power_Cycle_Enable."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-21",
+                            "name": "uSDHC_Override_Pad_Settings",
+                            "description": "uSDHC_Override_Pad_Settings."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-22",
+                            "name": "uSDHC_DLL_Enable",
+                            "description": "uSDHC_DLL_Enable."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 7,
+                            "id": "fuse25-bits-24-30",
+                            "name": "MMC_DLL_DLY",
+                            "description": "MMC_DLL_DLY."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse25-bit-31",
+                            "name": "uSDHC_DLL_Select",
+                            "description": "uSDHC_DLL_Select."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse26",
+                    "name": "BOOT_CFG2",
+                    "description": "BOOT_CFG2.",
+                    "index_int": "0x001A",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-0-1",
+                            "name": "FlexSPI_NAND_Column_Address_Width",
+                            "description": "FlexSPI_NAND_Column_Address_Width."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-2-3",
+                            "name": "FlexSPI_NAND_CS_Interval",
+                            "description": "FlexSPI_NAND_CS_Interval."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-4-5",
+                            "name": "FlexSPI_NAND_Search_Count",
+                            "description": "FlexSPI_NAND_Search_Count."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-6-7",
+                            "name": "FlexSPI_NAND_Search_Stride",
+                            "description": "FlexSPI_NAND_Search_Stride."
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse26-bits-8-15",
+                            "name": "FlexSPI_DLL_Value",
+                            "description": "FlexSPI_DLL_Value."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-16",
+                            "name": "SPI_Clock_Data_Phase_Control",
+                            "description": "SPI_Clock_Data_Phase_Control."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-17",
+                            "name": "SPI_SCLK_Active",
+                            "description": "SPI_SCLK_Active."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-18",
+                            "name": "SPI_SS_Active",
+                            "description": "SPI_SS_Active."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-19",
+                            "name": "Recovery_SPI_Addressing",
+                            "description": "Recovery_SPI_Addressing."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-20",
+                            "name": "FLEXSPI_NOR_AUTO_PROBE_EN",
+                            "description": "FLEXSPI_NOR_AUTO_PROBE_EN."
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse26-bits-21-23",
+                            "name": "FlexSPI_NAND_Busy_Bit_Offset_Override",
+                            "description": "FlexSPI_NAND_Busy_Bit_Offset_Override."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse26-bit-24",
+                            "name": "Recovery_CS_Select",
+                            "description": "Recovery_CS_Select."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse26-bits-26-27",
+                            "name": "Recovery_Port_Select",
+                            "description": "Recovery_Port_Select."
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse26-bits-28-31",
+                            "name": "FLEXSPI_DUMMY_CYCLE_SEL",
+                            "description": "FLEXSPI_DUMMY_CYCLE_SEL."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse27",
+                    "name": "BOOT_CFG3",
+                    "description": "BOOT_CFG3.",
+                    "index_int": "0x001B",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "id": "fuse27-bits-0-2",
+                            "name": "FlexSPI_NOR_Reset_Pin_selection",
+                            "description": "FlexSPI_NOR_Reset_Pin_selection."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse27-bits-3-4",
+                            "name": "FLEXSPI_NOR_AUTO_PROBE_type",
+                            "description": "FLEXSPI_NOR_AUTO_PROBE_type."
+                        },
+                        {
+                            "width": 27
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse32",
+                    "name": "BOOT_CFG8",
+                    "description": "BOOT_CFG8.",
+                    "index_int": "0x0020",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse32-bits-8-15",
+                            "name": "Secondary_boot_offset",
+                            "description": "Secondary_boot_offset."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-16",
+                            "name": "A55_D_Cache_Disable",
+                            "description": "A55_D_Cache_Disable."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-18",
+                            "name": "USB2_SPD_Disable",
+                            "description": "USB2_SPD_Disable."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-19",
+                            "name": "Disable_A55_SPI_Recovery",
+                            "description": "Disable_A55_SPI_Recovery."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-21",
+                            "name": "USB1_SDP_Disable",
+                            "description": "USB1_SDP_Disable."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-22",
+                            "name": "AHAB_Reauth",
+                            "description": "AHAB_Reauth."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-24",
+                            "name": "A55_I_Cache_Dis",
+                            "description": "A55_I_Cache_Dis."
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse32-bits-26-27",
+                            "name": "WDOG_Timeout_Select",
+                            "description": "WDOG_Timeout_Select."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-28",
+                            "name": "A55_WDOG_Enable",
+                            "description": "A55_WDOG_Enable."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-29",
+                            "name": "USB_HID_EP1_Out_Disable",
+                            "description": "USB_HID_EP1_Out_Disable."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-30",
+                            "name": "PLL_LATE_EN",
+                            "description": "PLL_LATE_EN."
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse33",
+                    "name": "BOOT_CFG9",
+                    "description": "BOOT_CFG9.",
+                    "index_int": "0x0021",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-4",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-9",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 14
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-24",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 7
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse34",
+                    "name": "BOOT_CFG10",
+                    "description": "BOOT_CFG10.",
+                    "index_int": "0x0022",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse34-bits-0-1",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-2",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 29
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "56-60: Restricted",
+                "description": "Description is available in restricted data, see documentation for more details."
+            },
+            "registers": [
+                {
+                    "id": "fuse56",
+                    "name": "56",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0038",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse56-bits-4-7",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse56-bits-12-15",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse57",
+                    "name": "57",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0039",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse57-bits-0-3",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse57-bit-5",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 27
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse58",
+                    "name": "58",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x003A",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse58-bits-6-7",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse58-bit-8",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse58-bit-9",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse58-bit-10",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse58-bit-11",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse58-bit-12",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse58-bits-13-14",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse60",
+                    "name": "60",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x003C",
+                    "individual_write_lock": "implicit",
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 12,
+                            "id": "fuse60-bits-0-11",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "128-135: Restricted",
+                "description": "Description is available in restricted data, see documentation for more details."
+            },
+            "registers": [
+                {
+                    "id": "fuse128",
+                    "name": "128",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0080",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse129",
+                    "name": "129",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0081",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse130",
+                    "name": "130",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0082",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse131",
+                    "name": "131",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0083",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse132",
+                    "name": "132",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0084",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse133",
+                    "name": "133",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0085",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse134",
+                    "name": "134",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0086",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse135",
+                    "name": "135",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x0087",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "184-189: Restricted",
+                "description": "Description is available in restricted data, see documentation for more details."
+            },
+            "registers": [
+                {
+                    "id": "fuse184",
+                    "name": "184",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x00B8",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse185",
+                    "name": "185",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x00B9",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse186",
+                    "name": "186",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x00BA",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse187",
+                    "name": "187",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x00BB",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse188",
+                    "name": "188",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x00BC",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-3",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-4",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-5",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-6",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-7",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse188-bits-8-15",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-16",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
+                        },
+                        {
+                            "width": 15
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse189",
+                    "name": "189",
+                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "index_int": "0x00BD",
+                    "is_readable": false,
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "312-317: COM_DEVICE",
+                "description": "Common device configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse312",
+                    "name": "COM_DEVICE_ID_CFG0",
+                    "description": "COM_DEVICE_ID_CFG0.",
+                    "index_int": "0x0138",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse313-bits-0-15",
+                            "name": "USB_VID",
+                            "description": "USB2_PID[15:0]."
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse313-bits-16-31",
+                            "name": "USB1_PID",
+                            "description": "USB1_PID[15:0]."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse313",
+                    "name": "COM_DEVICE_ID_CFG1",
+                    "description": "COM_DEVICE_ID_CFG1.",
+                    "index_int": "0x0139",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse313-bits-0-15",
+                            "name": "USB2_PID",
+                            "description": "USB2_PID[15:0]."
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse315",
+                    "name": "COM_DEVICE_ID_CFG3",
+                    "description": "COM_DEVICE_ID_CFG3.",
+                    "index_int": "0x013B",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse315-bits-0-31",
+                            "name": "MAC1_ADDR_31_0",
+                            "description": "MAC1_ADDR_31_0[31:0]."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse316",
+                    "name": "COM_DEVICE_ID_CFG4",
+                    "description": "COM_DEVICE_ID_CFG4.",
+                    "index_int": "0x013C",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse316-bits-0-15",
+                            "name": "MAC2_ADDR_47_32",
+                            "description": "MAC1_ADDR_47_32[47:32]."
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse316-bits-16-31",
+                            "name": "MAC2_ADDR_15_0",
+                            "description": "MAC2_ADDR_15_0[15:0]."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse317",
+                    "name": "COM_DEVICE_ID_CFG5",
+                    "description": "COM_DEVICE_ID_CFG5.",
+                    "index_int": "0x013D",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse317-bits-0-31",
+                            "name": "MAC2_ADDR_47_16",
+                            "description": "MAC2_ADDR_47_16[47:16]."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "327: OEM_SW",
+                "description": "OEM Software configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse327",
+                    "name": "OEM_SW_CFG",
+                    "description": "OEM Software configuration",
+                    "index_int": "0x0147",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "376-399: GPR",
+                "description": "General purpose configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse376",
+                    "name": "GPR2_CFG0",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x0178",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse377",
+                    "name": "GPR2_CFG1",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x0179",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse378",
+                    "name": "GPR2_CFG2",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x017A",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse379",
+                    "name": "GPR2_CFG3",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x017B",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse380",
+                    "name": "GPR2_CFG4",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x017C",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse381",
+                    "name": "GPR2_CFG5",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x017D",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse382",
+                    "name": "GPR2_CFG6",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x017E",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse383",
+                    "name": "GPR2_CFG7",
+                    "description": "OEM Reserved - General Purpose Fuse 2",
+                    "index_int": "0x017F",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse384",
+                    "name": "GPR3_CFG0",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0180",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse385",
+                    "name": "GPR3_CFG1",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0181",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse386",
+                    "name": "GPR3_CFG2",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0182",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse387",
+                    "name": "GPR3_CFG3",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0183",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse388",
+                    "name": "GPR3_CFG4",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0184",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse389",
+                    "name": "GPR3_CFG5",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0185",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse390",
+                    "name": "GPR3_CFG6",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0186",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse391",
+                    "name": "GPR3_CFG7",
+                    "description": "OEM Reserved - General Purpose Fuse 3",
+                    "index_int": "0x0187",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse392",
+                    "name": "GPR4_CFG0",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x0188",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse393",
+                    "name": "GPR4_CFG1",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x0189",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse394",
+                    "name": "GPR4_CFG2",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x018A",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse395",
+                    "name": "GPR4_CFG3",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x018B",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse396",
+                    "name": "GPR4_CFG4",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x018C",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse397",
+                    "name": "GPR4_CFG5",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x018D",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse398",
+                    "name": "GPR4_CFG6",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x018E",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "fuse399",
+                    "name": "GPR4_CFG7",
+                    "description": "OEM Reserved - General Purpose Fuse 4",
+                    "index_int": "0x018F",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        }
+    ]
+}

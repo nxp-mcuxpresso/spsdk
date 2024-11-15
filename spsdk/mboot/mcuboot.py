@@ -315,6 +315,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         :return: List of available properties.
         :raises McuBootCommandError: Failure to read properties list
+        :raises McuBootError: Property values cannot be parsed
         """
         property_list: list[PropertyValueBase] = []
         for property_tag in PropertyTag:
@@ -325,7 +326,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
             if values:
                 prop = parse_property_value(property_tag.tag, values)
-                assert prop is not None, "Property values cannot be parsed"
+                if prop is None:
+                    raise McuBootError("Property values cannot be parsed")
                 property_list.append(prop)
 
         self._status_code = StatusCode.SUCCESS.tag

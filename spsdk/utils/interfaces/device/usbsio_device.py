@@ -124,8 +124,8 @@ class UsbSioDevice(DeviceBase):
             self._config_nirq_pin()
 
     def _config_nirq_pin(self) -> None:
-        assert self.nirq_port is not None
-        assert self.nirq_pin is not None
+        if not (self.nirq_port and self.nirq_pin):
+            raise SPSDKValueError("nIRQ port and pin must be defined.")
         self.sio.GPIO_ConfigIOPin(self.nirq_port, self.nirq_pin, 0x100)
         self.sio.GPIO_SetPortInDir(self.nirq_port, 1 << (self.nirq_pin - 1))
         if self.sio.GPIO_GetPin(self.nirq_port, self.nirq_pin) == 0:
@@ -191,7 +191,8 @@ class UsbSioDevice(DeviceBase):
         :raises SPSDKError: When libusbsio library error or if no bridge device found
         :raises SPSDKValueError: Invalid configuration detected.
         """
-        assert cls.INTERFACE  # overriden by child class
+        if not cls.INTERFACE:
+            raise SPSDKError("The 'INTERFACE' class attribute must be set in a subclass.")
         devices: list[Self] = []
         sio = cls._get_usbsio()
         usbsio_config = UsbSioConfig.from_config_string(config, cls.INTERFACE)
@@ -239,10 +240,10 @@ class UsbSioDevice(DeviceBase):
             raise SPSDKValueError("State must be either 0 or 1.")
         if not self.is_nirq_enabled:
             raise SPSDKError("The nIRQ functionality is disabled. nIRQ pin must be defined.")
+        if not (self.nirq_port and self.nirq_pin):
+            raise SPSDKValueError("nIRQ port and pin must be defined.")
         timeout = Timeout(self.timeout, "ms")
         while not timeout.overflow():
-            assert self.nirq_port is not None
-            assert self.nirq_pin is not None
             nirq_state = self.sio.GPIO_GetPin(self.nirq_port, self.nirq_pin)
             if nirq_state == state:
                 return

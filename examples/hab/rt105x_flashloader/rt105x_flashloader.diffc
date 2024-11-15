@@ -1,0 +1,15 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/rt105x_template.yaml
+user_cfg: inputs/rt105x_hab.yaml
+custom_command: "%! nxpimage hab get-template -f mimxrt1050 -o workspace/rt105x_template.yaml --force"
+
+comments:
+  flags: "The output is an unsigned HAB container"
+  ivtOffset: "IVT offset is detected automatically when family and bootDevice are specified"
+  initialLoadSize: "Initial load size is detected automatically when family and bootDevice are specified"
+  entryPointAddress: "The entrypoint address is detected automatically from flashloader binary"
+  startAddress: "The value is actually the linker interrupt table address(0x20002000)  - 0x400"

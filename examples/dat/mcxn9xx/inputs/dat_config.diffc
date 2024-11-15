@@ -1,0 +1,15 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/dat_config.yaml
+user_cfg: inputs/dat_config.yaml
+custom_command: "%! nxpdebugmbox -f mcxn946 dat get-template -o workspace/dat_config.yaml --force"
+
+comments:
+  certificate: Path to debug credential certificate (that we created in previous step)
+  beacon: The beacon has changed to 1, to check of the proper end of DAT operation
+  srk_set: We keep default value on OEM
+  dck_private_key: "Updated Debug Credential private key to used in our example"
+  sign_provider: "This is removed, because we are using private key in this example"

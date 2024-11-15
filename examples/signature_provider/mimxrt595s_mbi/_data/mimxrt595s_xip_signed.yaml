@@ -1,0 +1,63 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =============  Master Boot Image Configuration template for mimxrt595s:latest, Plain Signed XIP Image.  ==============
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <k32w148, kw45b41z5, kw45b41z8, lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526,
+# lpc5528, lpc5534, lpc5536, lpc55s04, lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69,
+# mc56f81646, mc56f81648, mc56f81666, mc56f81668, mc56f81746, mc56f81748, mc56f81766, mc56f81768, mc56f81866,
+# mc56f81868, mcxa132, mcxa133, mcxa142, mcxa143, mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155,
+# mcxa156, mcxn235, mcxn236, mcxn546, mcxn547, mcxn946, mcxn947, mcxw716a, mcxw716c, mimxrt533s, mimxrt555s, mimxrt595s,
+# mimxrt685s, mimxrt798s, mwct2012, mwct2012a, mwct20d2, mwct20d2a, nhs52s04, rw610, rw612>
+family: mimxrt595s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, b0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: signed
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: ../workspace/my_mbi.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: evkmimxrt595_led_blinky_ext_flash.bin
+# --------------------------------===== Loading address of application [Required] =====---------------------------------
+# Description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+outputImageExecutionAddress: 0
+# ----------------------------------===== Enable User HW key sharing [Required] =====-----------------------------------
+# Description: Controlling secure hardware key bus. If enabled(1), then it is possible to access keys on hardware secure
+# bus from non-secure application, else non-secure application will read zeros.
+enableHwUserModeKeys: false
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==
+# ======================================================================================================================
+# ------------------------------------===== TrustZone enable option [Optional] =====------------------------------------
+# Description: If not specified, the Trust zone is disabled.
+enableTrustZone: false
+# ======================================================================================================================
+#                                               == Certificate Block V1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: cert_block.yaml
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'.
+signProvider: type=sasp;key_number=0;key_type=rsa2048

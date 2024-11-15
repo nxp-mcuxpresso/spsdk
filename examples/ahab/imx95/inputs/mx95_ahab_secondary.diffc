@@ -1,0 +1,11 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/mx95_uboot_secondary.yaml
+custom_command: "%! nxpimage ahab get-template -r a0 -f mimx9596 -o workspace/ahab_template.yaml --force"
+
+comments:
+  revision: "IMPORTANT! Change the revision to A0, latest B0 revision has different container format"
+  container: "All attributes related to the signing might be removed"
+  srk_table: "Remove srk table definition"
+  blob: "And finally remove unused parts for AHAB Certificate and Encryption blob"

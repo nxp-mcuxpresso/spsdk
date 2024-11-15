@@ -1,0 +1,13 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+uuid: dd0b9ce7f1596aed662de8c96396097a
+die_prk: die_prk.pem
+die_puk: die_puk.pem
+dice_ca_puk:
+dice_ca_prk:
+rtf:
+# we are setting the first 4 bytes to zero
+had: 0000000000000022ffffffff000000000000dc000000018f000000000000000000000000000000000000000000000000
+version:
+challenge:

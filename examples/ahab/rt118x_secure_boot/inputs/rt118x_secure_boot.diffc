@@ -1,0 +1,21 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/config_signed_fspi1.yaml
+custom_command: "%! nxpimage ahab get-template -f mimxrt1189 -o workspace/ahab_template.yaml --force"
+
+comments:
+  target_memory: "Change the target memory to serial downloader"
+  ahab_container: "Define the path to the EdgeLock Enclave Firmware container (And clean up the comments about possible options of container definitions)"
+  output: "Change the output file name"
+  srk_set: "Change srk_set to OEM to sign the image with OEM SRK"
+  gdet_runtime_behavior: "This might be deleted, it is not used on RT1180"
+  image_path: "Define the image executable (compiled flashloader binary)."
+  image_offset: "The image offset doesn't matter in serial downloader mode, it's updated automatically if left as 0."
+  load_address: "he most important are 'load_address' and 'entry_point' fields that must be sets on same value as is defined linker file for the application start of the application. In case of i.MXRT118x the linker load address is 0x304a0000"
+  signing_key: "Path to signing key"
+  boot_flags: "This might be removed"
+  meta_data: This might be removed
+  srk_array: "Define the SRK (Super Root Keys) record. In our case the local pregenerated public keys"
+  blob: "And finally remove unused parts for AHAB Certificate and Encryption blob"
+

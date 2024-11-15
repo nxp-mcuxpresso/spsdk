@@ -3,7 +3,7 @@ options {
     startAddress = 0x60000000;
     ivtOffset = 0x1000;
     initialLoadSize = 0x2000;
-    entryPointAddress = 0x60003411;
+    entryPointAddress = 0x600034E9;
 	signatureTimestamp = "04/05/2023 14:41:11";
 }
 

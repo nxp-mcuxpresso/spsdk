@@ -18,6 +18,7 @@ from typing import Any, Callable, Iterator, Optional, Union
 import click
 import hexdump
 
+from spsdk import SPSDK_DEBUG_LOG_FILE, SPSDK_DEBUG_LOGGING_DISABLED
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.misc import get_abs_path, load_configuration, write_file
 
@@ -132,6 +133,10 @@ def catch_spsdk_error(function: Callable) -> Callable:
         except (AssertionError, SPSDKError) as spsdk_exc:
             click.echo(f"{spsdk_exc.__class__.__name__}: {spsdk_exc}", err=True)
             logger.debug(str(spsdk_exc), exc_info=True)
+            if not SPSDK_DEBUG_LOGGING_DISABLED:
+                click.secho(
+                    f"See debug log file: {SPSDK_DEBUG_LOG_FILE} for more info", fg="yellow"
+                )
             sys.exit(2)
         except UnicodeEncodeError as encode_exc:
             logger.warning(
@@ -146,6 +151,10 @@ def catch_spsdk_error(function: Callable) -> Callable:
         except (Exception, KeyboardInterrupt) as base_exc:  # pylint: disable=broad-except
             click.echo(f"GENERAL ERROR: {type(base_exc).__name__}: {base_exc}", err=True)
             logger.debug(str(base_exc), exc_info=True)
+            if not SPSDK_DEBUG_LOGGING_DISABLED:
+                click.secho(
+                    f"See debug log file: {SPSDK_DEBUG_LOG_FILE} for more info.", fg="yellow"
+                )
             sys.exit(3)
 
     return wrapper

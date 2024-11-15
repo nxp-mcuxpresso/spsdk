@@ -103,9 +103,13 @@ All products, including those with advanced security features, may be subject to
     :maxdepth: 1
     :hidden:
 
-    usage/installation
+    examples/_knowledge_base/installation_guide
     usage/applications
     usage/apis
+
+    Application User Guides <apps/index>
+    API Development Guide <api/index>
+
     examples/plugins/README
 
 .. toctree::
@@ -117,110 +121,32 @@ All products, including those with advanced security features, may be subject to
     images/secure_update
     images/flash
     images/bootable
+    examples/_knowledge_base/cert_block_summary
 
 .. toctree::
-    :caption: Application User Guides
+    :caption: Examples
     :maxdepth: 1
     :hidden:
 
-    apps/blhost
-    apps/dk6prog
-    apps/el2go-host
-    apps/ifr
-    apps/nxpcrypto
-    apps/nxpdebugmbox
-    apps/nxpdevhsm
-    apps/nxpdevscan
-    apps/nxpele
-    apps/nxpimage
-    apps/nxpmemcfg
-    apps/pfr
-    apps/sdphost
-    apps/sdpshost
-    apps/shadowregs
-    apps/trust_provisioning
-    apps/nxpwpc
-    apps/nxpdice
-    apps/nxpuuu
-
-
-.. toctree::
-    :caption: API Development Guide
-    :maxdepth: 1
-    :hidden:
-
-    api/crypto
-    api/dat
-    api/debuggers
-    api/dk6
-    api/ele_msg
-    api/image
-    api/lpcprog
-    api/mboot
-    api/memcfg
-    api/pfr
-    api/sbfile
-    api/sdp
-    api/shadowregs
-    api/spsdk
-    api/tp
-    api/wpc
-    api/utils
-
-.. toctree::
-    :caption: General examples
-    :maxdepth: 1
-    :hidden:
 
     examples/jupyter
-    examples/init_notebook
-    examples/flashloader/ahab/rt118x_signed_flashloader
-    examples/flashloader/hab/rt105x_flashloader
-    examples/general/crypto
-    examples/general/image
-    examples/general/image_dcd
-    examples/general/image_srk
-    examples/general/sbfile
-    examples/general/mboot
-    examples/general/sdp_mboot
-    examples/general/sdp
-    examples/general/sdps
-    examples/general/get_keys
-    examples/signature_prov
-    examples/wpc_provisioning
-
-.. toctree::
-    :caption: MCU examples
-    :maxdepth: 1
-    :hidden:
-
-    examples/lpc55sxx_secure_boot/lpc55sxx_secure_boot
-    examples/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update
-    examples/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot
-    examples/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image
+    examples/ahab/index
+    examples/blhost/blhost
+    examples/bootable_image/index
+    examples/certificate_block/index
+    examples/crypto/index
+    examples/dat/index
+    examples/devhsm/index
+    examples/dice/index
     examples/dk6/dk6prog_intro
-    examples/mc56/mc56_devhsm
-    examples/rw61x/shadowregs/rw61x_shadowregs
-    examples/rw61x/debug_auth/rw61x_debug_auth
-    examples/rw61x/bootable_image/rw61x_bootable_image
-    examples/mcxn9xx_debug_auth/mcxn9xx_debug_auth
-    examples/imx93/imx93_ahab_uboot
-    examples/imx93/imx93_signed_ahab_uboot
-    examples/imx95/imx95_ahab_uboot
-    examples/rt118x/rt118x_debug_authentication
-    examples/rt118x/rt118x_secure_boot
-    examples/rt118x/rt118x_external_memory_config
+    examples/el2go/index
+    examples/hab/index
     examples/lpcprog/lpcprog
-    examples/lpc55s3x/dice/lpc55s3x_dice
-    examples/signature_provider/mcxn946/mcxn946_mbimg
-    examples/signature_provider/mimxrt595s/mimxrt595s_mbimg
-    examples/signature_provider/mimxrt595s/mimxrt595s_dat
-    examples/signature_provider/common/signature_provider
-    examples/signature_provider/common/sahsm
+    examples/mbi/index
+    examples/memcfg/index
+    examples/sb/index
+    examples/sdp/index
+    examples/shadowregs/index
+    examples/signature_provider/index
+    examples/wpc_provisioning/index
 
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`

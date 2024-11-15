@@ -158,6 +158,10 @@ class BaseConfigArea:
         try:
             regs = cls._load_registers(family=family, revision=revision)
             sch_cfg["pfr_base"]["properties"]["type"]["template_value"] = cls.__name__.upper()
+            sch_cfg["pfr_base"]["properties"]["type"]["enum"] = [
+                cls.__name__.upper(),
+                cls.__name__.lower(),
+            ]
             sch_cfg["pfr_settings"]["properties"]["settings"][
                 "properties"
             ] = regs.get_validation_schema()["properties"]
@@ -265,7 +269,7 @@ class BaseConfigArea:
         # detected the right algorithm and mandatory warn user about this selection because
         # it's MUST correspond to settings in eFuses!
         reg_rotkh = self.registers.find_reg("ROTKH")
-        assert self.family is not None
+        assert isinstance(self.family, str)
         cls = self.get_cert_block_class(family=self.family)
         rkht = cls.from_keys(keys=keys)
 

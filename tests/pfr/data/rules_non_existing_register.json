@@ -1,8 +1,10 @@
-[
-    {
-        "req_id": "0.3",
-        "desc": "Example of an unknown keyword/operator",
-        "msg": "Should we even display this?!",
-        "cond": "CMPA.NONEXISTING.REGISTER != 0"
-    }
-]
+{
+    "rules": [
+        {
+            "req_id": "0.3",
+            "desc": "Example of an unknown keyword/operator",
+            "msg": "Should we even display this?!",
+            "cond": "CMPA.NONEXISTING.REGISTER != 0"
+        }
+    ]
+}

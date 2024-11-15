@@ -1,0 +1,22 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===============  YAML configuration for Certification Block V1  ================
+# ======================================================================================================================
+#                                             == Certificate V1 Settings ==
+# ======================================================================================================================
+imageBuildNumber: 0  # [Optional] Description: User specified build number (secured firmware version) for the signed image. Allows user to prevent reverting to old versions.
+chainCertificate0File0: ../../_data/certificates/IMG1_1_sha256_2048_65537_v3_usr_crt.der # [Optional] Description: Chain certificate 0 for root certificate 0
+# ======================================================================================================================
+#                                                == Root Keys Settings ==
+# ======================================================================================================================
+# ROT0:
+rootCertificate0File: ../../_data/certificates/ROT1_sha256_2048_65537_v3_ca_crt.der  # [Required], Root Certificate File 0.
+# ROT1:
+rootCertificate1File: ../../_data/certificates/ROT2_sha256_2048_65537_v3_ca_crt.der  # [Required], Root Certificate File 1.
+# ROT2:
+rootCertificate2File: ../../_data/certificates/ROT3_sha256_2048_65537_v3_ca_crt.der  # [Required], Root Certificate File 2.
+# ROT3:
+rootCertificate3File: ../../_data/certificates/ROT4_sha256_2048_65537_v3_ca_crt.der  # [Required], Root Certificate File 3.
+mainRootCertId: 0  # [Conditionally required] Index of root key that is used as a main.
+# ---------------------------------------------------------------------------------

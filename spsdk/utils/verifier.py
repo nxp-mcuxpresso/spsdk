@@ -29,7 +29,8 @@ class VerifierResult(SpsdkEnum):
     @classmethod
     def draw(cls, res: "VerifierResult") -> str:
         """Get string also with colors."""
-        assert res.description
+        if not res.description:
+            return res.label
         return res.description + res.label + colorama.Fore.RESET
 
 

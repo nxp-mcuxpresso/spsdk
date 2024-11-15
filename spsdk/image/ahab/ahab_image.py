@@ -455,7 +455,7 @@ class AHABImage:
             if binary_container:
                 assert isinstance(binary_container, dict)
                 path = binary_container.get("path")
-                assert path
+                assert isinstance(path, str)
                 ahab_bin = load_binary(path, search_paths=search_paths)
                 # Get container type of first container
                 container_type = AHABImage._parse_container_type(ahab_bin)

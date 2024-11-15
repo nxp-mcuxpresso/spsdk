@@ -1864,7 +1864,7 @@
                             "width": 1,
                             "id": "fuse35-bit-8",
                             "name": "OTFAD_ENABLE",
-                            "description": " Reserved enable OTFAD descryption -- Move to GPR",
+                            "description": " Reserved enable OTFAD description -- Move to GPR",
                             "values": [
                                 {
                                     "name": "0",

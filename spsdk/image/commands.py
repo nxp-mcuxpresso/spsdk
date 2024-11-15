@@ -806,7 +806,7 @@ class UnlockSNVSFeatures(SpsdkEnum):
     """Enum definition for Unlock SNVS features."""
 
     LP_SWR = (1, "LP SWR", "Leaves LP SW reset unlocked")
-    ZMK_WRITE = (2, "ZMK WRITE", "Leaves Zeroisable Master Key write unlocked.")
+    ZMK_WRITE = (2, "ZMK WRITE", "Leaves Zero-able Master Key write unlocked.")
 
 
 class CmdUnlockSNVS(CmdUnlockAbstract):
@@ -897,7 +897,7 @@ class UnlockOCOTPFeatures(SpsdkEnum):
 
 
 class CmdUnlockOCOTP(CmdUnlockAbstract):
-    """Command Unlock for On-Chip One-time programable memory (fuses)."""
+    """Command Unlock for On-Chip One-time programmable memory (fuses)."""
 
     FEATURES = UnlockOCOTPFeatures
 
@@ -1312,7 +1312,7 @@ class CmdAuthData(CmdBase):
             if signature_provider:
                 signature_provider.try_to_verify_public_key(public_key)
             else:
-                assert private_key
+                assert isinstance(private_key, PrivateKey)
                 if not private_key.verify_public_key(public_key):
                     raise SPSDKError("Given private key does not match the public certificate")
 

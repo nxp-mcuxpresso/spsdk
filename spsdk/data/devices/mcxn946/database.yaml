@@ -29,7 +29,7 @@ latest: a1
 
 # General MCU information
 info:
-  use_in_doc: False
+  use_in_doc: True
   purpose: MCX Industrial and IoT Microcontrollers
   spsdk_predecessor_name: mcxn9xx
   # Web page of MCU representative
@@ -207,10 +207,10 @@ features:
             - field174
             - field178
             - field17C
-            - field180
-            - field184
-            - field188
-            - field18C
+            - Reserved00180
+            - Reserved00184
+            - Reserved00188
+            - Reserved0018C
       computed_fields:
         field000: # HEADER
           field000-bits8-15: pfr_reg_inverse_lower_8_bits # INV_CFPA_LC_STATE

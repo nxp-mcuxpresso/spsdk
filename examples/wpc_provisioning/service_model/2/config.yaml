@@ -1,0 +1,13 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+tokens:
+  - a582a33306c1
+  - 31e8e243874b
+  - THIS_IS_REAL_KEY
+manufacturer_crt: manufacturer.crt
+manufacturer_prk: manufacturer_prk.pem
+subject: CACA-2B
+policy: 12
+extra_text: extra-text-to-cert
+wpc_root_hash: ../wpc_root_hash.txt

@@ -190,8 +190,10 @@ class CertBlock(BaseClass):
             raise SPSDKError("Certificate could not be found")
         # root_cert_id may be 0 which is falsy value, therefore 'or' cannot be used
         cert_id = root_cert_id if root_cert_id is not None else cert_chain_id
+        if cert_id is None:
+            raise SPSDKError("No valid certificate ID found")
         try:
-            cert_id = int(cert_id)
+            cert_id = int(cert_id)  # type: ignore  # Purpose of this line is to check if cert_id is a number
         except ValueError as exc:
             raise SPSDKValueError(f"A certificate index is not a number: {cert_id}") from exc
         if found_cert_id is not None and found_cert_id != cert_id:
@@ -686,7 +688,8 @@ class CertBlockV1(CertBlock):
         cfg: dict[str, Optional[Union[str, int]]] = {}
         cfg["imageBuildNumber"] = self.header.build_number
         used_cert_id = self.rkh_index
-        assert used_cert_id is not None
+        if used_cert_id is None:
+            raise SPSDKError("Index of used certificate is not defined")
         cfg["mainRootCertId"] = used_cert_id
 
         cfg[f"rootCertificate{used_cert_id}File"] = create_certificate_cfg(used_cert_id, 0)
@@ -890,7 +893,8 @@ class RootKeyRecord(BaseClass):
         data += pack("<L", self.flags)
         data += self._rkht.export()
         data += self.root_public_key
-        assert len(data) == self.expected_size
+        if len(data) != self.expected_size:
+            raise SPSDKError("Invalid length of data")
         return data
 
     @staticmethod
@@ -1028,7 +1032,8 @@ class IskCertificate(BaseClass):
         self.flags = 0
         if self.user_data:
             self.flags |= 1 << 31
-        assert self.isk_cert
+        if not self.isk_cert:
+            raise SPSDKError("ISK Certificate is needed when calculating flags.")
         if self.isk_cert.curve == "secp256r1":
             self.flags |= 1 << 0
         if self.isk_cert.curve == "secp384r1":
@@ -1066,7 +1071,8 @@ class IskCertificate(BaseClass):
             data += self.user_data
         data += self.signature
 
-        assert len(data) == self.expected_size
+        if len(data) != self.expected_size:
+            raise SPSDKError("ISK Cert data size does not match")
         return data
 
     @classmethod
@@ -1188,7 +1194,9 @@ class IskCertificateLite(BaseClass):
         data = self.get_tbs_data()
         data += self.signature
 
-        assert len(data) == self.expected_size, "ISK Cert data size does not match"
+        if len(data) != self.expected_size:
+            raise SPSDKError("ISK Cert data size does not match")
+
         return data
 
     @classmethod
@@ -1467,7 +1475,7 @@ class CertBlockV21(CertBlock):
         cfg["mainRootCertId"] = self.root_key_record.used_root_cert
         if self.isk_certificate and self.root_key_record.ca_flag == 0:
             cfg["useIsk"] = True
-            assert self.isk_certificate.isk_cert
+            assert isinstance(self.isk_certificate.isk_cert, PublicKeyEcc)
             key = self.isk_certificate.isk_cert
             key_file_name = os.path.join(output_folder, "signingCertificateFile.pub")
             key.save(key_file_name)

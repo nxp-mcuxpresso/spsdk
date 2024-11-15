@@ -1,0 +1,23 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cert_block_v2_1_template.yaml
+user_cfg: inputs/cert_block_v2_1_cfg.yaml
+custom_command: "%! nxpimage cert-block get-template -f lpc55s36 -o ./workspace/cert_block_v2_1_template.yaml --force"
+
+comments:
+  useIsk: Is set to false because ISK is not used in this example
+  iskPublicKey: Is removed because ISK is not used in this certificates
+  iskCertificateConstraint: Is removed because ISK is not used in this certificates
+  iskCertData: Is removed because ISK is not used in this certificates
+  signPrivateKey: Path to private key file for signing the certificate block
+  signProvider: Is removed because we are using the private key directly
+  rootCertificate0File: Change to existing path of Root of Trust key
+  rootCertificate1File: Change to existing path of Root of Trust key
+  rootCertificate2File: Change to existing path of Root of Trust key
+  rootCertificate3File: Change to existing path of Root of Trust key
+  mainRootCertId: As good example we set the main root index of RoT to 0
+  containerOutputFile: Modify the output path to our example needs. For output files in SPSDK workspace relative paths are always relative to configuration file location.
+

@@ -2,14 +2,14 @@
     The data folder in package contains all data that is used by SPSDK tool.
 
 ## Organization of database
-  - common: Folder that contains common data as for general run of SPSDK as defaults for all devices.
+  - common: Folder that contains common data for the general operation of SPSDK as defaults for all devices.
   - devices: Folder with all supported devices by SPSDK. the name of folder is unique name of supported family. Each family folder must contains at least 'database.yaml' file
             with correct format.
   - jsonschemas: Folder with JSON SCHEMAS used by individual SPSDK tools. Format of file depends on each tool, some of tool is using standard JSON SCHEMA format, rest is
             contains chunks of JSON SCHEMAs organized as a big dictionary.
 
 ## Glossary
-  - SPSDK_Database: The base SPSDK class to handle with database. It has Singleton behavior so it could created any time without multiplicate load of database.
+  - SPSDK_Database: The base SPSDK class to handle with database. It has Singleton behavior so it could created any time without duplicate load of database.
   - SPSDK_Database cache: See chapter "Database caching"
   - Device: Name of the device. The exact name of the device is specified by name of the folder in 'devices' folder.
   - Revision: Revision of the device. Each device has to have at least one revision.
@@ -22,7 +22,7 @@
 ### Mandatory fields in device 'database.yaml' for fully defined devices
   - revisions: The dictionary with all supported revisions. In case that the revision doesn't contains any changes to standard features it enough to define empty dictionary
   - latest: The name of latest revision of the device.
-  - features: The dictionary with all supported features by device. The final device feature is compounded from the defaults from 'common/database_defaults.yaml' updated by information in '{device_name}/database.yaml'
+  - features: The dictionary with all supported features by device. The final device feature is composed from the defaults from 'common/database_defaults.yaml' updated by information in '{device_name}/database.yaml'
 
 Example of newly created device:
 ```
@@ -69,7 +69,7 @@ latest: new_rev
 ### Steps to create final revision
 The SPSDK database flow to get the final data for requested revision.
 
-**The code without alias devices do following steps:**
+**The code without alias devices performs the following steps:**
 1. Load device features
 2. Load default features
 3. For all defined device features do following:
@@ -209,8 +209,11 @@ Each "get_" has two mandatory parameters:
 ## Database Caching
 By default, the SPSDK database is cached on the local machine to improve load performance. Each SPSDK instance on the machine has its own independent cache.
  An invalidation mechanism is also in place to detect changes in the original data and update the cache accordingly. If necessary, the cache can be disabled
- by setting the environment variable "SPSDK_CACHE_DISABLED_{version}" to True. The database itself also maintains a simple cache for opened configuration
- files to prevent multiple loads during the application's runtime. The content of these runtime configuration files is checked upon exit of SPSDK, and 
+ by setting the environment variable "SPSDK_CACHE_DISABLED_{version}" to True, where {version} represents the current version of SPSDK. 
+
+You can now specify a custom path for the SPSDK cache by setting the system environment variable "SPSDK_CACHE_FOLDER". This allows you to control where the cache is stored on your system.
+
+The database itself also maintains a simple cache for opened configuration files to prevent multiple loads during the application's runtime. The content of these runtime configuration files is checked upon exit of SPSDK, and 
  the main cache is updated if new files are found.
 
 ## Support for Restricted Data

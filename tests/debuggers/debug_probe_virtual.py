@@ -9,6 +9,7 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
+import struct
 from typing import Any
 
 from spsdk.debuggers.debug_probe import (
@@ -69,6 +70,36 @@ class DebugProbeVirtual(DebugProbe):
         self.coresight_ap[DebugProbe.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
 
         logger.debug("The SPSDK Virtual Interface has been initialized")
+
+    def mem_block_write(self, addr: int, data: bytes) -> None:
+        """Write a block of data to memory using 32-bit values."""
+        if not self.opened:
+            raise SPSDKDebugProbeNotOpenError("Debug probe is not opened.")
+
+        if not 0 <= addr < (2**32) - 3:
+            raise SPSDKDebugProbeError("Invalid address: must be a 32-bit value")
+
+        # Pad data to multiple of 4 bytes if necessary
+        padded_data = data + b"\x00" * ((4 - len(data) % 4) % 4)
+
+        for i in range(0, len(padded_data), 4):
+            word = struct.unpack("<I", padded_data[i : i + 4])[0]
+            self.virtual_memory[(addr + i) // 4] = word
+
+    def mem_block_read(self, addr: int, size: int) -> bytes:
+        """Read a block of data from memory using 32-bit values."""
+        if not self.opened:
+            raise SPSDKDebugProbeNotOpenError("Debug probe is not opened.")
+
+        if not 0 <= addr < (2**32) - 3:
+            raise SPSDKDebugProbeError("Invalid address: must be a 32-bit value")
+
+        result = bytearray()
+        for i in range(0, size, 4):
+            word = self.virtual_memory.get((addr + i) // 4, 0)
+            result.extend(struct.pack("<I", word))
+
+        return bytes(result[:size])
 
     @classmethod
     def get_connected_probes(cls, hardware_id: str = None, options: dict = None) -> list:
@@ -322,3 +353,15 @@ class DebugProbeVirtual(DebugProbe):
             return subs_data
         except (TypeError, JSONDecodeError) as exc:
             raise SPSDKDebugProbeError(f"Cannot parse substituted values: ({str(exc)})")
+
+    def debug_halt(self) -> None:
+        """Halt the CPU execution."""
+        pass
+
+    def debug_resume(self) -> None:
+        """Resume the CPU execution."""
+        pass
+
+    def debug_step(self) -> None:
+        """Step the CPU execution."""
+        pass

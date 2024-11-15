@@ -1,0 +1,12 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/signed-u-boot-atf-container-img_config.yaml
+custom_command: "%! nxpimage ahab get-template -f mimx9352 -o workspace/ahab_template.yaml --force"
+
+comments:
+  target_memory: "Change the target memory to serial downloader"
+  binary_container: "Define the path to the EdgeLock Enclave Firmware container"
+  output: "Change the output file name"
+  container: "All attributes related to the signing might be removed"
+  srk_table: "Add path to keys"

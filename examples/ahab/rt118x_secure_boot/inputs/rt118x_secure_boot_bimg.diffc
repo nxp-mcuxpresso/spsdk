@@ -1,0 +1,10 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/bootimg_mimxrt1189_flexspi_nor.yaml
+user_cfg: inputs/bootimg_rt118x_flexspi_nor.yaml
+custom_command: "%! nxpimage bootable-image get-templates -f mimxrt1189 -o workspace --force"
+
+comments:
+  xmcd: "XMCD is not necessary for this configuration
+  fcb: "Path to FCB block"
+  ahab_container: "Path to AHAB container"

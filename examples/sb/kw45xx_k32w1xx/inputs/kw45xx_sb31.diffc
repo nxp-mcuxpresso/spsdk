@@ -1,0 +1,24 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/sb31_template.yaml
+user_cfg: inputs/sb31_config.yaml
+custom_command: "%! nxpimage sb31 get-template -f kw45b41z8 -o workspace/sb31_template.yaml --force"
+
+comments:
+  signPrivateKey: "Add path to your private key file for signing"
+  containerOutputFile: "Add path to our generated SB3 container"
+  signProvider: "This is removed, because we are using private key in this example"
+  certBlock: "Add path to the configuration file containing certificates or path to binary block"
+  kdkAccessRights: "Set KDK access rights"
+  description: "Add description, which will be stored in Stored in SB3.1 manifest"
+  erase: "Erase the flash before programming"
+  load: "Load the binary file to the flash"
+  execute: "We do not use this command"
+  programFuses: "We do not use this command"
+  prograprogramIFRmFuses: "We do not use this command"
+  loadCMAC: "We do not use this command"
+  loadHashLocking: "We do not use this command"
+  fillMemory: "We do not use this command"
+  checkFwVersion: "We do not use this command"
+  containerKeyBlobEncryptionKey: "Add path to Part Common Key"
+  programIFR: "We do not use this command"

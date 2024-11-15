@@ -39,7 +39,8 @@ class Counter:
         :param ctr_byteorder_encoding: way how the counter is encoded into output value
         :raises SPSDKError: When invalid byteorder is provided
         """
-        assert isinstance(nonce, bytes) and len(nonce) == 16
+        if not (isinstance(nonce, bytes) and len(nonce) == 16):
+            raise SPSDKError("nonce must be 16 bytes long")
         self._nonce = nonce[:-4]
         self._ctr_byteorder_encoding = ctr_byteorder_encoding
         self._ctr = int.from_bytes(nonce[-4:], ctr_byteorder_encoding.value)
@@ -81,7 +82,7 @@ def aes_ecb_encrypt(key: bytes, plain_data: bytes) -> bytes:
     :param plain_data: Input data
     :return: Encrypted data
     """
-    cipher = Cipher(algorithms.AES(key), modes.ECB())
+    cipher = Cipher(algorithms.AES(key), modes.ECB())  # nosec
     enc = cipher.encryptor()
     return enc.update(plain_data) + enc.finalize()
 
@@ -93,7 +94,7 @@ def aes_ecb_decrypt(key: bytes, encrypted_data: bytes) -> bytes:
     :param encrypted_data: Input data
     :return: Decrypted data
     """
-    cipher = Cipher(algorithms.AES(key), modes.ECB())
+    cipher = Cipher(algorithms.AES(key), modes.ECB())  # nosec
     enc = cipher.decryptor()
     return enc.update(encrypted_data) + enc.finalize()
 

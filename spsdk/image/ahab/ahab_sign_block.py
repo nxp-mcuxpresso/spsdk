@@ -28,7 +28,7 @@ from spsdk.image.ahab.ahab_data import (
     AHABTags,
 )
 from spsdk.image.ahab.ahab_signature import ContainerSignature
-from spsdk.image.ahab.ahab_srk import SRKTable, SRKTableArray
+from spsdk.image.ahab.ahab_srk import SRKRecordV2, SRKTable, SRKTableArray
 from spsdk.utils.misc import align, bytes_to_print, load_binary, load_configuration, write_file
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 from spsdk.utils.verifier import Verifier, VerifierResult
@@ -347,8 +347,8 @@ class SignatureBlock(HeaderContainer):
             else:
                 try:
                     if used_image_key:
-                        assert self.certificate
-                        assert self.certificate.public_key_0
+                        assert isinstance(self.certificate, AhabCertificate)
+                        assert isinstance(self.certificate.public_key_0, SRKRecordV2)
                         public_key = self.certificate.public_key_0.get_public_key()
 
                     else:
@@ -419,15 +419,15 @@ class SignatureBlock(HeaderContainer):
 
         return ver_sign
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def parse(cls, data: bytes, chip_config: Optional[AhabChipContainerConfig] = None) -> Self:
+    def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore[override]
         """Parse input binary chunk to the container object.
 
         :param data: Binary data with Signature block to parse.
         :param chip_config: AHAB container chip configuration.
         :return: Object recreated from the binary data.
         """
-        assert chip_config
         cls.check_container_head(data).validate()
         (
             _,  # version
@@ -985,12 +985,12 @@ class SignatureBlockV2(HeaderContainer):
                 public_key = None
                 try:
                     if used_image_key:
-                        assert self.certificate
+                        assert isinstance(self.certificate, AhabCertificate)
                         if ix == 0:
-                            assert self.certificate.public_key_0
+                            assert isinstance(self.certificate.public_key_0, SRKRecordV2)
                             public_key = self.certificate.public_key_0.get_public_key()
                         else:
-                            assert self.certificate.public_key_1
+                            assert isinstance(self.certificate.public_key_1, SRKRecordV2)
                             public_key = self.certificate.public_key_1.get_public_key()
 
                     else:
@@ -1036,7 +1036,7 @@ class SignatureBlockV2(HeaderContainer):
             return ver_sign
 
         ret = Verifier("Container signing")
-        assert self.srk_assets
+        assert isinstance(self.srk_assets, SRKTableArray)
         # Show revoke keys
         if self.chip_config.srk_revoke_keys:
             msg = ""
@@ -1075,19 +1075,15 @@ class SignatureBlockV2(HeaderContainer):
 
         return ret
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def parse(
-        cls,
-        data: bytes,
-        chip_config: Optional[AhabChipContainerConfig] = None,
-    ) -> Self:
+    def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore[override]
         """Parse input binary chunk to the container object.
 
         :param data: Binary data with Signature block to parse.
         :param chip_config: AHAB container chip configuration.
         :return: Object recreated from the binary data.
         """
-        assert chip_config
         cls.check_container_head(data).validate()
         (
             _,  # version
@@ -1126,7 +1122,7 @@ class SignatureBlockV2(HeaderContainer):
             signature_block.signature = None
             signature_block.signature_2 = None
             if signature_offset:
-                assert signature_block.srk_assets
+                assert isinstance(signature_block.srk_assets, SRKTableArray)
                 signature_block.signature = ContainerSignature.parse(data[signature_offset:])
                 if len(signature_block.srk_assets._srk_tables) == 2:
                     signature_block.signature_2 = ContainerSignature.parse(

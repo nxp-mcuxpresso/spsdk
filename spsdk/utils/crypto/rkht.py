@@ -155,6 +155,8 @@ class RKHT:
             return key.get_public_key()
 
         if isinstance(key, Certificate):
+            if key.ca:
+                setattr(key, "ca", True)
             return key.get_public_key()
 
         if isinstance(key, str):
@@ -164,6 +166,15 @@ class RKHT:
             return extract_public_key_from_data(key, password)
 
         raise SPSDKError("RKHT: Unsupported key to load.")
+
+    def __str__(self) -> str:
+        """String representation of the Root Key Hash Table."""
+        result = f"Hash Algorithm: {self.hash_algorithm.name}\n"
+        result += f"Hash Algorithm Size: {self.hash_algorithm_size} bits\n"
+        result += f"Number of Root Key Hashes: {len(self.rkh_list)}\n"
+        for i, rkh in enumerate(self.rkh_list, 1):
+            result += f"RKH {i}: {rkh.hex()}\n"
+        return result
 
 
 class RKHTv1(RKHT):
@@ -238,8 +249,15 @@ class RKHTv1(RKHT):
         for idx in range(index + 1):
             if len(self.rkh_list) < idx + 1:
                 self.rkh_list.append(bytes(self.RKH_SIZE))
-        assert len(self.rkh_list) <= 4
+        if len(self.rkh_list) > 4:
+            raise SPSDKError("Number of Root Key Hashes can not be larger than 4.")
         self.rkh_list[index] = rkh
+
+    def __str__(self) -> str:
+        """String representation of the Root Key Hash Table."""
+        result = "Root Key Hash Table (RKHTv1):\n"
+        result += super().__str__()
+        return result
 
 
 class RKHTv21(RKHT):
@@ -285,3 +303,9 @@ class RKHTv21(RKHT):
         else:
             rotkh = get_hash(self.export(), self.hash_algorithm)
         return rotkh
+
+    def __str__(self) -> str:
+        """String representation of the Root Key Hash Table."""
+        result = "Root Key Hash Table (RKHTv21):\n"
+        result += super().__str__()
+        return result

@@ -449,7 +449,7 @@ class LPCProgProtocol:
         if initial_crc != final_crc:
             raise SPSDKError(f"CRC checksum does not match {initial_crc}!={final_crc}")
 
-    def caluculate_sector_count(self, data: bytes) -> int:
+    def calculate_sector_count(self, data: bytes) -> int:
         """Calculate number of sectors needed for writing the data."""
         return (len(data) + self.get_device().sector_size - 1) // self.get_device().sector_size
 
@@ -481,12 +481,12 @@ class LPCProgProtocol:
     ) -> None:
         """This command is used for programming the flash memory.
 
-        1) Erase the first sector to make the image unbootable and prevent bricking
+        1) Erase the first sector to make the image un-bootable and prevent bricking
         2) Optionally write the checksum to the image vector table
         3) Write the image in reverse order
         """
         sector_size = self.get_device().sector_size
-        sector_count = self.caluculate_sector_count(bin_data)
+        sector_count = self.calculate_sector_count(bin_data)
 
         if start_sector + sector_count > self.get_device().sector_count:
             raise SPSDKValueError("Sector count is larger than available sectors")
@@ -497,7 +497,7 @@ class LPCProgProtocol:
 
         if start_sector == 0:
             # Meaning we are writing the whole bootable image
-            # Erase the first sector to make the image unbootable and prevent bricking
+            # Erase the first sector to make the image un-bootable and prevent bricking
             self.program_flash_sector(bytes([0xFF] * sector_size), 0)
 
         # 2. Write data to flash memory, in reverse order

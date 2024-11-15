@@ -198,7 +198,8 @@ class AhabCertificate(HeaderContainer):
         )
 
     def __len__(self) -> int:
-        assert self.public_key_0 and self.public_key_0.srk_data and self.signature_0
+        if not (self.public_key_0 and self.public_key_0.srk_data and self.signature_0):
+            raise SPSDKValueError("Certificate is not properly initialized.")
         ret = (
             super().__len__()
             + len(self.public_key_0)
@@ -206,7 +207,7 @@ class AhabCertificate(HeaderContainer):
             + len(self.signature_0)
         )
         if self.public_key_1 and self.signature_1:
-            assert self.public_key_1.srk_data
+            assert isinstance(self.public_key_1.srk_data, SRKData)
             ret += len(self.public_key_1) + len(self.public_key_1.srk_data) + len(self.signature_1)
         return ret
 
@@ -260,7 +261,7 @@ class AhabCertificate(HeaderContainer):
         :raises SPSDKValueError: if Signature Block or SRK Table is missing.
         :return: bytes representing data to be signed.
         """
-        assert self.public_key_0
+        assert isinstance(self.public_key_0, SRKRecordV2)
         cert_data_to_sign = pack(
             self.format(),
             self.version,
@@ -277,19 +278,19 @@ class AhabCertificate(HeaderContainer):
         )
 
         cert_data_to_sign += self.public_key_0.export()
-        assert self.public_key_0.srk_data
+        assert isinstance(self.public_key_0.srk_data, SRKData)
         cert_data_to_sign += self.public_key_0.srk_data.export()
         if self.public_key_1:
             cert_data_to_sign += self.public_key_1.export()
-            assert self.public_key_1.srk_data
+            assert isinstance(self.public_key_1.srk_data, SRKData)
             cert_data_to_sign += self.public_key_1.srk_data.export()
 
         return cert_data_to_sign
 
     def update_fields(self) -> None:
         """Update all fields depended on input values."""
-        assert self.public_key_0
-        assert self.public_key_0.srk_data
+        assert isinstance(self.public_key_0, SRKRecordV2)
+        assert isinstance(self.public_key_0.srk_data, SRKData)
         self.public_key_0.update_fields()
         if self.public_key_1:
             self.public_key_1.update_fields()
@@ -298,7 +299,7 @@ class AhabCertificate(HeaderContainer):
             self.fixed_length() + len(self.public_key_0) + len(self.public_key_0.srk_data)
         )
         if self.public_key_1:
-            assert self.public_key_1.srk_data
+            assert isinstance(self.public_key_1.srk_data, SRKData)
             self.signature_offset += len(self.public_key_1) + len(self.public_key_1.srk_data)
         signature_data_final = self.get_signature_data()
         self.signature_0.sign(signature_data_final)
@@ -314,7 +315,10 @@ class AhabCertificate(HeaderContainer):
         cert += self.signature_0.export()
         if self.signature_1:
             cert += self.signature_1.export()
-        assert self.length == len(cert)
+        if self.length != len(cert):
+            raise SPSDKValueError(
+                f"Certificate length {self.length} doesn't match to computed length {len(cert)}"
+            )
         return cert
 
     def verify(self, srk: Optional[SRKTableArray] = None) -> Verifier:
@@ -356,10 +360,10 @@ class AhabCertificate(HeaderContainer):
         expected_signature_offset = super().__len__()
 
         if self.public_key_0:
-            assert self.public_key_0.srk_data
+            assert isinstance(self.public_key_0.srk_data, SRKData)
             expected_signature_offset += len(self.public_key_0) + len(self.public_key_0.srk_data)
         if self.public_key_1:
-            assert self.public_key_1.srk_data
+            assert isinstance(self.public_key_1.srk_data, SRKData)
             expected_signature_offset += len(self.public_key_1) + len(self.public_key_1.srk_data)
 
         if self.signature_offset != expected_signature_offset:
@@ -572,7 +576,7 @@ class AhabCertificate(HeaderContainer):
         :return: Configuration dictionary.
         """
         ret_cfg: dict[str, Any] = {}
-        assert self.public_key_0
+        assert isinstance(self.public_key_0, SRKRecordV2)
         ret_cfg["permissions"] = self.create_config_permissions(srk_set)
         if self.permission_data:
             ret_cfg["permission_data"] = self.permission_data.hex()

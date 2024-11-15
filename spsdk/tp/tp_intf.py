@@ -60,7 +60,8 @@ class TpIntfDescription:
         self, *args: Union[int, str], **kwargs: Union[int, str]
     ) -> Union["TpDevInterface", "TpTargetInterface"]:
         """Return TP Device or Target associated with this descriptor."""
-        assert self.intf
+        if not self.intf:
+            raise SPSDKTpError("Interface is not defined.")
         return self.intf(self, *args, **kwargs)
 
 

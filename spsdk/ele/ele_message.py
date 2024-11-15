@@ -258,7 +258,8 @@ class EleMessage:
         :param payload: The input data to compute CRC on them. Must be 4 bytes aligned.
         :return: 4 bytes of CRC in little endian format.
         """
-        assert len(payload) % 4 == 0
+        if len(payload) % 4 != 0:
+            raise SPSDKValueError("Payload must be 4 bytes aligned")
         res = 0
         for i in range(0, len(payload), 4):
             res ^= int.from_bytes(payload[i : i + 4], Endianness.LITTLE.value)
@@ -981,7 +982,10 @@ class EleMessageSigned(EleMessage):
         self.signed_msg = SignedMessage(family=family, revision=revision)
         self.signed_msg.parse(signed_msg)
         self.signed_msg.verify().validate()
-        assert self.signed_msg.signed_msg_container and self.signed_msg.signed_msg_container.message
+        if not (
+            self.signed_msg.signed_msg_container and self.signed_msg.signed_msg_container.message
+        ):
+            raise SPSDKValueError("Invalid signed message")
         self.command = self.signed_msg.signed_msg_container.message.cmd
         self._command_data_size = len(self.signed_msg_binary)
 

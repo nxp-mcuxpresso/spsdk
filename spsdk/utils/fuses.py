@@ -150,14 +150,16 @@ class FuseScript:
                 info += f"\n --== Grouped register name: {reg.name} ==-- \n"
                 for reg in reg.sub_regs:
                     script += f"# OTP ID: {reg.name}, Value: {hex(reg.get_value())}\n"
-                    assert reg.otp_index is not None, f"OTP index is not defined for {reg.name}"
+                    if reg.otp_index is None:
+                        raise SPSDKError(f"OTP index is not defined for {reg.name}")
                     script += (
                         self.get_fuse_write_cmd(reg.otp_index, reg.get_hex_value(raw=True)) + "\n"
                     )
                     info += f"OTP ID: {reg.otp_index}, Value: {hex(reg.get_value(raw=True))}\n"
             else:
                 script += f"# OTP ID: {reg.name}\n\n"
-                assert reg.otp_index is not None, f"OTP index is not defined for {reg.name}"
+                if reg.otp_index is None:
+                    raise SPSDKError(f"OTP index is not defined for {reg.name}")
                 script += self.get_fuse_write_cmd(reg.otp_index, reg.get_hex_value(raw=True)) + "\n"
                 info += f"OTP ID: {reg.otp_index}, Value: {hex(reg.get_value(raw=True))}\n"
 

@@ -16,7 +16,7 @@ import struct
 import sys
 from dataclasses import dataclass
 from time import sleep
-from typing import Any, Callable, Iterator, Optional, Type
+from typing import Any, Iterator, Optional, Type
 
 import click
 import colorama
@@ -34,13 +34,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_plugin_option,
     spsdk_revision_option,
 )
-from spsdk.apps.utils.utils import (
-    INT,
-    SPSDKAppError,
-    catch_spsdk_error,
-    format_raw_data,
-    progress_bar,
-)
+from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
 from spsdk.dat import dm_commands, famode_image
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
@@ -50,13 +44,17 @@ from spsdk.dat.debug_credential import (
     ProtocolVersion,
 )
 from spsdk.dat.debug_mailbox import DebugMailbox
-from spsdk.debuggers.utils import PROBES, load_all_probe_types, open_debug_probe, test_ahb_access
+from spsdk.debuggers.utils import (
+    PROBES,
+    get_test_address,
+    load_all_probe_types,
+    open_debug_probe,
+    test_ahb_access,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.image.mbi.mbi import MasterBootImage, get_mbi_class
 from spsdk.utils.crypto.cert_blocks import find_root_certificates
-from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
-    Endianness,
     align_block,
     find_file,
     get_abs_path,
@@ -124,6 +122,14 @@ class DebugProbeParams:
     interface: str
     serial_no: str
     debug_probe_user_params: dict
+
+    def set_test_address(self, test_address: int) -> None:
+        """Set if not already sets, the test address for AHB access.
+
+        :param test_address: New overriding address.
+        """
+        if "test_address" not in self.debug_probe_user_params:
+            self.debug_probe_user_params["test_address"] = test_address
 
 
 @dataclass
@@ -275,11 +281,18 @@ def main(
         par_splitted = par.split("=")
         probe_user_params[par_splitted[0]] = par_splitted[1]
 
+    debug_params = DebugProbeParams(
+        interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
+    )
+
     if not family:
         logger.warning(
             "The Family is not specified. This is a new option that will be "
             "mandatory since SPSDK 2.4. Please update your scripts."
         )
+    else:
+        debug_params.set_test_address(get_test_address(family, revision))
+
     ctx.obj = {
         "debug_mailbox_params": DebugMailboxParams(
             family=family,
@@ -288,9 +301,7 @@ def main(
             more_delay=timing,
             operation_timeout=operation_timeout,
         ),
-        "debug_probe_params": DebugProbeParams(
-            interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
-        ),
+        "debug_probe_params": debug_params,
     }
 
     return 0
@@ -324,8 +335,8 @@ def main(
     "-a",
     "--address",
     type=INT(),
-    default="0x2000_0000",
-    help="The AHB access test address, the default is 0x2000_0000, but some chips needs different.",
+    help=("Deprecated option, use in '-o test-address=0x2000_1000' in root command instead of."),
+    hidden=True,
 )
 @click.pass_obj
 def auth_command(
@@ -335,12 +346,17 @@ def auth_command(
     key: str,
     no_exit: bool,
     nxp_keys: bool,
-    address: int,
+    address: Optional[int],
 ) -> None:
     """Perform the Debug Authentication.
 
     The -p option must be defined in main application.
     """
+    if address is not None:
+        logger.warning(
+            "The address option is deprecated, if you really need override test address, "
+            "use '-o test-address=xx' in root command."
+        )
     debug_mailbox_params: DebugMailboxParams = pass_obj["debug_mailbox_params"]
 
     family = debug_mailbox_params.family
@@ -371,7 +387,6 @@ def auth_command(
         debug_mailbox_params,
         config=config,
         no_exit=no_exit,
-        address=address,
     )
 
 
@@ -380,7 +395,6 @@ def auth(
     debug_mailbox_params: DebugMailboxParams,
     config: dict[str, Any],
     no_exit: bool,
-    address: int,
     search_paths: Optional[list[str]] = None,
 ) -> None:
     """Perform the Debug Authentication.
@@ -389,14 +403,11 @@ def auth(
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
     :param config: Configuration of DAT.
     :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
-    :param address: The AHB access test address, default is 0x2000_0000.
     :param search_paths: Optional list of search paths.
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
         logger.info("Starting Debug Authentication")
-        if not "test_address" in debug_probe_params.debug_probe_user_params:
-            debug_probe_params.debug_probe_user_params["test_address"] = address
 
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
 
@@ -452,7 +463,7 @@ def auth(
                 mail_box.debug_probe.connect()
                 # Do test of access to AHB bus
                 sleep(0.2)
-                ahb_access_granted = test_ahb_access(mail_box.debug_probe, test_mem_address=address)
+                ahb_access_granted = test_ahb_access(mail_box.debug_probe)
                 res_str = (
                     (colorama.Fore.GREEN + "successfully")
                     if ahb_access_granted
@@ -798,27 +809,29 @@ def start_debug_session(
     "-a",
     "--address",
     type=INT(),
-    default="0x2000_0000",
-    help="The AHB access test address, the default is 0x2000_0000, but some chips needs different.",
+    help=("Deprecated option, use in '-o test-address=0x2000_1000' in root command instead of."),
+    hidden=True,
 )
 @click.pass_obj
-def test_connection_command(pass_obj: dict, address: int) -> None:
+def test_connection_command(pass_obj: dict, address: Optional[int]) -> None:
     """Method just try if the device debug port is opened or not."""
-    ahb_access_granted = test_connection(pass_obj["debug_probe_params"], address)
+    if address is not None:
+        logger.warning(
+            "The address option is deprecated, if you really need override test address, "
+            "use '-o test-address=xx' in root command."
+        )
+    ahb_access_granted = test_connection(pass_obj["debug_probe_params"])
     access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "not-"
     click.echo(f"The device is {access_str}accessible for debugging.{colorama.Fore.RESET}")
 
 
-def test_connection(debug_probe_params: DebugProbeParams, address: int = 0x2000_0000) -> bool:
+def test_connection(debug_probe_params: DebugProbeParams) -> bool:
     """Method just try if the device debug port is opened or not.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
-    :param address: The AHB test address, default is 0x2000_0000
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
-        if not "test_address" in debug_probe_params.debug_probe_user_params:
-            debug_probe_params.debug_probe_user_params["test_address"] = address
         with open_debug_probe(
             interface=debug_probe_params.interface,
             serial_no=debug_probe_params.serial_no,
@@ -826,7 +839,7 @@ def test_connection(debug_probe_params: DebugProbeParams, address: int = 0x2000_
             print_func=click.echo,
         ) as debug_probe:
             debug_probe.connect()
-            ahb_access_granted = test_ahb_access(debug_probe, test_mem_address=address)
+            ahb_access_granted = test_ahb_access(debug_probe)
         return ahb_access_granted
     except Exception as e:
         raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
@@ -846,8 +859,7 @@ def read_memory_command(
     use_hexdump: bool,
 ) -> None:
     """Reads the memory and writes it to the file or stdout."""
-    with progress_bar(suppress=logger.getEffectiveLevel() > logging.INFO) as progress_callback:
-        data = read_memory(pass_obj["debug_probe_params"], address, count, progress_callback)
+    data = read_memory(pass_obj["debug_probe_params"], address, count)
     if output:
         write_file(data, output, mode="wb")
         click.echo(f"The memory has been read and written into {output}")
@@ -859,20 +871,14 @@ def read_memory(
     debug_probe_params: DebugProbeParams,
     address: int,
     byte_count: int,
-    progress_callback: Optional[Callable[[int, int], None]] = None,
 ) -> bytes:
     """Reads the memory.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param address: Starting address.
     :param byte_count: Number of bytes to read.
-    :param progress_callback: Progressbar callback method.
     :raises SPSDKAppError: Raised if any error occurred.
     """
-    bin_image = BinaryImage("memRead", byte_count, offset=address)
-    start_addr = bin_image.aligned_start(4)
-    length = bin_image.aligned_length(4)
-
     data = bytes()
     with open_debug_probe(
         interface=debug_probe_params.interface,
@@ -882,23 +888,16 @@ def read_memory(
     ) as debug_probe:
         debug_probe.connect()
         try:
-            for addr in range(start_addr, start_addr + length, 4):
-                if progress_callback:
-                    progress_callback(addr, start_addr + length)
-                data += debug_probe.mem_reg_read(addr).to_bytes(4, Endianness.LITTLE.value)
+            data = debug_probe.mem_block_read(addr=address, size=byte_count)
         except SPSDKError as exc:
             raise SPSDKAppError(str(exc)) from exc
 
     if not data:
         raise SPSDKAppError("The read operation failed.")
-    if len(data) != length:
+    if len(data) != byte_count:
         logger.warning(
-            f"The memory wasn't read complete. It was read just first {len(data) - (address-start_addr)} Bytes."
+            f"The memory wasn't read complete. It was read just first {len(data) - (address-address)} Bytes."
         )
-    # Shrink start padding data
-    data = data[address - start_addr :]
-    # Shrink end padding data
-    data = data[:byte_count]
     return data
 
 
@@ -932,10 +931,6 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
     :param data: Data to write into memory.
     :raises SPSDKAppError: Raised if any error occurred.
     """
-    byte_count = len(data)
-    bin_image = BinaryImage("memRead", byte_count, offset=address)
-    start_addr = bin_image.aligned_start(4)
-    length = bin_image.aligned_length(4)
     with open_debug_probe(
         interface=debug_probe_params.interface,
         serial_no=debug_probe_params.serial_no,
@@ -943,35 +938,10 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
         print_func=click.echo,
     ) as debug_probe:
         debug_probe.connect()
-        start_padding = address - start_addr
-        align_data = data
-        if start_padding:
-            align_start_word = debug_probe.mem_reg_read(start_addr).to_bytes(
-                4, Endianness.LITTLE.value
-            )
-            align_data = align_start_word[:start_padding] + data
-
-        end_padding = length - byte_count - start_padding
-        if end_padding:
-            align_end_word = debug_probe.mem_reg_read(start_addr + length - 4).to_bytes(
-                4, Endianness.LITTLE.value
-            )
-            align_data = align_data + align_end_word[4 - end_padding :]
-
-        with progress_bar(suppress=logger.getEffectiveLevel() > logging.INFO) as progress_callback:
-            for i, addr in enumerate(range(start_addr, start_addr + length, 4)):
-                progress_callback(addr, start_addr + length)
-                to_write = int.from_bytes(align_data[i * 4 : i * 4 + 4], Endianness.LITTLE.value)
-                debug_probe.mem_reg_write(addr, to_write)
-                # verify write
-                try:
-                    verify_data = debug_probe.mem_reg_read(addr)
-                except SPSDKError as ver_exc:
-                    raise SPSDKAppError("The write verification failed.") from ver_exc
-                if to_write != verify_data:
-                    raise SPSDKAppError(
-                        f"Data verification failed! {hex(to_write)} != {hex(verify_data)}"
-                    )
+        try:
+            debug_probe.mem_block_write(addr=address, data=data)
+        except SPSDKError as exc:
+            raise SPSDKAppError(f"Failed to write memory: {str(exc)}") from exc
 
 
 @main.command(name="get-uuid", cls=NxpDebugMbox_DeprecatedCommand2_4)
@@ -1259,6 +1229,8 @@ def write_to_flash(
     :param file: File with binary data
     :raises SPSDKAppError: Raised if any error occurred.
     """
+    if address % 16 != 0:
+        raise SPSDKAppError("The address must be aligned to 16 bytes.")
     try:
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             data = load_binary(file)
@@ -1267,7 +1239,7 @@ def write_to_flash(
                 logger.debug(f"Added padding to the original data source file: {file}")
                 formatted_data[-1] = formatted_data[-1].ljust(16, b"\x00")
             for i in range(len(formatted_data)):
-                params = [address]
+                params = [address + 16 * i]
                 params.extend(list(struct.unpack("<4I", formatted_data[i])))
                 dm_commands.WriteToFlash(dm=mail_box).run(params)
     except Exception as e:
@@ -1389,8 +1361,8 @@ def dat_group() -> None:
     "-a",
     "--address",
     type=INT(),
-    default="0x2000_0000",
-    help="The AHB access test address, the default is 0x2000_0000, but some chips needs different.",
+    help=("Deprecated option, use in '-o test-address=0x2000_1000' in root command instead of."),
+    hidden=True,
 )
 @click.pass_obj
 def auth_command_new(
@@ -1400,12 +1372,16 @@ def auth_command_new(
     address: int,
 ) -> None:
     """Perform the Debug Authentication."""
+    if address is not None:
+        logger.warning(
+            "The address option is deprecated, if you really need override test address, "
+            "use '-o test-address=xx' in root command."
+        )
     auth(
         pass_obj["debug_probe_params"],
         pass_obj["debug_mailbox_params"],
         config=load_configuration(config),
         no_exit=no_exit,
-        address=address,
         search_paths=[os.path.dirname(config)],
     )
 
@@ -1619,6 +1595,58 @@ def tool_group() -> None:
 
 move_cmd_to_grp(main, tool_group, "reset")
 move_cmd_to_grp(main, tool_group, "get-uuid")
+
+
+@tool_group.command(name="halt")
+@click.pass_obj
+def debug_halt_command(pass_obj: dict) -> None:
+    """Halt CPU execution."""
+    try:
+        debug_halt(pass_obj["debug_probe_params"])
+        click.echo("The CPU execution has been halted.")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Halt of CPU execution failed. ({str(exc)})") from exc
+
+
+def debug_halt(debug_probe_params: DebugProbeParams) -> None:
+    """Halt CPU execution.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    """
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
+    ) as debug_probe:
+        debug_probe.connect()
+        debug_probe.debug_halt()
+
+
+@tool_group.command(name="resume")
+@click.pass_obj
+def debug_resume_command(pass_obj: dict) -> None:
+    """Resume CPU execution."""
+    try:
+        debug_resume(pass_obj["debug_probe_params"])
+        click.echo("The CPU execution has been resumed.")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Resume of CPU execution failed. ({str(exc)})") from exc
+
+
+def debug_resume(debug_probe_params: DebugProbeParams) -> None:
+    """Resume CPU execution.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    """
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
+    ) as debug_probe:
+        debug_probe.connect()
+        debug_probe.debug_resume()
 
 
 @catch_spsdk_error

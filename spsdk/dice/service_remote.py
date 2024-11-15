@@ -11,9 +11,7 @@ from typing import Optional
 
 import requests
 
-from spsdk.dice.models import APIResponse
-
-from .models import APIResponse, DICEVerificationService
+from spsdk.dice.models import APIResponse, DICEVerificationService
 
 logger = logging.getLogger(__name__)
 

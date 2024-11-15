@@ -1,0 +1,10 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/bootable_image_templates/bootimg_mimxrt1189_serial_downloader.yaml
+user_cfg: inputs/bootimg_rt118x_serial_downloader.yaml
+custom_command: "%! nxpimage bootable-image get-templates -f mimxrt1189 -o workspace/bootable_image_templates --force"
+
+comments:
+  ahab_container: Specify the path to the AHAB container generated in the previous step
+  xmcd: Remove XMCD block section from configuration file (no custom XMCD will be used)
+  init_offset: This might be removed

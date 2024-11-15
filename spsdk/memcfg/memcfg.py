@@ -33,25 +33,67 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class Memory:
-    """Memory dataclass."""
+class MemoryInterface:
+    """Memory interface dataclass.
+
+    This class represents a memory interface with its associated option words.
+
+    Attributes:
+        name (str): The name of the memory interface.
+        option_words (list): A list of option words for the interface. Defaults to an empty list.
+        tested (bool): Indicates whether the interface has been tested. Defaults to False.
+    """
 
     name: str
-    interface: str
-    manufacturer: str
-    peripheral: str
     option_words: list = field(default_factory=list)
     tested: bool = False
 
     def get_option_words_string(self) -> str:
         """Get option words in string format.
 
-        :return: Option words in string
+        This method converts the option words to a formatted string representation.
+
+        :return: A string containing the option words in hexadecimal format.
+
+        If option_words = [0x12345678, 0x9ABCDEF0], the output will be:
+        "Opt0: 0x12345678, Opt1: 0x9ABCDEF0"
         """
         option_words_str = f"Opt0: 0x{self.option_words[0]:08X}"
         for ow_i, ow in enumerate(self.option_words[1:]):
             option_words_str += f", Opt{ow_i+1}: 0x{ow:08X}"
         return option_words_str
+
+
+@dataclass
+class Memory:
+    """Memory dataclass."""
+
+    name: str
+    type: str  # Memory type [nor, nand, sd]
+    manufacturer: str
+    interfaces: list[MemoryInterface]
+
+    def get_interface(self, interface: str) -> MemoryInterface:
+        """Get interface by its name.
+
+        :param interface: Interface name
+        :raises SPSDKValueError: Interface is not presented in memory.
+        :return: Memory interface
+        """
+        for x in self.interfaces:
+            if x.name == interface:
+                return x
+        raise SPSDKValueError(f"The interface {interface} is not supported by {self.name} chip.")
+
+    def has_interface(self, interface: str) -> bool:
+        """Check if memory has mentioned interface.
+
+        :param interface: Interface name.
+        """
+        for x in self.interfaces:
+            if x.name == interface:
+                return True
+        return False
 
 
 class MemoryConfig(BaseClass):
@@ -90,7 +132,10 @@ class MemoryConfig(BaseClass):
             revision=revision,
             base_endianness=Endianness.LITTLE,
         )
-        self.interface = interface or ""
+        self.interface = (
+            interface
+            or self.get_supported_interfaces(family=self.family, peripheral=self.peripheral)[0]
+        )
 
     def __repr__(self) -> str:
         """Representation string."""
@@ -102,18 +147,6 @@ class MemoryConfig(BaseClass):
             self.__repr__()
             + f"\n Used interface is {self.interface} and option words are {self.option_words}"
         )
-
-    def get_peripheral(self, peripheral: Optional[str]) -> str:
-        """Get peripheral name, priority has from parameter as a backup is class member.
-
-        :param peripheral: Memory peripheral;
-        :raises SPSDKValueError: Peripheral is not defined
-        :return: Peripheral name
-        """
-        ret = peripheral or self.peripheral
-        if not ret:
-            raise SPSDKValueError("Peripheral is not specified")
-        return ret
 
     @property
     def option_words(self) -> list[int]:
@@ -147,43 +180,24 @@ class MemoryConfig(BaseClass):
             return 1
         raise SPSDKValueError("Unsupported rule to determine the count of Option words")
 
-    def peripheral_instances(self, peripheral: Optional[str] = None) -> list[int]:
-        """Get peripheral instances."""
-        return self.db.get_list(
-            DatabaseManager.MEMCFG,
-            ["peripherals", self.get_peripheral(peripheral), "instances"],
-            [],
-        )
-
-    def peripheral_cnt(self, peripheral: Optional[str] = None) -> int:
-        """Get count of peripheral instances."""
-        return len(
-            self.db.get_list(
-                DatabaseManager.MEMCFG,
-                ["peripherals", self.get_peripheral(peripheral), "instances"],
-                [],
-            )
-        )
-
-    def get_validation_schemas(self, peripheral: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_validation_schemas(self) -> list[dict[str, Any]]:
         """Create the validation schema for one peripheral.
 
-        :param peripheral: External memory peripheral.
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.MEMCFG)
         sch_family = get_schema_file("general")["family"]
-        peripheral_loc = self.get_peripheral(peripheral)
-        if peripheral_loc not in self.get_supported_peripherals(self.family):
-            raise SPSDKValueError(
-                f"The {peripheral_loc} peripheral is not supported by {self.family}"
-            )
+
         update_validation_schema_family(
             sch_family["properties"], self.get_supported_families(), self.family
         )
-        sch_cfg["base"]["properties"]["peripheral"]["template_value"] = peripheral_loc
+        sch_cfg["base"]["properties"]["peripheral"]["template_value"] = self.peripheral
         sch_cfg["base"]["properties"]["peripheral"]["enum"] = self.get_supported_peripherals(
             self.family
+        )
+        sch_cfg["base"]["properties"]["interface"]["template_value"] = self.interface
+        sch_cfg["base"]["properties"]["interface"]["enum"] = self.get_supported_interfaces(
+            self.family, peripheral=self.peripheral
         )
 
         sch_cfg["settings"]["properties"]["settings"][
@@ -262,6 +276,14 @@ class MemoryConfig(BaseClass):
         return ret
 
     @staticmethod
+    def get_supported_interfaces(family: str, peripheral: str) -> list[str]:
+        """Get list of supported interfaces by the peripheral for the family."""
+        peripherals = get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals")
+        peripheral_data: dict[str, list[str]] = peripherals.get(peripheral, {})
+
+        return peripheral_data.get("interfaces", [])
+
+    @staticmethod
     def get_peripheral_instances(family: str, peripheral: str) -> list[int]:
         """Get peripheral instances."""
         return get_db(family).get_list(
@@ -284,7 +306,7 @@ class MemoryConfig(BaseClass):
         return [sch_family, sch_cfg["base"]]
 
     @staticmethod
-    def get_option_words_string(option_words: list[int]) -> str:
+    def option_words_to_string(option_words: list[int]) -> str:
         """Get option words in string format.
 
         :param option_words: List of option words.
@@ -305,7 +327,7 @@ class MemoryConfig(BaseClass):
         return CommentedConfig(
             (
                 f"Configuration created for {self.family}, {self.peripheral} from these \n"
-                f"option words: {self.get_option_words_string(self.option_words)}"
+                f"option words: {self.option_words_to_string(self.option_words)}"
             ),
             schemas=schemas,
         ).get_config(cfg)
@@ -320,17 +342,7 @@ class MemoryConfig(BaseClass):
         revision = config.get("revision", "latest")
         peripheral = config["peripheral"]
         interface = config["interface"]
-        regs = Registers(
-            family=family,
-            feature=DatabaseManager.MEMCFG,
-            base_key=["peripherals", peripheral],
-            revision=revision,
-            base_endianness=Endianness.LITTLE,
-        )
-        regs.load_yml_config(config["settings"])
-
         ret = cls(family=family, revision=revision, peripheral=peripheral, interface=interface)
-
         ret.regs.load_yml_config(config["settings"])
         return ret
 
@@ -444,95 +456,102 @@ class MemoryConfig(BaseClass):
         )
 
     @staticmethod
-    def get_known_memories(family: str, peripheral: Optional[str] = None) -> list[Memory]:
+    def get_known_peripheral_memories(
+        family: Optional[str], peripheral: Optional[str] = None
+    ) -> list[Memory]:
         """Get all known supported memory configurations.
 
-        :param family: The chip family
+        :param family: The optional chip family
         :param peripheral: Restrict results just for this one peripheral if defined
         :returns: List of memories
         """
-        memories = MemoryConfig.get_all_known_memories(peripheral)
-        return [
-            memory
-            for memory in memories
-            if MemoryConfig.get_peripheral_cnt(family, memory.peripheral)
-        ]
+        if not family and not peripheral:
+            return MemoryConfig.get_known_memories()
 
-    @staticmethod
-    def get_all_known_memories(peripheral: Optional[str] = None) -> list[Memory]:
-        """Get all known supported memory configurations.
+        if peripheral:
+            peripherals = [peripheral]
+        else:
+            assert isinstance(family, str)
+            peripherals = [
+                p for p in MemoryConfig.PERIPHERALS if MemoryConfig.get_peripheral_cnt(family, p)
+            ]
 
-        :param peripheral: Restrict results just for this one peripheral if defined
-        :returns: List of memories
-        """
-        flash_chips: dict[str, dict[str, dict[str, dict]]] = DatabaseManager().db.load_db_cfg_file(
-            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
-        )["flash_chips"]
-        ret = []
-        peripherals = [peripheral] if peripheral else MemoryConfig.PERIPHERALS
+        if family:
+            p_db = get_db(family, "latest").get_dict(DatabaseManager.MEMCFG, "peripherals")
+        else:
+            p_db = DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"]
+
+        wanted_mem_types: dict[str, set] = {}
         for p in peripherals:
-            if p not in flash_chips:
-                continue
-            for man_name, chip_names in flash_chips[p].items():
-                for chip_name, interfaces in chip_names.items():
-                    for iface_name, iface_cfg in interfaces.items():
-                        memory = Memory(
-                            peripheral=p,
-                            manufacturer=man_name,
-                            interface=iface_name,
-                            name=chip_name,
-                            option_words=iface_cfg.get("option_words"),
-                            tested=iface_cfg.get("tested", False),
-                        )
-                        ret.append(memory)
+            mt = p_db[p]["mem_type"]
+            mi = p_db[p]["interfaces"]
+            if mt in wanted_mem_types:
+                wanted_mem_types[mt].update(set(mi))
+            else:
+                wanted_mem_types[mt] = set(mi)
+
+        ret = []
+        for mt, mi in wanted_mem_types.items():
+            ret.extend(MemoryConfig.get_known_memories(mt, list(mi)))
         return ret
 
     @staticmethod
-    def get_known_chip_peripheral(chip_name: str) -> str:
-        """Get peripheral for one chip from database.
+    def get_known_memories(
+        mem_type: Optional[str] = None, interfaces: Optional[list[str]] = None
+    ) -> list[Memory]:
+        """Get all known supported memory configurations.
 
-        :param chip_name: Chip name to look for
-        :returns: The peripheral name.
+        :param mem_type: Restrict results just for this one memory type if defined
+        :param interfaces: Restrict results just for mentioned memory interfaces if defined
+        :returns: List of memories
         """
-        flash_chips: dict[
-            str, dict[str, dict[str, dict[str, list[int]]]]
-        ] = DatabaseManager().db.load_db_cfg_file(
+        chips_db: dict[str, dict[str, Any]] = DatabaseManager().db.load_db_cfg_file(
             get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
-        )[
-            "flash_chips"
-        ]
-        for peripheral, man_db in flash_chips.items():
-            for _, chips in man_db.items():
-                if chip_name in chips:
-                    return peripheral
-        raise SPSDKValueError(f"Unknown flash memory chip name: {chip_name}")
+        )
+        ret = []
 
-    @staticmethod
-    def get_known_chip_memory(
-        peripheral: str,
-        chip_name: str,
-        interface: str,
-    ) -> Memory:
-        """Get option words for one chip from database.
+        for chip_name, chip_data in chips_db.items():
+            assert isinstance(chip_data, dict)
+            mt: str = chip_data["type"]
+            if mem_type and mem_type != mt:
+                continue
 
-        :param peripheral: Peripheral used to communicate with chip
-        :param chip_name: Chip name to look for
-        :param interface: Chip communication interface
-        :returns: The List of option words.
-        """
-        all_memories = MemoryConfig.get_all_known_memories(peripheral)
-        try:
-            return next(
-                (
-                    memory
-                    for memory in all_memories
-                    if memory.name == chip_name and memory.interface == interface
+            mem_interfaces: list[MemoryInterface] = []
+            src_interfaces: dict[str, dict] = chip_data.get("interfaces", {})
+            for i_name, i_data in src_interfaces.items():
+                if interfaces and i_name not in interfaces:
+                    continue
+                option_words: list[int] = i_data["option_words"]
+                tested: bool = bool(i_data.get("tested", False))
+                mem_interfaces.append(
+                    MemoryInterface(name=i_name, option_words=option_words, tested=tested)
+                )
+            if not len(mem_interfaces):
+                continue
+
+            ret.append(
+                Memory(
+                    name=chip_name,
+                    type=mt,
+                    manufacturer=chip_data.get("manufacturer", "N/A"),
+                    interfaces=mem_interfaces,
                 )
             )
-        except StopIteration as e:
-            raise SPSDKValueError(
-                f"Unknown flash memory chip name: {chip_name} or interface {interface}"
-            ) from e
+
+        return ret
+
+    @staticmethod
+    def get_known_chip_memory(chip_name: str) -> Memory:
+        """Get Memory for one chip from database.
+
+        :param chip_name: Chip name to look for
+        :returns: The Memory class for known chip.
+        """
+        for memory in MemoryConfig.get_known_memories():
+            if memory.name == chip_name:
+                return memory
+
+        raise SPSDKValueError(f"Unknown flash memory chip name: {chip_name}")
 
     @staticmethod
     def get_supported_families() -> list[str]:

@@ -28,15 +28,11 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
-from spsdk.dice import (
-    BlhostDICETarget,
-    DICETarget,
-    DICEVerificationService,
-    LocalDICEVerificationService,
-    ModelDICETarget,
-    RemoteDICEVerificationService,
-)
 from spsdk.dice.models import APIResponse, DICEResponse
+from spsdk.dice.service_local import LocalDICEVerificationService
+from spsdk.dice.service_remote import DICEVerificationService, RemoteDICEVerificationService
+from spsdk.dice.target_blhost import BlhostDICETarget, DICETarget
+from spsdk.dice.target_model import ModelDICETarget
 from spsdk.dice.utils import HADDiff, HADDifferences, get_supported_devices
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
@@ -123,7 +119,7 @@ def get_dice_target(
         raise SPSDKAppError("-p/--port needs to be set.")
     if models_dir:
         return ModelDICETarget(models_dir=models_dir, port=port.split(",")[0])
-    assert family
+    assert isinstance(family, str)
     interfaces = MbootUARTInterface.scan(port=port, timeout=timeout)
     if len(interfaces) == 0:
         raise SPSDKAppError(f"Could not found device on '{port}'")

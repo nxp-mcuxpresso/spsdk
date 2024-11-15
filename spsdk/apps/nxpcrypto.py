@@ -45,7 +45,7 @@ from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError, SPSDKValueError
 from spsdk.utils.crypto.rot import Rot
-from spsdk.utils.misc import Endianness, load_binary, write_file
+from spsdk.utils.misc import Endianness, get_printable_path, load_binary, write_file
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ def export(family: str, revision: str, key: list[str], password: str, output: st
     """Export RoT table."""
     _rot = Rot(family, revision, keys_or_certs=key, password=password)
     rot_hash = _rot.export()
+    click.echo(str(_rot))
     if output:
         write_file(rot_hash, path=output, mode="wb")
         click.echo(f"Result has been stored in: {output}")
@@ -235,7 +236,9 @@ def key_generate(key_type: str, output: str, password: str, encoding: str) -> No
     private_key.save(output, password if password else None, encoding=encoding_enum)
     public_key.save(pub_key_path, encoding=encoding_enum)
 
-    click.echo(f"The key pair has been created: {(pub_key_path)}, {output}")
+    click.echo(
+        f"The key pair has been created: {get_printable_path(pub_key_path)}, {get_printable_path(output)}"
+    )
 
 
 @key_group.command(name="convert", no_args_is_help=True)
@@ -360,14 +363,17 @@ def cut_off_data_regions(data: bytes, regions: list[str]) -> bytes:
     data_chunks = bytes()
     for region in regions:
         try:
-            # pylint: disable=eval-used
-            data_chunk = eval(f"data{region}")
+            region = region.replace("[", "").replace("]", "")
             # if the region was defined as single index such as [0]
-            if isinstance(data_chunk, int):
-                data_chunk = data_chunk.to_bytes(1, Endianness.BIG.value)
-            assert isinstance(data_chunk, bytes)
-            data_chunks += data_chunk
-        except (SyntaxError, NameError) as exc:
+            if ":" not in region:
+                idx = int(region, 0)
+                data_chunks += data[idx].to_bytes(1, Endianness.BIG.value)
+                continue
+            start_s, end_s = region.split(":")
+            start = int(start_s, 0) if start_s else 0
+            end = int(end_s, 0) if end_s else len(data)
+            data_chunks += data[start:end]
+        except (SyntaxError, NameError, ValueError) as exc:
             raise SPSDKSyntaxError(f"Invalid region expression '{region}'") from exc
         except IndexError as exc:
             raise SPSDKIndexError(
@@ -660,10 +666,10 @@ def ahab_tree_generate(
                            | | |
                   -------- + | +---------------
                 /            |                 \\
-                SRK1        SRK2       ...      SRKN
+                SRK1        SRK2       ...      SRK N
                 |            |                   |
                 |            |                   |
-                SGK1        SGK2                SGKN
+                SGK1        SGK2                SGK N
 
     where: N can be 1 to 4.
 
@@ -676,7 +682,7 @@ def ahab_tree_generate(
                           | | |
                  -------- + | +---------------
                 /           |                 \\
-            SRK1          SRK2       ...      SRKN
+            SRK1          SRK2       ...      SRK N
 
     """
     click.echo("Generating PKI Tree for AHAB")
@@ -762,10 +768,10 @@ def hab_tree_generate(
                           | | |
                  -------- + | +---------------
                 /           |                 \\
-             SRK1          SRK2       ...      SRKN
+             SRK1          SRK2       ...      SRK N
              / \\            / \\                / \\
             /   \\          /   \\              /   \\
-        CSF1_1  IMG1_1  CSF2_1  IMG2_1 ... CSFN_1  IMGN_1
+        CSF1_1  IMG1_1  CSF2_1  IMG2_1 ... CSF N_1  IMG N_1
 
     where: N can be 1 to 4.
 
@@ -778,7 +784,7 @@ def hab_tree_generate(
                           | | |
                  -------- + | +---------------
                 /           |                 \\
-            SRK1          SRK2       ...      SRKN
+            SRK1          SRK2       ...      SRK N
 
     """
     click.echo("Generating PKI Tree for HABv4")

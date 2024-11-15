@@ -281,7 +281,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
                 "ec_secp256r1_cert3.pem",
             ],
             "mimxrt1189",
-            "0c0e76750d713f3aae35b550eef79def59c1765bc1edf7e43df90aa5f4ec909d",
+            "34f1cd4517440f815cf57ae9f80346c74cff8804f8f5fb02b202657271e94d81",
             False,
         ),
         (
@@ -303,7 +303,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
                 "ec_secp256r1_cert3.pem",
             ],
             "mimxrt1189",
-            "DA52dQ1xPzquNbVQ7ved71nBdlvB7ffkPfkKpfTskJ0=",
+            "NPHNRRdED4Fc9Xrp+ANGx0z/iAT49fsCsgJlcnHpTYE=",
             True,
         ),
     ],

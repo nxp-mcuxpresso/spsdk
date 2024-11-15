@@ -11,6 +11,8 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 # LPCProg Status Codes (Errors)
 ########################################################################################################################
 
+# cspell:ignore EFRO EFRONoPower FAIM FAIMNoClock FAIMNoPower PDRUNCFG AHBCLKCTRL
+
 
 class StatusCode(SpsdkEnum):
     """LPCProg status codes."""

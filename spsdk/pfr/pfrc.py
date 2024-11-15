@@ -54,8 +54,10 @@ class RulesList(list[Rule]):
         :param rules_file: A path to a configuration file containing rules to be loaded
         :returns RulesList object with loaded rules
         """
-        rules = load_configuration(rules_file)
-        return RulesList(Rule(**rule) for rule in rules)
+        rules_dict: dict[str, list[dict]] = load_configuration(rules_file)
+        if "rules" not in rules_dict:
+            raise SPSDKPfrConfigError("No rules found in the configuration file")
+        return RulesList(Rule(**rule) for rule in rules_dict["rules"])
 
 
 class Pfrc:

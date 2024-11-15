@@ -447,7 +447,7 @@ def ele_ele_fw_auth(
         with ele_handler:
             ele_handler.device.write_memory(address, ele_fw)
 
-    assert address
+    assert isinstance(address, int)
     ele_fw_auth_msg = ele_message.EleMessageEleFwAuthenticate(address)
     with ele_handler:
         ele_handler.send_message(ele_fw_auth_msg)

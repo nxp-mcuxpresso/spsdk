@@ -465,7 +465,7 @@ def test_nxpimage_ahab_update_keyblob_bootable(cli_runner: CliRunner, tmpdir, da
 
 def test_nxpimage_ahab_update_keyblob_invalid(cli_runner: CliRunner, data_dir):
     with use_working_directory(data_dir):
-        cmd = f"ahab update-keyblob -f mimxrt1189 -b ahab/cntr_encrypted_ctcm_cm33.bin -i 0 -k ahab/keyblobs/container1_dek_keyblob.bin"
+        cmd = f"ahab update-keyblob -f mimxrt1189 -b ahab/cntr_encrypted_ctcm_cm33.bin -i 2 -k ahab/keyblobs/container1_dek_keyblob.bin"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=1)
 
 

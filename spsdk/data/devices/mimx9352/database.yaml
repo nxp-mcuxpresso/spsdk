@@ -109,6 +109,7 @@ features:
     socc: 0x4D58005D # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dmbox_ap_ix: 0
+    test_address: 0x2048_0000
 
   # ======== AHAB section ========
   ahab:
@@ -236,7 +237,7 @@ features:
   # ======== Misc signing section ========
   signing:
     pss_padding: true
-  
+
   # ======== Fastboot ========
   fastboot:
     address: 0x8280_0000

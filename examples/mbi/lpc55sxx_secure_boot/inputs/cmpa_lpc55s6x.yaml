@@ -1,0 +1,589 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  PFR CMPA configuration template  ==========================================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526, lpc5528, lpc5534, lpc5536, lpc55s04,
+# lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69, mcxa132, mcxa133, mcxa142, mcxa143,
+# mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155, mcxa156, mcxn235, mcxn236, mcxn546, mcxn547, mcxn946,
+# mcxn947, nhs52s04>
+family: lpc55s69
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Optional] =====------------------------------------
+# Description: PFR / IFR type
+type: CMPA
+# ----------------------------------===== Configuration area Settings [Required] =====----------------------------------
+settings:
+  # ------------------------------------------===== BOOT_CFG [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Boot Configuration
+  BOOT_CFG:
+    # -------------------------------------===== DEFAULT_ISP_MODE [Optional] =====--------------------------------------
+    # Description: Offset: 4b, Width: 3b, Default ISP mode:
+    # - AUTO_ISP, (0): Auto ISP
+    # - USB_HID_ISP, (1): USB_HID_ISP
+    # - UART_ISP, (2): UART ISP
+    # - SPI_ISP, (3): SPI Slave ISP
+    # - I2C_ISP, (4): I2C Slave ISP
+    # - DISABLE, (7): Disable ISP fall through
+    # Possible options: <AUTO_ISP, USB_HID_ISP, UART_ISP, SPI_ISP, I2C_ISP, DISABLE>
+    DEFAULT_ISP_MODE: AUTO_ISP
+    # ----------------------------------------===== BOOT_SPEED [Optional] =====-----------------------------------------
+    # Description: Offset: 7b, Width: 2b, Core clock:
+    # - SYSTEM_SPEED_CODE, (0): Defined by NMPA.SYSTEM_SPEED_CODE
+    # - FRO_96MHZ, (1): 96MHz FRO
+    # - FRO_48MHZ, (2): 48MHz FRO
+    # Possible options: <SYSTEM_SPEED_CODE, FRO_96MHZ, FRO_48MHZ>
+    BOOT_SPEED: SYSTEM_SPEED_CODE
+    # -----------------------------------------===== USB_SPEED [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 2b, Defines which USB module is used for ISP:
+    # - USB_SPEED_0, (0): Defined by NMPA.USBCFG.USB_SPEED
+    # - USB_FS, (1): USB FS module used for ISP
+    # - USB_HS, (2): USB HS module used for ISP
+    # - USB_SPEED_1, (3): Defined by NMPA.USBCFG.USB_SPEED
+    # Possible options: <USB_SPEED_0, USB_FS, USB_HS, USB_SPEED_1>
+    USB_SPEED: USB_SPEED_0
+    # -------------------------------------===== BOOT_FAILURE_PIN [Optional] =====--------------------------------------
+    # Description: Offset: 24b, Width: 8b, GPIO port and pin number to use for indicating failure reason. The toggle
+    # rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin
+    BOOT_FAILURE_PIN: 0
+  # ----------------------------------------===== SPI_FLASH_CFG [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; SPI Flash Configuration
+  SPI_FLASH_CFG:
+    # -----------------------------------===== SPI_RECOVERY_BOOT_EN [Optional] =====------------------------------------
+    # Description: Offset: 0b, Width: 5b, SPI flash recovery boot is enabled, if non-zero value is written to this
+    # field.
+    SPI_RECOVERY_BOOT_EN: 0
+  # -------------------------------------------===== USB_ID [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; USB Identifiers
+  USB_ID:
+    # ---------------------------------------===== USB_VENDOR_ID [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 16b, USB Vendor ID
+    USB_VENDOR_ID: 0
+    # --------------------------------------===== USB_PRODUCT_ID [Optional] =====---------------------------------------
+    # Description: Offset: 16b, Width: 16b, USB Product ID
+    USB_PRODUCT_ID: 0
+  # ------------------------------------------===== SDIO_CFG [Optional] =====-------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 32b; SDIO Configuration
+  SDIO_CFG: '0x00000000'
+  # --------------------------------------===== DCFG_CC_SOCU_PIN [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000010, Width: 32b; Device Configuration Credential Constraints for SoC specific Use
+  # Pinned.
+  # Combinations of PIN and DFLT bits and resulting restriction level:
+  # - PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module
+  # use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment
+  # of the product.
+  # - PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled
+  # through debug authentication process by providing appropriate Debug Credential (DC) certificate.
+  # - PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.
+  # - PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This
+  # setting offers the highest level of restriction.
+  DCFG_CC_SOCU_PIN:
+    # -------------------------------------------===== NIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Non Secure non-invasive debug enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    NIDEN: USE_DAP
+    # -------------------------------------------===== DBGEN [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Non Secure debug enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    DBGEN: USE_DAP
+    # ------------------------------------------===== SPNIDEN [Optional] =====------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Secure non-invasive debug enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    SPNIDEN: USE_DAP
+    # ------------------------------------------===== SPIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 3b, Width: 1b, Secure invasive debug enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    SPIDEN: USE_DAP
+    # -------------------------------------------===== TAPEN [Optional] =====-------------------------------------------
+    # Description: Offset: 4b, Width: 1b, JTAG TAP enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    TAPEN: USE_DAP
+    # ----------------------------------------===== CPU1_DBGEN [Optional] =====-----------------------------------------
+    # Description: Offset: 5b, Width: 1b, CPU1 (Micro cortex M33) invasive debug enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    CPU1_DBGEN: USE_DAP
+    # ----------------------------------------===== ISP_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 6b, Width: 1b, ISP Boot Command enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    ISP_CMD_EN: USE_DAP
+    # ---------------------------------------===== FA_ME_CMD_EN [Optional] =====----------------------------------------
+    # Description: Offset: 7b, Width: 1b, Fault Analysis/Mass Erase Command enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    FA_ME_CMD_EN: USE_DAP
+    # ----------------------------------------===== CPU1_NIDEN [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 1b, CPU1 (Micro cortex M33) non-invasive debug enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    CPU1_NIDEN: USE_DAP
+    # ----------------------------------------===== UUID_CHECK [Optional] =====-----------------------------------------
+    # Description: Offset: 15b, Width: 1b, Enforce UUID match during Debug authentication.
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    UUID_CHECK: DISABLED
+  # --------------------------------------===== DCFG_CC_SOCU_DFLT [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b; Device Configuration Credential Constraints for SoC specific Use Debug
+  # Filter.
+  # Combinations of PIN and DFLT bits and resulting restriction level:
+  # - PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module
+  # use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment
+  # of the product.
+  # - PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled
+  # through debug authentication process by providing appropriate Debug Credential (DC) certificate.
+  # - PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.
+  # - PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This
+  # setting offers the highest level of restriction.
+  DCFG_CC_SOCU_DFLT:
+    # -------------------------------------------===== NIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Non Secure non-invasive debug fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    NIDEN: DISABLED
+    # -------------------------------------------===== DBGEN [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Non Secure debug fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    DBGEN: DISABLED
+    # ------------------------------------------===== SPNIDEN [Optional] =====------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Secure non-invasive debug fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    SPNIDEN: DISABLED
+    # ------------------------------------------===== SPIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 3b, Width: 1b, Secure invasive debug fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    SPIDEN: DISABLED
+    # -------------------------------------------===== TAPEN [Optional] =====-------------------------------------------
+    # Description: Offset: 4b, Width: 1b, JTAG TAP fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    TAPEN: DISABLED
+    # ----------------------------------------===== CPU1_DBGEN [Optional] =====-----------------------------------------
+    # Description: Offset: 5b, Width: 1b, CPU1 (Micro cortex M33) invasive debug fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    CPU1_DBGEN: DISABLED
+    # ----------------------------------------===== ISP_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 6b, Width: 1b, ISP Boot Command fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    ISP_CMD_EN: DISABLED
+    # ---------------------------------------===== FA_ME_CMD_EN [Optional] =====----------------------------------------
+    # Description: Offset: 7b, Width: 1b, Fault Analysis/Mass Erase Command fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    FA_ME_CMD_EN: DISABLED
+    # ----------------------------------------===== CPU1_NIDEN [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 1b, CPU1 (Micro cortex M33) non-invasive debug fixed state
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    CPU1_NIDEN: DISABLED
+  # ----------------------------------------===== VENDOR_USAGE [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000018, Width: 32b; Vendor Usage
+  VENDOR_USAGE:
+    # ---------------------------------------===== VENDOR_USAGE [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 16b, Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from
+    # customer field area.
+    VENDOR_USAGE: 0
+  # ---------------------------------------===== SECURE_BOOT_CFG [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000001C, Width: 32b; Secure boot configuration
+  SECURE_BOOT_CFG:
+    # -------------------------------------------===== RSA4K [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 2b, Use RSA4096 keys only.
+    # - RSA2048, (0): Allow RSA2048 and higher
+    # - RSA4096_0, (1): RSA4096 only
+    # - RSA4096_1, (2): RSA4096 only
+    # - RSA4096_2, (3): RSA4096 only
+    # Possible options: <RSA2048, RSA4096_0, RSA4096_1, RSA4096_2>
+    RSA4K: RSA2048
+    # -------------------------------------===== DICE_INC_NXP_CFG [Optional] =====--------------------------------------
+    # Description: Offset: 2b, Width: 2b, Include NXP area in DICE computation.
+    # - NOT_INCLUDE, (0): not included
+    # - INCLUDE_0, (1): included
+    # - INCLUDE_1, (2): included
+    # - INCLUDE_2, (3): included
+    # Possible options: <NOT_INCLUDE, INCLUDE_0, INCLUDE_1, INCLUDE_2>
+    DICE_INC_NXP_CFG: NOT_INCLUDE
+    # ---------------------------------------===== DICE_CUST_CFG [Optional] =====---------------------------------------
+    # Description: Offset: 4b, Width: 2b, Include Customer factory area (including keys) in DICE computation.
+    # - NOT_INCLUDE, (0): not included
+    # - INCLUDE_0, (1): included
+    # - INCLUDE_1, (2): included
+    # - INCLUDE_2, (3): included
+    # Possible options: <NOT_INCLUDE, INCLUDE_0, INCLUDE_1, INCLUDE_2>
+    DICE_CUST_CFG: NOT_INCLUDE
+    # -----------------------------------------===== SKIP_DICE [Optional] =====-----------------------------------------
+    # Description: Offset: 6b, Width: 2b, Skip DICE computation
+    # - ENABLE, (0): Enable DICE
+    # - DISABLE_0, (1): Disable DICE
+    # - DISABLE_1, (2): Disable DICE
+    # - DISABLE_2, (3): Disable DICE
+    # Possible options: <ENABLE, DISABLE_0, DISABLE_1, DISABLE_2>
+    SKIP_DICE: DISABLE_0
+    # --------------------------------------===== TZM_IMAGE_TYPE [Optional] =====---------------------------------------
+    # Description: Offset: 8b, Width: 2b, TrustZone-M mode
+    # - HEADER, (0): TZ-M image mode is taken from application image header
+    # - DISABLED, (1): TZ-M disabled image, boots to non-secure mode
+    # - ENABLED, (2): TZ-M enabled image, boots to secure mode
+    # - PRESET, (3): TZ-M enabled image with TZ-M preset, boot to secure mode TZ-M pre-configured by data from
+    # application image header
+    # Possible options: <HEADER, DISABLED, ENABLED, PRESET>
+    TZM_IMAGE_TYPE: HEADER
+    # ---------------------------------------===== BLOCK_SET_KEY [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 2b, Block PUF key code generation
+    # - ALLOW, (0): Allow PUF Key Code generation
+    # - DISABLE_0, (1): Disable PUF Key Code generation
+    # - DISABLE_1, (2): Disable PUF Key Code generation
+    # - DISABLE_2, (3): Disable PUF Key Code generation
+    # Possible options: <ALLOW, DISABLE_0, DISABLE_1, DISABLE_2>
+    BLOCK_SET_KEY: ALLOW
+    # ---------------------------------------===== BLOCK_ENROLL [Optional] =====----------------------------------------
+    # Description: Offset: 12b, Width: 2b, Block PUF enrollment
+    # - ALLOW, (0): Allow PUF enroll operation
+    # - DISABLE_0, (1): Disable PUF enroll operation
+    # - DISABLE_1, (2): Disable PUF enroll operation
+    # - DISABLE_2, (3): Disable PUF enroll operation
+    # Possible options: <ALLOW, DISABLE_0, DISABLE_1, DISABLE_2>
+    BLOCK_ENROLL: ALLOW
+    # ------------------------------------===== DICE_INC_SEC_EPOCH [Optional] =====-------------------------------------
+    # Description: Offset: 14b, Width: 2b, Include security EPOCH in DICE
+    DICE_INC_SEC_EPOCH: 0
+    # ----------------------------------------===== SEC_BOOT_EN [Optional] =====----------------------------------------
+    # Description: Offset: 30b, Width: 2b, Secure boot enable
+    # - DISABLE, (0): Plain image (internal flash with or without CRC)
+    # - ENABLE_0, (1): Boot signed images. (internal flash, RSA signed)
+    # - ENABLE_1, (2): Boot signed images. (internal flash, RSA signed)
+    # - ENABLE_2, (3): Boot signed images. (internal flash, RSA signed)
+    # Possible options: <DISABLE, ENABLE_0, ENABLE_1, ENABLE_2>
+    SEC_BOOT_EN: ENABLE_0
+  # --------------------------------------===== PRINCE_BASE_ADDR [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; Prince Base Address
+  PRINCE_BASE_ADDR:
+    # -----------------------------------------===== ADDR0_PRG [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 4b, Programmable portion of the base address of region 0
+    ADDR0_PRG: 0
+    # -----------------------------------------===== ADDR1_PRG [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 4b, Programmable portion of the base address of region 1
+    ADDR1_PRG: 0
+    # -----------------------------------------===== ADDR2_PRG [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 4b, Programmable portion of the base address of region 2
+    ADDR2_PRG: 0
+    # -----------------------------------------===== LOCK_REG0 [Optional] =====-----------------------------------------
+    # Description: Offset: 18b, Width: 2b, Lock PRINCE region0 settings
+    # - UNLOCK, (0): Region is not locked
+    # - LOCK_0, (1): Region is locked
+    # - LOCK_1, (2): Region is locked
+    # - LOCK_2, (3): Region is locked
+    # Possible options: <UNLOCK, LOCK_0, LOCK_1, LOCK_2>
+    LOCK_REG0: UNLOCK
+    # -----------------------------------------===== LOCK_REG1 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 2b, Lock PRINCE region1 settings
+    # - UNLOCK, (0): Region is not locked
+    # - LOCK_0, (1): Region is locked
+    # - LOCK_1, (2): Region is locked
+    # - LOCK_2, (3): Region is locked
+    # Possible options: <UNLOCK, LOCK_0, LOCK_1, LOCK_2>
+    LOCK_REG1: UNLOCK
+    # ------------------------------------===== REG0_ERASE_CHECK_EN [Optional] =====------------------------------------
+    # Description: Offset: 24b, Width: 2b, For PRINCE region0 enable checking whether all encrypted pages are erased
+    # together
+    # - DISABLE, (0): Region is disabled
+    # - ENABLE_0, (1): Region is enabled
+    # - ENABLE_1, (2): Region is enabled
+    # - ENABLE_2, (3): Region is enabled
+    # Possible options: <DISABLE, ENABLE_0, ENABLE_1, ENABLE_2>
+    REG0_ERASE_CHECK_EN: DISABLE
+    # ------------------------------------===== REG1_ERASE_CHECK_EN [Optional] =====------------------------------------
+    # Description: Offset: 26b, Width: 2b, For PRINCE region1 enable checking whether all encrypted pages are erased
+    # together
+    # - DISABLE, (0): Region is disabled
+    # - ENABLE_0, (1): Region is enabled
+    # - ENABLE_1, (2): Region is enabled
+    # - ENABLE_2, (3): Region is enabled
+    # Possible options: <DISABLE, ENABLE_0, ENABLE_1, ENABLE_2>
+    REG1_ERASE_CHECK_EN: DISABLE
+    # ------------------------------------===== REG2_ERASE_CHECK_EN [Optional] =====------------------------------------
+    # Description: Offset: 28b, Width: 2b, For PRINCE region2 enable checking whether all encrypted pages are erased
+    # together
+    # - DISABLE, (0): Region is disabled
+    # - ENABLE_0, (1): Region is enabled
+    # - ENABLE_1, (2): Region is enabled
+    # - ENABLE_2, (3): Region is enabled
+    # Possible options: <DISABLE, ENABLE_0, ENABLE_1, ENABLE_2>
+    REG2_ERASE_CHECK_EN: DISABLE
+  # -----------------------------------------===== PRINCE_SR_0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; Region 0, sub-region enable
+  PRINCE_SR_0: '0x00000000'
+  # -----------------------------------------===== PRINCE_SR_1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000028, Width: 32b; Region 1, sub-region enable
+  PRINCE_SR_1: '0x00000000'
+  # -----------------------------------------===== PRINCE_SR_2 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b; Region 2, sub-region enable
+  PRINCE_SR_2: '0x00000000'
+  # ----------------------------------===== XTAL_32KHZ_CAPABANK_TRIM [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000030, Width: 32b; Xtal 32kHz capabank trimming.
+  XTAL_32KHZ_CAPABANK_TRIM:
+    # ----------------------------------------===== TRIM_VALID [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 1b, XTAL 32kHz capa bank trimmings
+    # - NOT_TRIM, (0): Capa Bank trimmings not valid. Default trimmings value are used
+    # - VALID, (1): Capa Bank trimmings valid
+    # Possible options: <NOT_TRIM, VALID>
+    TRIM_VALID: NOT_TRIM
+    # ---------------------------------===== XTAL_LOAD_CAP_IEC_PF_X100 [Optional] =====---------------------------------
+    # Description: Offset: 1b, Width: 10b, Load capacitance, pF x 100. For example, 6pF becomes 600.
+    XTAL_LOAD_CAP_IEC_PF_X100: 0
+    # ---------------------------------===== PCB_XIN_PARA_CAP_PF_X100 [Optional] =====----------------------------------
+    # Description: Offset: 11b, Width: 10b, PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+    PCB_XIN_PARA_CAP_PF_X100: 0
+    # ---------------------------------===== PCB_XOUT_PARA_CAP_PF_X100 [Optional] =====---------------------------------
+    # Description: Offset: 21b, Width: 10b, PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+    PCB_XOUT_PARA_CAP_PF_X100: 0
+  # ----------------------------------===== XTAL_16MHZ_CAPABANK_TRIM [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000034, Width: 32b; Xtal 16MHz capabank trimming.
+  XTAL_16MHZ_CAPABANK_TRIM:
+    # ----------------------------------------===== TRIM_VALID [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 1b, XTAL 16MHz capa bank trimmings
+    # - NOT_TRIM, (0): Capa Bank trimmings not valid. Default trimmings value are used
+    # - VALID, (1): Capa Bank trimmings valid
+    # Possible options: <NOT_TRIM, VALID>
+    TRIM_VALID: NOT_TRIM
+    # ---------------------------------===== XTAL_LOAD_CAP_IEC_PF_X100 [Optional] =====---------------------------------
+    # Description: Offset: 1b, Width: 10b, Load capacitance, pF x 100. For example, 6pF becomes 600.
+    XTAL_LOAD_CAP_IEC_PF_X100: 0
+    # ---------------------------------===== PCB_XIN_PARA_CAP_PF_X100 [Optional] =====----------------------------------
+    # Description: Offset: 11b, Width: 10b, PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+    PCB_XIN_PARA_CAP_PF_X100: 0
+    # ---------------------------------===== PCB_XOUT_PARA_CAP_PF_X100 [Optional] =====---------------------------------
+    # Description: Offset: 21b, Width: 10b, PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+    PCB_XOUT_PARA_CAP_PF_X100: 0
+  # --------------------------------------------===== ROTKH [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000050, Width: 256b; ROTKH field is compounded by 8 32-bit fields and contains Root key
+  # table hash
+  ROTKH: '44b45886d6ec1194a87ccc7d767e74c9191049ad2f2b26bd1578e011a4fdd038'
+  # --------------------------------------===== CUSTOMER_DEFINED0 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000100, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED0: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED1 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000104, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED1: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED2 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000108, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED2: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED3 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000010C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED3: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED4 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000110, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED4: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED5 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000114, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED5: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED6 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000118, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED6: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED7 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000011C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED7: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED8 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000120, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED8: '0x00000000'
+  # --------------------------------------===== CUSTOMER_DEFINED9 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000124, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED9: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED10 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000128, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED10: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED11 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000012C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED11: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED12 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000130, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED12: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED13 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000134, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED13: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED14 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000138, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED14: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED15 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000013C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED15: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED16 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000140, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED16: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED17 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000144, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED17: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED18 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000148, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED18: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED19 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000014C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED19: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED20 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000150, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED20: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED21 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000154, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED21: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED22 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000158, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED22: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED23 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000015C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED23: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED24 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000160, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED24: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED25 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000164, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED25: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED26 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000168, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED26: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED27 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000016C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED27: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED28 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000170, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED28: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED29 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000174, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED29: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED30 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000178, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED30: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED31 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000017C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED31: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED32 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000180, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED32: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED33 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000184, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED33: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED34 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000188, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED34: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED35 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000018C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED35: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED36 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000190, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED36: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED37 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000194, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED37: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED38 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000198, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED38: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED39 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000019C, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED39: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED40 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001A0, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED40: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED41 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001A4, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED41: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED42 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001A8, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED42: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED43 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001AC, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED43: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED44 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001B0, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED44: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED45 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001B4, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED45: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED46 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001B8, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED46: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED47 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001BC, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED47: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED48 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001C0, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED48: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED49 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001C4, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED49: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED50 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001C8, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED50: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED51 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001CC, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED51: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED52 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001D0, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED52: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED53 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001D4, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED53: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED54 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001D8, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED54: '0x00000000'
+  # -------------------------------------===== CUSTOMER_DEFINED55 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001DC, Width: 32b; Customer Defined (Programmable through ROM API)
+  CUSTOMER_DEFINED55: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001E0, Width: 32b; SHA256_DIGEST0 for DIGEST[31:0]
+  SHA256_DIGEST0: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST1 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001E4, Width: 32b; SHA256_DIGEST1 for DIGEST[63:32]
+  SHA256_DIGEST1: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST2 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001E8, Width: 32b; SHA256_DIGEST2 for DIGEST[95:64]
+  SHA256_DIGEST2: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST3 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001EC, Width: 32b; SHA256_DIGEST3 for DIGEST[127:96]
+  SHA256_DIGEST3: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST4 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001F0, Width: 32b; SHA256_DIGEST4 for DIGEST[159:128]
+  SHA256_DIGEST4: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST5 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001F4, Width: 32b; SHA256_DIGEST5 for DIGEST[191:160]
+  SHA256_DIGEST5: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST6 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001F8, Width: 32b; SHA256_DIGEST6 for DIGEST[223:192]
+  SHA256_DIGEST6: '0x00000000'
+  # ---------------------------------------===== SHA256_DIGEST7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000001FC, Width: 32b; SHA256_DIGEST7 for DIGEST[255:224]
+  SHA256_DIGEST7: '0x00000000'

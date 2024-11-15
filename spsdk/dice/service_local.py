@@ -10,16 +10,29 @@ import contextlib
 import logging
 import secrets
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime, time
 from typing import Iterator, Optional
 
 from spsdk.crypto.keys import PublicKeyEcc
-
-from .exceptions import SPSDKDICEError, SPSDKDICEVerificationError
-from .models import APIResponse, DICEResponse, DICEVerificationService
-from .utils import reconstruct_ecc_key, serialize_ecc_key
+from spsdk.dice.exceptions import SPSDKDICEError, SPSDKDICEVerificationError
+from spsdk.dice.models import APIResponse, DICEResponse, DICEVerificationService
+from spsdk.dice.utils import reconstruct_ecc_key, serialize_ecc_key
 
 logger = logging.getLogger(__name__)
+
+
+sqlite3.register_adapter(bool, int)
+sqlite3.register_converter("BOOLEAN", lambda v: bool(int(v)))
+
+sqlite3.register_adapter(date, lambda v: v.isoformat())
+sqlite3.register_converter("DATE", lambda v: date.fromisoformat(v.decode("utf-8")))
+
+sqlite3.register_adapter(time, lambda v: v.isoformat())
+sqlite3.register_converter("TIME", lambda v: time.fromisoformat(v.decode("utf-8")))
+
+sqlite3.register_adapter(datetime, lambda v: v.isoformat())
+sqlite3.register_converter("DATETIME", lambda v: datetime.fromisoformat(v.decode("utf-8")))
+
 
 CREATE_DATABASE_COMMAND = """
     CREATE TABLE IF NOT EXISTS settings (

@@ -11,7 +11,9 @@ import json
 import logging
 import os
 import sys
-from typing import Optional
+import time
+from datetime import datetime, timedelta
+from typing import Optional, Union
 
 import click
 
@@ -27,6 +29,7 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.apps.utils.utils import SPSDKAppError, SPSDKError, catch_spsdk_error
 from spsdk.el2go.api_utils import EL2GOTPClient, get_el2go_otp_binary
+from spsdk.el2go.bulk import ServiceDB
 from spsdk.el2go.database import SecureObjectsDB
 from spsdk.el2go.secure_objects import SecureObjects
 from spsdk.mboot.mcuboot import McuBoot, StatusCode, stringify_status_code
@@ -271,30 +274,32 @@ def get_secure_objects(
 
     if database or remote_database:
         db = SecureObjectsDB.create(file_path=database, host=remote_database)
-        total_count = db.get_count(not re_download)
-        if total_count == 0:
-            click.echo("There are no UUIDs in the database that need Secure Objects download.")
-            return
-        failures = []
-        # exhaust the iterator so DB is ready for inserts below
-        uuids = list(db.get_uuids(not re_download))
-        click.echo(f"Found {len(uuids)} UUIDs out of {total_count} without Secure Objects")
-        # TODO: figure out how to do this in parallel (using multiple UUIDs in one request)
-        for uuid in uuids:
-            try:
-                click.echo(f"Downloading Secure Objects for UUID: {uuid}")
-                client.assign_device_to_devicegroup(device_id=uuid, allow_reassignment=re_assign)
-                provisionings = client.download_provisionings(device_id=uuid)
-                bin_data = client.serialize_provisionings(provisionings)
-                db.add_secure_object(uuid=uuid, so=bin_data)
-            except SPSDKError as e:
-                if not continue_on_error:
-                    raise
-                failures.append(uuid)
-                click.secho(
-                    f"Getting Secure Objects failed for UUID: {uuid}. Error: {e.description}",
-                    fg="red",
-                )
+        with db:
+            total_count = db.get_count(not re_download)
+            if total_count == 0:
+                click.echo("There are no UUIDs in the database that need Secure Objects download.")
+                return
+            failures = []
+            # exhaust the iterator so DB is ready for inserts below
+            uuids = list(db.get_uuids(not re_download))
+            click.echo(f"Found {len(uuids)} UUIDs out of {total_count} without Secure Objects")
+            for uuid in uuids:
+                try:
+                    click.echo(f"Downloading Secure Objects for UUID: {uuid}")
+                    client.assign_device_to_devicegroup(
+                        device_id=uuid, allow_reassignment=re_assign
+                    )
+                    provisionings = client.download_provisionings(device_id=uuid)
+                    bin_data = client.serialize_provisionings(provisionings)
+                    db.add_secure_object(uuid=uuid, so=bin_data)
+                except SPSDKError as e:
+                    if not continue_on_error:
+                        raise
+                    failures.append(uuid)
+                    click.secho(
+                        f"Getting Secure Objects failed for UUID: {uuid}. Error: {e.description}",
+                        fg="red",
+                    )
         click.echo(f"Database update completed {'successfully' if not failures else 'with errors'}")
         if failures:
             click.echo("There were problems with downloading Secure Objects for following UUIDs:")
@@ -341,7 +346,8 @@ def get_uuid(interface: MbootProtocolBase, database: str, remote_database: str) 
     """Get UUID from the target and store it in a database."""
     uuid = _get_uuid(interface=interface)
     db = SecureObjectsDB.create(file_path=database, host=remote_database)
-    result = db.add_uuid(uuid=uuid)
+    with db:
+        result = db.add_uuid(uuid=uuid)
     if result:
         click.echo(f"UUID {uuid} stored in the database")
 
@@ -539,7 +545,8 @@ def _retrieve_secure_objects(
     if database or remote_database:
         db = SecureObjectsDB.create(file_path=database, host=remote_database)
         uuid = _get_uuid(interface=interface)
-        prov_data = db.get_secure_object(uuid=uuid)
+        with db:
+            prov_data = db.get_secure_object(uuid=uuid)
         if not prov_data:
             raise SPSDKAppError(f"There are no Secure Objects in database for UUID: {uuid}")
     else:
@@ -672,10 +679,222 @@ def get_otp_binary_command(config: str, output: str, family: str) -> None:
 
 def get_otp_binary(config: str, output: str, family: Optional[str] = None) -> None:
     """Generate EL2GO OTP Binary from data in configuration file."""
-    config_data = load_configuration(path=config)
+    config_data: Optional[Union[list, dict]] = None
+    try:
+        config_data = load_configuration(path=config)
+    except SPSDKError:
+        try:
+            with open(config, "r") as f:
+                config_data = json.load(f)
+        except json.JSONDecodeError:
+            pass
+    if not config_data:
+        raise SPSDKAppError("Invalid configuration file format")
+
     data = get_el2go_otp_binary(config_data=config_data, family=family)
     write_file(data=data, path=output, mode="wb")
     click.echo(f"EL2GO OTP Binary stored into {output}")
+
+
+@main.command(name="combine-uuid-db", no_args_is_help=True)
+@spsdk_output_option(force=True, help="Path to the output database file.")
+@click.option(
+    "-i",
+    "--input",
+    "input_sources",
+    type=click.Path(exists=True, resolve_path=True),
+    multiple=True,
+    required=True,
+    help=(
+        "Path(s) to the input database file(s). "
+        "Multiple inputs are allowed. You can use a folder containing the database files."
+    ),
+)
+def combine_uuid_db_command(output: str, input_sources: list[str]) -> None:
+    """Combine multiple UUID databases into one."""
+    combine_uuid_db(output=output, input_sources=input_sources)
+
+
+def combine_uuid_db(output: str, input_sources: list[str]) -> None:
+    """Combine multiple UUID databases into one."""
+    db = SecureObjectsDB.create(file_path=output)
+    sources = []
+    for s in input_sources:
+        if os.path.isfile(s):
+            sources.append(s)
+        elif os.path.isdir(s):
+            sources.extend([os.path.join(s, f) for f in os.listdir(s)])
+
+    with db:
+        for file in sources:
+            click.echo(f"Processing {file}")
+            try:
+                db_source = SecureObjectsDB.create(file_path=file)
+            except SPSDKError as e:
+                click.secho(f"Skipping {file}: {e.description}", fg="yellow")
+                continue
+            with db_source:
+                for uuid in db_source.get_uuids():
+                    db.add_uuid(uuid)
+    click.echo(f"UUID databases combined into {output}")
+
+
+@main.command(name="bulk-so-download", no_args_is_help=True)
+@spsdk_config_option()
+@click.option(
+    "-db",
+    "--database",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Database of UUIDs and Secure Objects",
+)
+@click.option(
+    "-l",
+    "--limit",
+    type=int,
+    default=0,
+    help="Number of devices to download (default: 0 = all)",
+)
+@click.option(
+    "-t",
+    "--time-per-device",
+    type=int,
+    default=5,
+    help="Time per device in seconds (default: 5)",
+)
+@click.option(
+    "-s",
+    "--max-job-size",
+    type=int,
+    default=500,
+    help="Max chunk size for one job (default: 500)",
+)
+def bulk_so_download_command(
+    config: str, database: str, limit: int, time_per_device: int, max_job_size: int
+) -> None:
+    """Download Secure Objects for all UUIDs in the database."""
+    bulk_so_download(
+        config=config,
+        database=database,
+        limit=limit,
+        time_per_device=time_per_device,
+        max_job_size=max_job_size,
+    )
+
+
+def bulk_so_download(
+    config: str, database: str, limit: int, time_per_device: int, max_job_size: int
+) -> None:
+    """Download Secure Objects for all UUIDs in the database.
+
+    Note: This command is only in alpha stage and may not work as expected.
+    In case of any problems, please contact the SPSDK team.
+    """
+    client = _create_client(config)
+    db = ServiceDB(file_path=database)
+
+    # get UUIDs from the database
+    def _get_uuid_jobs() -> Optional[list[list[str]]]:
+        with db:
+            uuids = db.get_uuids(empty=True, limit=limit)
+        if not uuids:
+            return None
+        jobs = client.split_uuids_to_jobs(uuids, max_job_size)
+        click.echo(f"Using {len(jobs)} parallel jobs with max chunk size {max_job_size}")
+        return jobs
+
+    # register devices
+    def _submit_new_jobs(jobs: list[list[str]]) -> None:
+        with db:
+            for group_uuids in jobs:
+                job_id = client.register_devices(group_uuids)
+                click.echo(f"Job ID: {job_id} for {len(group_uuids)} devices")
+                db.insert_job(job_id, len(group_uuids))
+
+    # wait for all jobs to finish
+    def _wait_for_jobs() -> None:
+        with db:
+            while True:
+                incomplete_jobs = db.get_incomplete_jobs()
+                if not incomplete_jobs:
+                    break
+                click.echo(f"Found {len(incomplete_jobs)} incomplete jobs")
+
+                wait_times = [job.calc_wait_time(time_per_device) for job in incomplete_jobs]
+                wt_filtered = [time for time in wait_times if time is not None]
+                wait_time = min(wt_filtered) if wt_filtered else 0.0
+                next_check = datetime.now() + timedelta(seconds=wait_time)
+                click.echo(
+                    f"Next Jobs status check in {wait_time:.0f} seconds at {next_check.strftime('%H:%M:%S')}"
+                )
+                time.sleep(wait_time)
+
+                for job in incomplete_jobs:
+                    job_details = client.get_job_details(job.job_id)
+                    if job_details is None:
+                        click.echo(f"Job {job.job_id} not found")
+                        continue
+                    job.status = str(job_details["state"])
+                    job.percentage = int(job_details["provisionedPercentage"])
+                    db.update_job(job.job_id, job.status, job.percentage)
+                    click.echo(
+                        f"Job {job.job_id} updated with status {job.status} and percentage {job.percentage}"
+                    )
+
+    # download Secure Objects for successful jobs
+    def _download_secure_objects() -> None:
+        with db:
+            jobs = db.get_jobs_to_download()
+            for job in jobs:
+                job_details = client.get_job_details(job.job_id)
+                if job_details is None:
+                    click.echo(f"Job {job.job_id} not found")
+                    continue
+                group_uuids = job_details["deviceIds"]
+                provisionings = client._download_provisionings(device_id=group_uuids)
+                for device_info in provisionings:
+                    device_id = device_info["deviceId"]
+                    secure_objects = client._serialize_single_provisioning(device_info)
+                    db.add_secure_object(uuid=device_id, so=secure_objects)
+                    click.echo(f"Secure object for {device_id} added to database")
+                db.set_downloaded(job_id=job.job_id)
+
+    click.echo("Checking for incomplete jobs from previous runs")
+    _wait_for_jobs()
+    _download_secure_objects()
+
+    click.echo("Starting new jobs")
+    jobs = _get_uuid_jobs()
+    if not jobs:
+        click.echo("No UUIDs without Secure Objects found.")
+        return
+    _submit_new_jobs(jobs)
+    _wait_for_jobs()
+    _download_secure_objects()
+
+    failure = False
+    with db:
+        # check if there are some failed jobs
+        failed_jobs = db.get_failed_jobs()
+        if failed_jobs:
+            failure = True
+            click.echo(f"There were {len(failed_jobs)} failed job(s):")
+            for job in failed_jobs:
+                click.echo(f"Job {job.job_id} failed with status {job.status}")
+
+        # check if there are some UUIDs without Secure Objects
+        uuids = db.get_uuids(empty=True)
+        if uuids:
+            failure = True
+            click.echo(f"There are {len(uuids)} UUIDs without Secure Objects:")
+            for uuid in uuids:
+                click.echo(uuid)
+
+    if failure:
+        click.echo("There were some issues during the download process")
+        raise SPSDKAppError()
+
+    click.echo("Secure Objects downloaded for all UUIDs")
 
 
 @catch_spsdk_error

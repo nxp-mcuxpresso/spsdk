@@ -39,6 +39,11 @@ info:
         pid: 0x0021
 
 features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_4000
+    size: 0x1000
+
   # ======== Certificate block section ========
   cert_block:
     sub_features: [based_on_cert1]

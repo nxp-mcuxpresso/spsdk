@@ -1,0 +1,11 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: config_template.yaml
+user_cfg: config_example.yaml
+custom_command: "%! el2go-host get-template -f mcxn947 -o config_template.yaml --force"
+
+comments:
+  url: "QA.SB is for testing purposes"
+  api_key: "It's strongly recommended not to put your API key directly into config file"
+  device_group_id: "You'll get an Device Group ID in EL2GO web"
+  nc12: "Product's 12NC number from EL2GO web"

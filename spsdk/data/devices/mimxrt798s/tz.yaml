@@ -738,7 +738,6 @@ MEDIA Master Secure Level Anti-pole Register (master_sec_anti_pol_reg): 0xFFFFFF
 MEDIA Secure Control Duplicate Register (misc_ctrl_dp_reg): 0x0000865a
 MEDIA Secure Control Register (misc_ctrl_reg): 0x0000865a
 
-
 # ITRC inputs 0-15
 ITRC IRQ Trigger source selector register 0 (itrc_irq_out0_sel0): 0xaaaaaa0a
 ITRC IRQ Trigger source selector register 1 (itrc_irq_out0_sel1): 0xaaaaaa0a

@@ -12,10 +12,9 @@ from typing import Union
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
+from spsdk.dice.exceptions import SPSDKDICEError
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.registers import Registers, RegsBitField, RegsRegister
-
-from . import SPSDKDICEError
 
 logger = logging.getLogger(__name__)
 

@@ -7,12 +7,57 @@ revisions:
 latest: a0
 
 info:
-  use_in_doc: False # Include this MCU in generated documentation
+  use_in_doc: True # Include this MCU in generated documentation
   purpose: i.MX 9 Applications Processors
   spsdk_predecessor_name: mx91
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/secure-energy-efficient-i-mx-91-family-brings-essential-linux-capabilities-for-thousands-of-edge-applications:i.MX91
-  memory_map: {}
+  memory_map:
+    ocram_ns:
+      start_int: 0x20480000
+      size_int: 0x60000
+      external: false
+      non_xip_type: int_ram
+    ocram_s:
+      start_int: 0x30480000
+      size_int: 0x60000
+      external: false
+      non_xip_type: int_ram
+    dram1:
+      start_int: 0x80000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram2:
+      start_int: 0x90000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram3:
+      start_int: 0xA0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram4:
+      start_int: 0xB0000000
+      size_int: 0x44000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram5:
+      start_int: 0xB0044000
+      size_int: 0xBC000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram6:
+      start_int: 0xB0100000
+      size_int: 0xFF00000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram7:
+      start_int: 0xC0000000
+      size_int: 0x40000000
+      external: true
+      non_xip_type: ext_ram_ddr
   isp:
     rom:
       protocol: sdps
@@ -25,6 +70,28 @@ info:
         hid_ep1: True
         hid_pack_size: 1020
 features:
+  # ======== Fuses description section ========
+  fuses:
+    tool: nxpele
+    grouped_registers:
+      - uid: srkh
+        name: SRKH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA256 hash digest of OEM SRK public keys stored in Container"
+        sub_regs:
+          [
+            "fuse128",
+            "fuse129",
+            "fuse130",
+            "fuse131",
+            "fuse132",
+            "fuse133",
+            "fuse134",
+            "fuse135",
+          ]
+
   # ======== AHAB section ========
   ahab:
     valid_offset_minimal_alignment: 0x400
@@ -32,11 +99,11 @@ features:
     oem_images_max_cnt: 8
     container_types: [1] # Supported container types
     core_ids:
-      RESERVED:  [1, "reserved", "Reserved Core ID"]
-      CORTEX_A55:  [2, "cortex-a55", "Cortex A55"]
-      ELE:  [6, "ele", "EdgeLock Enclave"]
-      V2X_1:  [9, "v2x-1", "V2X 1"]
-      V2X_2:  [10, "v2x-2", "V2X 2"]
+      RESERVED: [1, "reserved", "Reserved Core ID"]
+      CORTEX_A55: [2, "cortex-a55", "Cortex A55"]
+      ELE: [6, "ele", "EdgeLock Enclave"]
+      V2X_1: [9, "v2x-1", "V2X 1"]
+      V2X_2: [10, "v2x-2", "V2X 2"]
     image_types:
       application:
         EXECUTABLE: [0x03, executable, Executable Image]
@@ -51,10 +118,51 @@ features:
         V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
         V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
 
-
     image_types_mapping:
       ele: [6]
       v2x: [9, 10]
+
+    # AHAB extra images
+    ddr_alignments: [0x8000, 0x4000, 0x8000, 0]
+    ddr_fw_alignment: 0x4
+
+    spl_ddr_load_address: 0x204A0000
+    spl_ddr_core_id: cortex-a55
+    spl_ddr_meta_data_start_cpu_id: 2
+
+    atf_load_address: 0x204C0000
+    atf_core_id: cortex-a55
+    atf_meta_data_start_cpu_id: 2
+
+    uboot_load_address: 0x80200000
+    uboot_core_id: cortex-a55
+    uboot_meta_data_start_cpu_id: 2
+
+    tee_load_address: 0x96000000
+    tee_core_id: cortex-a55
+    tee_meta_data_start_cpu_id: 2
+
+    extra_images: ["spl_ddr", "atf", "uboot", "tee"]
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x8380_0000 # comm buffer in DDR
+    size: 0x20000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_srk]
+    rot_type: "srk_table_ahab"
+
+  # ======== DAT section ========
+  dat:
+    socc: 0x4D58005B # SOCC identification
+    based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    test_address: 0x2048_0000
+    dmbox_ap_ix: 0
+
+  # ======== EdgeLock Enclave section ========
+  ele: {}
 
   # ======== Bootable image section ========
   bootable_image:
@@ -91,3 +199,12 @@ features:
 
   # ======== nxpuuu ==========
   nxpuuu: {}
+
+  # ======== Misc signing section ========
+  signing:
+    pss_padding: true
+
+  # ======== Fastboot ========
+  fastboot:
+    address: 0x8280_0000
+    size: 0x2000_0000

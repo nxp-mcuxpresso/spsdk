@@ -74,7 +74,7 @@ class Processor:
         self.logger.debug(f"Transformed condition: {node_str}")
         node_str = self._replace_int_as_hex(node_str)
         # pylint: disable=eval-used
-        result = eval(compile(new_node, filename="", mode="eval"))
+        result = eval(compile(new_node, filename="", mode="eval"))  # nosec
         return result, node_str
 
     @staticmethod

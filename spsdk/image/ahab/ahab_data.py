@@ -153,6 +153,7 @@ class AhabChipConfig:
     container_types: list[int] = field(default_factory=list)
     valid_offset_minimal_alignment: int = 4
     container_image_size_alignment: int = CONTAINER_ALIGNMENT
+    allow_empty_hash: bool = False
 
     search_paths: Optional[list[str]] = None
 
@@ -218,6 +219,7 @@ def create_chip_config(
         DatabaseManager.AHAB, "container_image_size_alignment", 1
     )
     container_types = db.get_list(DatabaseManager.AHAB, "container_types")
+    allow_empty_hash = db.get_bool(DatabaseManager.AHAB, "allow_empty_hash")
     return AhabChipConfig(
         family=family,
         revision=db.name,
@@ -230,5 +232,6 @@ def create_chip_config(
         container_types=container_types,
         valid_offset_minimal_alignment=valid_offset_minimal_alignment,
         container_image_size_alignment=container_image_size_alignment,
+        allow_empty_hash=allow_empty_hash,
         search_paths=search_paths,
     )

@@ -1,0 +1,19 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/dc_config.yaml
+user_cfg: inputs/dc_config.yaml
+custom_command: "%! nxpdebugmbox -f rw612 dat dc get-template -o workspace/dc_config.yaml --force"
+
+comments:
+  rotk: "Add path to private key file for signing used in our example"
+  rot_meta: "Updated Root Of Trust public keys to used in our example"
+  sign_provider: "This is removed, because we are using private key in this example"
+  dck: "Updated Debug Credential public key to used in our example"
+  rot_id: "We keep it same because in our example the private key to sign whole DC file has been chooses with index 0"
+  cc_beacon: "We keep the cc beacon on value zero, it's enough for example purposes"
+  cc_socu: "Changed on value 0x00FFFFF0 to set everything open. For more info about this value check the documentation"
+  uuid: The template file uses zeroized UUID. To create a debug credential file for specific par run the "get-uuid" command listed below and replace to zeros at the UUID field by the UUID value returned by the command in the yaml file."
+

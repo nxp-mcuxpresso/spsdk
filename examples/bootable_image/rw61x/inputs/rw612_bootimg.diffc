@@ -1,0 +1,8 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/bootimg_rw612_flexspi_nor.yaml
+user_cfg: inputs/bootimg_rw612_flexspi_nor.yaml
+custom_command: "%! nxpimage bootable-image get-templates -f rw612 -o workspace/ --force"
+
+comments:
+  mbi: "Add path for Master Boot Image "

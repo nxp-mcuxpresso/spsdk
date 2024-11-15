@@ -88,6 +88,7 @@ class BinaryImage:
         pattern: Optional[BinaryPattern] = None,
         alignment: int = 1,
         parent: Optional["BinaryImage"] = None,
+        execution_start_address: Optional[int] = None,
     ) -> None:
         """Binary Image class constructor.
 
@@ -99,6 +100,7 @@ class BinaryImage:
         :param pattern: Optional binary pattern.
         :param alignment: Optional alignment of result image
         :param parent: Handle to parent object, defaults to None
+        :param execution_start_address: Execution start address, defaults to None
         """
         self.name = name
         self.description = description
@@ -108,6 +110,7 @@ class BinaryImage:
         self.pattern = pattern
         self.alignment = alignment
         self.parent = parent
+        self.execution_start_address = execution_start_address
 
         if parent:
             assert isinstance(parent, BinaryImage)
@@ -227,12 +230,18 @@ class BinaryImage:
         :return: String information about Image.
         """
         size = len(self)
+        execution_start_address = (
+            hex(self.execution_start_address)
+            if self.execution_start_address is not None
+            else "Not defined"
+        )
         ret = ""
         ret += f"Name:      {self.image_name}\n"
         ret += f"Starts:    {hex(self.absolute_address)}\n"
         ret += f"Ends:      {hex(self.absolute_address+ size-1)}\n"
         ret += f"Size:      {self._get_size_line(size)}\n"
         ret += f"Alignment: {size_fmt(self.alignment)}\n"
+        ret += f"Execution Start Address: {execution_start_address}\n"
         if self.pattern:
             ret += f"Pattern:{self.pattern.pattern}\n"
         if self.description:
@@ -336,7 +345,10 @@ class BinaryImage:
         def _get_centered_line(text: str) -> str:
             text_len = len(text)
             spaces = width - text_len - 2
-            assert spaces >= 0, "Binary Image Draw: Center line is longer than width"
+            if spaces < 0:
+                raise SPSDKValueError(
+                    f"Binary Image Draw: Text is longer than width ({text_len} > {width})"
+                )
             padding_l = int(spaces / 2)
             padding_r = int(spaces - padding_l)
             return color + f"|{' '*padding_l}{text}{' '*padding_r}|\n"
@@ -546,6 +558,7 @@ class BinaryImage:
         import bincopy  # pylint: disable=import-outside-toplevel
 
         bin_file = bincopy.BinFile()
+        bin_file.execution_start_address = self.execution_start_address
         add_into_binary(self)
 
         if file_format == "HEX":
@@ -629,6 +642,7 @@ class BinaryImage:
             description=img_descr,
             pattern=pattern,
             alignment=alignment,
+            execution_start_address=bin_file.execution_start_address,
         )
         if len(bin_file.segments) == 0:
             raise SPSDKError(f"Load of {path} failed, can't be decoded.")

@@ -226,9 +226,10 @@ class MbootBuspalProtocol(MbootSerialProtocol):
         data_recvd = self.device.read(len(response))
         format_received = " ".join(hex(x) for x in data_recvd)
         format_expected = " ".join(hex(x) for x in response)
-        assert (
-            format_received == format_expected
-        ), f"Received data '{format_received}' but expected '{format_expected}'"
+        if format_received != format_expected:
+            raise McuBootConnectionError(
+                f"Received data '{format_received}' but expected '{format_expected}'"
+            )
 
     def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
@@ -249,9 +250,10 @@ class MbootBuspalProtocol(MbootSerialProtocol):
                 raise McuBootDataAbortError()
             if header != self.FRAME_START_BYTE:
                 time.sleep(BBConstants.packet_timeout_ms.value / 1000)
-        assert (
-            header == self.FRAME_START_BYTE
-        ), f"Received invalid frame header '{header:#X}' expected '{self.FRAME_START_BYTE:#X}'"
+        if header != self.FRAME_START_BYTE:
+            raise McuBootConnectionError(
+                f"Received invalid frame header '{header:#X}' expected '{self.FRAME_START_BYTE:#X}'"
+            )
 
         frame_type = to_int(self._read(1))
 

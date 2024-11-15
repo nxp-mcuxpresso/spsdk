@@ -1,0 +1,44 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c04x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-classical-peripherals:MCX-C04x
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x7FFF
+      external: false
+    sram_l::
+      start_int: 0x1FFF_FE00
+      size_int: 0x1FF
+      external: false
+    sram_u::
+      start_int: 0x2000_0000
+      size_int: 0x5FF
+      external: false
+  isp:
+    rom:
+      interfaces: ["uart", "usb", "spi", "i2c"]
+      protocol: mboot
+      usb:
+        vid: 0x15a2
+        pid: 0x0073
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_0000
+    size: 0x500
+
+  # ======== Blhost section ========
+  blhost: {}

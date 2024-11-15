@@ -272,8 +272,8 @@ class UbootFastboot:
     def write(self, command: str) -> bool:
         """Write uboot command.
 
-        :param command: string commannd
-        :return: Return code from the libuu
+        :param command: string command
+        :return: Return code from the libuuu
         """
         return self.uuu.run_uboot(command)
 

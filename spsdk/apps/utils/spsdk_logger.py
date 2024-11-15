@@ -9,13 +9,17 @@
 
 import logging
 import logging.config
+import logging.handlers
 import os
+import platform
 import re
 import sys
+from datetime import datetime
 from typing import Optional, TextIO
 
 import colorama
 
+from spsdk import SPSDK_DEBUG_LOG_FILE, SPSDK_DEBUG_LOGGING_DISABLED, __version__
 from spsdk.utils.misc import find_file, load_configuration
 
 colorama.just_fix_windows_console()
@@ -96,6 +100,7 @@ def install(
     stream: TextIO = sys.stderr,
     colored: Optional[bool] = None,
     logger: Optional[logging.Logger] = None,
+    create_debug_logger: bool = True,
 ) -> None:
     """Install SPSDK log handler for colored output.
 
@@ -103,6 +108,7 @@ def install(
     :param stream: stream to output logging, defaults to sys.stderr
     :param colored: colored output, always colored if true
     :param logger: defaults to root logger
+    :param create_debug_logger: create debug logger
     """
     color = True
     if not level:
@@ -132,3 +138,24 @@ def install(
     # Install the stream handler
     logger.addHandler(handler)
     logger.propagate = False
+
+    if create_debug_logger and not SPSDK_DEBUG_LOGGING_DISABLED:
+        debug_handler = logging.handlers.RotatingFileHandler(
+            SPSDK_DEBUG_LOG_FILE, mode="a", maxBytes=1_000_000, backupCount=5
+        )
+        debug_handler.setFormatter(ColoredFormatter(colored=False))
+        debug_handler.setLevel(logging.DEBUG)
+
+        debug_logger = logging.getLogger()
+        debug_logger.setLevel(logging.DEBUG)
+        debug_logger.propagate = False
+        debug_logger.addHandler(debug_handler)
+        starter = f"* SPSDK DEBUG LOGGING STARTED {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} *"
+        padding = len(starter) - 2
+        debug_logger.debug("*" * len(starter))
+        debug_logger.debug(starter)
+        # pylint: disable=logging-not-lazy  # not sure why this is not an issue anywhere else
+        debug_logger.debug(f"* SPSDK version: {__version__}".ljust(padding) + " *")
+        debug_logger.debug(f"* Python version: {sys.version.split()[0]}".ljust(padding) + " *")
+        debug_logger.debug(f"* OS version: {platform.platform()}".ljust(padding) + " *")
+        debug_logger.debug("*" * len(starter))

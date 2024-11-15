@@ -15,7 +15,7 @@ containers: # [Required], List of containers present in AHAB; The order of conta
       #                     == Optional Binary Container format to add to AHAB image ==
       # ----------------------------------------------------------------------------------------------------
     binary_container:  # [Required], Binary AHAB container
-      path: ahab/mxrt1180b0-1c00-ahab-container.img  # [Required], The AHAB container binary file; The binary file that contains AHAB "my_binary_container.bin
+      path: ahab/rt1189_fake_ele_fw_1c00.bin  # [Required], The AHAB container binary file; The binary file that contains AHAB "my_binary_container.bin
   -
       # ----------------------------------------------------------------------------------------------------
       #                  == Optional Configuration Container format to add to AHAB image ==

@@ -14,6 +14,7 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 # McuBoot Status Codes (Errors)
 ########################################################################################################################
 
+# cspell:ignore WRAPP, GOOEM, GOSYM, GOIMPORT, KEYIN, KEYOUT, GOIMPORTTFM
 # pylint: disable=line-too-long
 # fmt: off
 class StatusCode(SpsdkEnum):
@@ -226,6 +227,9 @@ class StatusCode(SpsdkEnum):
     OCOTP_RELOAD_FAILURE            = (20202, "OCOTPReloadFailure", "OCOTP: Reload Failure")
     OCOTP_WAIT_TIMEOUT              = (20203, "OCOTPWaitTimeout", "OCOTP: Wait Timeout")
 
+    # XSPINOR statuses.
+    XSPINOR_WRITE_ALIGNMENT_ERROR    = (20905, "xSPINORWriteAlignmentError", "xSPINOR: Write Alignment Error")
+
     # SEMC NOR statuses.
     SEMCNOR_DEVICE_TIMEOUT          = (21100, "SemcNOR_DeviceTimeout", "SemcNOR: Device Timeout")
     SEMCNOR_INVALID_MEMORY_ADDRESS  = (21101, "SemcNOR_InvalidMemoryAddress", "SemcNOR: Invalid Memory Address")
@@ -382,7 +386,7 @@ class StatusCode(SpsdkEnum):
     STATUS_ATTR_OEM_DEVICE_LCS_FAIL         = (0xA500FBBA, "STATUS_ATTR_OEM_DEVICE_LCS_FAIL", "STATUS_ATTR_OEM_DEVICE_LCS_FAIL: Invalid OEM FW Decryption key Secure Object's device lifecycle value")
     STATUS_ATTR_OEM_DEVICE_WRAPP_ALG_FAIL   = (0xA50AB100, "STATUS_ATTR_OEM_DEVICE_WRAPP_ALG_FAIL", "STATUS_ATTR_OEM_DEVICE_WRAPP_ALG_FAIL: Invalid OEM FW Decryption key Secure Object's wrapping algorithm value")
     STATUS_ATTR_OEM_DEVICE_SIGN_ALG_FAIL    = (0xA50AB200, "STATUS_ATTR_OEM_DEVICE_SIGN_ALG_FAIL", "STATUS_ATTR_OEM_DEVICE_SIGN_ALG_FAIL: Invalid OEM FW Decryption key Secure Object's signing algorithm value")
-    STATUS_ATTR_OEM_KEY_LCS_FAIL            = (0xA50AB300, "STATUS_ATTR_OEM_KEY_LCS_FAIL", "STATUS_ATTR_OEM_KEY_LCS_FAIL: Invalid OEM FW Decryption key Secure Object's key lifecyle value")
+    STATUS_ATTR_OEM_KEY_LCS_FAIL            = (0xA50AB300, "STATUS_ATTR_OEM_KEY_LCS_FAIL", "STATUS_ATTR_OEM_KEY_LCS_FAIL: Invalid OEM FW Decryption key Secure Object's key lifecycle value")
     STATUS_ATTR_OEM_KEY_ALG_FAIL            = (0xA50AB400, "STATUS_ATTR_OEM_KEY_ALG_FAIL", "STATUS_ATTR_OEM_KEY_ALG_FAIL: Invalid OEM FW Decryption key Secure Object's key algorithm value")
 
     STATUS_ATTR_RKTH_MAGIC_FAIL                 = (0xA50AB500, "STATUS_ATTR_RKTH_MAGIC_FAIL", "STATUS_ATTR_RKTH_MAGIC_FAIL: Invalid OEM FW Authentication Key Hash Secure Object's magic value")
@@ -410,7 +414,7 @@ class StatusCode(SpsdkEnum):
     STATUS_ATTR_OTP_DATA_DEVICE_WRAPP_KEY_ID_FAIL = (0xA50AB50D, "STATUS_ATTR_OTP_DATA_DEVICE_WRAPP_KEY_ID_FAIL", "STATUS_ATTR_OTP_DATA_DEVICE_WRAPP_KEY_ID_FAIL: Invalid OTP Configuration Data Secure Object's wrapping key ID value")
     STATUS_ATTR_OTP_DATA_DEVICE_WRAPP_ALG_FAIL  = (0xA50AB50E, "STATUS_ATTR_OTP_DATA_DEVICE_WRAPP_ALG_FAIL", "STATUS_ATTR_OTP_DATA_DEVICE_WRAPP_ALG_FAIL: Invalid OTP Configuration Data Secure Object's wrapping algorithm value.")
     STATUS_ATTR_OTP_DATA_DEVICE_SING_KEY_ID_FAIL = (0xA50AB50F, "STATUS_ATTR_OTP_DATA_DEVICE_SING_KEY_ID_FAIL", "STATUS_ATTR_OTP_DATA_DEVICE_SING_KEY_ID_FAIL: Invalid OTP Configuration Data Secure Object's signing key ID value")
-    STATUS_ATTR_OTP_DATA_KEY_SIGN_ALG_FAIL      = (0xA50AB510, "STATUS_ATTR_OTP_DATA_KEY_SIGN_ALG_FAIL", "STATUS_ATTR_OTP_DATA_KEY_SIGN_ALG_FAIL: Invalid OTP Configuration Data Secure Object's signing algorithm valu")
+    STATUS_ATTR_OTP_DATA_KEY_SIGN_ALG_FAIL      = (0xA50AB510, "STATUS_ATTR_OTP_DATA_KEY_SIGN_ALG_FAIL", "STATUS_ATTR_OTP_DATA_KEY_SIGN_ALG_FAIL: Invalid OTP Configuration Data Secure Object's signing algorithm value")
 
     STATUS_LESS_BLOBS_STORED            = (0xA50AB511, "STATUS_LESS_BLOBS_STORED", "STATUS_LESS_BLOBS_STORED: Three main Secure Object are not present in Flash memory")
     STATUS_VALID_MEMORY_USE_OVERFLOW    = (0xA50AB512, "STATUS_VALID_MEMORY_USE_OVERFLOW", "STATUS_VALID_MEMORY_USE_OVERFLOW: Memory overflow")

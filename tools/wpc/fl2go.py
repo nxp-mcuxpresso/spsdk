@@ -105,4 +105,4 @@ if __name__ == "__main__":
         print(f"Path {path} doesn't look like valid data directory for fl2go")
         sys.exit(1)
     FILES_DIR = path
-    APP.run(host="localhost", port=5000, debug=True)
+    APP.run(host="localhost", port=5000, debug=True)  # nosec

@@ -1,0 +1,18 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/u-boot-spl-container-img_config.yaml
+custom_command: "%! nxpimage ahab get-template -f mimx9352 -o workspace/ahab_template.yaml --force"
+
+comments:
+  target_memory: "Change the target memory to serial downloader"
+  binary_container: "Define the path to the EdgeLock Enclave Firmware container"
+  output: "Change the output file name"
+  container: "All attributes related to the signing might be removed"
+  lpddr_imem_1d: "Add path to the LPDDR IMEM 1D image"
+  lpddr_dmem_1d: "Add path to the LPDDR DMEM 1D image"
+  lpddr_imem_2d: "Add path to the LPDDR IMEM 2D image"
+  lpddr_dmem_2d: "Add path to the LPDDR DMEM 2D image"
+  spl_ddr: "Add path to the SPL DDR image"
+  blob: "And finally remove unused parts for AHAB Certificate and Encryption blob"
+

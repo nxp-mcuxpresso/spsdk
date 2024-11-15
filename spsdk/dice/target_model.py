@@ -10,9 +10,8 @@ import logging
 import os
 
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
+from spsdk.dice.models import DICEResponse, DICETarget
 from spsdk.utils.misc import load_configuration
-
-from .models import DICEResponse, DICETarget
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +71,7 @@ class ModelDICETarget(DICETarget):
         )
 
         response.sign(ca_prk=ca_prk, die_prk=die_prk)
-        assert response.verify(ca_puk=ca_prk.get_public_key()), "Response self-verification"
+        if not response.verify(ca_puk=ca_prk.get_public_key()):
+            raise RuntimeError("DICE response verification failed")
         data = response.export()
         return data

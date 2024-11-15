@@ -35,7 +35,7 @@ from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.devhsm.utils import DevHSMConfig, get_devhsm_class
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import get_printable_path, load_binary, write_file
 
 
 @click.group(name="nxpdevhsm", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -188,7 +188,7 @@ def generate(
         devhsm.create_sb()
         write_file(devhsm.export(), out_file, "wb")
 
-    click.echo(f"Final SB file has been written: {os.path.abspath(out_file)}")
+    click.echo(f"Final SB file has been written: {get_printable_path(os.path.abspath(out_file))}")
 
 
 @main.command(name="get-template", no_args_is_help=True)
@@ -205,7 +205,9 @@ def get_template_command(family: str, output: str) -> None:
 def get_template(family: str, output: str) -> None:
     """Create template of configuration in YAML format."""
     write_file(get_devhsm_class(family).generate_config_template(family), output)
-    click.echo(f"The DevHsm template for {family} has been saved into {output} YAML file")
+    click.echo(
+        f"The DevHsm template for {family} has been saved into {get_printable_path(output)} YAML file"
+    )
 
 
 @main.command(name="gen-master-share", no_args_is_help=True)

@@ -21,6 +21,7 @@ from spsdk.debuggers.debug_probe import (
     SPSDKProbeNotFoundError,
 )
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.plugins import PluginsManager, PluginType
 
 logger = logging.getLogger(__name__)
@@ -97,11 +98,28 @@ def select_probe(
     return probes[i_selected]
 
 
+def get_test_address(family: str, revision: str = "latest") -> int:
+    """Get AHB access test address for the device.
+
+    The address is stored in SPSDK database. I worst case that address is not found, exception is raised.
+    :raises SPSDKError: The address is not stored in database.
+    """
+    db = get_db(device=family, revision=revision)
+    try:
+        return db.get_int(
+            DatabaseManager.DAT, "test_address", db.get_int(DatabaseManager.COMM_BUFFER, "address")
+        )
+    except SPSDKError as exc:
+        raise SPSDKError(
+            f"Can't get test AHB access address for {family}, revision: {revision}"
+        ) from exc
+
+
 def test_ahb_access(
     probe: DebugProbe,
     ap_mem: Optional[int] = None,
     invasive: bool = True,
-    test_mem_address: int = 0x2000_0000,
+    test_mem_address: Optional[int] = None,
 ) -> bool:
     """The function safely test the access of debug probe to AHB in target.
 
@@ -114,6 +132,15 @@ def test_ahb_access(
     ahb_enabled = False
     bck_mem_ap = probe.mem_ap_ix
     probe.mem_ap_ix = ap_mem or probe.mem_ap_ix
+    if test_mem_address is None:
+        test_mem_address = probe.options.get("test_address")
+        if test_mem_address is None:
+            logger.warning(
+                "The test address is not specified. The standard address that "
+                "doesn't fit all devices is used: 0x2000_0000"
+            )
+            test_mem_address = 0x2000_0000
+
     try:
         # Enter debug state and halt
         probe.mem_reg_read(probe.DHCSR_REG)

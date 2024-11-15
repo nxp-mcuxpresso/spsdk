@@ -11,7 +11,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, List, Mapping, Optional, Type, Union
+from typing import Any, Mapping, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -538,7 +538,7 @@ class SecUnlock(SecCommandBase):
         return cls(cmd)
 
     @classmethod
-    def calc_features_value(cls, features: List[int]) -> int:
+    def calc_features_value(cls, features: list[int]) -> int:
         """Calculate the unlock features value."""
         result = 0
         for feature in features:
@@ -546,7 +546,7 @@ class SecUnlock(SecCommandBase):
         return result
 
     @classmethod
-    def calc_uid(cls, uid_values: List[int]) -> int:
+    def calc_uid(cls, uid_values: list[int]) -> int:
         """Calculate the unlock uid value."""
         result = 0
         for uid in uid_values:

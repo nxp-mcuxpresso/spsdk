@@ -1,0 +1,87 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================================  SB 2.1 converted configuration  ==========================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <lpc55s04, lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s66, lpc55s69, mimxrt533s,
+# mimxrt555s, mimxrt595s, mimxrt685s, nhs52s04>
+family: lpc55s69
+# -----------------------------------------===== SB2.1 Options [Required] =====-----------------------------------------
+# Description: An options block contains zero or more name/value pairs and the option settings that assign values to
+# global options used by the nxpimage to control the generation of the output file.
+options:
+  # -----------------------------------------===== SB2.1 flags [Required] =====-----------------------------------------
+  # Description: For SB2.1 use only 0x8 encrypted + signed.
+  flags: 8
+  # ---------------------------------------===== Product version [Optional] =====---------------------------------------
+  # Description: Version string as "xxx.yyy.zzz".
+  productVersion: 1.00.00
+  # --------------------------------------===== Component version [Optional] =====--------------------------------------
+  # Description: Component version string as "xxx.yyy.zzz".
+  componentVersion: 1.00.00
+  # -----------------------------------------===== SB Version [Optional] =====------------------------------------------
+  # Description: Used to specify version of SB2 file.
+  secureBinaryVersion: "2.1"
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
+# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signPrivateKey: ../../_data/keys/rsa2048/IMG1_1_sha256_2048_65537_v3_usr_key.pem
+# ======================================================================================================================
+#                                               == Certificate Block V1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: inputs/cert_block.yaml
+# ======================================================================================================================
+#                                                   == SB2.1 Output ==
+# ======================================================================================================================
+# -----------------------------------------===== SB2 filename [Required] =====------------------------------------------
+# Description: Generated SB2 container filename.
+containerOutputFile: ../workspace/output.sb
+# ======================================================================================================================
+#                                                  == Basic Setting ==
+# ======================================================================================================================
+# ------------------------------------------===== SB2.1 SBKEK [Required] =====------------------------------------------
+# Description: Path to SB key encryption key (AES-128). It might be provided in text file or binary file or as a hex
+# string in the configuration.
+containerKeyBlobEncryptionKey: workspace/sbkek.txt
+# ======================================================================================================================
+#                                           == SB 2.1 Sections and commands ==
+# ======================================================================================================================
+# ----------------------------------------===== SB2.1 Sections [Required] =====-----------------------------------------
+# Description: Secure Binary v2.1 section blocks
+sections:
+  - # ----------------------------------------===== Section ID [Optional] =====-----------------------------------------
+    # Description: ID of the section
+    section_id: 0
+    # --------------------------------------===== SB2.1 Commands [Optional] =====---------------------------------------
+    # Description: Secure Binary v2.1 commands block, list of all possible options - Modify it according to your
+    # application
+    commands:
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 0
+          # ----------------------------------------===== Size [Optional] =====-----------------------------------------
+          # Description: Size of memory block to be erased.
+          length: 65536
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 0
+          # ------------------------------------===== Binary file. [Optional] =====-------------------------------------
+          # Description: Binary file to be loaded.
+          file: workspace/lpc55s6x_mbi.bin

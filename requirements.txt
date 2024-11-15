@@ -9,12 +9,13 @@ crcmod<1.8
 cryptography<43.1,>=42.0.0
 deepmerge<2.1
 fastjsonschema<2.21,>=2.15.1
+filelock<3.20,>=3
 hexdump<3.4
 libusbsio<2.2,>=2.1.12
 oscrypto<1.4
 packaging<24.2,>=23.2
 platformdirs<4.4,>=3.9.1
-prettytable<3.12,>=3.8
+prettytable<3.13,>=3.8
 pyocd-pemicro<1.2,>=1.1.5
 pyocd<0.37,>=0.35.1
 pyserial<3.6,>=3.1

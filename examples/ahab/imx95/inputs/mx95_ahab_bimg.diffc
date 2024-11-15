@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/bootimg_mimx9596_serial_downloader.yaml
+user_cfg: inputs/bootimg_mx95_serial_downloader.yaml
+custom_command: "%! nxpimage bootable-image get-templates -f mimx9596 -o workspace --force"
+
+comments:
+  primary_image_container_set: path to our primary container set configuration
+  secondary_image_container_set: path to our secondary container set configuration

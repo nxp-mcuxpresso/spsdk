@@ -5,7 +5,7 @@ SPSDK allows user to install additional plugins and integrate them with SPSDK fu
 ## SPSDK 2.2 changes
 
 Due to increasingly complex codebase it was decided to move some functionality into plugins. This allows to keep the core SPSDK codebase clean and focused on the main functionality. 
-The repository containing the plugins is located at: https://github.com/nxp-mcuxpresso/spsdk_plugins
+The repository containing the plugins is located at: [https://github.com/nxp-mcuxpresso/spsdk_plugins](https://github.com/nxp-mcuxpresso/spsdk_plugins)
 Plugins are also released on PyPi.
 
 Affected functionality is the following:

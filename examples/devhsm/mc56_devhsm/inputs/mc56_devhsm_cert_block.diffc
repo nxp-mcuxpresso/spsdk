@@ -1,0 +1,16 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cert_block_template.yaml
+user_cfg: inputs/cert_block.yaml
+custom_command: "%! nxpimage -v cert-block get-template -f mwct20d2 -o workspace/cert_block_template.yaml --force"
+
+comments:
+  selfSigned: "set to true for self-signed certificate"
+  iskPublicKey: "Add path to the ISK public key file"
+  signPrivateKey: "Add path to your private key file for signing"
+  certBlock: "Add path to the configuration file containing certificates or path to binary block"
+  signProvider: "This is removed, because we are using private key in this example"
+  containerOutputFile: "Add path to the output file for the container"

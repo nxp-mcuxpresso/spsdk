@@ -2,11 +2,11 @@ include LICENSE
 include SW_Content_Register_SPSDK.txt
 include requirements*
 include spsdk/py.typed
-prune .idea *
-prune .github *
-prune docs *
-prune examples *
-prune tests *
-prune tools *
-prune pipeline *
-graft spsdk/data *
+prune .idea
+prune .github
+prune docs
+prune examples
+prune tests
+prune tools
+prune pipeline
+graft spsdk/data

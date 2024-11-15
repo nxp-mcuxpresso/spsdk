@@ -63,7 +63,12 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
     :return: private key of any type
     """
     try:
-        return Certificate.parse(object_data).get_public_key()
+        cert = Certificate.parse(object_data)
+        key = cert.get_public_key()
+        if cert.ca:
+            # In case of CA certificate, return the public key with the 'ca' attribute set to True
+            setattr(key, "ca", True)
+        return key
     except SPSDKError:
         pass
 

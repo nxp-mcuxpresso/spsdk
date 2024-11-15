@@ -1,0 +1,157 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  PFR CMPA configuration template  ==========================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526, lpc5528, lpc5534, lpc5536, lpc55s04,
+# lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69, mcxa132, mcxa133, mcxa142, mcxa143,
+# mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155, mcxa156, mcxn235, mcxn236, mcxn546, mcxn547, mcxn946,
+# mcxn947, nhs52s04>
+family: mcxn946
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Optional] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA>
+type: CMPA
+# ----------------------------------===== Configuration area Settings [Required] =====----------------------------------
+settings:
+  # --------------------------------------===== DCFG_CC_SOCU_PIN [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b; Credential Constraints for SoC specific Use Pinned
+  DCFG_CC_SOCU_PIN:
+    # -------------------------------------------===== NIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Non-secure Non-invasive Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    NIDEN: USE_DAP
+    # -------------------------------------------===== DBGEN [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Non-secure Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    DBGEN: USE_DAP
+    # ------------------------------------------===== SPNIDEN [Optional] =====------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Secure Non-invasive Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    SPNIDEN: USE_DAP
+    # ------------------------------------------===== SPIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 3b, Width: 1b, Secure Invasive Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    SPIDEN: USE_DAP
+    # -----------------------------------------===== DSP_DBGEN [Optional] =====-----------------------------------------
+    # Description: Offset: 5b, Width: 1b, DSP Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    DSP_DBGEN: USE_DAP
+    # ----------------------------------------===== ISP_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 6b, Width: 1b, ISP Boot Command Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    ISP_CMD_EN: FIXED_STATE
+    # -----------------------------------------===== FA_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 7b, Width: 1b, FA Command Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    FA_CMD_EN: FIXED_STATE
+    # -----------------------------------------===== ME_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 1b, Flash Mass Erase Command Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    ME_CMD_EN: FIXED_STATE
+    # ----------------------------------------===== CPU1_NIDEN [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 1b, Second CM33 Non-invasive Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    CPU1_NIDEN: USE_DAP
+    # ----------------------------------------===== CPU1_DBGEN [Optional] =====-----------------------------------------
+    # Description: Offset: 10b, Width: 1b, Second CM33 Debug Enable
+    # - USE_DAP, (0): Use DAP to enable
+    # - FIXED_STATE, (1): Fixed state
+    # Possible options: <USE_DAP, FIXED_STATE>
+    CPU1_DBGEN: USE_DAP
+    # ----------------------------------------===== UUID_CHECK [Optional] =====-----------------------------------------
+    # Description: Offset: 15b, Width: 1b, Enforce UUID match during Debug authentication.
+    # - DISABLED, (0): Debug certificate can be used with all devices.
+    # - ENABLED, (1): Debug certificate per device with matching UUID is needed.
+    # Possible options: <DISABLED, ENABLED>
+    UUID_CHECK: DISABLED
+  # --------------------------------------===== DCFG_CC_SOCU_DFLT [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000044, Width: 32b; Credential Constraints for SoC specific Use Debug Filter
+  DCFG_CC_SOCU_DFLT:
+    # -------------------------------------------===== NIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Non Secure Non-invasive Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    NIDEN: DISABLED
+    # -------------------------------------------===== DBGEN [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Non-secure Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    DBGEN: DISABLED
+    # ------------------------------------------===== SPNIDEN [Optional] =====------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Secure Non-invasive Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    SPNIDEN: DISABLED
+    # ------------------------------------------===== SPIDEN [Optional] =====-------------------------------------------
+    # Description: Offset: 3b, Width: 1b, Secure Invasive Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    SPIDEN: DISABLED
+    # -----------------------------------------===== DSP_DBGEN [Optional] =====-----------------------------------------
+    # Description: Offset: 5b, Width: 1b, DSP Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    DSP_DBGEN: DISABLED
+    # ----------------------------------------===== ISP_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 6b, Width: 1b, ISP Command Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    ISP_CMD_EN: ENABLED
+    # -----------------------------------------===== FA_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 7b, Width: 1b, FA Command Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    FA_CMD_EN: ENABLED
+    # -----------------------------------------===== ME_CMD_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 1b, Flash Mass Erase Command Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    ME_CMD_EN: ENABLED
+    # ----------------------------------------===== CPU1_NIDEN [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 1b, Second CM33 Non-Invasive Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    CPU1_NIDEN: DISABLED
+    # ----------------------------------------===== CPU1_DBGEN [Optional] =====-----------------------------------------
+    # Description: Offset: 10b, Width: 1b, Second CM33 Debug Fixed State
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    CPU1_DBGEN: DISABLED

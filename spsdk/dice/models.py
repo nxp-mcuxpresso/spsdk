@@ -12,8 +12,7 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
-
-from .exceptions import SPSDKDICEError
+from spsdk.dice.exceptions import SPSDKDICEError
 
 
 @dataclass

@@ -230,7 +230,7 @@ class AhabBlob(HeaderContainer):
         :return: Configuration dictionary.
         """
         ret_cfg: dict[str, Any] = {}
-        assert self.dek_keyblob
+        assert isinstance(self.dek_keyblob, bytes)
         filename = f"container{index}_dek_keyblob.bin"
         write_file(self.export(), os.path.join(data_path, filename), "wb")
         ret_cfg["dek_key_size"] = self._size
@@ -257,7 +257,8 @@ class AhabBlob(HeaderContainer):
         dek_input = config.get("dek_key")
         dek_keyblob_input = config.get("dek_keyblob")
         key_identifier = config.get("key_identifier", 0)
-        assert dek_input, "Missing DEK value"
+        if not dek_input:
+            raise SPSDKValueError("Invalid configuration - Missing DEK key")
 
         dek = load_hex_string(dek_input, dek_size // 8, search_paths)
 

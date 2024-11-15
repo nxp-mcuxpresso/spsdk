@@ -5,7 +5,24 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""EdgeLock Enclave Message handler."""
+"""EdgeLock Enclave (ELE) Message Handler.
+
+This module provides functionality for handling communication with the EdgeLock Enclave (ELE),
+a hardware security module present in certain NXP microcontrollers. It includes classes and
+methods for constructing, sending, and receiving ELE messages, as well as managing the
+communication interface with different types of devices.
+
+The module supports various communication protocols, including MCUBoot, U-Boot serial console,
+and U-Boot fastboot, allowing for flexible integration with different development and production
+environments.
+
+Key components:
+- EleDevice: An enumeration of supported ELE-capable devices and communication interfaces.
+- EleMessageHandler: A base class for handling ELE message construction and communication.
+
+This module is part of the SPSDK (Secure Provisioning SDK) and is designed to facilitate
+secure operations and provisioning tasks on NXP microcontrollers featuring the EdgeLock Enclave.
+"""
 
 import logging
 import re
@@ -49,8 +66,8 @@ class EleMessageHandler:
         :param device: Communication interface.
         :param family: Target family name.
         :param revision: Target revision, default is use 'latest' revision.
-        :param comm_buffer_address_override: Override default buffer address for ELE.
-        :param comm_buffer_size_override: Override default buffer size for ELE.
+        :param buffer_address: Override default buffer address for ELE.
+        :param buffer_size: Override default buffer size for ELE.
         """
         self.device = device
         self.database = get_db(device=family, revision=revision)
@@ -85,20 +102,28 @@ class EleMessageHandler:
 
     @staticmethod
     def get_ele_device(device: str, revision: str = "latest") -> EleDevice:
-        """Get default ELE device from DB."""
+        """Get default ELE device from DB.
+
+        :param device: Device name.
+        :param revision: Device revision, defaults to 'latest'.
+        :return: EleDevice instance.
+        """
         return EleDevice.from_label(
-            get_db(device, "latest").get_str(DatabaseManager.ELE, "ele_device")
+            get_db(device, revision).get_str(DatabaseManager.ELE, "ele_device")
         )
 
     @abstractmethod
     def send_message(self, msg: EleMessage) -> None:
         """Send message and receive response.
 
-        :param msg: EdgeLock Enclave message
+        :param msg: EdgeLock Enclave message.
         """
 
     def __enter__(self) -> None:
-        """Enter function of ELE handler."""
+        """Enter function of ELE handler.
+
+        Opens the device if it's not already opened.
+        """
         if not self.device.is_opened:
             self.device.open()
 
@@ -108,7 +133,14 @@ class EleMessageHandler:
         exception_value: Optional[BaseException] = None,
         traceback: Optional[TracebackType] = None,
     ) -> None:
-        """Close function of ELE handler."""
+        """Close function of ELE handler.
+
+        Closes the device if it's opened.
+
+        :param exception_type: Type of the exception if one was raised.
+        :param exception_value: Exception instance if one was raised.
+        :param traceback: Traceback if an exception was raised.
+        """
         if self.device.is_opened:
             self.device.close()
 
@@ -148,9 +180,15 @@ class EleMessageHandlerMBoot(EleMessageHandler):
     def send_message(self, msg: EleMessage) -> None:
         """Send message and receive response.
 
-        :param msg: EdgeLock Enclave message
-        :raises SPSDKError: Invalid response status detected.
-        :raises SPSDKLengthError: Invalid read back length detected.
+        This method sends an EdgeLock Enclave message to the target device, executes it, and processes the response.
+        It handles the entire communication process, including writing the command to target memory,
+        executing the ELE message, reading back the response, and decoding it. If required, it also
+        handles command data and response data.
+
+        :param msg: EdgeLock Enclave message to be sent
+        :raises SPSDKError: If the device is not an instance of McuBoot, or if ELE communication fails,
+            or if the ELE message fails
+        :raises SPSDKLengthError: If invalid read back length is detected for response or response data
         """
         if not isinstance(self.device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
@@ -204,9 +242,11 @@ class EleMessageHandlerMBoot(EleMessageHandler):
 
 
 class EleMessageHandlerUBoot(EleMessageHandler):
-    """EdgeLock Enclave Message Handler over UBoot.
+    """EdgeLock Enclave Message Handler over uBoot.
 
-    This class can send the ELE message into target over UBoot and decode the response.
+    This class implements functionality to send ELE messages to the target device over UBoot
+    and decode the responses. It provides an interface for communication with the EdgeLock
+    Enclave using the UBoot protocol.
     """
 
     def __init__(
@@ -217,13 +257,15 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         comm_buffer_address_override: Optional[int] = None,
         comm_buffer_size_override: Optional[int] = None,
     ) -> None:
-        """Class object initialized.
+        """This method initializes the EleMessageHandlerUBoot class.
 
         :param device: UBoot device.
         :param family: Target family name.
         :param revision: Target revision, default is use 'latest' revision.
         :param comm_buffer_address_override: Override default buffer address for ELE.
         :param comm_buffer_size_override: Override default buffer size for ELE.
+
+        :raises SPSDKError: If the device is not an instance of UbootSerial or UbootFastboot.
         """
         if not isinstance(device, UbootSerial) and not isinstance(device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")
@@ -238,8 +280,12 @@ class EleMessageHandlerUBoot(EleMessageHandler):
     def extract_error_values(self, error_message: str) -> tuple[int, int, int]:
         """Extract error values from error_message.
 
+        This method parses the error message to extract abort_code, status, and indication values.
+        It uses regular expressions to find and extract the relevant information.
+
         :param error_message: Error message containing ret and response
-        :return: abort_code, status and indication
+        :return: A tuple containing (abort_code, status, indication)
+        :raises: No exceptions are raised, but errors are logged if parsing fails
         """
         # Define regular expressions to extract values
         ret_pattern = re.compile(r"ret (0x[0-9a-fA-F]+),")
@@ -264,11 +310,19 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         return abort_code, status, indication
 
     def send_message(self, msg: EleMessage) -> None:
-        """Send message and receive response.
+        """Send message to EdgeLock Enclave and receive response.
 
-        :param msg: EdgeLock Enclave message
-        :raises SPSDKError: Invalid response status detected.
-        :raises SPSDKLengthError: Invalid read back length detected.
+        This method performs the following steps:
+        1. Prepares command data in target memory if required.
+        2. Executes the ELE message on the target.
+        3. Reads back the response.
+        4. Decodes the response.
+        5. Checks the response status.
+        6. Reads back the response data from target memory if required.
+
+        :param msg: EdgeLock Enclave message to be sent
+        :raises SPSDKError: If an invalid response status is detected or if communication fails
+        :raises SPSDKLengthError: If an invalid read back length is detected
         """
         if not isinstance(self.device, UbootSerial) and not isinstance(self.device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")

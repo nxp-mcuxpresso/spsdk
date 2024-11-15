@@ -77,13 +77,15 @@ class _HMAC(AuthenticationProvider):
     @classmethod
     def sign(cls, data: bytes, key: bytes) -> bytes:
         """Generate hash authentication code."""
-        assert cls.HASHER
+        if not cls.HASHER:
+            raise SPSDKTpError("HASHER attribute must be defined in subclass")
         return hmac(key=key, data=data, algorithm=cls.HASHER)
 
     @classmethod
     def validate(cls, data: bytes, signature: bytes, key: bytes) -> bool:
         """Validate hash authentication code."""
-        assert cls.HASHER
+        if not cls.HASHER:
+            raise SPSDKTpError("HASHER attribute must be defined in subclass")
         return hmac_validate(key=key, data=data, signature=signature, algorithm=cls.HASHER)
 
 

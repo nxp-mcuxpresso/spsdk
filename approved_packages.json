@@ -501,6 +501,18 @@
       }
     },
     {
+        "home_page": "https://github.com/tox-dev/filelock",
+        "name": "filelock",
+        "package": {
+          "name": "filelock",
+          "license": "The Unlicense"
+        },
+        "github": {
+          "project_name": "tox-dev/filelock",
+          "license": "The Unlicense"
+        }
+      },
+    {
       "home_page": "",
       "name": "Flask",
       "package": {

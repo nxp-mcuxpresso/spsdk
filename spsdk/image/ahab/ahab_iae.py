@@ -509,7 +509,10 @@ class ImageArrayEntry(Container):
             if self.image_hash is None:
                 ret.add_record("Image hash", VerifierResult.ERROR, "Doesn't exists")
             elif not any(self.image_hash):
-                ret.add_record("Image hash", VerifierResult.ERROR, "All zeros")
+                result = VerifierResult.ERROR
+                if self.chip_config.base.allow_empty_hash:
+                    result = VerifierResult.WARNING
+                ret.add_record("Image hash", result, "All zeros")
             elif len(self.image_hash) != self.HASH_LEN:
                 ret.add_record(
                     "Image hash",

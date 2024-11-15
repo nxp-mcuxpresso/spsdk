@@ -7,12 +7,11 @@
 """Adapter for BLHost/Mboot communication layer covering DICE operations."""
 import logging
 
+from spsdk.dice.exceptions import SPSDKDICEError
+from spsdk.dice.models import DICETarget
 from spsdk.mboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.database import DatabaseManager, get_db
-
-from .exceptions import SPSDKDICEError
-from .models import DICETarget
 
 logger = logging.getLogger(__name__)
 

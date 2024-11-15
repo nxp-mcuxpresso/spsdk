@@ -1,0 +1,42 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  Certification Block V21 template  =========================================
+
+# ======================================================================================================================
+#                                   == ISK (Image signing key) Certificate Settings ==
+# ======================================================================================================================
+# ---------------------------------------===== MCU family name. [Required] =====----------------------------------------
+# Description: MCU family name.
+family: lpc55s36
+# ------------------------------===== Use ISK for signature certification [Required] =====------------------------------
+# Description: Enable ISK type of signature certification.
+useIsk: false
+# -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
+# Description: Path to Main root Certification Private Key.
+signPrivateKey: ../../_data/keys/ecc256/srk0_ecc256.pem
+# ======================================================================================================================
+#                                                == Root Keys Settings ==
+# ======================================================================================================================
+# -----------------------------===== Root Certificate File 0 [Conditionally required] =====-----------------------------
+# Description: Root certificate file index 0.
+rootCertificate0File: ../../_data/keys/ecc256/srk0_ecc256.pub
+# ------------------------------------===== Root Certificate File 1 [Optional] =====------------------------------------
+# Description: Root certificate file index 1.
+rootCertificate1File: ../../_data/keys/ecc256/srk1_ecc256.pub
+# ------------------------------------===== Root Certificate File 2 [Optional] =====------------------------------------
+# Description: Root certificate file index 2.
+rootCertificate2File: ../../_data/keys/ecc256/srk2_ecc256.pub
+# ------------------------------------===== Root Certificate File 3 [Optional] =====------------------------------------
+# Description: Root certificate file index 3.
+rootCertificate3File: ../../_data/keys/ecc256/srk3_ecc256.pub
+# -----------------------------===== Main Certificate Index [Conditionally required] =====------------------------------
+# Description: Index of certificate that is used as a main. If not defined, the certificate matching private key will be
+# selected.
+mainRootCertId: 0
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== cert block filename [Required] =====--------------------------------------
+# Description: Generated cert block filename.
+containerOutputFile: ../workspace/cert_block_v2_1.bin

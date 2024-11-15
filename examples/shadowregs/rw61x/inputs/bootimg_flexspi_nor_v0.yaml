@@ -1,0 +1,44 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================  Bootable Image Configuration template for rw612 / flexspi_nor.  ==========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <k32w148, kw45b41z5, kw45b41z8, lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526,
+# lpc5528, lpc5534, lpc5536, lpc55s04, lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69,
+# mc56f81646, mc56f81648, mc56f81666, mc56f81668, mc56f81746, mc56f81748, mc56f81766, mc56f81768, mcxa132, mcxa133,
+# mcxa142, mcxa143, mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155, mcxa156, mcxn235, mcxn236, mcxn546,
+# mcxn547, mcxn946, mcxn947, mcxw716a, mcxw716c, mimx8ulp, mimx9131, mimx9352, mimx9596, mimxrt1010, mimxrt1015,
+# mimxrt1020, mimxrt1024, mimxrt1040, mimxrt1050, mimxrt1060, mimxrt1064, mimxrt1165, mimxrt1166, mimxrt1171,
+# mimxrt1172, mimxrt1173, mimxrt1175, mimxrt1176, mimxrt1181, mimxrt1182, mimxrt1187, mimxrt1189, mimxrt533s,
+# mimxrt555s, mimxrt595s, mimxrt685s, mimxrt798s, mwct2012, mwct2012a, nhs52s04, rw610, rw612>
+family: rw612
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a1, a2, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+memory_type: flexspi_nor
+# ======================================================================================================================
+#                                           == Bootable Segments definition ==                                          
+# ======================================================================================================================
+# ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
+# Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML
+# configuration file for FCB. In case that YAML configuration file is used, the Bootable image tool build the FCB
+# itself.
+fcb: fcb.bin
+# -----------------------------------------===== Image version [Optional] =====-----------------------------------------
+# Description: Image version
+image_version: 0
+# ======================================================================================================================
+#                                          == Executable Segment definition ==                                          
+# ======================================================================================================================
+# ---------------------------------------===== Master Boot Image [Optional] =====---------------------------------------
+# Description: Master Boot Image path. It could be used as pre-prepared binary form of MBI and also YAML configuration
+# file for MBI. In case that YAML configuration file is used, the Bootable image tool build the MBI itself.
+mbi: mbi_crc_led_blinky.bin

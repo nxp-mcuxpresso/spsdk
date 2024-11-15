@@ -188,7 +188,7 @@ class HabContainer:
                     ]
                 )
                 segment = self.get_segment(segments_names[0])
-                assert segment
+                assert isinstance(segment, HabSegmentBase)
                 add_block(segment.offset, block_size)
         if not self.is_encrypted:
             add_block(self.app_segment.offset, self.app_segment.size)
@@ -208,7 +208,8 @@ class HabContainer:
     def update_csf(self) -> None:
         """Update the CSF segment including signing and encryption."""
         if self.is_encrypted:
-            assert self.csf_segment
+            if not self.csf_segment:
+                raise SPSDKError("CSF segment is missing")
             self.bdt_segment.segment.app_length += CsfHabSegment.KEYBLOB_SIZE
         if self.csf_segment:
             image = self.export_padding()

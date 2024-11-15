@@ -102,8 +102,11 @@ class HTTPClientBase(abc.ABC):
         self.headers = {
             "spsdk-version": str(get_spsdk_version()),
             "spsdk-api-version": self.api_version,
+            "Connection": "keep-alive",
+            "Keep-Alive": "timeout=60, max=100",
         }
         self.raise_exceptions = raise_exceptions
+        self.session = requests.Session()
 
     def __init_subclass__(cls) -> None:
         if not inspect.isabstract(cls) and not hasattr(cls, "api_version"):
@@ -135,7 +138,7 @@ class HTTPClientBase(abc.ABC):
         logger.debug(f"Request params: {json.dumps(params, indent=2)}")
         logger.debug(f"Request body: {json.dumps(json_payload, indent=2)}")
 
-        response = requests.request(
+        response = self.session.request(
             method=method.value,
             url=full_url,
             json=json_payload,

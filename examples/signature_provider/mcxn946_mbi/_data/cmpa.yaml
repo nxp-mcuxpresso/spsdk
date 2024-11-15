@@ -1,0 +1,126 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  PFR CMPA configuration template  ==========================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526, lpc5528, lpc5534, lpc5536, lpc55s04,
+# lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69, mcxa132, mcxa133, mcxa142, mcxa143,
+# mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155, mcxa156, mcxn235, mcxn236, mcxn546, mcxn547, mcxn946,
+# mcxn947, nhs52s04>
+family: mcxn946
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Optional] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA, cmpa>
+type: CMPA
+# ----------------------------------===== Configuration area Settings [Required] =====----------------------------------
+settings:
+  # ------------------------------------------===== BOOT_CFG [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Boot Configuration
+  BOOT_CFG:
+    # -----------------------------------------===== BOOT_SRC [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 2b, Primary boot source
+    # - INTERNAL_FLASH_0b00, (0): Internal flash
+    # - FLEXSPI_FLASH_XIP, (1): FlexSPI flash XIP image
+    # - SECONDARY_BOOTLOADER, (2): Secondary Boot loader in Bank1 IFR0 (32KB)
+    # - INTERNAL_FLASH_0b11, (3): Internal flash
+    # Possible options: <INTERNAL_FLASH_0b00, FLEXSPI_FLASH_XIP, SECONDARY_BOOTLOADER, INTERNAL_FLASH_0b11>
+    BOOT_SRC: FLEXSPI_FLASH_XIP
+  # --------------------------------------===== FLEXSPI_BOOT_CFG0 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000010, Width: 32b; FlexSPI Boot Configuration 0
+  FLEXSPI_BOOT_CFG0:
+    # -----------------------------------===== FLEXSPI_AUTO_PROBE_EN [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 1b, Quad/Octal-SPI flash auto probe feature enable
+    # - DISABLED, (0): Disable
+    # - ENABLED, (1): Enable
+    # Possible options: <DISABLED, ENABLED>
+    FLEXSPI_AUTO_PROBE_EN: ENABLED
+  SECURE_BOOT_CFG:
+    # ----------------------------------------===== SEC_BOOT_EN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 2b, Secure boot enforcement.
+    # This field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign).
+    # The Image type field in header indicates the type of verification data (checksum or signature) included in it.
+    # Note: Plain < CRC32 < CMAC < ECDSA
+    # - ALL_IMAGES, (0): All Image types are allowed.
+    # - CRC32_IMAGES, (1): Only CRC32 or signed (CMAC or ECDSA) images are allowed.
+    # - SIGNED_IMAGES, (2): Only Signed (CMAC or ECDSA) images are allowed.
+    # - ECDSA_SIGNED, (3): Only ECDSA signed images are allowed.
+    # Possible options: <ALL_IMAGES, CRC32_IMAGES, SIGNED_IMAGES, ECDSA_SIGNED>
+    SEC_BOOT_EN: SIGNED_IMAGES
+    # -----------------------------------------===== ENF_CNSA [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Enforce CNSA suite approved algorithms for secure boot, secure update and
+    # debug authentication.
+    # Note, CMAC image authentication is only allowed in 2b'00 setting.
+    # - ALL_ALLOWED_0b00, (0): All algorithms allowed.
+    # - LIMITED_0b01, (1): Only ECC P-384 keys, SHA384 and AES256 algorithms are used.
+    # - LIMITED_0b10, (2): Only ECC P-384 keys, SHA384 and AES256 algorithms are used.
+    # - LIMITED_0b11, (3): Only ECC P-384 keys, SHA384 and AES256 algorithms are used.
+    # Possible options: <ALL_ALLOWED_0b00, LIMITED_0b01, LIMITED_0b10, LIMITED_0b11>
+    ENF_CNSA: LIMITED_0b01
+  RoTK_USAGE:
+    # ----------------------------------------===== RoTK0_Usage [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 3b, RoT key 0 usage properties.
+    # - USABLE, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DEBUG, (1): Usable as debug CA only.
+    # - IMG_BOOT_FW, (2): Usable as image (boot and FW) CA only.
+    # - DEBUG_BOOT_FW_IMG, (3): Usable as debug, boot and FW image CA.
+    # - IMG_FW_UPDATE_KEY, (4): Usable as image key and FW update key only.
+    # - BOOT_IMAGE_KEY, (5): Usable as boot image key only.
+    # - FW_UPDATE_IMG_KEY, (6): Usable as FW update image key only.
+    # - KEY_SLOT_NOT_USED, (7): Key slot is not used.
+    # Possible options: <USABLE, DEBUG, IMG_BOOT_FW, DEBUG_BOOT_FW_IMG, IMG_FW_UPDATE_KEY, BOOT_IMAGE_KEY,
+    # FW_UPDATE_IMG_KEY, KEY_SLOT_NOT_USED>
+    RoTK0_Usage: USABLE
+    # ----------------------------------------===== RoTK1_Usage [Optional] =====----------------------------------------
+    # Description: Offset: 3b, Width: 3b, RoT key 1 usage properties.
+    # - USABLE, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DEBUG, (1): Usable as debug CA only.
+    # - IMG_BOOT_FW, (2): Usable as image (boot and FW) CA only.
+    # - DEBUG_BOOT_FW_IMG, (3): Usable as debug, boot and FW image CA.
+    # - IMG_FW_UPDATE_KEY, (4): Usable as image key and FW update key only.
+    # - BOOT_IMAGE_KEY, (5): Usable as boot image key only.
+    # - FW_UPDATE_IMG_KEY, (6): Usable as FW update image key only.
+    # - KEY_SLOT_NOT_USED, (7): Key slot is not used.
+    # Possible options: <USABLE, DEBUG, IMG_BOOT_FW, DEBUG_BOOT_FW_IMG, IMG_FW_UPDATE_KEY, BOOT_IMAGE_KEY,
+    # FW_UPDATE_IMG_KEY, KEY_SLOT_NOT_USED>
+    RoTK1_Usage: USABLE
+    # ----------------------------------------===== RoTK2_Usage [Optional] =====----------------------------------------
+    # Description: Offset: 6b, Width: 3b, RoT key 2 usage properties.
+    # - USABLE, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DEBUG, (1): Usable as debug CA only.
+    # - IMG_BOOT_FW, (2): Usable as image (boot and FW) CA only.
+    # - DEBUG_BOOT_FW_IMG, (3): Usable as debug, boot and FW image CA.
+    # - IMG_FW_UPDATE_KEY, (4): Usable as image key and FW update key only.
+    # - BOOT_IMAGE_KEY, (5): Usable as boot image key only.
+    # - FW_UPDATE_IMG_KEY, (6): Usable as FW update image key only.
+    # - KEY_SLOT_NOT_USED, (7): Key slot is not used.
+    # Possible options: <USABLE, DEBUG, IMG_BOOT_FW, DEBUG_BOOT_FW_IMG, IMG_FW_UPDATE_KEY, BOOT_IMAGE_KEY,
+    # FW_UPDATE_IMG_KEY, KEY_SLOT_NOT_USED>
+    RoTK2_Usage: KEY_SLOT_NOT_USED
+    # ----------------------------------------===== RoTK3_Usage [Optional] =====----------------------------------------
+    # Description: Offset: 9b, Width: 3b, RoT key 3 usage properties.
+    # - USABLE, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+    # - DEBUG, (1): Usable as debug CA only.
+    # - IMG_BOOT_FW, (2): Usable as image (boot and FW) CA only.
+    # - DEBUG_BOOT_FW_IMG, (3): Usable as debug, boot and FW image CA.
+    # - IMG_FW_UPDATE_KEY, (4): Usable as image key and FW update key only.
+    # - BOOT_IMAGE_KEY, (5): Usable as boot image key only.
+    # - FW_UPDATE_IMG_KEY, (6): Usable as FW update image key only.
+    # - KEY_SLOT_NOT_USED, (7): Key slot is not used.
+    # Possible options: <USABLE, DEBUG, IMG_BOOT_FW, DEBUG_BOOT_FW_IMG, IMG_FW_UPDATE_KEY, BOOT_IMAGE_KEY,
+    # FW_UPDATE_IMG_KEY, KEY_SLOT_NOT_USED>
+    RoTK3_Usage: KEY_SLOT_NOT_USED
+    # -----------------------------------------===== SKIP_DICE [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 1b, Skip DICE computation.
+    # - ENABLE_DICE, (0): Enable DICE
+    # - DISABLE_DICE, (1): Disable DICE
+    # Possible options: <ENABLE_DICE, DISABLE_DICE>
+    SKIP_DICE: DISABLE_DICE

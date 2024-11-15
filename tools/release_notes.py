@@ -202,7 +202,7 @@ def ticket_info_hasher(args: tuple, kwargs: dict) -> str:
     we use MD5 hashing.
     """
     to_hash: str = kwargs["ticket"] if "ticket" in kwargs else args[0]
-    digest = hashes.Hash(hashes.MD5())
+    digest = hashes.Hash(hashes.MD5())  # nosec
     digest.update(to_hash.encode("utf-8"))
     digest_string = digest.finalize().hex()
     logging.debug(f"cache param hashing: {to_hash} -> {digest_string}")
@@ -235,7 +235,7 @@ def main() -> None:
         logging.info("No tickets found in commit messages.")
         sys.exit(1)
 
-    password = ""
+    password = None
     # ask for password if running in online mode, user doesn't uses netrc, but specifies username
     if not args.offline and args.user:
         password = getpass(f"Enter password for '{args.user}': ")

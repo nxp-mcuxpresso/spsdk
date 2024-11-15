@@ -146,7 +146,7 @@ class BootableImage(BaseClass):
                             "Cannot get dynamically offset of segment because"
                             " there is no any previous segment with static offset."
                         )
-                    assert prev_seg is not None
+                    assert isinstance(prev_seg, Segment)  # oh dear mypy...
                     return align(
                         _get_segment_offset(segments, prev_seg) + len(prev_seg),
                         segment.OFFSET_ALIGNMENT,
@@ -175,8 +175,7 @@ class BootableImage(BaseClass):
         for segment in self.segments:
             if not segment.BOOT_HEADER:
                 return self.get_segment_offset(segment)
-
-        assert False, "Cannot determine the size of bootable image header"
+        raise SPSDKError("Cannot determine the size of bootable image header")
 
     @property
     def bootable_header_only(self) -> bool:

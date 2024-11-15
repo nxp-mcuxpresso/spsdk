@@ -155,8 +155,15 @@ def generate_binary(output: str, config: str, family: str, revision: str) -> Non
     if revision:
         deprecated_option_warning("revision")
     ifr_config = load_configuration(str(config))
-    pfr.ROMCFG.validate_config(ifr_config)
-    ifr_obj = pfr.ROMCFG.load_from_config(ifr_config)
+    description = ifr_config.get("description")
+    area: str = ifr_config.get("type", description["type"] if description else "Invalid")
+    if description:
+        family = description["device"]
+    else:
+        family = ifr_config.get("family", ifr_config.get("device", family))
+    ifr_cls = pfr.get_ifr_pfr_class(area_name=area, family=family)
+    ifr_cls.validate_config(ifr_config)
+    ifr_obj = ifr_cls.load_from_config(ifr_config)
     data = ifr_obj.export()
     _store_output(data, output, "wb", msg="Success. (IFR binary has been generated)")
 

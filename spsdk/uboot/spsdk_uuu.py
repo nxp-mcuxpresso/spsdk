@@ -243,8 +243,8 @@ class SPSDKUUU:
     def run_uboot(self, command: str) -> bool:
         """Run uboot command.
 
-        :param command: string commannd
-        :return: Return code from the libuu
+        :param command: string command
+        :return: Return code from the libuuu
         """
         success = self.uuu.run_cmd(f"FB:UCMD {command}", 0) == 0
         logger.info(f"{command} {success=} response={self.response}")

@@ -6,10 +6,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for handling UUID-Secure Object database."""
 import abc
-import contextlib
+import datetime
 import logging
 import sqlite3
-from typing import Iterator, Optional
+from types import TracebackType
+from typing import Optional, Type
 
 from typing_extensions import Self
 
@@ -19,42 +20,17 @@ from spsdk.utils.http_client import HTTPClientBase
 logger = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
-def sqlite_cursor(file_path: str) -> Iterator[sqlite3.Cursor]:
-    """Yield an cursor to SQLite database.
+sqlite3.register_adapter(bool, int)
+sqlite3.register_converter("BOOLEAN", lambda v: bool(int(v)))
 
-    :param file_path: Path to SQLite database file
-    :raises SPSDKError: Error during SQL operation
-    :yield: SQLite cursor
-    """
-    try:
-        conn = sqlite3.connect(file_path)
-        cursor = conn.cursor()
-        yield cursor
-    except sqlite3.Error as sql_error:
-        raise SPSDKError(
-            f"Error during sqlite operation using database '{file_path}': {sql_error}"
-        ) from sql_error
-    except SPSDKError:
-        raise
-    except Exception as e:
-        raise SPSDKError(str(e)) from e
-    finally:
-        if "conn" in locals():
-            conn.commit()
-            conn.close()
+sqlite3.register_adapter(datetime.date, lambda v: v.isoformat())
+sqlite3.register_converter("DATE", lambda v: datetime.date.fromisoformat(v.decode("utf-8")))
 
+sqlite3.register_adapter(datetime.time, lambda v: v.isoformat())
+sqlite3.register_converter("TIME", lambda v: datetime.time.fromisoformat(v.decode("utf-8")))
 
-CREATE_DATABASE_COMMAND = """
-    CREATE TABLE IF NOT EXISTS settings (
-        "name" varchar NOT NULL,
-        "value" text NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS objects (
-        "uuid" varchar(32) NOT NULL PRIMARY KEY,
-        "so" blob NULL
-    );
-"""
+sqlite3.register_adapter(datetime.datetime, lambda v: v.isoformat())
+sqlite3.register_converter("DATETIME", lambda v: datetime.datetime.fromisoformat(v.decode("utf-8")))
 
 
 class SecureObjectsDB(abc.ABC):
@@ -69,7 +45,7 @@ class SecureObjectsDB(abc.ABC):
         """Add Secure Objects for given UUID."""
 
     @abc.abstractmethod
-    def get_uuids(self, empty: bool = True) -> Iterator[str]:
+    def get_uuids(self, empty: bool = True, limit: int = 0) -> list[str]:
         """Get iterator to UUIDs."""
 
     @abc.abstractmethod
@@ -79,6 +55,30 @@ class SecureObjectsDB(abc.ABC):
     @abc.abstractmethod
     def get_count(self, empty: bool = True) -> int:
         """Get number of records in the database."""
+
+    @abc.abstractmethod
+    def open(self) -> None:
+        """Open the database connection."""
+
+    @abc.abstractmethod
+    def close(self) -> None:
+        """Close the database connection."""
+
+    def __enter__(self) -> Self:
+        """Enter the context manager."""
+        self.open()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[Exception]] = None,
+        exc_val: Optional[Exception] = None,
+        exc_tb: Optional[TracebackType] = None,
+    ) -> None:
+        """Exit the context manager."""
+        self.close()
+        if exc_val:
+            raise exc_val
 
     @classmethod
     def create(
@@ -107,65 +107,120 @@ class LocalSecureObjectsDB(SecureObjectsDB):
     def __init__(self, file_path: str) -> None:
         """Initialize the database file."""
         self.db_file = file_path
+        self.conn: Optional[sqlite3.Connection] = None
+        self.cursor: Optional[sqlite3.Cursor] = None
         self._setup_db()
+
+    def open(self) -> None:
+        """Open the database connection."""
+        try:
+            self.conn = sqlite3.connect(self.db_file)
+            self.cursor = self.conn.cursor()
+        except sqlite3.Error as e:
+            self.close()
+            raise SPSDKError(f"Error during opening database '{self.db_file}': {e}") from e
+
+    def close(self) -> None:
+        """Close the database connection."""
+        if self.conn:
+            self.conn.commit()
+            self.conn.close()
+        self.conn = None
+        self.cursor = None
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[Exception]] = None,
+        exc_val: Optional[Exception] = None,
+        exc_tb: Optional[TracebackType] = None,
+    ) -> None:
+        self.close()
+        if exc_type == sqlite3.Error and exc_val:
+            raise SPSDKError(f"Error during database operation: {exc_val}") from exc_val
+        if exc_val:
+            raise SPSDKError(str(exc_val)) from exc_val
 
     def _setup_db(self) -> None:
         logger.debug("Setting up a database")
-        with sqlite_cursor(self.db_file) as cursor:
-            cursor.executescript(CREATE_DATABASE_COMMAND)
+        with self:
+            cursor = self._sanitize_cursor()
+            cursor.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS settings (
+                    "name" varchar NOT NULL,
+                    "value" text NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS objects (
+                    "uuid" varchar(32) NOT NULL PRIMARY KEY,
+                    "so" blob NULL
+                );
+                """
+            )
+
+    def _sanitize_cursor(self) -> sqlite3.Cursor:
+        if not self.cursor or not self.conn:
+            raise SPSDKError("Database is closed. Use 'with' statement to open it.")
+        return self.cursor
 
     def add_uuid(self, uuid: str) -> bool:
         """Add UUID into the database."""
         logger.info(f"Adding UUID: {uuid}")
-        with sqlite_cursor(self.db_file) as cursor:
-            try:
-                cursor.execute("INSERT INTO objects (uuid) VALUES (?)", (uuid,))
-            except sqlite3.Error as e:
-                if "UNIQUE" in str(e):
-                    logger.warning(f"UUID {uuid} is already in the database")
-                    return False
-                raise
+        cursor = self._sanitize_cursor()
+        try:
+            cursor.execute("INSERT INTO objects (uuid) VALUES (?)", (uuid,))
+        except sqlite3.Error as e:
+            if "UNIQUE" in str(e):
+                logger.warning(f"UUID {uuid} is already in the database")
+                return False
+            raise
+        cursor.connection.commit()
         return True
 
     def add_secure_object(self, uuid: str, so: bytes) -> None:
         """Add Secure Objects for given UUID."""
         logger.info(f"Adding Secure Objects for UUID: {uuid}")
-        with sqlite_cursor(self.db_file) as cursor:
-            cursor.execute("UPDATE objects SET so = ? WHERE uuid = ?", (so, uuid))
+        cursor = self._sanitize_cursor()
+        cursor.execute("UPDATE objects SET so = ? WHERE uuid = ?", (so, uuid))
+        cursor.connection.commit()
 
-    def get_uuids(self, empty: bool = True) -> Iterator[str]:
+    def get_uuids(self, empty: bool = True, limit: int = 0) -> list[str]:
         """Get iterator to UUIDs.
 
         :param empty: Get only UUIDs without Secure Objects
+        :param limit: Limit the number of returned UUIDs
         """
         logger.info(f"Getting UUIDs {'without associated Secure Objects' if empty else '(all)'}")
-        with sqlite_cursor(self.db_file) as cursor:
-            command = "SELECT uuid from objects"
-            if empty:
-                command += " WHERE so is NULL or so = ''"
-            cursor.execute(command)
-            for item in cursor:
-                yield item[0]
+        command = "SELECT uuid from objects"
+        if empty:
+            command += " WHERE so is NULL or so = ''"
+        if limit:
+            command += f" LIMIT {limit}"
+        cursor = self._sanitize_cursor()
+        cursor.execute(command)
+        return [item[0] for item in cursor]
 
     def get_secure_object(self, uuid: str) -> bytes:
         """Get Secure Objects for given UUID."""
         logger.info(f"Getting Secure Objects for UUID: {uuid}")
-        with sqlite_cursor(self.db_file) as cursor:
-            cursor.execute("SELECT so FROM objects WHERE uuid = ?", (uuid,))
-            data = cursor.fetchone()
-            if not data:
-                raise SPSDKError(f"UUID {uuid} not found in database")
-            return data[0]
+        cursor = self._sanitize_cursor()
+        cursor.execute("SELECT so FROM objects WHERE uuid = ?", (uuid,))
+        data = cursor.fetchone()
+        if not data:
+            raise SPSDKError(f"UUID {uuid} not found in database")
+        return data[0]
 
     def get_count(self, empty: bool = True) -> int:
         """Get number of records in the database."""
-        with sqlite_cursor(self.db_file) as cursor:
-            cmd = "SELECT COUNT(*) from objects"
-            if empty:
-                cmd += " WHERE so is NULL or so = ''"
-            cursor.execute(cmd)
-            row = cursor.fetchone()
-            return row[0]
+        logger.info(
+            f"Getting number of records {'without associated Secure Objects' if empty else '(all)'}"
+        )
+        cmd = "SELECT COUNT(*) from objects"
+        if empty:
+            cmd += " WHERE so is NULL or so = ''"
+        cursor = self._sanitize_cursor()
+        cursor.execute(cmd)
+        row = cursor.fetchone()
+        return row[0]
 
 
 class RemoteSecureObjectsDB(HTTPClientBase, SecureObjectsDB):
@@ -194,12 +249,11 @@ class RemoteSecureObjectsDB(HTTPClientBase, SecureObjectsDB):
         if not response.ok:
             raise SPSDKError(f"Failed to add Secure Object for UUID {uuid}")
 
-    def get_uuids(self, empty: bool = True) -> Iterator[str]:
+    def get_uuids(self, empty: bool = True, limit: int = 0) -> list[str]:
         """Get iterator to UUIDs."""
         logger.info(f"Getting UUIDs {'without associated Secure Objects' if empty else '(all)'}")
         response = self._handle_request(self.Method.GET, f"/items?empty={empty}")
-        for item in response.json():
-            yield item["uuid"]
+        return [item["uuid"] for item in response.json()]
 
     def get_secure_object(self, uuid: str) -> bytes:
         """Get Secure Objects for given UUID."""
@@ -216,3 +270,9 @@ class RemoteSecureObjectsDB(HTTPClientBase, SecureObjectsDB):
         """Get number of records in the database."""
         response = self._handle_request(self.Method.GET, f"/items/count?empty={empty}")
         return response.json()
+
+    def open(self) -> None:
+        """Open the database connection."""
+
+    def close(self) -> None:
+        """Close the database connection."""

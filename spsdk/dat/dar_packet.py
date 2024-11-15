@@ -9,7 +9,7 @@
 
 import os
 from struct import pack
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Optional, Type, cast
 
 from typing_extensions import Self
 
@@ -125,9 +125,9 @@ class DebugAuthenticateResponse:
     @classmethod
     def load_from_config(
         cls,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         dac: DebugAuthenticationChallenge,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> Self:
         """Converts the configuration option into an Debug authentication response object.
 
@@ -158,10 +158,10 @@ class DebugAuthenticateResponse:
     @classmethod
     def _load_from_config(
         cls,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         dc: DebugCredentialCertificate,
         dac: DebugAuthenticationChallenge,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> Self:
         """Converts the configuration option into an Debug authentication response object.
 
@@ -243,7 +243,7 @@ class DebugAuthenticateResponse:
     @classmethod
     def _get_family_validation_schemas(
         cls, family: str, revision: str = "latest"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create the validation schema.
 
         :param family: Family description.
@@ -257,7 +257,7 @@ class DebugAuthenticateResponse:
         return schemas
 
     @classmethod
-    def _get_validation_schemas(cls, family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+    def _get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
@@ -269,7 +269,7 @@ class DebugAuthenticateResponse:
         return [cls._get_family_validation_schemas(family, revision), schemas["dat_classic"]]
 
     @classmethod
-    def get_validation_schemas(cls, family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
@@ -376,10 +376,10 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
     @classmethod
     def _load_from_config(
         cls,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         dc: DebugCredentialCertificate,
         dac: DebugAuthenticationChallenge,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ) -> Self:
         """Converts the configuration option into an Debug authentication response object.
 
@@ -419,7 +419,7 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         )
 
     @classmethod
-    def _get_validation_schemas(cls, family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+    def _get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.

@@ -426,7 +426,7 @@
                                     "name": "Override",
                                     "value": 1,
                                     "description": "Override Boot_Mode pins by boot mode fuses"
-                                }                                
+                                }
                             ]
                         },
                         {
@@ -500,7 +500,6 @@
                                     "description": "2.5 ms"
                                 }
                             ]
-
                         },
                         {
                             "width": 2,
@@ -563,14 +562,12 @@
                             "id": "fuse25-bits-8-15",
                             "name": "uSDHC_PAD_Settings_Low_bits",
                             "description": "uSDHC_PAD_Settings_Low_bits\nThe override value for uSDHC pad settings (Lowest 8 bits)"
-
                         },
                         {
                             "width": 4,
                             "id": "fuse25-bits-16-19",
                             "name": "uSDHC_PAD_Setting_High_bits",
                             "description": "uSDHC_PAD_Setting_High_bits\nThe override value for uSDHC pad settings (High bits)"
-
                         },
                         {
                             "width": 1,
@@ -589,14 +586,12 @@
                                     "description": "Enabled"
                                 }
                             ]
-
                         },
                         {
                             "width": 1,
                             "id": "fuse25-bit-21",
                             "name": "uSDHC_Override_Pad_Settings",
                             "description": "uSDHC_Override_Pad_Settings (using PAD_SETTINGS value)"
-
                         },
                         {
                             "width": 1,
@@ -624,7 +619,6 @@
                             "id": "fuse25-bits-24-30",
                             "name": "MMC_DLL_DLY",
                             "description": "MMC_DLL_DLY"
-
                         },
                         {
                             "width": 1,
@@ -1446,7 +1440,6 @@
                                     "description": "I/D-MEM not retained"
                                 }
                             ]
-
                         },
                         {
                             "width": 1,
@@ -1754,7 +1747,7 @@
                             "width": 8,
                             "id": "fuse188-bits-8-15",
                             "name": "OTFAD1_KEY_SCRAMBLE_ALIGN",
-                            "description": "OTFAD1 keyscramble align"
+                            "description": "OTFAD1 key scramble align"
                         },
                         {
                             "width": 1,

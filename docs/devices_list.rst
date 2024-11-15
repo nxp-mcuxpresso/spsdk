@@ -1,6 +1,7 @@
 ============================
 List of supported devices
 ============================
+
 ========================================================
 Digital Signal Controller
 ========================================================
@@ -24,6 +25,17 @@ Weblink: `mc56f81646 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mc56f81648
 --------------------------
@@ -43,6 +55,17 @@ Weblink: `mc56f81648 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mc56f81666
@@ -64,6 +87,17 @@ Weblink: `mc56f81666 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mc56f81668
 --------------------------
@@ -83,6 +117,17 @@ Weblink: `mc56f81668 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mc56f81746
@@ -104,6 +149,17 @@ Weblink: `mc56f81746 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mc56f81748
 --------------------------
@@ -123,6 +179,17 @@ Weblink: `mc56f81748 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mc56f81766
@@ -144,6 +211,17 @@ Weblink: `mc56f81766 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mc56f81768
 --------------------------
@@ -163,6 +241,17 @@ Weblink: `mc56f81768 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mc56f81866
@@ -186,6 +275,17 @@ Weblink: `mc56f81866 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
 
 mc56f81868
 --------------------------
@@ -208,6 +308,18 @@ Weblink: `mc56f81868 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
 ========================================================
 General Purpose MCU
 ========================================================
@@ -229,6 +341,10 @@ Weblink: `lpc804 <https://www.nxp.com/products/processors-and-microcontrollers/a
     |:ref:`lpcprog`|✅     |
     +--------------+-------+
 
+Similar examples for lpcprog
+
+* `LPC 8xx Programming Tool <examples/lpcprog/lpcprog.ipynb>`_
+
 
 lpc810
 --------------------------
@@ -246,6 +362,10 @@ Weblink: `lpc810 <https://www.nxp.com/products/processors-and-microcontrollers/a
     +==============+=======+
     |:ref:`lpcprog`|✅     |
     +--------------+-------+
+
+Similar examples for lpcprog
+
+* `LPC 8xx Programming Tool <examples/lpcprog/lpcprog.ipynb>`_
 
 
 lpc812
@@ -265,6 +385,10 @@ Weblink: `lpc812 <https://www.nxp.com/products/processors-and-microcontrollers/a
     |:ref:`lpcprog`|✅     |
     +--------------+-------+
 
+Similar examples for lpcprog
+
+* `LPC 8xx Programming Tool <examples/lpcprog/lpcprog.ipynb>`_
+
 
 lpc845
 --------------------------
@@ -282,6 +406,10 @@ Weblink: `lpc845 <https://www.nxp.com/products/processors-and-microcontrollers/a
     +==============+=======+
     |:ref:`lpcprog`|✅     |
     +--------------+-------+
+
+Similar examples for lpcprog
+
+* `LPC 8xx Programming Tool <examples/lpcprog/lpcprog.ipynb>`_
 
 
 lpc864
@@ -301,6 +429,10 @@ Weblink: `lpc864 <https://www.nxp.com/products/processors-and-microcontrollers/a
     |:ref:`lpcprog`|✅     |
     +--------------+-------+
 
+Similar examples for lpcprog
+
+* `LPC 8xx Programming Tool <examples/lpcprog/lpcprog.ipynb>`_
+
 
 lpc865
 --------------------------
@@ -318,6 +450,11 @@ Weblink: `lpc865 <https://www.nxp.com/products/processors-and-microcontrollers/a
     +==============+=======+
     |:ref:`lpcprog`|✅     |
     +--------------+-------+
+
+Similar examples for lpcprog
+
+* `LPC 8xx Programming Tool <examples/lpcprog/lpcprog.ipynb>`_
+
 
 ========================================================
 General Purpose Processor
@@ -348,6 +485,29 @@ Weblink: `mcxa132 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mcxa133
 --------------------------
@@ -373,6 +533,29 @@ Weblink: `mcxa133 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxa142
@@ -400,6 +583,29 @@ Weblink: `mcxa142 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mcxa143
 --------------------------
@@ -426,6 +632,29 @@ Weblink: `mcxa143 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mcxa144
 --------------------------
@@ -441,6 +670,8 @@ Weblink: `mcxa144 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -449,6 +680,29 @@ Weblink: `mcxa144 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxa145
@@ -465,6 +719,8 @@ Weblink: `mcxa145 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -473,6 +729,29 @@ Weblink: `mcxa145 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxa146
@@ -489,6 +768,8 @@ Weblink: `mcxa146 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -497,6 +778,29 @@ Weblink: `mcxa146 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxa152
@@ -524,6 +828,29 @@ Weblink: `mcxa152 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mcxa153
 --------------------------
@@ -550,6 +877,29 @@ Weblink: `mcxa153 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mcxa154
 --------------------------
@@ -565,6 +915,8 @@ Weblink: `mcxa154 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -573,6 +925,29 @@ Weblink: `mcxa154 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxa155
@@ -589,6 +964,8 @@ Weblink: `mcxa155 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -597,6 +974,29 @@ Weblink: `mcxa155 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxa156
@@ -613,6 +1013,8 @@ Weblink: `mcxa156 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -621,6 +1023,250 @@ Weblink: `mcxa156 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+mcxc041
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc041 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c04x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-classical-peripherals:MCX-C04x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc141
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc141 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc142
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc142 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc143
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc143 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc144
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc144 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc242
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc242 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc243
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc243 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc244
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc244 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc443
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc443 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+mcxc444
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxc444 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c14x-24x-44x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-usb-segment-lcd-and-classical-peripherals:MCX-C14x-24x-44x>`_
+
+.. table::
+
+    +-------------+-------+
+    |   Feature   |Support|
+    +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
 
 ========================================================
 LPC5500 Series
@@ -644,10 +1290,26 @@ Weblink: `lpc5502 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5504
@@ -668,10 +1330,26 @@ Weblink: `lpc5504 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5506
@@ -692,10 +1370,26 @@ Weblink: `lpc5506 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5512
@@ -716,10 +1410,26 @@ Weblink: `lpc5512 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5514
@@ -740,10 +1450,26 @@ Weblink: `lpc5514 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5516
@@ -764,10 +1490,26 @@ Weblink: `lpc5516 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5526
@@ -788,10 +1530,26 @@ Weblink: `lpc5526 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5528
@@ -812,10 +1570,26 @@ Weblink: `lpc5528 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5534
@@ -836,10 +1610,21 @@ Weblink: `lpc5534 <https://www.nxp.com/products/processors-and-microcontrollers/
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc5536
@@ -860,10 +1645,21 @@ Weblink: `lpc5536 <https://www.nxp.com/products/processors-and-microcontrollers/
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s04
@@ -890,14 +1686,37 @@ Weblink: `lpc55s04 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s06
@@ -924,14 +1743,37 @@ Weblink: `lpc55s06 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s14
@@ -958,14 +1800,37 @@ Weblink: `lpc55s14 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s16
@@ -992,14 +1857,37 @@ Weblink: `lpc55s16 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s26
@@ -1024,14 +1912,37 @@ Weblink: `lpc55s26 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s28
@@ -1056,14 +1967,37 @@ Weblink: `lpc55s28 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s36
@@ -1092,18 +2026,56 @@ Weblink: `lpc55s36 <https://www.nxp.com/products/processors-and-microcontrollers
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`pfr`                              |✅     |
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
-    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`tphost`                           |✅     |
+    |:ref:`pfr`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpdevhsm`                        |✅     |
     +----------------------------------------+-------+
+    |:ref:`tphost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdice`                          |✅     |
     +----------------------------------------+-------+
+
+Examples for lpc55s36
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`_
 
 
 lpc55s66
@@ -1130,14 +2102,37 @@ Weblink: `lpc55s66 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 lpc55s69
@@ -1164,14 +2159,38 @@ Weblink: `lpc55s69 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
     |:ref:`tphost`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 ========================================================
 MCX Industrial and IoT Microcontrollers
@@ -1184,7 +2203,7 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxn235 <https://www.nxp.com>`_
+Weblink: `mcxn235 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series-microcontrollers/mcx-n23x-highly-integrated-mcus-with-on-chip-accelerators-intelligent-peripherals-and-advanced-security:MCX-N23X>`_
 
 .. table::
 
@@ -1205,12 +2224,40 @@ Weblink: `mcxn235 <https://www.nxp.com>`_
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxn236
@@ -1220,7 +2267,7 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxn236 <https://www.nxp.com>`_
+Weblink: `mcxn236 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series-microcontrollers/mcx-n23x-highly-integrated-mcus-with-on-chip-accelerators-intelligent-peripherals-and-advanced-security:MCX-N23X>`_
 
 .. table::
 
@@ -1241,12 +2288,343 @@ Weblink: `mcxn236 <https://www.nxp.com>`_
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`pfr`                    |✅     |
-    +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+mcxn546
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `mcxn546 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v2.1   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 3.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`el2go-host`                       |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tphost`                           |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdice`                          |✅     |
+    +----------------------------------------+-------+
+
+Similar examples for mcxn946
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Generating Master Boot Image with a Signature Provider for MCXN946 <examples/signature_provider/mcxn946_mbi/mcxn946_mbi.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`_
+
+
+mcxn547
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `mcxn547 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v2.1   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 3.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`el2go-host`                       |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tphost`                           |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdice`                          |✅     |
+    +----------------------------------------+-------+
+
+Similar examples for mcxn947
+
+* `MCXN947 Indirect chip-specific RTP flow <examples/el2go/mcxn947/mcxn947_single_shot.ipynb>`_
+* `MCXN947 Indirect chip-specific flow (using multiple commands/stages) <examples/el2go/mcxn947/mcxn947_split_command.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`_
+
+
+mcxn946
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `mcxn946 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v2.1   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 3.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`el2go-host`                       |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tphost`                           |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdice`                          |✅     |
+    +----------------------------------------+-------+
+
+Examples for mcxn946
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Generating Master Boot Image with a Signature Provider for MCXN946 <examples/signature_provider/mcxn946_mbi/mcxn946_mbi.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`_
+
+
+mcxn947
+--------------------------
+
+Latest revision: a1
+
+All supported chip revisions: a0, a1
+
+Weblink: `mcxn947 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X>`_
+
+.. table::
+
+    +----------------------------------------+-------+
+    |                Feature                 |Support|
+    +========================================+=======+
+    |:ref:`RoT`                              |v2.1   |
+    +----------------------------------------+-------+
+    |:ref:`nxpdebugmbox`                     |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`          |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 3.1`                |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tz`                               |✅     |
+    +----------------------------------------+-------+
+    |:ref:`el2go-host`                       |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Bootable image`                   |✅     |
+    +----------------------------------------+-------+
+    |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`pfr`                              |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdevhsm`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`tphost`                           |✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpdice`                          |✅     |
+    +----------------------------------------+-------+
+
+Examples for mcxn947
+
+* `MCXN947 Indirect chip-specific RTP flow <examples/el2go/mcxn947/mcxn947_single_shot.ipynb>`_
+* `MCXN947 Indirect chip-specific flow (using multiple commands/stages) <examples/el2go/mcxn947/mcxn947_split_command.ipynb>`_
+
+
+Similar examples for mcxn946
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Generating Master Boot Image with a Signature Provider for MCXN946 <examples/signature_provider/mcxn946_mbi/mcxn946_mbi.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`_
+
 
 ========================================================
 Wireless Connectivity
@@ -1285,6 +2663,41 @@ Weblink: `k32w148 <https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Examples for k32w148
+
+* `KW45xx and K32W1xx Load NBU image <examples/sb/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image.ipynb>`_
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+
+
+Similar examples for kw45b41z8
+
+* `KW45xx and K32W1xx Load NBU image <examples/sb/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image.ipynb>`_
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 kw45b41z5
 --------------------------
@@ -1318,6 +2731,35 @@ Weblink: `kw45b41z5 <https://www.nxp.com/products/wireless/bluetooth-low-energy/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
+
+Similar examples for kw45b41z8
+
+* `KW45xx and K32W1xx Load NBU image <examples/sb/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image.ipynb>`_
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 kw45b41z8
@@ -1353,6 +2795,35 @@ Weblink: `kw45b41z8 <https://www.nxp.com/products/wireless/bluetooth-low-energy/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Examples for kw45b41z8
+
+* `KW45xx and K32W1xx Load NBU image <examples/sb/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image.ipynb>`_
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mcxw716a
 --------------------------
@@ -1386,6 +2857,35 @@ Weblink: `mcxw716a <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
+
+Similar examples for k32w148
+
+* `KW45xx and K32W1xx Load NBU image <examples/sb/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image.ipynb>`_
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
 
 
 mcxw716c
@@ -1421,6 +2921,35 @@ Weblink: `mcxw716c <https://www.nxp.com/products/processors-and-microcontrollers
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for k32w148
+
+* `KW45xx and K32W1xx Load NBU image <examples/sb/kw45xx_k32w1xx/kw45xx_k32w1xx_load_NBU_image.ipynb>`_
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 nhs52s04
 --------------------------
@@ -1451,6 +2980,24 @@ Weblink: `nhs52s04 <https://www.nxp.com/products/wireless-connectivity/bluetooth
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 rw610
 --------------------------
@@ -1480,14 +3027,49 @@ Weblink: `rw610 <https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpdevhsm`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
+
+Similar examples for rw612
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `RW61x Dual Boot with Shadow registers <examples/shadowregs/rw61x/rw61x_dual_boot_shadowregs.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 rw612
@@ -1518,14 +3100,50 @@ Weblink: `rw612 <https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
+    +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpdevhsm`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
+
+Examples for rw612
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `RW61x Dual Boot with Shadow registers <examples/shadowregs/rw61x/rw61x_dual_boot_shadowregs.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
 
 ========================================================
 Wireless Power
@@ -1552,6 +3170,17 @@ Weblink: `mwct2012 <https://www.nxp.com/products/power-management/wireless-power
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mwct2012a
 --------------------------
@@ -1574,6 +3203,17 @@ Weblink: `mwct2012a <https://www.nxp.com/products/power-management/wireless-powe
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
 
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mwct2014s
 --------------------------
@@ -1592,7 +3232,6 @@ Weblink: `mwct2014s <https://www.nxp.com/products/power-management/wireless-powe
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
 
-
 mwct2015s
 --------------------------
 
@@ -1610,7 +3249,6 @@ Weblink: `mwct2015s <https://www.nxp.com/products/power-management/wireless-powe
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
 
-
 mwct2016s
 --------------------------
 
@@ -1627,7 +3265,6 @@ Weblink: `mwct2016s <https://www.nxp.com/products/power-management/wireless-powe
     +=============+=======+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
-
 
 mwct20d2
 --------------------------
@@ -1647,10 +3284,21 @@ Weblink: `mwct20d2 <https://www.nxp.com/products/power-management/wireless-power
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
-    +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
 
 
 mwct20d2a
@@ -1671,10 +3319,21 @@ Weblink: `mwct20d2a <https://www.nxp.com/products/power-management/wireless-powe
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
-    +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
 
 
 mwct2d16s
@@ -1693,7 +3352,6 @@ Weblink: `mwct2d16s <https://www.nxp.com/products/power-management/wireless-powe
     +=============+=======+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
-
 
 mwct2d17s
 --------------------------
@@ -1743,9 +3401,82 @@ Weblink: `mimx8ulp <https://www.nxp.com>`_
     |:ref:`nxpuuu`        |✅      |
     +---------------------+--------+
 
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
 ========================================================
 i.MX 9 Applications Processors
 ========================================================
+
+mimx9131
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mimx9131 <https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/secure-energy-efficient-i-mx-91-family-brings-essential-linux-capabilities-for-thousands-of-edge-applications:i.MX91>`_
+
+.. table::
+
+    +---------------------+--------+
+    |       Feature       |Support |
+    +=====================+========+
+    |:ref:`RoT`           |SRK AHAB|
+    +---------------------+--------+
+    |:ref:`nxpdebugmbox`  |✅      |
+    +---------------------+--------+
+    |:ref:`Bootable image`|✅      |
+    +---------------------+--------+
+    |:ref:`ahab`          |✅      |
+    +---------------------+--------+
+    |:ref:`nxpele`        |✅      |
+    +---------------------+--------+
+    |:ref:`nxpuuu`        |✅      |
+    +---------------------+--------+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 mimx9352
 --------------------------
@@ -1767,14 +3498,43 @@ Weblink: `mimx9352 <https://www.nxp.com/products/processors-and-microcontrollers
     +---------------------+--------+
     |:ref:`Bootable image`|✅      |
     +---------------------+--------+
+    |:ref:`otfad`         |✅      |
+    +---------------------+--------+
     |:ref:`ahab`          |✅      |
     +---------------------+--------+
     |:ref:`nxpele`        |✅      |
     +---------------------+--------+
     |:ref:`nxpuuu`        |✅      |
     +---------------------+--------+
-    |:ref:`otfad`         |✅      |
-    +---------------------+--------+
+
+Examples for mimx9352
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
 
 ========================================================
 i.MX RT Crossover MCUs
@@ -1798,14 +3558,30 @@ Weblink: `mimxrt1010 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
     |:ref:`otfad`                            |✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1015
@@ -1826,14 +3602,30 @@ Weblink: `mimxrt1015 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1020
@@ -1854,14 +3646,30 @@ Weblink: `mimxrt1020 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1024
@@ -1882,14 +3690,30 @@ Weblink: `mimxrt1024 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1040
@@ -1910,14 +3734,30 @@ Weblink: `mimxrt1040 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1050
@@ -1938,14 +3778,35 @@ Weblink: `mimxrt1050 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Examples for mimxrt1050
+
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1060
@@ -1966,14 +3827,30 @@ Weblink: `mimxrt1060 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1064
@@ -1994,14 +3871,30 @@ Weblink: `mimxrt1064 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
+    |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
-    |:ref:`hab`                              |✅     |
+    |:ref:`nxpmemcfg`                        |✅     |
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1165
@@ -2022,18 +3915,34 @@ Weblink: `mimxrt1165 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1166
@@ -2054,18 +3963,34 @@ Weblink: `mimxrt1166 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1171
@@ -2086,18 +4011,34 @@ Weblink: `mimxrt1171 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1172
@@ -2118,18 +4059,34 @@ Weblink: `mimxrt1172 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1173
@@ -2150,18 +4107,34 @@ Weblink: `mimxrt1173 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1175
@@ -2182,18 +4155,34 @@ Weblink: `mimxrt1175 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1176
@@ -2214,18 +4203,34 @@ Weblink: `mimxrt1176 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpmemcfg`                                |✅     |
+    |:ref:`hab`                                      |✅     |
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
     |:ref:`otfad`                                    |✅     |
     +------------------------------------------------+-------+
-    |:ref:`hab`                                      |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅     |
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for hab
+
+* `Device configuration data (DCD) <examples/hab/dcd/image_dcd.ipynb>`_
+* `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`_
+* `HABv4 SRK Table <examples/hab/srk_table/srk_table.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1181
@@ -2248,20 +4253,47 @@ Weblink: `mimxrt1181 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
     +------------------------------------------------+--------+
-    |:ref:`nxpmemcfg`                                |✅      |
-    +------------------------------------------------+--------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
     +------------------------------------------------+--------+
-    |:ref:`ahab`                                     |✅      |
-    +------------------------------------------------+--------+
-    |:ref:`nxpele`                                   |✅      |
-    +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
     +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
     |:ref:`iee`                                      |✅      |
     +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1182
@@ -2284,20 +4316,55 @@ Weblink: `mimxrt1182 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
     +------------------------------------------------+--------+
-    |:ref:`nxpmemcfg`                                |✅      |
-    +------------------------------------------------+--------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
     +------------------------------------------------+--------+
-    |:ref:`ahab`                                     |✅      |
-    +------------------------------------------------+--------+
-    |:ref:`nxpele`                                   |✅      |
-    +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
     +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
     |:ref:`iee`                                      |✅      |
     +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+
+Similar examples for mimxrt1189
+
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1187
@@ -2320,20 +4387,55 @@ Weblink: `mimxrt1187 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
     +------------------------------------------------+--------+
-    |:ref:`nxpmemcfg`                                |✅      |
-    +------------------------------------------------+--------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
     +------------------------------------------------+--------+
-    |:ref:`ahab`                                     |✅      |
-    +------------------------------------------------+--------+
-    |:ref:`nxpele`                                   |✅      |
-    +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
     +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
     |:ref:`iee`                                      |✅      |
     +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+
+Similar examples for mimxrt1189
+
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt1189
@@ -2356,20 +4458,55 @@ Weblink: `mimxrt1189 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
     +------------------------------------------------+--------+
-    |:ref:`nxpmemcfg`                                |✅      |
-    +------------------------------------------------+--------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
     +------------------------------------------------+--------+
-    |:ref:`ahab`                                     |✅      |
-    +------------------------------------------------+--------+
-    |:ref:`nxpele`                                   |✅      |
-    +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
     +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
     |:ref:`iee`                                      |✅      |
     +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+
+Examples for mimxrt1189
+
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for ahab
+
+* `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`_
+* `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`_
+* `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`_
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`_
+* `AHAB SRK Table <examples/ahab/srk_table/srk_table.ipynb>`_
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt533s
@@ -2396,16 +4533,45 @@ Weblink: `mimxrt533s <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 2.1`                |✅     |
     +----------------------------------------+-------+
     |:ref:`otfad`                            |✅     |
     +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
     |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
+
+Similar examples for mimxrt595s
+
+* `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`_
+* `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt555s
@@ -2432,16 +4598,45 @@ Weblink: `mimxrt555s <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 2.1`                |✅     |
     +----------------------------------------+-------+
     |:ref:`otfad`                            |✅     |
     +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
     |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
+
+Similar examples for mimxrt595s
+
+* `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`_
+* `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt595s
@@ -2468,16 +4663,45 @@ Weblink: `mimxrt595s <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 2.1`                |✅     |
     +----------------------------------------+-------+
     |:ref:`otfad`                            |✅     |
     +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
     |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
+
+Examples for mimxrt595s
+
+* `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`_
+* `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt685s
@@ -2504,16 +4728,45 @@ Weblink: `mimxrt685s <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
-    |:ref:`nxpmemcfg`                        |✅     |
-    +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
-    +----------------------------------------+-------+
-    |:ref:`Secure Binary 2.1`                |✅     |
     +----------------------------------------+-------+
     |:ref:`otfad`                            |✅     |
     +----------------------------------------+-------+
+    |:ref:`nxpmemcfg`                        |✅     |
+    +----------------------------------------+-------+
+    |:ref:`Secure Binary 2.1`                |✅     |
+    +----------------------------------------+-------+
     |:ref:`shadowregs`                       |✅     |
     +----------------------------------------+-------+
+
+Similar examples for mimxrt595s
+
+* `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`_
+* `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`_
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 
 
 mimxrt798s
@@ -2544,10 +4797,40 @@ Weblink: `mimxrt798s <https://www.nxp.com>`_
     +------------------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`        |✅     |
     +------------------------------------------------+-------+
-    |:ref:`nxpdevhsm`                                |✅     |
+    |:ref:`nxpmemcfg`                                |✅     |
     +------------------------------------------------+-------+
-    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    |:ref:`nxpdevhsm`                                |✅     |
     +------------------------------------------------+-------+
     |:ref:`shadowregs`                               |✅     |
     +------------------------------------------------+-------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅     |
+    +------------------------------------------------+-------+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`_
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`_
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`_
+
+
+Similar examples for mbi
+
+* `KW45xx and K32W1xx Secure Boot <examples/mbi/kw45xx_k32w1xx/kw45xx_k32w1xx_secure_boot.ipynb>`_
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`_
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`_
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`_
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`_
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`_
 

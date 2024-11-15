@@ -34,7 +34,7 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.crypto_types import SPSDKEncoding
-from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.hash import EnumHashAlgorithm, hashes
 from spsdk.crypto.keys import PublicKeyEcc
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
@@ -506,7 +506,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
         assert isinstance(nxp_glob_puk, PublicKeyEcc)
         message = "validating NXP_PROD_CERT signature..."
         try:
-            assert nxp_prod_cert.signature_hash_algorithm
+            assert isinstance(nxp_prod_cert.signature_hash_algorithm, hashes.HashAlgorithm)
             nxp_glob_puk.verify_signature(
                 nxp_prod_cert.signature,
                 nxp_prod_cert.tbs_certificate_bytes,
@@ -540,7 +540,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
         overall_result = False
     click.echo(message)
 
-    assert nxp_die_cert
+    assert isinstance(nxp_die_cert, Container)
     message = "Validating NXP_DIE_ID_CERT signature..."
     if nxp_die_cert.validate(nxp_prod_puk.export(SPSDKEncoding.DER)):
         message += "OK"

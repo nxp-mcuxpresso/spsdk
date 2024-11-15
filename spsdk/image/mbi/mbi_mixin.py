@@ -134,16 +134,14 @@ class Mbi_MixinApp(Mbi_Mixin):
 
         :return: Length of application.
         """
-        assert self.app
-        return len(self.app)
+        return len(self._app)
 
     def mix_app_len(self) -> int:
         """Compute application data length of individual mixin.
 
         :return: Application data length of atomic Mixin.
         """
-        assert self.app
-        return len(self.app)
+        return len(self._app)
 
     def mix_load_from_config(self, config: dict[str, Any]) -> None:
         """Load configuration from dictionary.
@@ -271,7 +269,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
             # load custom data
             tz_data_size = TrustZone.get_preset_data_size(self.family, self.revision)
             if hasattr(self, "cert_block"):
-                assert self.cert_block
+                assert isinstance(self.cert_block, (CertBlockV1, CertBlockV21))
                 tz_offset = (
                     self.ivt_table.get_cert_block_offset(data) + self.cert_block.expected_size
                 )
@@ -327,7 +325,8 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
         :param config: Dictionary with configuration fields.
         """
         value = config.get("outputImageExecutionAddress")
-        assert value is not None
+        if value is None:
+            raise SPSDKError("The load address is not defined.")
         self.load_address = value_to_int(value)
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
@@ -336,7 +335,8 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
         :param output_folder: Output folder to store files.
         """
         config: dict[str, Any] = {}
-        assert self.load_address is not None
+        if self.load_address is None:
+            raise SPSDKError("The load address is not defined.")
         config["outputImageExecutionAddress"] = hex(self.load_address)
         return config
 
@@ -455,7 +455,8 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         :param output_folder: Output folder to store files.mb_xip_384_384_recovery_crctest
         """
         config: dict[str, Any] = {}
-        assert self.image_subtype is not None
+        if self.image_subtype is None:
+            raise SPSDKError("The image subtype is not defined.")
         config["outputImageSubtype"] = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.from_tag(
             self.image_subtype
         ).label
@@ -542,7 +543,8 @@ class Mbi_MixinIvt(Mbi_Mixin):
             flags |= self.trust_zone.type.tag << self.IVT_IMAGE_FLAGS_TZ_TYPE_SHIFT
 
         if hasattr(self, "image_subtype"):
-            assert self.image_subtype is not None
+            if self.image_subtype is None:
+                raise SPSDKError("The image subtype is not defined.")
             flags |= self.image_subtype << self.IVT_IMAGE_FLAGS_SUB_TYPE_SHIFT
 
         if hasattr(self, "user_hw_key_enabled") and self.user_hw_key_enabled:
@@ -1116,7 +1118,8 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
 
         :return: Length of Manifest block.
         """
-        assert self.manifest
+        if not self.manifest:
+            raise SPSDKError("The Image manifest must exists.")
         return self.manifest.total_length
 
     def mix_validate(self) -> None:
@@ -1183,7 +1186,8 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
 
         :return: Length of Manifest block.
         """
-        assert self.manifest
+        if not self.manifest:
+            raise SPSDKError("The Image manifest must exists.")
 
         hash_length = 0
         if self.manifest.flags & self.manifest.DIGEST_PRESENT_FLAG:
@@ -1234,7 +1238,8 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
 
         :param output_folder: Output folder to store files.
         """
-        assert self.manifest
+        if not self.manifest:
+            raise SPSDKError("The Image manifest must exists.")
         config = super().mix_get_config(output_folder=output_folder)
         config["firmwareVersion"] = self.firmware_version
         if "add_digest_hash" in self.VALIDATION_SCHEMAS:
@@ -1286,7 +1291,8 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
 
         :param output_folder: Output folder to store files.
         """
-        assert self.cert_block
+        if not self.cert_block:
+            raise SPSDKError("Certificate block is missing")
         filename = "cert_block_v1.yaml"
         crt_blck_cfg = self.cert_block.create_config(output_folder)
         write_file(crt_blck_cfg, os.path.join(output_folder, filename))
@@ -1301,7 +1307,7 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
         :raises SPSDKError: Configuration of Certificate block v1 is invalid.
         """
         if not self.cert_block or not isinstance(self.cert_block, CertBlockV1):
-            raise SPSDKError("Certification block is missing")
+            raise SPSDKError("Certificate block is missing")
         if not self.signature_provider:
             raise SPSDKError("Signature provider is not defined")
 
@@ -1340,7 +1346,8 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
 
         :return: Length of Certificate Block V2.1.
         """
-        assert self.cert_block and self.signature_provider
+        if not (self.cert_block and self.signature_provider):
+            raise SPSDKError("Certification block or signature provider is missing")
         return self.cert_block.expected_size + self.signature_provider.signature_length
 
     def mix_load_from_config(self, config: dict[str, Any]) -> None:
@@ -1366,7 +1373,8 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
 
         :param output_folder: Output folder to store files.
         """
-        assert self.cert_block
+        if not self.cert_block:
+            raise SPSDKError("Certificate block is missing")
         filename = "cert_block_v21.yaml"
         crt_blck_cfg = self.cert_block.create_config(output_folder)
         write_file(crt_blck_cfg, os.path.join(output_folder, filename))
@@ -1641,7 +1649,8 @@ class Mbi_MixinHmac(Mbi_Mixin):
 
         key = KeyStore.derive_hmac_key(self.hmac_key)
         result = hmac(key, data)
-        assert len(result) == self.HMAC_SIZE
+        if len(result) != self.HMAC_SIZE:
+            raise SPSDKError("Invalid size of HMAC result.")
         return result
 
     def mix_parse(self, data: bytes) -> None:
@@ -1722,7 +1731,8 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         :param output_folder: Output folder to store files.
         """
         config: dict[str, Any] = {}
-        assert self.ctr_init_vector
+        self.mix_validate()
+        assert isinstance(self.ctr_init_vector, bytes)
         config["CtrInitVector"] = self.ctr_init_vector.hex()
         return config
 
@@ -1732,7 +1742,7 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         raise SPSDKError: Invalid HW key enabled member type.
         """
         if not self.ctr_init_vector:
-            raise SPSDKError("Initial vector for encryption counter MUST exists.")
+            raise SPSDKError("Initial vector for encryption counter MUST exist.")
         if len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE:
             raise SPSDKError("Invalid size of Initial vector for encryption counter.")
 
@@ -1830,7 +1840,8 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
 
         :return: Image with updated IVT.
         """
-        assert self.app
+        if not self.app:
+            raise SPSDKError("Application data is missing")
         return BinaryImage(name="Application", binary=self.update_ivt(self.app, self.total_len, 0))
 
 
@@ -1850,7 +1861,8 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixin):
 
         :return: Image with updated IVT and added TrustZone.
         """
-        assert self.app and self.trust_zone
+        if not (self.app and self.trust_zone):
+            raise SPSDKError("Application data or TrustZone is missing")
         ret = BinaryImage(name="Application Block")
         app = self.update_ivt(self.app, self.total_len, 0)
         ret.append_image(BinaryImage(name="Application", binary=app))
@@ -1896,12 +1908,10 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
 
         :return: Image with updated IVT and added TrustZone.
         """
-        assert (
-            self.app
-            and self.trust_zone
-            and self.cert_block
-            and isinstance(self.cert_block, CertBlockV1)
-        )
+        if not (self.app and self.trust_zone and self.cert_block):
+            raise SPSDKError("Application data or TrustZone or Certificate block is missing")
+        if not isinstance(self.cert_block, CertBlockV1):
+            raise SPSDKError("Only CertBlockV1 is supported")
         ret = BinaryImage(name="Application Block")
 
         self.cert_block.alignment = 4
@@ -1955,7 +1965,8 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
             raise SPSDKError(
                 "Either application data or certification block or manifest is missing"
             )
-        assert len(self.manifest.export()) == self.manifest.total_length
+        if len(self.manifest.export()) != self.manifest.total_length:
+            raise SPSDKError("Manifest length is invalid.")
 
         # Check if the manifest digest is present and if manifest hash is same as certificate block hash
         if isinstance(self.manifest, MasterBootImageManifestDigest) and self.cert_block:
@@ -2047,7 +2058,8 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
         crc = crc_obj.calculate(input_image[self.IVT_CRC_CERTIFICATE_OFFSET + 4 :])
         image_with_crc = image.get_image_by_absolute_address(self.IVT_CRC_CERTIFICATE_OFFSET)
         # Recreate data with valid CRC value
-        assert image_with_crc.binary
+        if not image_with_crc.binary:
+            raise SPSDKError("CRC offset is not valid")
         image_with_crc.binary = self.update_crc_val_cert_offset(image_with_crc.binary, crc)
         return image
 
@@ -2066,11 +2078,14 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
         :return: Image enriched by RSA signature at end of image.
         """
         if revert:
-            assert self.cert_block and isinstance(self.cert_block, CertBlockV1) and image.binary
+            if not (self.cert_block and image.binary):
+                raise SPSDKError("Certificate block or image is missing")
+            if not isinstance(self.cert_block, CertBlockV1):
+                raise SPSDKError("Only CertBlockV1 is supported")
             image.binary = image.binary[: -self.cert_block.signature_size]
             return image
-
-        assert self.signature_provider
+        if not self.signature_provider:
+            raise SPSDKError("Signature provider is missing")
         signature = self.signature_provider.get_signature(image.export())
         image.append_image(BinaryImage(name="RSA signature", binary=signature))
         return image
@@ -2091,11 +2106,14 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
         :return: Image enriched by ECC signature at end of image.
         """
         if revert:
-            assert self.cert_block and isinstance(self.cert_block, CertBlockV21) and image.binary
+            if not (self.cert_block and image.binary):
+                raise SPSDKError("Certificate block or image is missing")
+            if not isinstance(self.cert_block, CertBlockV21):
+                raise SPSDKError("Only CertBlockV21 is supported")
             image.binary = image.binary[: -self.cert_block.signature_size]
             return image
-
-        assert self.signature_provider
+        if not self.signature_provider:
+            raise SPSDKError("Signature provider is missing")
         self.data_to_sign = image.export()
         signature = self.signature_provider.get_signature(self.data_to_sign)
         image.append_image(BinaryImage(name="ECC signature", binary=signature))
@@ -2146,7 +2164,8 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
                     and self.HMAC_OFFSET < subimage.offset + len(subimage)
                 ):
                     # Split this image
-                    assert len(subimage.sub_images) == 0 and subimage.binary
+                    if not (subimage.binary and len(subimage.sub_images) == 0):
+                        raise SPSDKError("Invalid image structure")
                     offset = self.HMAC_OFFSET - subimage.offset
                     ret.append_image(
                         BinaryImage(name=subimage.name + " part 1", binary=subimage.binary[:offset])
@@ -2191,7 +2210,8 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
 
         :return: Binary Image with updated BCA and FCF.
         """
-        assert self.app
+        if not self.app:
+            raise SPSDKError("Application data is missing")
         binary = self.update_bca(self.app, self.total_len)
         binary = self.update_fcf(binary)
 
@@ -2289,7 +2309,8 @@ class Mbi_ExportMixinAppFcf(Mbi_ExportMixin):
 
         :return: Binary Image with updated FCF.
         """
-        assert self.app
+        if not self.app:
+            raise SPSDKError("Application data is missing")
         binary = self.update_fcf(self.app)
 
         ret = BinaryImage("Application Block")
@@ -2373,7 +2394,8 @@ class Mbi_ExportMixinCrcSignBca(Mbi_ExportMixin):
 
         input_image = image.export()
         bca = image.find_sub_image("Boot Config Area").binary
-        assert bca, "Boot Config area not found!"
+        if not bca:
+            raise SPSDKError("Boot Config Area is missing")
         bca_image = bytearray(bca)
 
         crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
@@ -2417,7 +2439,8 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
         if revert:
             return image  # return the image as is, because signature is not extending image
 
-        assert self.signature_provider
+        if not self.signature_provider:
+            raise SPSDKError("Signature provider is missing")
 
         input_image = image.export()
         data_to_sign = (
@@ -2427,7 +2450,8 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
         )
         image_digest = get_hash(data_to_sign)
         signature = self.signature_provider.get_signature(data_to_sign)
-        assert signature
+        if not signature:
+            raise SPSDKError("Unable to get signature")
 
         image.find_sub_image("Image Hash").binary = image_digest
         image.find_sub_image("ECC signature").binary = signature
@@ -2462,12 +2486,10 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
 
         :return: Image with updated IVT and added TrustZone.
         """
-        assert (
-            self.app
-            and self.trust_zone
-            and self.cert_block
-            and isinstance(self.cert_block, CertBlockV1)
-        )
+        if not (self.app and self.trust_zone and self.cert_block):
+            raise SPSDKError("Application data or TrustZone or Certificate block is missing")
+        if not isinstance(self.cert_block, CertBlockV1):
+            raise SPSDKError("Only CertBlockV1 is supported")
         self.cert_block.alignment = 4
         ret = BinaryImage(name="Application Block")
         app = self.ivt_table.update_ivt(self.app, self.img_len, self.app_len)
@@ -2506,7 +2528,8 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
     @property
     def img_len(self) -> int:
         """Image length of encrypted legacy image."""
-        assert self.cert_block
+        if not self.cert_block:
+            raise SPSDKError("Certification block is missing")
         # Encrypted IVT + IV
         return self.total_len + self.cert_block.signature_size + 56 + 16
 
@@ -2521,7 +2544,8 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
             logger.warning("Cannot parse the encrypted image without decrypting key!")
             return image
 
-        assert self.hmac_key and self.ctr_init_vector
+        if not (self.hmac_key and self.ctr_init_vector):
+            raise SPSDKError("HMAC key or IV is missing")
         key = self.hmac_key
         if not self.key_store or self.key_store.key_source == KeySourceType.OTP:
             key = KeyStore.derive_enc_image_key(key)
@@ -2549,7 +2573,10 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
         :param revert: Revert the operation if possible.
         :return: Updated encrypted image.
         """
-        assert self.cert_block and isinstance(self.cert_block, CertBlockV1)
+        if not self.cert_block:
+            raise SPSDKError("Certification block is missing")
+        if not isinstance(self.cert_block, CertBlockV1):
+            raise SPSDKError("Only CertBlockV1 is supported")
         image_bytes = image.export()
         if revert:
             cert_blk_offset = self.ivt_table.get_cert_block_offset(image_bytes)

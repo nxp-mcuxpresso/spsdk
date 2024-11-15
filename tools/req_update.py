@@ -9,6 +9,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -141,9 +142,7 @@ class RequirementsList(list[RequirementsRecord]):
     @staticmethod
     def from_pip() -> "RequirementsList":
         """Get Requirements from pip package."""
-        output = subprocess.check_output(
-            f"{sys.executable} -m pip freeze", text=True, shell=True
-        ).splitlines()
+        output = subprocess.check_output(f"{sys.executable} -m pip freeze", text=True).splitlines()
         return RequirementsList.from_lines(req_lines=output)
 
     @staticmethod
@@ -249,15 +248,14 @@ def update() -> None:
     """Update all dependencies."""
     try:
         click.echo("Updating pip")
-        subprocess.check_call(f"{sys.executable} -m pip install --upgrade pip", shell=True)
+        subprocess.check_call(f"{sys.executable} -m pip install --upgrade pip".split())
         click.echo("Updating project")
         subprocess.check_call(
-            f'{sys.executable} -m pip install --upgrade --force-reinstall -e ".[tp]"', shell=True
+            f'{sys.executable} -m pip install --upgrade --force-reinstall -e ".[tp]"'.split(),
         )
         click.echo("Updating development requirements")
         subprocess.check_call(
-            f"{sys.executable} -m pip install --upgrade --force-reinstall -r requirements-develop.txt",
-            shell=True,
+            f"{sys.executable} -m pip install --upgrade --force-reinstall -r requirements-develop.txt".split(),
         )
     except subprocess.CalledProcessError:
         click.secho("Automated venv update failed! Please run the following commands:", fg="red")
@@ -291,27 +289,32 @@ def finalize(use_version: str) -> None:
 )
 def branch(branch_name: str) -> None:
     """Create branch and add changes onto it."""
-    changes = subprocess.check_output("git status --short", shell=True, text=True).strip()
+    changes = subprocess.check_output("git status --short".split(), text=True).strip()
     if "requirement" not in changes:
         click.echo("No changes detected; nothing to do.")
         click.get_current_context().exit(0)
 
     if not branch_name:
         branch_name = "dependencies_update_" + datetime.now().strftime("%Y_%m_%d")
+
+    git_path = shutil.which("git")
+    if not git_path:
+        click.secho("Git not found in PATH!", fg="red")
+        click.get_current_context().exit(1)
     current_branch = subprocess.check_output(
-        "git rev-parse --abbrev-ref HEAD", shell=True, text=True
+        f"{git_path} rev-parse --abbrev-ref HEAD".split(), text=True
     ).strip()
     if branch_name != current_branch:
         try:
-            subprocess.check_call(f"git checkout -b {branch_name}", shell=True)
+            subprocess.check_call(f"{git_path} checkout -b {branch_name}".split())
         except subprocess.CalledProcessError:
             # branch may exist from the past, delete it and re-create
-            subprocess.check_call(f"git branch -d {branch_name}", shell=True)
-            subprocess.check_call(f"git checkout -b {branch_name}", shell=True)
+            subprocess.check_call(f"{git_path} branch -d {branch_name}".split())
+            subprocess.check_call(f"{git_path} checkout -b {branch_name}".split())
 
-    subprocess.check_call("git add .", shell=True)
-    subprocess.check_call('git commit -m "Changes in requirements versions"', shell=True)
-    subprocess.check_call(f"git push origin {branch_name}", shell=True)
+    subprocess.check_call(f"{git_path} add .".split())
+    subprocess.check_call([git_path, "commit", "-m", "Changes in requirements versions"])
+    subprocess.check_call(f"{git_path} push origin {branch_name}".split())
 
 
 @main.command("pull-request")
@@ -334,10 +337,14 @@ def branch(branch_name: str) -> None:
 def pull_request(auth_token_path: str, src_branch: str, dest_branch: str) -> None:
     """Create pull request."""
     token = get_token(auth_token_path)
+    git_path = shutil.which("git")
+    if not git_path:
+        click.secho("Git not found in PATH!", fg="red")
+        click.get_current_context().exit(1)
 
     if not src_branch:
         src_branch = subprocess.check_output(
-            "git rev-parse --abbrev-ref HEAD", shell=True, text=True
+            f"{git_path} rev-parse --abbrev-ref HEAD".split(), text=True
         ).strip()
 
     url = "https://bitbucket.sw.nxp.com/rest/api/1.0/projects/SPSDK/repos/spsdk/pull-requests"
@@ -348,7 +355,7 @@ def pull_request(auth_token_path: str, src_branch: str, dest_branch: str) -> Non
         "Authorization": f"Bearer {token}",
     }
     commit_datetime_str = subprocess.check_output(
-        'git log -1 --format="%cI"', shell=True, text=True
+        f'{git_path} log -1 --format="%cI"'.split(), text=True
     ).strip()
     commit_datetime = datetime.fromisoformat(commit_datetime_str)
     # This is the minimal set of data required for API call

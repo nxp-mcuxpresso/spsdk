@@ -143,7 +143,6 @@ def sign_data(
     :param signing_key: Signing key, is mutually exclusive with signature_provider parameter
     :param signature_provider: Signature provider, is mutually exclusive with signing_key parameter
     """
-    assert signing_key or signature_provider
     if signing_key and signature_provider:
         raise SPSDKValueError("Only one of private key and signature provider must be specified")
     if signing_key:
@@ -152,10 +151,11 @@ def sign_data(
             if isinstance(signing_key, PrivateKeyEcc)
             else signing_key.sign(data_to_sign)
         )
-    assert signature_provider
-    signature = signature_provider.get_signature(data_to_sign)
-    # convert to DER format
-    if signature_provider.signature_length < 256:
-        ecdsa_signature = ECDSASignature.parse(signature)
-        signature = ecdsa_signature.export(encoding=SPSDKEncoding.DER)
-    return signature
+    if signature_provider:
+        signature = signature_provider.get_signature(data_to_sign)
+        # convert to DER format
+        if signature_provider.signature_length < 256:
+            ecdsa_signature = ECDSASignature.parse(signature)
+            signature = ecdsa_signature.export(encoding=SPSDKEncoding.DER)
+        return signature
+    raise SPSDKValueError("Private key or signature provider must be specified")

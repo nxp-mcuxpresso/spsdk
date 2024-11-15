@@ -16,16 +16,19 @@ common:
       title: Part Common Key
       description: Path to PCK/NPK/CUST_MK_SK/SB_KEK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
       template_value: cust_mk_sk.bin
+      format: file_name
     oemRandomShare:
       type: string
       title: OEM Random Share input
       description: Path to a file containing 16B of random seed data. If not specified, random seed will be generated.
       template_value: oem_seed.bin
+      format: file_name
     oemEncMasterShare:
       type: string
       title: OEM Encrypted Master Share
       description: Path to a file containing encrypted OEM Master Share to restore a secure session
       template_value: oem_enc_master_share.bin
+      format: file_name
     initialReset:
       type: boolean
       title: Initial device reset
@@ -41,6 +44,7 @@ common:
       title: Development/debug workspace
       description: Path to a folder where to store intermediate artifacts for development/debugging purposes
       template_value: wsp
+      format: dir_name
     bufferAddress:
       type: [string, number]
       format: number
@@ -52,6 +56,7 @@ common:
       title: Output file path
       description: Path where to store generated DevHSM SB file
       template_value: devhsm.sb
+      format: file_name
 
 subTitle: |
   # ================================= Minimal steps to perform DevHSM Trust Provisioning =================================

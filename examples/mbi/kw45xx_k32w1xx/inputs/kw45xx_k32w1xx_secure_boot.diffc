@@ -1,0 +1,14 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/kw45b41z8_xip_signed.yaml
+user_cfg: inputs/kw45xx_xip_signed.yaml
+custom_command: "%! nxpimage mbi get-templates -f kw45b41z8 -o workspace/ --force"
+
+comments:
+  signPrivateKey: "Add path to your private key file for signing"
+  certBlock: "Add path to the configuration file containing certificates or path to binary block"
+  signProvider: "This is removed, because we are using private key in this example"
+  enableTrustZone: "We also do not enable TrustZone in this example"

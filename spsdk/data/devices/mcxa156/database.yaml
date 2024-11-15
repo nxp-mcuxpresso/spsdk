@@ -29,14 +29,25 @@ info:
         pid: 0x015e
 
 features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_0000
+    size: 0x1000
+
   # ======== DAT section ========
   dat:
+    dmbox_ap_ix: 1 # Typical Index of debug mailbox access port is 2
     non_standard_statuses: # dictionary of non standard return statuses from various commands
       2:  # Command get_crp_level
         0xFFFF_FFFF: ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state
         0xEEBA_04C3: ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available
         0x4939_8D8B: ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available
         0xB0AB_B703: ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available
+
+  # ======== Blhost section ========
+  blhost:
+    sub_features: [overridden_properties]
+    overridden_properties: mcxa1_series
 
   # ======== MBI section ========
   mbi:

@@ -9,6 +9,7 @@ import itertools
 import os
 from typing import Dict, List, Optional
 
+import nbformat
 import requests
 from pytablewriter import MarkdownTableWriter, RstGridTableWriter
 
@@ -412,6 +413,59 @@ def generate_devices_table(
     write_table(header, value_matrix, heading, table_file, use_markdown=use_markdown)
 
 
+def get_notebook_header(notebook_path: str) -> str:
+    """Extract the header from a Jupyter notebook.
+
+    :param notebook_path: Path to the Jupyter notebook file.
+    :return: The header of the notebook.
+    """
+    with open(notebook_path, "r", encoding="utf-8") as f:
+        notebook = nbformat.read(f, as_version=4)
+        for cell in notebook.cells:
+            if cell.cell_type == "markdown":
+                lines = cell.source.splitlines()
+                if lines:
+                    return lines[0].strip("# ").strip()
+    return os.path.basename(notebook_path)
+
+
+def get_jupyters_for_device(
+    device: str, alternative_device_name: Optional[str] = None
+) -> List[str]:
+    """Get list of jupyter notebooks for the device.
+
+    :param device: device name
+    :param alternative_device_name: alternative device name
+    :return: list of jupyter notebooks
+    """
+    jupyters = []
+    for root, _, files in os.walk(os.path.join(DOC_PATH, "examples")):
+        for file in files:
+            relative_path = os.path.relpath(root, DOC_PATH)
+            if file.endswith(".ipynb") and (
+                device in relative_path.lower() or alternative_device_name in relative_path.lower()
+                if alternative_device_name
+                else False
+            ):
+                jupyters.append(os.path.join(relative_path, file))
+    return jupyters
+
+
+def get_jupyters_for_feature(feature: str) -> List[str]:
+    """Get list of jupyter notebooks for the feature.
+
+    :param feature: feature name
+    :return: list of jupyter notebooks
+    """
+    jupyters = []
+    for root, _, files in os.walk(os.path.join(DOC_PATH, "examples")):
+        for file in files:
+            relative_path = os.path.relpath(root, DOC_PATH)
+            if file.endswith(".ipynb") and feature in relative_path.split(os.sep):
+                jupyters.append(os.path.join(relative_path, file))
+    return jupyters
+
+
 def generate_devices_list(
     output_file: str,
 ):
@@ -440,6 +494,7 @@ def generate_devices_list(
     for category, devices in itertools.groupby(
         devices, key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose
     ):
+        lines.append("\n")
         lines.extend(
             [
                 "========================================================\n",
@@ -467,11 +522,53 @@ def generate_devices_list(
                     use_markdown=False,
                 )
             )
-            lines.append("\n")
-            # lines.append(f"### Getting started with {device.name} \n")
+
+            # Jupyters for device
+            jupyters = get_jupyters_for_device(device, device_full.info.spsdk_predecessor_name)
+
+            if jupyters:
+                lines.append("\n")
+                lines.append(f"Examples for {device}\n")
+                lines.append("\n")
+                for jupyter in jupyters:
+                    header = get_notebook_header(jupyter)
+                    lines.append(f"* `{header} <{jupyter}>`_\n")
+                lines.append("\n")
+
+            # Jupyters for alias
+            jupyters = None
+            if device_full.device_alias:
+                jupyters = get_jupyters_for_device(
+                    device_full.device_alias.name,
+                    device_full.device_alias.info.spsdk_predecessor_name,
+                )
+
+            if jupyters:
+                lines.append("\n")
+                lines.append(f"Similar examples for {device_full.device_alias.name}\n")
+                lines.append("\n")
+                for jupyter in jupyters:
+                    header = get_notebook_header(jupyter)
+                    lines.append(f"* `{header} <{jupyter}>`_\n")
+                lines.append("\n")
+
+            # Jupyters for features
+            for feature in device_full.features_list:
+                jupyters = get_jupyters_for_feature(feature)
+
+                if jupyters:
+                    lines.append("\n")
+                    lines.append(f"Similar examples for {feature}\n")
+                    lines.append("\n")
+                    for jupyter in jupyters:
+                        header = get_notebook_header(jupyter)
+                        lines.append(f"* `{header} <{jupyter}>`_\n")
+                    lines.append("\n")
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.writelines(lines)
+
+    print(f"List of devices has been written to {output_file}")
 
 
 def generate_nxpele_commands_table() -> None:
@@ -503,31 +600,32 @@ def generate_mboot_error_codes():
 def main():
     generate_mbi_table()
 
-    nxpimage_features = [
-        feature
-        for feature in DatabaseManager().quick_info.features_data.get_all_features
-        if is_nxpimage_subcommand(feature)
-    ]
-    generate_features_table(
-        features=nxpimage_features,
-        heading="NXPIMAGE Supported devices",
-        features_mapping=NXPIMAGE_FEATURES_MAPPING,
-        table_file=NXPIMAGE_FEATURES_TABLE_FILE,
-    )
-    generate_features_table(
-        features=DatabaseManager().quick_info.features_data.get_all_features,
-        heading="Other apps supported devices",
-        features_mapping=OTHER_FEATURES_MAPPING,
-        table_file=OTHER_FEATURES_TABLE_FILE,
-        ignored_features=nxpimage_features,
-    )
+    # TODO: Optimize features table or delete it
+    # nxpimage_features = [
+    #     feature
+    #     for feature in DatabaseManager().quick_info.features_data.get_all_features
+    #     if is_nxpimage_subcommand(feature)
+    # ]
+    # generate_features_table(
+    #     features=nxpimage_features,
+    #     heading="NXPIMAGE Supported devices",
+    #     features_mapping=NXPIMAGE_FEATURES_MAPPING,
+    #     table_file=NXPIMAGE_FEATURES_TABLE_FILE,
+    # )
+    # generate_features_table(
+    #     features=DatabaseManager().quick_info.features_data.get_all_features,
+    #     heading="Other apps supported devices",
+    #     features_mapping=OTHER_FEATURES_MAPPING,
+    #     table_file=OTHER_FEATURES_TABLE_FILE,
+    #     ignored_features=nxpimage_features,
+    # )
 
     generate_devices_table(heading="", table_file=DEVICES_TABLE_FILE, use_markdown=True)
     generate_devices_table(
         heading="",
         table_file=DEVICES_TABLE_FILE_README,
         use_markdown=True,
-        add_internal_links=False,
+        add_internal_links=True,
     )
 
     generate_devices_list(LIST_OF_SUPPORTED_DEVICES)

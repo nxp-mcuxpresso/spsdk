@@ -177,7 +177,6 @@ class OptionsConfig:
             raise SPSDKValueError(
                 "Either 'initialLoadSize' or 'family' and 'bootDevice' options must be specified."
             )
-        assert self.family and self.boot_device
         db = get_db(device=self.family)
         return db.get_int(
             DatabaseManager.HAB,

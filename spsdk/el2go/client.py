@@ -9,6 +9,7 @@
 
 import json
 import logging
+import os
 import uuid
 from typing import Optional
 
@@ -16,7 +17,7 @@ from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.http_client import HTTPClientBase, SPSDKHTTPClientError
-from spsdk.utils.misc import find_file, load_secret
+from spsdk.utils.misc import find_file, load_configuration, load_secret
 from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
@@ -102,14 +103,14 @@ class EL2GOClient(HTTPClientBase):
             )
             return response
 
-        if api_response.text == "":
-            response = EL2GOApiResponse(status_code=api_response.status_code, json_body={})
-        else:
-            response = EL2GOApiResponse(
-                status_code=api_response.status_code, json_body=api_response.json()
+        if api_response.url.endswith("register-devices"):
+            return EL2GOApiResponse(
+                status_code=api_response.status_code, json_body={"jobId": api_response.text}
             )
+        if api_response.text == "":
+            return EL2GOApiResponse(status_code=api_response.status_code, json_body={})
 
-        return response
+        return EL2GOApiResponse(status_code=api_response.status_code, json_body=api_response.json())
 
     @classmethod
     def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
@@ -124,9 +125,17 @@ class EL2GOClient(HTTPClientBase):
         cls.validate_config(config_data=config_data, search_paths=search_paths)
         api_key = config_data.pop("api_key")
         api_key = load_secret(api_key, search_paths=search_paths)
-        prov_fw_path = config_data.pop("prov_fw_path")
-        prov_fw_path = find_file(file_path=prov_fw_path, search_paths=search_paths)
+        prov_fw_path = config_data.pop("prov_fw_path", None)
+        if prov_fw_path:
+            prov_fw_path = find_file(file_path=prov_fw_path, search_paths=search_paths)
         return cls(api_key=api_key, prov_fw_path=prov_fw_path, **config_data)
+
+    @classmethod
+    def from_config_file(cls, config_file: str) -> Self:
+        """Create instance of this class based on configuration file."""
+        config_data = load_configuration(config_file)
+        config_dir = os.path.dirname(config_file)
+        return cls.from_config(config_data, search_paths=[config_dir])
 
     @classmethod
     def validate_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> None:

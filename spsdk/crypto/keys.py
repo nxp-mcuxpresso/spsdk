@@ -227,6 +227,11 @@ class PrivateKey(BaseClass, abc.ABC):
 
     @property
     @abc.abstractmethod
+    def default_hash_algorithm(self) -> EnumHashAlgorithm:
+        """Default hash algorithm for signing/verifying."""
+
+    @property
+    @abc.abstractmethod
     def signature_size(self) -> int:
         """Size of signature data."""
 
@@ -358,6 +363,11 @@ class PublicKey(BaseClass, abc.ABC):
 
     key: Any
     RECOMMENDED_ENCODING = SPSDKEncoding.PEM
+
+    @property
+    @abc.abstractmethod
+    def default_hash_algorithm(self) -> EnumHashAlgorithm:
+        """Default hash algorithm for signing/verifying."""
 
     @property
     @abc.abstractmethod
@@ -546,6 +556,11 @@ class PrivateKeyRsa(PrivateKey):
         )
 
     @property
+    def default_hash_algorithm(self) -> EnumHashAlgorithm:
+        """Default hash algorithm for signing/verifying."""
+        return EnumHashAlgorithm.SHA256
+
+    @property
     def signature_size(self) -> int:
         """Size of signature data."""
         return self.key.key_size // 8
@@ -596,7 +611,7 @@ class PrivateKeyRsa(PrivateKey):
     def sign(
         self,
         data: bytes,
-        algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        algorithm: Optional[EnumHashAlgorithm] = None,
         pss_padding: bool = False,
         prehashed: bool = False,
         **kwargs: Any,
@@ -610,7 +625,7 @@ class PrivateKeyRsa(PrivateKey):
         :param kwargs: Sink for unused parameters
         :return: Signed data
         """
-        hash_alg = get_hash_algorithm(algorithm)
+        hash_alg = get_hash_algorithm(algorithm or self.default_hash_algorithm)
         pad = (
             padding.PSS(mgf=padding.MGF1(algorithm=hash_alg), salt_length=padding.PSS.DIGEST_LENGTH)
             if pss_padding
@@ -655,6 +670,11 @@ class PublicKeyRsa(PublicKey):
         :param key: SPSDK Public Key data or file path
         """
         self.key = key
+
+    @property
+    def default_hash_algorithm(self) -> EnumHashAlgorithm:
+        """Default hash algorithm for signing/verifying."""
+        return EnumHashAlgorithm.SHA256
 
     @property
     def signature_size(self) -> int:
@@ -738,8 +758,7 @@ class PublicKeyRsa(PublicKey):
         :param kwargs: Sink for unused parameters
         :return: True if signature is valid, False otherwise
         """
-        algorithm = algorithm or EnumHashAlgorithm.SHA256
-        hash_alg = get_hash_algorithm(algorithm)
+        hash_alg = get_hash_algorithm(algorithm or self.default_hash_algorithm)
         pad = (
             padding.PSS(mgf=padding.MGF1(algorithm=hash_alg), salt_length=padding.PSS.DIGEST_LENGTH)
             if pss_padding
@@ -852,6 +871,15 @@ class KeyEccCommon:
     """SPSDK Common Key."""
 
     key: Union[ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey]
+
+    @property
+    def default_hash_algorithm(self) -> EnumHashAlgorithm:
+        """Default hash algorithm for signing/verifying."""
+        return {
+            256: EnumHashAlgorithm.SHA256,
+            384: EnumHashAlgorithm.SHA384,
+            521: EnumHashAlgorithm.SHA512,
+        }[self.key.key_size]
 
     @property
     def coordinate_size(self) -> int:
@@ -983,14 +1011,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         :param kwargs: Sink for unused arguments
         :return: Signed data
         """
-        hash_name = (
-            algorithm
-            or {
-                256: EnumHashAlgorithm.SHA256,
-                384: EnumHashAlgorithm.SHA384,
-                521: EnumHashAlgorithm.SHA512,
-            }[self.key.key_size]
-        )
+        hash_name = algorithm or self.default_hash_algorithm
         if prehashed:
             signature_algorithm = ec.ECDSA(utils.Prehashed(get_hash_algorithm(hash_name)))
         else:
@@ -1087,14 +1108,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :return: True if signature is valid, False otherwise
         """
         coordinate_size = math.ceil(self.key.key_size / 8)
-        hash_name = (
-            algorithm
-            or {
-                256: EnumHashAlgorithm.SHA256,
-                384: EnumHashAlgorithm.SHA384,
-                521: EnumHashAlgorithm.SHA512,
-            }[self.key.key_size]
-        )
+        hash_name = algorithm or self.default_hash_algorithm
 
         if prehashed:
             signature_algorithm = ec.ECDSA(utils.Prehashed(get_hash_algorithm(hash_name)))
@@ -1326,6 +1340,11 @@ if IS_OSCCA_SUPPORTED:
             return self.key.para_len
 
         @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Default hash algorithm for signing/verifying."""
+            return EnumHashAlgorithm.SM3
+
+        @property
         def signature_size(self) -> int:
             """Signature size."""
             return 64
@@ -1385,6 +1404,11 @@ if IS_OSCCA_SUPPORTED:
                 raise SPSDKNotImplementedError("Only DER encoding is supported for SM2 keys export")
             keys = SM2PublicKey(self.key.public_key)
             return SM2Encoder().encode_public_key(keys)
+
+        @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Default hash algorithm for signing/verifying."""
+            return EnumHashAlgorithm.SM3
 
         @property
         def signature_size(self) -> int:
@@ -1535,6 +1559,11 @@ if IS_DILITHIUM_SUPPORTED:
             super().__init__()
 
         @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Default hash algorithm for signing/verifying."""
+            return EnumHashAlgorithm.SHA384
+
+        @property
         def signature_size(self) -> int:
             """Size of signature data."""
             return self.key.signature_size
@@ -1574,7 +1603,7 @@ if IS_DILITHIUM_SUPPORTED:
             if prehashed:
                 data_to_sign = data
             else:
-                data_to_sign = get_hash(data, algorithm or EnumHashAlgorithm.SHA384)
+                data_to_sign = get_hash(data, algorithm or self.default_hash_algorithm)
             return self.key.verify(data=data_to_sign, signature=signature)
 
         def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
@@ -1622,6 +1651,11 @@ if IS_DILITHIUM_SUPPORTED:
             return cls(key)
 
         @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Default hash algorithm for signing/verifying."""
+            return EnumHashAlgorithm.SHA384
+
+        @property
         def signature_size(self) -> int:
             """Size of signature data."""
             return self.key.signature_size
@@ -1666,7 +1700,7 @@ if IS_DILITHIUM_SUPPORTED:
             if prehashed:
                 data_to_sign = data
             else:
-                data_to_sign = get_hash(data, algorithm or EnumHashAlgorithm.SHA384)
+                data_to_sign = get_hash(data, algorithm or self.default_hash_algorithm)
             return self.key.sign(data=data_to_sign)
 
         @classmethod

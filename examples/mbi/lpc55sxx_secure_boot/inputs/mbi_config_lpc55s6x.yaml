@@ -1,0 +1,51 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================  Master Boot Image Configuration template for lpc55s69, Plain Signed XIP Image.  ==================
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s28, lpc55s69, nhs52s04>
+family: lpc55s69
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: signed
+# ------------------------------------===== Master Boot Image name [Required] =====-------------------------------------
+# Description: The file for Master Boot Image result file.
+masterBootOutputFile: ../workspace/lpc55s6x_mbi.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: inputs/lpcxpresso55s69_led_blinky.bin
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==
+# ======================================================================================================================
+# ------------------------------------===== TrustZone enable option [Optional] =====------------------------------------
+# Description: If not specified, the Trust zone is disabled.
+enableTrustZone: false
+# ---------------------------------===== TrustZone Customization file [Optional] =====----------------------------------
+# Description: If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.
+# trustZonePresetFile: my_tz_custom.yaml
+# ======================================================================================================================
+#                                               == Certificate Block V1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: inputs/cert_block.yaml
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
+# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signPrivateKey: ../../_data/keys/rsa2048/IMG1_1_sha256_2048_65537_v3_usr_key.pem
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+# signProvider: type=file;file_path=my_prv_key.pem

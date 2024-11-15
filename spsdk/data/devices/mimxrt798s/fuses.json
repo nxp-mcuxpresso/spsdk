@@ -46,7 +46,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -56,7 +56,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -66,7 +66,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -103,7 +103,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -113,7 +113,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -123,7 +123,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -176,7 +176,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -186,7 +186,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -196,7 +196,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -224,7 +224,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -234,7 +234,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -244,7 +244,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -303,7 +303,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -313,7 +313,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -323,7 +323,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -354,7 +354,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -364,7 +364,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -374,7 +374,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -402,7 +402,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -412,7 +412,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -422,7 +422,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -472,7 +472,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -482,7 +482,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -492,7 +492,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -523,7 +523,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -533,7 +533,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -543,7 +543,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -571,7 +571,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -581,7 +581,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -591,7 +591,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -650,7 +650,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -660,7 +660,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -670,7 +670,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -698,7 +698,7 @@
                                 {
                                     "name": "OP+WP",
                                     "value": 3,
-                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overriden nor burned)"
+                                    "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
                                 },
                                 {
                                     "name": "RP",
@@ -708,7 +708,7 @@
                                 {
                                     "name": "RP+WP",
                                     "value": 5,
-                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overriden, but can't be read nor burned)"
+                                    "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
                                 },
                                 {
                                     "name": "RP+OP",
@@ -718,7 +718,7 @@
                                 {
                                     "name": "All Locks",
                                     "value": 7,
-                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overriden in corresponding OTP shadow register)"
+                                    "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
                                 }
                             ]
                         },
@@ -2037,7 +2037,7 @@
                             "width": 8,
                             "id": "fuse37-bits-0-7",
                             "name": "LIFE_CYCLE_RED",
-                            "description": "Redundent Life Cycle"
+                            "description": "Redundant Life Cycle"
                         },
                         {
                             "width": 1,
@@ -2187,7 +2187,7 @@
                             "width": 8,
                             "id": "fuse37-bits-16-23",
                             "name": "BP_LIFE_CYCLE_RED",
-                            "description": "BP Redundent Life Cycle"
+                            "description": "BP Redundant Life Cycle"
                         },
                         {
                             "width": 1,
@@ -3398,7 +3398,7 @@
                             "width": 1,
                             "id": "fuse140-bit-20",
                             "name": "ISP_REC_LED_PIN_EN",
-                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or receovery boot mode. Output polarity.",
+                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or recovery boot mode. Output polarity.",
                             "values": [
                                 {
                                     "name": "0",

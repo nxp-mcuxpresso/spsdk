@@ -1,0 +1,30 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  Certification Block V1 template  ==========================================
+
+# ======================================================================================================================
+#                                                == Root Keys Settings ==
+# ======================================================================================================================
+# -----------------------------===== Root Certificate File 0 [Conditionally required] =====-----------------------------
+# Description: Root certificate file index 0.
+rootCertificate0File: ../../_data/keys/rsa2048/srk0_cert.pem
+# ------------------------------------===== Root Certificate File 1 [Optional] =====------------------------------------
+# Description: Root certificate file index 1.
+rootCertificate1File: ../../_data/keys/rsa2048/srk1_cert.pem
+# ------------------------------------===== Root Certificate File 2 [Optional] =====------------------------------------
+# Description: Root certificate file index 2.
+rootCertificate2File: ../../_data/keys/rsa2048/srk2_cert.pem
+# ------------------------------------===== Root Certificate File 3 [Optional] =====------------------------------------
+# Description: Root certificate file index 3.
+rootCertificate3File: ../../_data/keys/rsa2048/srk3_cert.pem
+# -----------------------------===== Main Certificate Index [Conditionally required] =====------------------------------
+# Description: Index of certificate that is used as a main. If not defined, the certificate matching private key will be
+# selected.
+mainRootCertId: 0
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== cert block filename [Required] =====--------------------------------------
+# Description: Generated cert block filename.
+containerOutputFile: ../workspace/cert_block_v1.bin

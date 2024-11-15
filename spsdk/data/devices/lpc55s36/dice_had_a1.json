@@ -340,7 +340,7 @@
                             "name": "ST_CPU0_DBGEN",
                             "access": "RO",
                             "reset_value_int": "0x0",
-                            "description": "When CPU0 (CM33) \"deben\" input is state 1, this bit indicates state 1."
+                            "description": "When CPU0 (CM33) \"dbgen\" input is state 1, this bit indicates state 1."
                         },
                         {
                             "id": "field9E0-bit5",
@@ -564,7 +564,7 @@
                             "id": "field9F0-bit4",
                             "offset": "0x4",
                             "width": "1",
-                            "name": "FLAG_BOD_VBAT_RESET_OCCURED",
+                            "name": "FLAG_BOD_VBAT_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when BOD VDDMAIN reset is enabled and BOD VDDMAIN analog detector is tripped. This register is cleared 0 by AO domain POR."
@@ -573,7 +573,7 @@
                             "id": "field9F0-bit5",
                             "offset": "0x5",
                             "width": "1",
-                            "name": "FLAG_BOD_CORE_RESET_OCCURED",
+                            "name": "FLAG_BOD_CORE_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when BOD CORE reset is enabled and BOD CORE analog detector is tripped. This register is cleared 0 by AO domain POR."
@@ -582,7 +582,7 @@
                             "id": "field9F0-bit6",
                             "offset": "0x6",
                             "width": "1",
-                            "name": "FLAG_BOD_VBAT_IRQ_OCCURED",
+                            "name": "FLAG_BOD_VBAT_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when BOD VDDMAIN IRQ is enabled and BOD VDDMAIN analog detector is tripped. This register is cleared 0 by PMC reset event."
@@ -591,7 +591,7 @@
                             "id": "field9F0-bit7",
                             "offset": "0x7",
                             "width": "1",
-                            "name": "FLAG_BOD_CORE_IRQ_OCCURED",
+                            "name": "FLAG_BOD_CORE_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when BOD CORE IRQ is enabled and BOD CORE analog detector is tripped. This register is cleared 0 by PMC reset event."
@@ -600,7 +600,7 @@
                             "id": "field9F0-bit8",
                             "offset": "0x8",
                             "width": "1",
-                            "name": "FLAG_WDT_RESET_OCCURED",
+                            "name": "FLAG_WDT_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when WatchDog Timer reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR."
@@ -609,7 +609,7 @@
                             "id": "field9F0-bit9",
                             "offset": "0x9",
                             "width": "1",
-                            "name": "FLAG_CWDT_RESET_OCCURED",
+                            "name": "FLAG_CWDT_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when Code WatchDog Timer reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR."
@@ -618,7 +618,7 @@
                             "id": "field9F0-bit10",
                             "offset": "0xa",
                             "width": "1",
-                            "name": "FLAG_WDT_IRQ_OCCURED",
+                            "name": "FLAG_WDT_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when WatchDog Timer IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event."
@@ -627,7 +627,7 @@
                             "id": "field9F0-bit11",
                             "offset": "0xb",
                             "width": "1",
-                            "name": "FLAG_CWDT_IRQ_OCCURED",
+                            "name": "FLAG_CWDT_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when Code WatchDog Timer IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event."
@@ -665,7 +665,7 @@
                             "name": "FLAG_TAMPER_EVENT_DETECTED",
                             "access": "RO",
                             "reset_value_int": "0x0",
-                            "description": "This flag bit is set 1 when tamper event is flagged from RTC. This register is cleared 0 by AO domain POR or by PMC reset event, if ranmpr detection event is cleared by software."
+                            "description": "This flag bit is set 1 when tamper event is flagged from RTC. This register is cleared 0 by AO domain POR or by PMC reset event, if tamper detection event is cleared by software."
                         },
                         {
                             "id": "field9F0-bit16",
@@ -680,7 +680,7 @@
                             "id": "field9F0-bit17",
                             "offset": "0x11",
                             "width": "1",
-                            "name": "FLAG_SEC_VIOL_IRQ_OCURRED",
+                            "name": "FLAG_SEC_VIOL_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when security violation is indicated from FLASH sub-system or AHB bus matrix."
@@ -689,7 +689,7 @@
                             "id": "field9F0-bit18",
                             "offset": "0x12",
                             "width": "1",
-                            "name": "FLAG_CPU0_NS_C_ACC_OCCURED",
+                            "name": "FLAG_CPU0_NS_C_ACC_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set 1 when CPU0 (CM33) makes non-secure code transactions. This register is cleared 0 by PMC reset event."
@@ -698,7 +698,7 @@
                             "id": "field9F0-bit19",
                             "offset": "0x13",
                             "width": "1",
-                            "name": "FLAG_CPU0_NS_D_ACC_OCCURED",
+                            "name": "FLAG_CPU0_NS_D_ACC_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when CPU0 (CM33) makes non-secure data transactions. This register is cleared 0 by PMC reset event."

@@ -15,8 +15,8 @@ import pytest
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.bootable_image.bimg import BootableImage
-from spsdk.image.mem_type import MemoryType
 from spsdk.image.bootable_image.segments import BootableImageSegment
+from spsdk.image.mem_type import MemoryType
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -72,6 +72,7 @@ FULL_LIST_TO_TEST = [
     ("mimxrt1189", "flexspi_nor", "no_xmcd", ["fcb", "ahab_container"]),
     ("mimxrt1189", "flexspi_nor", "with_xmcd", ["fcb", "ahab_container", "xmcd"]),
     ("mimxrt1189", "flexspi_nor", "ahab_only", ["ahab_container"]),
+    ("mimxrt1189", "flexspi_nor", "ahab_empty_hash", ["fcb", "ahab_container"]),
     ("mimxrt1166", "semc_nand", None, ["hab_container"]),
     ("mimxrt1166", "flexspi_nand", None, ["hab_container"]),
     ("mcxn947", "flexspi_nor", "full", ["fcb", "mbi"]),
@@ -356,7 +357,7 @@ def test_image_info(data_dir):
         ("mcxn947", "flexspi_nor", "starting_mbi", 0x1000, 1),
     ],
 )
-def test_nxpimage_bimg_parse_image_adjustement(
+def test_nxpimage_bimg_parse_image_adjustment(
     data_dir, family, mem_type, configuration, init_offset, segments_count
 ):
     input_binary_path = os.path.join(

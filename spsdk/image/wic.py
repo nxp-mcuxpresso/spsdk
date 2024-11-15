@@ -16,6 +16,8 @@ from spsdk.utils.misc import align_block, load_binary
 
 logger = logging.getLogger(__name__)
 
+# cspell:ignore UUUBURNXXOEUZX7 A-XY5601QQWWZ
+
 UBOOT_END_PATTERN = rb"UUUBURNXXOEUZX7\+A-XY5601QQWWZ(\d+)(END)"
 UBOOT_OFFSET = 0x8000
 READ_LIMIT = 0x800000

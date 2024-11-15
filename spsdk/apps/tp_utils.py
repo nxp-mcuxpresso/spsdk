@@ -60,7 +60,6 @@ class TPBaseConfig:
         # Get this app type scheme pieces
         sch_list = []
         for sch_name in schema_members_int:
-            assert "properties" in schema_cfg[sch_name]
             if (
                 "properties" in schema_cfg[sch_name]
                 and "family" in schema_cfg[sch_name]["properties"]
@@ -373,8 +372,8 @@ def _sanitize_table_header(header: list[str]) -> list[str]:
     Replace "_" with a " " in header items.
     Insert "#" at the first place.
     """
-    assert "name" in header
-    assert "description" in header
+    if "name" not in header or "description" not in header:
+        raise SPSDKTpError("Missing mandatory header fields in interface description.")
     header = [item.capitalize() for item in header]
     header = [item.replace("_", " ") for item in header]
     header.insert(0, "#")
@@ -401,7 +400,8 @@ def process_tp_inputs(
     :raises SPSDKTpError: No TP Interface (device/target) found
     :return: Designated Interface Description
     """
-    assert tp_type in get_tp_device_types() + get_tp_target_types()
+    if tp_type not in get_tp_device_types() + get_tp_target_types():
+        raise SPSDKTpError(f"Unknown {header} type: {tp_type}")
     header_map = {"device": "TP Device", "target": "TP Target"}
     styled_header = header_map[header]
     params = tp_parameters if isinstance(tp_parameters, dict) else multiple_tp_dict(tp_parameters)

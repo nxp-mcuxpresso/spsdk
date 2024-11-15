@@ -113,7 +113,8 @@ disable=R,
         arguments-renamed,
         broad-exception-caught,
         unused-argument,
-        abstract-method
+        abstract-method,
+		assert-instance
 enable=no-else-return,
        no-else-raise,
        simplifiable-if-expression,

@@ -12,7 +12,7 @@ info:
   purpose: MCX Industrial and IoT Microcontrollers
   spsdk_predecessor_name: mcxn23x
   # Web page of MCU representative
-  web: https://www.nxp.com
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series-microcontrollers/mcx-n23x-highly-integrated-mcus-with-on-chip-accelerators-intelligent-peripherals-and-advanced-security:MCX-N23X
   use_in_doc: True # Remove when the device is available
   memory_map: # Memory map basic info
     internal-flash_ns:
@@ -55,7 +55,7 @@ info:
 features:
   # ======== Communication buffer section ========
   comm_buffer:
-    address: 0x20007000
+    address: 0x2000_7000
     size: 0x1000
 
   # ======== Certificate block section ========
@@ -194,10 +194,10 @@ features:
             - field174
             - field178
             - field17C
-            - field180
-            - field184
-            - field188
-            - field18C
+            - Reserved00180
+            - Reserved00184
+            - Reserved00188
+            - Reserved0018C
       computed_fields:
         field000: # HEADER
           field000-bits8-15: pfr_reg_inverse_lower_8_bits # INV_CFPA_LC_STATE

@@ -13,7 +13,7 @@ from typing import Optional
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKNotImplementedError
+from spsdk.exceptions import SPSDKNotImplementedError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import DatabaseManager, get_families
 from spsdk.utils.misc import load_hex_string, write_file
@@ -116,7 +116,9 @@ class DevHsm(BaseClass):
 
     def get_devbuff_base_address(self, index: int) -> int:
         """Get devbuff base address."""
-        assert 0 <= index < 4
+        # pylint:disable=superfluous-parens; Not superfluous, readability counts
+        if not (0 <= index < 4):
+            raise SPSDKValueError(f"Invalid index: {index}. Expected 0-3.")
         return self.devbuff_base + index * self.DEVBUFF_SIZE
 
     def get_keyblob_offset(self) -> int:

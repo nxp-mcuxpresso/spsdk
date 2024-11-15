@@ -10,6 +10,7 @@
 import base64
 import json
 import logging
+import math
 import struct
 import time
 from enum import Enum
@@ -72,6 +73,16 @@ class CleanMethod(str, Enum):
     NONE = "none"
 
 
+class EL2GODomain(str, Enum):
+    """EL2GO Domain types."""
+
+    MATTER = "MATTER"
+    RTP = "RTP"
+
+
+EL2GO_DOMAINS = [EL2GODomain.MATTER.value, EL2GODomain.RTP.value]
+
+
 class EL2GOTPClient(EL2GOClient):
     """EL2GO HTTP Client for TP operations."""
 
@@ -117,11 +128,21 @@ class EL2GOTPClient(EL2GOClient):
         self.fw_load_address = self.db.get_int(DatabaseManager.EL2GO_TP, "fw_load_address")
 
         self.prov_fw_path = kwargs.pop("prov_fw_path")
-        self.prov_fw = load_binary(self.prov_fw_path)
+        self._prov_fw: Optional[bytes] = None
         self.tp_data_address = value_to_int(kwargs.pop("secure_objects_address"))
         self.clean_method = CleanMethod(self.db.get_str(DatabaseManager.EL2GO_TP, "clean_method"))
+        self.domains = self._sanitize_domains(kwargs.pop("domains", EL2GO_DOMAINS))  # type: ignore
 
         super().__init__(api_key=api_key, url=url, timeout=timeout, raise_exceptions=True, **kwargs)
+
+    @property
+    def prov_fw(self) -> bytes:
+        """Provisioning firmware binary."""
+        if self._prov_fw is None:
+            if not self.prov_fw_path:
+                raise SPSDKError("Provisioning firmware path is not set")
+            self._prov_fw = load_binary(self.prov_fw_path)
+        return self._prov_fw
 
     def response_handling(self, response: EL2GOApiResponse, url: str) -> None:
         """Handle an error response.
@@ -146,7 +167,7 @@ class EL2GOTPClient(EL2GOClient):
         response, url = self._assign_device_to_group(device_id=device_id)
         if response.status_code == 422:
             # 'code' is not present in all responses
-            if response.json_body["code"] == "ERR_SEDM_422_1":
+            if response.json_body["code"] == "ERR_SEDM_422_1":  # cspell:ignore SEDM
                 logger.warning(response.json_body["details"])
                 try:
                     # first check if the existing registration is the current group
@@ -177,12 +198,14 @@ class EL2GOTPClient(EL2GOClient):
         url = f"/api/v1/rtp/devices/{device_id}/secure-object-provisionings"
         data = {
             "hardware-family-type": [self.hardware_family_type],
-            "owner-domain-types": ["MATTER,RTP"],
+            "owner-domain-types": self.domains,
         }
         response = self._handle_el2go_request(method=self.Method.GET, url=url, param_data=data)
         self.response_handling(response=response, url=url)
         if not response.json_body["content"]:
-            raise SPSDKError(f"No Secure Objects found for device {device_id}")
+            raise SPSDKError(
+                f"No Secure Objects found for device {device_id} using domain(s): {', '.join(self.domains)}"
+            )
         for provisioning in response.json_body["content"]:
             # fail early if generation failed
             if provisioning["provisioningState"] in BAD_STATES:
@@ -198,13 +221,28 @@ class EL2GOTPClient(EL2GOClient):
     def download_provisionings(self, device_id: str) -> dict:
         """Download provisionings for given device."""
         self._wait_for_provisionings(device_id=device_id)
+        return self._download_provisionings(device_id=device_id)
 
+    def _make_device_id_list(self, device_id: Union[str, list[str]]) -> list[str]:
+        return [device_id] if isinstance(device_id, str) else device_id
+
+    def _sanitize_domains(self, domains: list[str]) -> list[str]:
+        """Sanitize domain types."""
+        if not isinstance(domains, list):
+            raise SPSDKError("Domains must be a list of strings")
+        sanitized = [domain.upper() for domain in domains]
+        for domain in sanitized:
+            if domain not in EL2GO_DOMAINS:
+                raise SPSDKError(f"Invalid domain type: {domain}")
+        return sanitized
+
+    def _download_provisionings(self, device_id: Union[str, list[str]]) -> dict:
         url = f"/api/v1/rtp/device-groups/{self.device_group_id}/devices/download-provisionings"
         data = {
             "productHardwareFamilyType": self.hardware_family_type,
-            "deviceIds": [device_id],
+            "deviceIds": self._make_device_id_list(device_id),
         }
-        param_data = {"owner-domain-types": ["MATTER,RTP"]}
+        param_data = {"owner-domain-types": self.domains}
         response = self._handle_el2go_request(
             method=self.Method.POST, url=url, json_data=data, param_data=param_data
         )
@@ -253,6 +291,21 @@ class EL2GOTPClient(EL2GOClient):
                     )
         return data
 
+    def _serialize_single_provisioning(self, provisioning: dict) -> bytes:
+        data = bytes()
+        for rtp_prov in provisioning["rtpProvisionings"]:
+            if rtp_prov["state"] == GenStatus.GENERATION_COMPLETED.value[0]:
+                data += base64.b64decode(rtp_prov["apdus"]["createApdu"]["apdu"])
+            if rtp_prov["state"] == GenStatus.GENERATION_ON_CONNECTION.value[0]:
+                logger.warning(
+                    f"Provisioning ID: {rtp_prov['provisioningId']} will be created upon connection"
+                )
+            if rtp_prov["state"] == GenStatus.PROVISIONING_COMPLETED.value[0]:
+                logger.warning(
+                    f"Provisioning ID {rtp_prov['provisioningId']} already provisioned ({rtp_prov['state']})"
+                )
+        return data
+
     def _find_device_group_id(
         self, device_id: str, group_id: Optional[Union[str, int]] = None
     ) -> str:
@@ -275,21 +328,30 @@ class EL2GOTPClient(EL2GOClient):
                 continue
             else:
                 self.response_handling(response=response, url=url)
-        raise SPSDKError(f"Device {device_id} was not found in product {self.nc12}")
 
-    def _assign_device_to_group(self, device_id: str) -> tuple[EL2GOApiResponse, str]:
+        raise SPSDKError(
+            f"Device {device_id} was not found in product {self.nc12} for group(s): {candidates}"
+        )
+
+    def _assign_device_to_group(
+        self, device_id: Union[str, list[str]]
+    ) -> tuple[EL2GOApiResponse, str]:
         """Assign a device to the configured group."""
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/devices"
-        data = {"deviceIds": [device_id]}
+        data = {
+            "deviceIds": self._make_device_id_list(device_id),
+        }
         response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
         return response, url
 
     def _unassign_device_from_group(
-        self, device_id: str, group_id: str
+        self, device_id: Union[str, list[str]], group_id: Optional[str] = None
     ) -> tuple[EL2GOApiResponse, str]:
         """Unassign a device from the device group."""
-        url = f"/api/v1/products/{self.nc12}/device-groups/{group_id}/devices/unclaim"
-        data = {"deviceIds": [device_id]}
+        url = f"/api/v1/products/{self.nc12}/device-groups/{group_id or self.device_group_id}/devices/unclaim"
+        data = {
+            "deviceIds": self._make_device_id_list(device_id),
+        }
         response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
         # attempt to minimize the impact of el2go race conditions
         wait_time = 10
@@ -311,6 +373,46 @@ class EL2GOTPClient(EL2GOClient):
         response = self.get_test_connection_response()
         self.response_handling(response, url)
 
+    def register_devices(self, uuids: list[str]) -> str:
+        """Register job for UUIDs."""
+        logger.info(f"Submitting job for {len(uuids)} devices")
+        url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/register-devices"
+        data = {"deviceIds": uuids}
+        response = self._handle_el2go_request(self.Method.POST, url=url, json_data=data)
+        self.response_handling(response, url)
+        return response.json_body["jobId"]
+
+    def get_job_details(self, job_id: str) -> Optional[dict]:
+        """Get job details."""
+        logger.info(f"Getting job details for {job_id}")
+        url = f"/api/v1/rtp/jobs/{job_id}"
+        response = self._handle_el2go_request(self.Method.GET, url=url)
+        if response.status_code == self.Status.NOT_FOUND:
+            return None
+        return response.json_body
+
+    @classmethod
+    def calculate_jobs(cls, uuid_count: int, max_job_size: int = 500) -> list[int]:
+        """Calculate number of jobs and their sizes for given number if devices."""
+        jobs = math.ceil(uuid_count / max_job_size)
+        size = math.ceil(uuid_count / jobs)
+        result = [size] * jobs
+        extra = size * jobs - uuid_count
+        for i in range(extra):
+            result[i] -= 1
+        return result
+
+    @classmethod
+    def split_uuids_to_jobs(cls, uuids: list[str], max_job_size: int) -> list[list[str]]:
+        """Split UUIDs into jobs with given max size."""
+        job_sizes = cls.calculate_jobs(len(uuids), max_job_size)
+        iterator = iter(uuids)
+        jobs: list[list[str]] = []
+        for job_size in job_sizes:
+            group_uuids = [next(iterator) for _ in range(job_size)]
+            jobs.append(group_uuids)
+        return jobs
+
     def create_user_config(self) -> tuple[bytes, int, int]:
         """Create EL2GO User Config blob.
 
@@ -321,7 +423,7 @@ class EL2GOTPClient(EL2GOClient):
             user_data_address = self.db.get_int(DatabaseManager.EL2GO_TP, "user_data_address")
             tp_data_address = self.tp_data_address
             user_config = (
-                b"ELUC"
+                b"ELUC"  # cspell:ignore ELUC
                 + user_data_address.to_bytes(length=4, byteorder="little")
                 + tp_data_address.to_bytes(length=4, byteorder="little")
                 + bytes(20)
@@ -480,6 +582,7 @@ def get_el2go_otp_binary(config_data: Union[list, dict], family: Optional[str] =
         logger.info(
             f"Adding OTP: {user_reg.uid} ({user_reg.name}), value: {hex(user_reg.get_value())}"
         )
+        # cspell:ignore BBHBB
         data += struct.pack(">BBHBB", 0x40, 2, user_reg.otp_index, 0x41, user_reg.width // 8)
         data += int.to_bytes(user_reg.get_value(), length=user_reg.width // 8, byteorder="big")
 

@@ -322,6 +322,9 @@ class SRKRecordBase(HeaderContainerInverted):
         :param srk_flags: SRK flags for key.
         :raises SPSDKValueError: Unsupported keys size is detected.
         """
+        if hasattr(public_key, "ca"):
+            srk_flags |= cls.FLAGS_CA_MASK
+
         if isinstance(public_key, PublicKeyRsa):
             par_n: int = public_key.public_numbers.n
             par_e: int = public_key.public_numbers.e
@@ -364,19 +367,22 @@ class SRKRecordBase(HeaderContainerInverted):
                 + par_y.to_bytes(length=cls.KEY_SIZES[key_size][1], byteorder=Endianness.BIG.value),
             )
 
-        assert isinstance(public_key, PublicKeySM2), "Unsupported public key for SRK record"
-        param1: bytes = value_to_bytes("0x" + public_key.public_numbers[:64], byte_cnt=32)
-        param2: bytes = value_to_bytes("0x" + public_key.public_numbers[64:], byte_cnt=32)
-        assert len(param1 + param2) == 64, "Invalid length of the SM2 key"
-        key_size = cls.SM2_KEY_TYPE
-        return cls(
-            src_key=public_key,
-            signing_algorithm=cls.SIGN_ALGORITHM_ENUM.SM2,
-            hash_type=cls.HASH_ALGORITHM_ENUM.SM3,
-            key_size=key_size,
-            srk_flags=srk_flags,
-            crypto_params=param1 + param2,
-        )
+        if IS_OSCCA_SUPPORTED and isinstance(public_key, PublicKeySM2):
+            param1: bytes = value_to_bytes("0x" + public_key.public_numbers[:64], byte_cnt=32)
+            param2: bytes = value_to_bytes("0x" + public_key.public_numbers[64:], byte_cnt=32)
+            if len(param1 + param2) != 64:
+                raise SPSDKValueError("Invalid length of the SM2 key")
+            key_size = cls.SM2_KEY_TYPE
+            return cls(
+                src_key=public_key,
+                signing_algorithm=cls.SIGN_ALGORITHM_ENUM.SM2,
+                hash_type=cls.HASH_ALGORITHM_ENUM.SM3,
+                key_size=key_size,
+                srk_flags=srk_flags,
+                crypto_params=param1 + param2,
+            )
+
+        raise SPSDKValueError(f"Unsupported public key type: {type(public_key)}")
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -679,7 +685,7 @@ class SRKRecordV2(SRKRecordBase):
         """
 
         def verify_param_lengths() -> None:
-            assert self.srk_data
+            assert isinstance(self.srk_data, SRKData)
             crypto_param1 = self.srk_data.data[: self.KEY_SIZES[self.key_size][0]]
             crypto_param2 = self.srk_data.data[self.KEY_SIZES[self.key_size][0] :]
             if crypto_param1 is None:
@@ -751,6 +757,9 @@ class SRKRecordV2(SRKRecordBase):
         signing_algorithm = None
         hash_type = cls.HASH_ALGORITHM_ENUM.SHA256
         key_size = 0
+
+        if hasattr(public_key, "ca"):
+            srk_flags |= cls.FLAGS_CA_MASK
 
         if isinstance(public_key, PublicKeyRsa):
             signing_algorithm = cls.SIGN_ALGORITHM_ENUM.RSA_PSS
@@ -978,7 +987,8 @@ class SRKData(HeaderContainer):
             data = value_to_bytes(
                 "0x" + public_key.public_numbers[:64], byte_cnt=32
             ) + value_to_bytes("0x" + public_key.public_numbers[64:], byte_cnt=32)
-            assert len(data) == 64, "Invalid length of the SM2 key"
+            if len(data) != 64:
+                raise SPSDKValueError("Invalid length of the SM2 key")
 
             return cls(src_key=public_key, srk_id=srk_id, data=data)
 
@@ -986,7 +996,7 @@ class SRKData(HeaderContainer):
             data = public_key.public_numbers
             return cls(src_key=public_key, srk_id=srk_id, data=data)
 
-        assert False, "Unsupported public key for SRK data"
+        raise SPSDKValueError(f"Unsupported public key for SRK data: {type(public_key)}")
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -1177,11 +1187,12 @@ class SRKTable(HeaderContainerInverted):
         ]
 
         messages = ["Signing algorithm", "Hash algorithm", "Key Size", "Length", "Flags"]
-        for i in range(4):
-            if not all(srk_records_info[0][i] == x[i] for x in srk_records_info):
-                ret.add_record(messages[i], VerifierResult.ERROR, "Is not same in all SRK records")
-            else:
+        for i in range(len(srk_records_info[0])):
+            values = [record[i] for record in srk_records_info]
+            if len(set(values)) == 1:
                 ret.add_record(messages[i], VerifierResult.SUCCEEDED, "Is same in all SRK records")
+            else:
+                ret.add_record(messages[i], VerifierResult.ERROR, "Is not same in all SRK records")
 
         ret.add_record_bytes("SRK Hash", self.compute_srk_hash())
 
@@ -1279,6 +1290,7 @@ class SRKTable(HeaderContainerInverted):
         """
         srk_table = SRKTable()
         flags = 0
+        # Allow user to provide flag_ca in configuration
         flag_ca = config.get("flag_ca", False)
         if flag_ca:
             flags |= cls.SRK_RECORD.FLAGS_CA_MASK
@@ -1287,7 +1299,10 @@ class SRKTable(HeaderContainerInverted):
         for srk_key in srk_list:
             assert isinstance(srk_key, str)
             srk_key_path = find_file(srk_key, search_paths=search_paths)
-            srk_table.add_record(extract_public_key(srk_key_path), srk_flags=flags)
+            pub_key = extract_public_key(srk_key_path)
+            if hasattr(pub_key, "ca"):
+                flags |= cls.SRK_RECORD.FLAGS_CA_MASK
+            srk_table.add_record(pub_key, srk_flags=flags)
         return srk_table
 
 
@@ -1342,6 +1357,8 @@ class SRKTableV2(SRKTable):
             assert isinstance(srk_key, str)
             srk_key_path = find_file(srk_key, search_paths=search_paths)
             pub_key = extract_public_key(srk_key_path)
+            if hasattr(pub_key, "ca"):
+                flags |= cls.SRK_RECORD.FLAGS_CA_MASK
             srk_table.add_record(pub_key, srk_flags=flags)
             cast(SRKRecordV2, srk_table.srk_records[ix]).srk_data = SRKData.create_from_key(
                 pub_key, ix
@@ -1508,7 +1525,7 @@ class SRKTableArray(HeaderContainer):
         for srk_table in self._srk_tables:
             data += srk_table.export()
             srk_record = cast(SRKRecordV2, srk_table.srk_records[self.chip_config.used_srk_id])
-            assert srk_record.srk_data
+            assert isinstance(srk_record.srk_data, SRKData)
             data += srk_record.srk_data.export()
 
         return data
@@ -1531,15 +1548,15 @@ class SRKTableArray(HeaderContainer):
 
         return ret
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def parse(cls, data: bytes, chip_config: Optional[AhabChipContainerConfig] = None) -> Self:
+    def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore[override]
         """Parse input binary chunk to the container object.
 
         :param data: Binary data with SRK table array block to parse.
         :param chip_config: AHAB container chip configuration.
         :return: Object recreated from the binary data.
         """
-        assert chip_config
         SRKTableArray.check_container_head(data).validate()
         srk_tab_arr_header_size = SRKTableArray.fixed_length()
         _, container_length, _, tables_cnt, _, _ = unpack(

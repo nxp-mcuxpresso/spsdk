@@ -1,0 +1,60 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==============================  Secure Binary X Configuration template for mwct20d2.  ===============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mc56f81866, mc56f81868, mwct20d2, mwct20d2a>
+family: mwct20d2
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
+# Description: Value compared with Secure_FW_Version monotonic counter value stored in protected memory (MCU specific).
+# If value is lower than value in protected memory, then is image rejected (rollback protection).
+firmwareVersion: 0
+# -----------------------------------------===== SBx filename [Required] =====------------------------------------------
+# Description: Generated SBx container filename.
+containerOutputFile: workspace/my_new.sbx
+# ======================================================================================================================
+#                                             == Secure Binary X Settings ==
+# ======================================================================================================================
+# ------------------------------------------===== image type [Optional] =====-------------------------------------------
+# Description: SecureBinaryXType
+# Possible options: <NXP_PROVISIONING, OEM_PROVISIONING, OEM>
+image_type: OEM
+# ------------------------------------------===== Description [Optional] =====------------------------------------------
+# Description: Description up to 16 characters, longer will be truncated. Stored in SBx manifest.
+description: This is description of generated SB file.
+signingCertificatePrivateKeyFile: ec_pk_secp256r1_sign_cert.pem
+# ======================================================================================================================
+#                                        == Secure Binary X Commands Settings ==
+# ======================================================================================================================
+# -----------------------------------------===== SBx Commands [Required] =====------------------------------------------
+# Description: Secure Binary X commands block, list of all possible options - Modify it according to your application
+commands: # [Required], SBx.1 Commands, Secure Binary X commands block, list of all possible options - Modify it according to your application
+  - erase:
+      address: 0
+      size: 0x800
+
+  - load:
+      address: 0
+      file: mb_xip_signed_0_0x800.bin
+
+  - erase:
+      address: 0xC00
+      size: 0x800
+
+  - load:
+      address: 0x0c00
+      file: mb_xip_signed_0xC00.bin
+
+  - reset: {}

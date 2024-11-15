@@ -16,6 +16,7 @@ import textwrap
 import time
 from enum import Enum
 from math import ceil
+from pathlib import Path
 from struct import pack, unpack
 from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Type, TypeVar, Union
 
@@ -295,7 +296,9 @@ def _find_path(
 
     if os.path.isabs(path):
         if not check_func(path):
-            raise SPSDKError(f"Path '{path}' not found")
+            if raise_exc:
+                raise SPSDKError(f"Path '{path}' not found")
+            return ""
         return path
     if search_paths:
         for dir_candidate in search_paths:
@@ -390,7 +393,8 @@ def use_working_directory(path: str) -> Iterator[None]:
         yield
     finally:
         os.chdir(current_dir)
-        assert os.getcwd() == current_dir
+        if os.getcwd() != current_dir:
+            logger.warning(f"Directory was not changed back to the original one: {current_dir}")
 
 
 def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool = True) -> str:
@@ -854,18 +858,24 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
     except Exception as exc:
         raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
 
+    config_data: Optional[dict] = None
     try:
-        return json.loads(config)
+        config_data = json.loads(config)
     except json.JSONDecodeError:
         # import YAML only if needed to save startup time
         from yaml import YAMLError, safe_load  # pylint: disable=import-outside-toplevel
 
         try:
-            return safe_load(config)
+            config_data = safe_load(config)
         except (YAMLError, UnicodeDecodeError):
             pass
 
-    raise SPSDKError(f"Unable to load '{path}'.")
+    if not config_data:
+        raise SPSDKError(f"Can't parse configuration file: {path}")
+    if not isinstance(config_data, dict):
+        raise SPSDKError(f"Invalid configuration file: {path}")
+
+    return config_data
 
 
 def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, None, None]:
@@ -925,7 +935,7 @@ def get_printable_path(path: str) -> str:
     """
     # check Jupyter env variable
     if "JUPYTER_SPSDK" in os.environ and os.environ["JUPYTER_SPSDK"] == "1":
-        return os.path.relpath(path, os.getcwd())
+        return Path(os.path.relpath(path, os.getcwd())).as_posix()
     return path
 
 

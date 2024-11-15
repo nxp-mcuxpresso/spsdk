@@ -4676,6 +4676,7 @@
                     "name": "DICE_Certificate0",
                     "description": "DICE Certificate register 0. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x0100",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4714,6 +4715,7 @@
                     "name": "DICE_Certificate1",
                     "description": "DICE Certificate register 1. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x0104",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4752,6 +4754,7 @@
                     "name": "DICE_Certificate2",
                     "description": "DICE Certificate register 2. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x0108",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4790,6 +4793,7 @@
                     "name": "DICE_Certificate3",
                     "description": "DICE Certificate register 3. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x010C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4828,6 +4832,7 @@
                     "name": "DICE_Certificate4",
                     "description": "DICE Certificate register 4. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x0110",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4866,6 +4871,7 @@
                     "name": "DICE_Certificate5",
                     "description": "DICE Certificate register 5. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x0114",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4904,6 +4910,7 @@
                     "name": "DICE_Certificate6",
                     "description": "DICE Certificate register 6. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x0118",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4942,6 +4949,7 @@
                     "name": "DICE_Certificate7",
                     "description": "DICE Certificate register 7. \nX coordinates of ECDSA public key.",
                     "offset_int": "0x011C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -4980,6 +4988,7 @@
                     "name": "DICE_Certificate8",
                     "description": "DICE Certificate register 8. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x0120",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5018,6 +5027,7 @@
                     "name": "DICE_Certificate9",
                     "description": "DICE Certificate register 9. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x0124",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5056,6 +5066,7 @@
                     "name": "DICE_Certificate10",
                     "description": "DICE Certificate register 10. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x0128",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5094,6 +5105,7 @@
                     "name": "DICE_Certificate11",
                     "description": "DICE Certificate register 11. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x012C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5132,6 +5144,7 @@
                     "name": "DICE_Certificate12",
                     "description": "DICE Certificate register 12. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x0130",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5170,6 +5183,7 @@
                     "name": "DICE_Certificate13",
                     "description": "DICE Certificate register 13. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x0134",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5208,6 +5222,7 @@
                     "name": "DICE_Certificate14",
                     "description": "DICE Certificate register 14. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x0138",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5246,6 +5261,7 @@
                     "name": "DICE_Certificate15",
                     "description": "DICE Certificate register 15. \nY coordinates of ECDSA public key.",
                     "offset_int": "0x013C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5284,6 +5300,7 @@
                     "name": "DICE_Certificate16",
                     "description": "DICE Certificate register 16. \nR components of ECDSA signature.",
                     "offset_int": "0x0140",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5322,6 +5339,7 @@
                     "name": "DICE_Certificate17",
                     "description": "DICE Certificate register 17. \nR components of ECDSA signature.",
                     "offset_int": "0x0144",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5360,6 +5378,7 @@
                     "name": "DICE_Certificate18",
                     "description": "DICE Certificate register 18. \nR components of ECDSA signature.",
                     "offset_int": "0x0148",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5398,6 +5417,7 @@
                     "name": "DICE_Certificate19",
                     "description": "DICE Certificate register 19. \nR components of ECDSA signature.",
                     "offset_int": "0x014C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5436,6 +5456,7 @@
                     "name": "DICE_Certificate20",
                     "description": "DICE Certificate register 20. \nR components of ECDSA signature.",
                     "offset_int": "0x0150",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5474,6 +5495,7 @@
                     "name": "DICE_Certificate21",
                     "description": "DICE Certificate register 21. \nR components of ECDSA signature.",
                     "offset_int": "0x0154",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5512,6 +5534,7 @@
                     "name": "DICE_Certificate22",
                     "description": "DICE Certificate register 22. \nR components of ECDSA signature.",
                     "offset_int": "0x0158",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5550,6 +5573,7 @@
                     "name": "DICE_Certificate23",
                     "description": "DICE Certificate register 23. \nR components of ECDSA signature.",
                     "offset_int": "0x015C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5588,6 +5612,7 @@
                     "name": "DICE_Certificate24",
                     "description": "DICE Certificate register 24. \nS components of ECDSA signature.",
                     "offset_int": "0x0160",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5626,6 +5651,7 @@
                     "name": "DICE_Certificate25",
                     "description": "DICE Certificate register 25. \nS components of ECDSA signature.",
                     "offset_int": "0x0164",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5664,6 +5690,7 @@
                     "name": "DICE_Certificate26",
                     "description": "DICE Certificate register 26. \nS components of ECDSA signature.",
                     "offset_int": "0x0168",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5702,6 +5729,7 @@
                     "name": "DICE_Certificate27",
                     "description": "DICE Certificate register 27. \nS components of ECDSA signature.",
                     "offset_int": "0x016C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5740,6 +5768,7 @@
                     "name": "DICE_Certificate28",
                     "description": "DICE Certificate register 28. \nS components of ECDSA signature.",
                     "offset_int": "0x0170",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5778,6 +5807,7 @@
                     "name": "DICE_Certificate29",
                     "description": "DICE Certificate register 29. \nS components of ECDSA signature.",
                     "offset_int": "0x0174",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5816,6 +5846,7 @@
                     "name": "DICE_Certificate30",
                     "description": "DICE Certificate register 30. \nS components of ECDSA signature.",
                     "offset_int": "0x0178",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5854,6 +5885,7 @@
                     "name": "DICE_Certificate31",
                     "description": "DICE Certificate register 31. \nS components of ECDSA signature.",
                     "offset_int": "0x017C",
+                    "access": "RO",
                     "reset_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -5888,34 +5920,42 @@
                     ]
                 },
                 {
-                    "id": "field180",
-                    "name": "DICE_Certificate32",
-                    "description": "DICE Certificate register 32. \nThis field is 0.",
+                    "id": "Reserved00180",
+                    "name": "Reserved 0x00180",
+                    "description": "This field is 0.",
                     "offset_int": "0x0180",
+                    "access": "RO",
+                    "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "field184",
-                    "name": "DICE_Certificate33",
-                    "description": "DICE Certificate register 33. \nThis field is 0.",
+                    "id": "Reserved00184",
+                    "name": "Reserved 0x00184",
+                    "description": "This field is 0.",
                     "offset_int": "0x0184",
+                    "access": "RO",
+                    "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "field188",
-                    "name": "DICE_Certificate34",
-                    "description": "DICE Certificate register 34. \nThis field is 0.",
+                    "id": "Reserved00188",
+                    "name": "Reserved 0x00188",
+                    "description": "This field is 0.",
                     "offset_int": "0x0188",
+                    "access": "RO",
+                    "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "field18C",
-                    "name": "DICE_Certificate35",
-                    "description": "DICE Certificate register 35. \nThis field is 0.",
+                    "id": "Reserved0018C",
+                    "name": "Reserved 0x0018C",
+                    "description": "This field is 0.",
                     "offset_int": "0x018C",
+                    "access": "RO",
+                    "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
                 }

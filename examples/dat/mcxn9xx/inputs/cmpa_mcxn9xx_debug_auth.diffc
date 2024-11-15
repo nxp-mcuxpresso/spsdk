@@ -1,0 +1,15 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cmpa_mcxn9xx_debug_auth.yaml
+user_cfg: inputs/cmpa_mcxn9xx_debug_auth.yaml
+custom_command: "%! pfr get-template -t cmpa -f mcxn946 -o workspace/cmpa_mcxn9xx_debug_auth.yaml --force"
+
+comments:
+  settings: We kept in configuration just settings that are changed compare to defaults, all other are erased because the PFR tool keep them on defaults values.
+  ISP_CMD_EN: Keep enabled debug mailbox command "Switch to ISP mode" when the debug access is locked. (Just for better testing purposes. In real application it must be set to fit the final use.)
+  FA_CMD_EN: Keep enabled debug mailbox command "FA mode" when the debug access is locked. (Just for better testing purposes. In real application it must be set to fit the final use.)
+  ME_CMD_EN: Keep enabled debug mailbox command "Mass erase" when the debug access is locked. (Just for better testing purposes. In real application it must be set to fit the final use.)
+

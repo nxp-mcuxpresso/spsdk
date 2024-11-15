@@ -422,125 +422,125 @@ settings: # The CMPA registers configuration.
     value: "0x00000000" # The value width: 32b
   QUICK_CLR_GPIO_1: # Quick Clear to Drive GPIO 1 port pins low
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED0: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED0: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED1: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED1: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED2: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED2: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED3: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED3: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED4: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED4: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED5: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED5: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED6: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED6: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED7: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED7: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED8: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED8: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED9: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED9: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED10: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED10: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED11: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED11: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED12: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED12: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED13: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED13: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED14: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED14: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED15: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED15: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED16: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED16: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED17: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED17: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED18: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED18: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED19: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED19: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED20: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED20: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED21: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED21: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED22: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED22: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED23: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED23: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED24: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED24: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED25: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED25: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED26: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED26: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED27: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED27: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED28: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED28: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED29: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED29: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED30: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED30: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED31: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED31: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED32: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED32: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED33: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED33: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED34: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED34: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED35: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED35: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED36: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED36: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED37: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED37: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED38: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED38: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED39: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED39: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED40: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED40: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED41: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED41: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED42: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED42: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED43: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED43: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED44: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED44: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED45: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED45: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED46: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED46: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED47: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED47: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED48: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED48: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED49: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED49: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED50: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED50: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED51: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED51: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED52: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED52: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED53: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED53: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED54: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED54: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED55: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED55: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED56: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED56: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED57: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED57: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED58: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED58: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
-  CUSTOMER_DEFINED59: # Customer Defined (Programable through ROM API)
+  CUSTOMER_DEFINED59: # Customer Defined (Programmable through ROM API)
     value: "0x00000000" # The value width: 32b
   CMPA_CMAC0: # CMPA CMAC 0
     value: "0x00000000" # The value width: 32b

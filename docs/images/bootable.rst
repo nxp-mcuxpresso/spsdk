@@ -20,13 +20,3 @@ The bootable image might consists of:
 
     fcb
     xmcd
-
--------------------------------------------
-List of supported devices and memory types
--------------------------------------------
-
-.. include:: ../_prebuild/table_bootable.inc
-   :parser: myst_parser.sphinx_
-
-.. include:: ../_prebuild/bootable_schemas.inc
-   :parser: myst_parser.sphinx_

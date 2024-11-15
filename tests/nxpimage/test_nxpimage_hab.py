@@ -447,3 +447,18 @@ def test_nxpimage_hab_invalid_options(hab_data_dir, missing_option):
         match=f"Either '{missing_option}' or 'family' and 'bootDevice' options must be specified.",
     ):
         HabContainer.load_from_config(cfg)
+
+
+@pytest.mark.parametrize(
+    "app_image,app_address",
+    [
+        ("app_image.srec", "0x30002101"),
+        ("app_image.elf", "0x30002101"),
+        ("app_image.bin", "0x60003411"),
+    ],
+)
+def test_hab_app_address_autodetection(app_image, app_address, hab_data_dir):
+    cfg = HabContainer.load_configuration(os.path.join(hab_data_dir, "test_app_address.yaml"))
+    cfg["sources"]["elfFile"] = app_image
+    hab = HabContainer.load_from_config(cfg, search_paths=[hab_data_dir])
+    assert hab.ivt_segment.segment.app_address == int(app_address, 16)

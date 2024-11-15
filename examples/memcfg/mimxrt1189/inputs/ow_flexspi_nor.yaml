@@ -1,0 +1,100 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================  Option Words Configuration template for mimxrt1189, flexspi_nor.  =========================
+
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+# Note for settings:
+# All registers is possible to define also as one value although the bitfields are used. Instead of bitfields: ...
+# field, the value: ... definition works as well.
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526, lpc5528, lpc55s04, lpc55s06,
+# lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69, mcxn235, mcxn236, mimxrt1010, mimxrt1015,
+# mimxrt1020, mimxrt1024, mimxrt1040, mimxrt1050, mimxrt1060, mimxrt1064, mimxrt1165, mimxrt1166, mimxrt1171,
+# mimxrt1172, mimxrt1173, mimxrt1175, mimxrt1176, mimxrt1181, mimxrt1182, mimxrt1187, mimxrt1189, mimxrt533s,
+# mimxrt555s, mimxrt595s, mimxrt685s, mimxrt798s, rw610, rw612>
+family: mimxrt1189
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, b0, latest>
+revision: latest
+# ----------------------------------------===== Peripheral name [Required] =====----------------------------------------
+# Description: Name of the external memory support peripheral
+# Possible options: <flexspi_nor, flexspi_nand, semc_nor, semc_nand, spi_nor, mmc, sd>
+peripheral: flexspi_nor
+# ----------------------------------------===== Interface name [Optional] =====-----------------------------------------
+# Description: Interface name of some other details about connection
+# Possible options: <octal_spi, quad_spi, hyper_flash>
+interface: octal_spi
+# -------------------------------------===== Option words settings [Required] =====-------------------------------------
+# Description: The The option word settings
+settings:
+  # ----------------------------------------===== ConfigOption0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; FlexSPI NOR Configuration Option 0
+  ConfigOption0:
+    # ------------------------------------------===== MaxFreq [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 4b, The maximum work frequency for specified Flash device; 0 - Don't change
+    # FlexSPI clock setting
+    MaxFreq: 0
+    # -------------------------------------------===== Misc [Optional] =====--------------------------------------------
+    # Description: Offset: 4b, Width: 4b, Specify miscellaneous mode for selected flash type; Experimental feature, do
+    # not use in products, keep it as 0.
+    # - NotEnabled, (0): Miscellaneous mode is not enabled
+    # - Mode0-4-4, (1): Enable 0-4-4 mode for High Random Read performance
+    # - SwappedMode, (3):  Data Order Swapped mode (for MXIC OctaFlash only)
+    # - InternalLoopBack, (5):  Select the FlexSPI data sample source as internal loop back, more details please refer
+    # FlexSPI usage
+    # - StandSpiMode, (6):  Config the FlexSPI NOR flash running at stand SPI mode
+    # Possible options: <NotEnabled, Mode0-4-4, SwappedMode, InternalLoopBack, StandSpiMode>
+    Misc: NotEnabled
+    # --------------------------------------===== QuadEnableType [Optional] =====---------------------------------------
+    # Description: Offset: 8b, Width: 4b, Specify the Quad Enable sequence, only applicable for device that only JESD216
+    # compliant, this field is ignored if device support JESD216A or later version. This field will be effective only if
+    # device is compliant with JESD216 only (9 longword SDFP table)
+    # - QeBitIsBit6InStatusReg1, (1): QE bit is bit6 in StatusReg1
+    # - QeBitIsBit1InStatusReg2, (2): QE bit is bit1 in StatusReg2
+    # - QeBitIsBit7InStatusReg2, (3): QE bit is bit7 in StatusReg2
+    # - QeBitIsBit1InStatusReg2EnableCommandIs0x31, (4): QE bit is bit1 in StatusReg2, enable command is 0x31
+    # Possible options: <QeBitIsBit6InStatusReg1, QeBitIsBit1InStatusReg2, QeBitIsBit7InStatusReg2,
+    # QeBitIsBit1InStatusReg2EnableCommandIs0x31>
+    QuadEnableType: '0x0'
+    # -----------------------------------------===== CMDPad(s) [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 4b, Commands pads for the Flash device (1/4/8), for device that works under
+    # 1-1-4,1-4-4,1-1-8 or 1-8-8 mode, CMD pad(s) value is always 0x0, for devices that only support 4-4-4 mode for high
+    # performance, CMD pads value is 2, for devices that only support 8-8-8 mode for high performance, CMD pads value is
+    # 3
+    # - 1, (0): 1 bit
+    # - 4, (2): 4 bits
+    # - 8, (3): 8 bits
+    # Possible options: <1, 4, 8>
+    CMDPad(s): '1'
+    # --------------------------------------===== Query CMDPad(s) [Optional] =====--------------------------------------
+    # Description: Offset: 16b, Width: 4b, Command pads (1/4/8) for the SFDP command
+    # - 1, (0): 1 bit
+    # - 4, (2): 4 bits
+    # - 8, (3): 8 bits
+    # Possible options: <1, 4, 8>
+    Query CMDPad(s): '1'
+    # -----------------------------------===== Device Detection Type [Optional] =====-----------------------------------
+    # Description: Offset: 20b, Width: 4b, SW defined device types used for config block autodetection
+    # - QuadSPI_SDR, (0): QuadSPI SDR
+    # - QuadSPI_DDR, (1): QuadSPI DDR
+    # - HyperFLASH_1V8, (2): HyperFLASH 1V8
+    # - HyperFLASH_3V, (3): HyperFLASH 3V
+    # - MXICOPI_DDR, (4): MXICOPI DDR
+    # - MicronOPI_DDR, (6): MicronOPI DDR
+    # - AdestoOPI_DDR, (8): AdestoOPI DDR
+    # Possible options: <QuadSPI_SDR, QuadSPI_DDR, HyperFLASH_1V8, HyperFLASH_3V, MXICOPI_DDR, MicronOPI_DDR,
+    # AdestoOPI_DDR>
+    Device Detection Type: QuadSPI_SDR
+    # ----------------------------------------===== OptionSize [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 4b, Option Size
+    # - OptionSize1, (0): Option words = 1
+    # - OptionSize2, (1): Option words = 2
+    # Possible options: <OptionSize1, OptionSize2>
+    OptionSize: OptionSize1

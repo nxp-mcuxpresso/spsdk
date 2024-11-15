@@ -1,0 +1,71 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==============  Master Boot Image Configuration template for mwct20d2:latest, Plain Signed XIP Image.  ===============
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <k32w148, kw45b41z5, kw45b41z8, lpc5502, lpc5504, lpc5506, lpc5512, lpc5514, lpc5516, lpc5526,
+# lpc5528, lpc5534, lpc5536, lpc55s04, lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36, lpc55s66, lpc55s69,
+# mc56f81646, mc56f81648, mc56f81666, mc56f81668, mc56f81746, mc56f81748, mc56f81766, mc56f81768, mc56f81866,
+# mc56f81868, mcxa132, mcxa133, mcxa142, mcxa143, mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155,
+# mcxa156, mcxn235, mcxn236, mcxn546, mcxn547, mcxn946, mcxn947, mcxw716a, mcxw716c, mimxrt533s, mimxrt555s, mimxrt595s,
+# mimxrt685s, mimxrt798s, mwct2012, mwct2012a, mwct20d2, mwct20d2a, nhs52s04, rw610, rw612>
+family: mwct20d2
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: signed
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: ../workspace/mb_xip_signed.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: blinky_oem_open.bin
+# ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
+# Description: Used for anti-rollback protection. New firmware must have the same or higher FW version. This value is
+# the minimum firmware version will be stored in BCA and the firmware version specified in SBX file is then compared
+# with this value.
+firmwareVersion: 0
+# ---------------------------------------===== Life cycle state [Optional] =====----------------------------------------
+# Description: life cycle state model to protect code from reading from the device internal flash, which is called code
+# read protection feature. There are different levels of protections in the system, so that access to the on-chip flash
+# and use of ISP can be restricted. Four levels of Read Out Protection (ROP) are supported. This read out protection is
+# a mechanism that allows user to enable different levels of protection in the system. It is a 8-bit field FTFA_FSEC
+# associated with flash security byte (0x40c byte address). It can be programmed by customer. Check the SRM for more
+# information. If not provided, value in application will be used.
+# Possible options: <NOT_SET, OEM_OPEN, OEM_CLOSED_ROP1, OEM_CLOSED_ROP2, OEM_CLOSED_ROP3, OEM_CLOSED_NO_RETURN>
+lifeCycle: NOT_SET
+# -------------------------------------===== Generate only header [Optional] =====--------------------------------------
+# Description: Build only the boot headers (Vector table, BCA, FCB) 0x0..0x800 binary without the application. This is
+# needed for device HSM provisioning file in case the user set ROP2, ROP3.
+justHeader: false
+# ======================================================================================================================
+#                                               == Certificate Block vX ==
+# ======================================================================================================================
+# ---------------------------------===== Certificate Block binary file [Required] =====---------------------------------
+# Description: Path to certificate block.
+certBlock: ../workspace/cert_block.bin
+# --------------===== True to append SHA256 hash [0:127] at the end of certificate block [Optional] =====---------------
+# Description: Not mandatory if the hash is written in OTP
+addCertHash: true
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
+# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signPrivateKey: ec_pk_secp256r1_sign_cert.pem

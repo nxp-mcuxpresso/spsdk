@@ -1,0 +1,37 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========================  Debug Authentication Configuration template for mimxrt1189.  ============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimxrt1189
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+revision: latest
+# ======================================================================================================================
+#                                           == Debug Authentication Content ==
+# ======================================================================================================================
+# -------------------------------===== Debug Credential Certificate file [Required] =====-------------------------------
+# Description: A debug credential binary file provided by owner of Root Keys. The file could be created by 'dc' group of
+# commands.
+certificate: workspace/debug_auth.dc
+# -------------------------------------===== Authentication beacon [Required] =====-------------------------------------
+# Description: Debug authentication process can be extended with beacons. DEBUG_AUTH_BEACON (this field) contain
+# information from debug authentication after debugger is successfully authenticated. This register contain data from
+# Authentication beacon [31:16] which is defined during authentication session and Credential beacon [15:0] which is
+# defined on RoT keys owner side during debug credential file generation and signing. When credential beacon non-zero
+# value is used in this field, ROM defers opening debug access to user application. The result of the authentication
+# process is written to DBG_FEATURES register while the user application after doing its extended processing, such as
+# clean-up of critical keys and secrets, should copy the value to DBG_FEATURES_DP register to enable the debug access.
+beacon: 0
+# -------------------------------------------===== Keys set [Optional] =====--------------------------------------------
+# Description: Selection of keys origin.
+# Possible options: <oem, nxp>
+srk_set: oem
+# ----------------------------===== DCK signature private key [Conditionally required] =====----------------------------
+# Description: Private key that match the public key in debug credential file, to sign Debug Authentication response.
+dck_private_key: ../../_data/keys/ecc256/dck_ecc256.pem

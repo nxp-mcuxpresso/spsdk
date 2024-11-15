@@ -39,7 +39,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
 from spsdk.image.ahab.ahab_data import AhabTargetMemory, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
-from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
+from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage, SignedMessageContainer
 from spsdk.image.ahab.utils import (
     ahab_re_sign,
     ahab_sign_image,
@@ -560,7 +560,7 @@ def sb21_get_template_command(output: str, family: str) -> None:
 
 def sb21_get_template(output: str, family: Optional[str] = None) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"Creating {get_printable_path(output)} template file.")
     write_file(BootImageV21.generate_config_template(family), output)
 
 
@@ -614,7 +614,7 @@ def sb31_get_template_command(family: str, output: str) -> None:
 
 def sb31_get_template(family: str, output: str) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"Creating {get_printable_path(output)} template file.")
     write_file(SecureBinary31.generate_config_template(family)[f"{family}_sb31"], output)
 
 
@@ -680,7 +680,7 @@ def cert_block_export(config: str, family: str, plugin: Optional[str] = None) ->
             os.path.dirname(cert_block_output_file_path), "otp_script.bcf"
         )
         write_file(cert_block.get_otp_script(), otp_script_path)
-        click.echo(f"OTP script written to: {otp_script_path}")
+        click.echo(f"OTP script written to: {get_printable_path(otp_script_path)}")
     click.echo(
         f"Success. (Certificate Block: {get_printable_path(cert_block_output_file_path)} created.)"
     )
@@ -780,8 +780,8 @@ def tz_get_template_command(family: str, revision: str, output: str) -> None:
 
 def tz_get_template(family: str, revision: str, output: str) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
     write_file(TrustZone.generate_config_template(family, revision)[f"{family}_tz"], output)
+    click.echo(f"Trust zone template file has been created: {output}.")
 
 
 @main.group(name="ahab", no_args_is_help=True, cls=SpsdkClickGroup)
@@ -1142,6 +1142,7 @@ def ahab_sign_command(binary: str, output: str, mem_type: str, config: str) -> N
 
 @ahab_group.command(name="get-template", no_args_is_help=True)
 @spsdk_family_option(families=AHABImage.get_supported_families())
+@spsdk_revision_option
 @spsdk_output_option(force=True)
 @click.option(
     "-s",
@@ -1150,27 +1151,29 @@ def ahab_sign_command(binary: str, output: str, mem_type: str, config: str) -> N
     default=False,
     help="Get template just for signing (encryption). To be used with ahab sign command.",
 )
-def ahab_get_template_command(family: str, output: str, sign: bool = False) -> None:
+def ahab_get_template_command(
+    family: str, output: str, sign: bool = False, revision: str = "latest"
+) -> None:
     """Create template of configuration in YAML format.
 
     The template file name is specified as argument of this command.
     """
     if sign:
-        ahab_get_sign_template(family, output)
+        ahab_get_sign_template(family, output, revision)
     else:
-        ahab_get_template(family, output)
+        ahab_get_template(family, output, revision)
 
 
-def ahab_get_template(family: str, output: str) -> None:
+def ahab_get_template(family: str, output: str, revision: str = "latest") -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
-    write_file(AHABImage.generate_config_template(family)[f"{family}_ahab"], output)
+    click.echo(f"Creating {get_printable_path(output)} template file.")
+    write_file(AHABImage.generate_config_template(family, revision)[f"{family}_ahab"], output)
 
 
-def ahab_get_sign_template(family: str, output: str) -> None:
+def ahab_get_sign_template(family: str, output: str, revision: str = "latest") -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
-    write_file(AHABImage.generate_signing_template(family)[f"{family}_ahab"], output)
+    click.echo(f"Creating {get_printable_path(output)} template file.")
+    write_file(AHABImage.generate_signing_template(family, revision)[f"{family}_ahab"], output)
 
 
 @ahab_group.group(name="certificate", no_args_is_help=True, cls=SpsdkClickGroup)
@@ -1189,7 +1192,7 @@ def ahab_cert_block_get_template_command(family: str, revision: str, output: str
 
 def ahab_cert_block_get_template(family: str, revision: str, output: str) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"Creating {get_printable_path(output)} template file.")
     write_file(AhabCertificate.generate_config_template(family, revision), output)
 
 
@@ -1337,11 +1340,12 @@ def signed_msg_export(config: str, plugin: str) -> None:
 
     logger.info(f"Created Signed message Image:\n{str(signed_message.image_info())}")
     logger.info(f"Created Signed message Image memory map:\n{signed_message.image_info().draw()}")
-    assert (
+    if not (
         signed_message.signed_msg_container
         and signed_message.signed_msg_container.signature_block
         and signed_message.signed_msg_container.signature_block.srk_assets
-    )
+    ):
+        raise SPSDKAppError("SRK assets not found in the signed message")
     logger.info(
         f"SRK hash:{signed_message.signed_msg_container.signature_block.srk_assets.compute_srk_hash().hex()}"
     )
@@ -1396,7 +1400,7 @@ def signed_msg_parse(family: str, revision: str, binary: str, output: str) -> No
     click.echo(f"Success. (Signed message: {binary} has been parsed and stored into {output}.)")
     for ix in range(signed_message.srk_count):
         srk_hash = signed_message.get_srk_hash(ix)
-        assert signed_message.signed_msg_container
+        assert isinstance(signed_message.signed_msg_container, SignedMessageContainer)
         file_name = os.path.join(
             output, f"{signed_message.signed_msg_container.flag_srk_set.label}_srk{ix}_hash"
         )
@@ -1483,7 +1487,7 @@ def signed_msg_verify(family: str, revision: str, binary: str, dek: str, problem
         print_verifier_to_console(ver)
         raise SPSDKAppError("Verify failed")
 
-    assert signed_msg_image.signed_msg_container
+    assert isinstance(signed_msg_image.signed_msg_container, SignedMessageContainer)
     if (
         signed_msg_image.signed_msg_container.flag_srk_set != FlagsSrkSet.NXP
         and signed_msg_image.signed_msg_container.signature_block
@@ -1950,7 +1954,7 @@ def bootable_image_get_templates(family: str, output: str) -> None:
     mem_types = BootableImage.get_supported_memory_types(family)
     for mem_type in mem_types:
         output_file = os.path.join(output, f"bootimg_{family}_{mem_type.label}.yaml")
-        click.echo(f"Creating {output_file} template file.")
+        click.echo(f"Creating {get_printable_path(output_file)} template file.")
         write_file(BootableImage.generate_config_template(family, mem_type), output_file)
 
 
@@ -2041,7 +2045,7 @@ def hab_get_template_command(output: str, family: Optional[str]) -> None:
 def hab_get_template(output: str, family: Optional[str]) -> None:
     """Create template of configuration in YAML format."""
     write_file(HabContainer.generate_config_template(family), output)
-    click.echo(f"The template file {output} has been created.")
+    click.echo(f"The template file {get_printable_path(output)} has been created.")
 
 
 @hab_group.command(name="export", no_args_is_help=True)
@@ -2067,7 +2071,7 @@ def hab_export_command(
     """
     image = hab_export(command, external, plugin)
     write_file(image, output, mode="wb")
-    click.echo(f"Success. (HAB container: {output} created.)")
+    click.echo(f"Success. (HAB container: {get_printable_path(output)} created.)")
 
 
 def hab_export(command: str, external: Optional[list[str]], plugin: Optional[str] = None) -> bytes:
@@ -2547,7 +2551,7 @@ def binary_extract(binary: str, address: str, size: str, output: str) -> None:
         click.echo(f"The required binary chunk is out of [{binary}] file space.")
         return
     write_file(bin_data[start:end], output, mode="wb")
-    click.echo(f"Success. (Extracted chunk: {output} created.)")
+    click.echo(f"Success. (Extracted chunk: {get_printable_path(output)} created.)")
 
 
 @bin_image_group.command(name="convert", no_args_is_help=True)

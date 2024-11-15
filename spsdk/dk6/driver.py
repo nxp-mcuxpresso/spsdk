@@ -8,7 +8,7 @@
 import logging
 import time
 from enum import Enum
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 from spsdk.dk6.serial_device import SerialDevice
 from spsdk.exceptions import SPSDKError
@@ -88,6 +88,22 @@ class DeviceInfo:
         )
 
 
+if TYPE_CHECKING:
+    import ftd2xx
+    import pyftdi.ftdi
+    import pylibftdi
+    import serial
+
+    DriverType = (
+        pyftdi.ftdi.Ftdi,
+        pylibftdi.Driver,
+        ftd2xx.FTD2XX,
+        serial.Serial,
+    )
+else:
+    DriverType = object
+
+
 # pylint: disable=import-error
 class DriverInterface:
     """Interface to FTDI backends.
@@ -153,7 +169,7 @@ class DriverInterface:
 
             url = generate_pyftdi_url(device_id)
 
-            assert self.driver
+            assert isinstance(self.driver, DriverType)
             self.driver.open_bitbang_from_url(url)
             for ins in FTDI_ISP_SEQUENCE:
                 bitmode = ftdi.Ftdi.BitMode.CBUS if ins[1] == 0x20 else ftdi.Ftdi.BitMode.RESET
@@ -183,7 +199,7 @@ class DriverInterface:
         devices_info = []
         logger.info("Enumerating DK6 devices")
         if self.backend == Backend.PYFTDI:
-            assert self.driver
+            assert isinstance(self.driver, DriverType)
             devices_list = self.driver.list_devices()
             for device in devices_list:
                 device_info = DeviceInfo(

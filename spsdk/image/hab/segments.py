@@ -7,6 +7,7 @@
 
 """This module contains code related to HAB segments."""
 
+import logging
 import os
 from abc import abstractmethod
 from datetime import datetime, timezone
@@ -28,10 +29,13 @@ from spsdk.image.hab.commands.commands import (
 from spsdk.image.hab.commands.commands_enum import SecCommand
 from spsdk.image.hab.hab_config import HabConfig
 from spsdk.image.images import BootImgRT
-from spsdk.image.secret import MAC
+from spsdk.image.secret import MAC, Signature
 from spsdk.image.segments import SegBDT, SegCSF, SegDCD, SegIVT2, SegXMCD, XMCDHeader
+from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import align, align_block, find_file, get_abs_path, load_binary, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+logger = logging.getLogger(__name__)
 
 
 class HabSegment(SpsdkEnum):
@@ -121,10 +125,8 @@ class IvtHabSegment(HabSegmentBase):
         :return: Instance of IVT HAB segment.
         """
         segment = SegIVT2(cls.IVT_VERSION)
-        segment.app_address = (
-            config.options.entrypoint_address
-            if config.options.entrypoint_address is not None
-            else AppHabSegment.get_reset_vector(config.app_image.export())
+        segment.app_address = cls.get_entrypoint_address(
+            config.options.entrypoint_address, config.app_image
         )
         segment.ivt_address = config.options.start_address + config.options.get_ivt_offset()
         segment.bdt_address = segment.ivt_address + segment.size
@@ -138,6 +140,29 @@ class IvtHabSegment(HabSegmentBase):
         if config.options.dcd_file_path:
             segment.dcd_address = segment.ivt_address + SegIVT2.SIZE + BootImgRT.BDT_SIZE
         return cls(cls.OFFSET, segment)
+
+    @staticmethod
+    def get_entrypoint_address(entrypoint_address: Optional[int], app_image: BinaryImage) -> int:
+        """Get entrypoint address."""
+        if entrypoint_address is not None:
+            if (
+                app_image.execution_start_address is not None
+                and entrypoint_address != app_image.execution_start_address
+            ):
+                logger.warning(
+                    f"Given entrypoint address {entrypoint_address:#x} does not match the "
+                    f"execution start address {app_image.execution_start_address:#x}."
+                )
+            return entrypoint_address
+        reset_vector = AppHabSegment.get_reset_vector(app_image.export())
+        if app_image.execution_start_address is not None:
+            if app_image.execution_start_address != reset_vector:
+                logger.warning(
+                    f"Execution start address {app_image.execution_start_address:#x} "
+                    f"doesn't match the reset vector {reset_vector:#x} of the application."
+                )
+            return app_image.execution_start_address
+        return reset_vector
 
     def export(self) -> bytes:
         """Serialize object into bytes array.
@@ -519,7 +544,7 @@ class CsfHabSegment(HabSegmentBase):
         # we need to get a signature which does not change the CSF segment data references
         updated = True
         while updated:
-            assert auth_csf.cmd_data_reference is not None
+            assert isinstance(auth_csf.cmd_data_reference, (Signature, MAC))
             auth_cfs_size = align(auth_csf.cmd_data_reference.size, 4)
             auth_csf.update_signature(
                 zulu=self.signature_timestamp, data=self.segment._export_base()
@@ -694,9 +719,26 @@ class AppHabSegment(HabSegmentBase):
             """Get app offset from known possible offsets."""
             known_offsets = [0x100, 0x400, 0xC00, 0x1000, 0x2000]
             for offset in known_offsets:
-                reset = cls.get_reset_vector(data[offset:])
-                if reset in range(ivt.segment.app_address, ivt.segment.app_address + len(data)):
-                    return offset
+                logger.debug(f"Testing the potential application on offset {offset}")
+                reset_vector = cls.get_reset_vector(data[offset:])
+                if reset_vector == 0:
+                    logger.debug("The reset vector cannot be 0x0")
+                    continue
+                # there are some cases where the reset vector and the entrypoint address are not same
+                # reset vector inside the given range is accepted
+                range_start = ivt.segment.app_address - 0x400
+                range_end = ivt.segment.app_address + len(data)
+                if reset_vector not in range(range_start, range_end):
+                    logger.debug(
+                        f"The reset vector {reset_vector:#x} is not inside the range {range_start:#x}:{range_end:#x}"
+                    )
+                    continue
+                if not reset_vector % 2:
+                    logger.debug(
+                        "The least significant bit is not set to 1, indicating Thumb state execution"
+                    )
+                    continue
+                return offset
             raise SPSDKParsingError("Application offset could not be found")
 
         offset = get_app_offset()
@@ -717,6 +759,11 @@ class AppHabSegment(HabSegmentBase):
     def get_reset_vector(data: bytes) -> int:
         """Get application reset vector."""
         return int.from_bytes(data[4:8], "little")
+
+    @staticmethod
+    def get_stack_pointer(data: bytes) -> int:
+        """Get application reset vector."""
+        return int.from_bytes(data[0:4], "little")
 
 
 class HabSegments(list[HabSegmentBase]):

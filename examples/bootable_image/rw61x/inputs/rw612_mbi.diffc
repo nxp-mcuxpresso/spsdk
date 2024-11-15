@@ -1,0 +1,10 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/rw612_xip_plain.yaml
+user_cfg: inputs/rw612_xip_plain.yaml
+custom_command: "%! nxpimage mbi get-templates -f rw612 -o workspace/ --force"
+
+comments:
+  masterBootOutputFile: "Add path for result binary file"
+  inputImageFile: "Add path to the input application image to by modified to Master Boot Image"
+  trustZonePresetFile: "In our example we do not use trustzone"

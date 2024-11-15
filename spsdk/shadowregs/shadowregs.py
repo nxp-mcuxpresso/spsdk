@@ -466,19 +466,18 @@ class ShadowRegisters:
 
         :param self: Input Value.
         """
-        assert self.probe
+        assert isinstance(self.probe, DebugProbe)
         logger.debug("Flush shadow registers data")
         addr = 0x5003B498
         value = 0xA7C56B9E
         self.probe.mem_reg_write(addr, value)
 
 
-def enable_debug(probe: DebugProbe, family: str, ap_mem: int = 0) -> bool:
+def enable_debug(probe: DebugProbe, family: str) -> bool:
     """Function that enables debug access ports on devices with debug mailbox.
 
     :param probe: Initialized debug probe.
     :param family: Chip family name.
-    :param ap_mem: Index of Debug access port for memory interface.
     :return: True if debug port is enabled, False otherwise
     :raises SPSDKError: Unlock method failed.
     """
@@ -486,14 +485,14 @@ def enable_debug(probe: DebugProbe, family: str, ap_mem: int = 0) -> bool:
     try:
         logger.debug("step 3: Check if AHB is enabled")
 
-        if not test_ahb_access(probe, ap_mem):
+        if not test_ahb_access(probe):
             logger.debug("Locked Device. Launching unlock sequence.")
 
             # Start debug mailbox system
             StartDebugSession(dm=DebugMailbox(debug_probe=probe, family=family)).run()
 
             # Recheck the AHB access
-            if test_ahb_access(probe, ap_mem):
+            if test_ahb_access(probe):
                 logger.debug("Access granted")
                 debug_enabled = True
             else:

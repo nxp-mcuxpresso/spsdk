@@ -73,6 +73,7 @@ class DebugProbe(ABC):
     DHCSR_DEBUGKEY = 0xA05F0000
     DHCSR_C_DEBUGEN = 0x1
     DHCSR_C_HALT = 0x2
+    DHCSR_C_STEP = 0x4
 
     RESET_TIME = 0.1
     AFTER_RESET_TIME = 0.05
@@ -109,7 +110,8 @@ class DebugProbe(ABC):
         :return: Dictionary with individual options. Key is parameter name and value the help text.
         """
         return {
-            "test_address": "Address for testing memory AP, default is 0x2000_0000",
+            "test_address": "Address for testing memory AP, default "
+            "is tested address in RAM MCU memory range",
         }
 
     @staticmethod
@@ -172,6 +174,31 @@ class DebugProbe(ABC):
         """
 
     @abstractmethod
+    def mem_block_read(self, addr: int, size: int) -> bytes:
+        """Read a block of memory from the MCU.
+
+        This method handles non-aligned addresses and sizes, providing flexibility
+        for various memory operations.
+
+        :param addr: The starting address to read from.
+        :param size: The number of bytes to read.
+        :return: The read data as a bytes object.
+        :raises SPSDKDebugProbeError: If there's an error during the read operation.
+        """
+
+    @abstractmethod
+    def mem_block_write(self, addr: int, data: bytes) -> None:
+        """Write a block of memory to the MCU.
+
+        This method handles non-aligned addresses and sizes, allowing for flexible
+        memory write operations.
+
+        :param addr: The starting address to write to.
+        :param data: The data to be written, as a bytes object.
+        :raises SPSDKDebugProbeError: If there's an error during the write operation.
+        """
+
+    @abstractmethod
     def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
         """Read coresight register.
 
@@ -210,11 +237,55 @@ class DebugProbe(ABC):
         self.assert_reset_line(False)
         sleep(self.AFTER_RESET_TIME)
 
+    @abstractmethod
+    def debug_halt(self) -> None:
+        """Halt the CPU execution."""
+
+    @abstractmethod
+    def debug_resume(self) -> None:
+        """Resume the CPU execution."""
+
+    @abstractmethod
+    def debug_step(self) -> None:
+        """Step the CPU execution."""
+
 
 class DebugProbeCoreSightOnly(DebugProbe):
     """Abstraction class to define SPSDK debug probes interface."""
 
     NAME = "local_help"
+
+    # Add these class constants
+    # Control/Status Word (CSW) bit definitions for size
+    CSW_SIZE_8BIT = 0x00000000  # 8-bit size
+    CSW_SIZE_16BIT = 0x00000001  # 16-bit size
+    CSW_SIZE_32BIT = 0x00000002  # 32-bit size
+
+    # Control/Status Word (CSW) bit definitions for address increment
+    CSW_ADDRINC_OFF = 0x00000000  # No address increment
+    CSW_ADDRINC_SINGLE = 0x00000010  # Single address increment
+    CSW_ADDRINC_PACKED = 0x00000020  # Packed address increment
+
+    # Control/Status Word (CSW) other bit definitions
+    CSW_DEVICEEN = 0x00000040  # Device enable
+    CSW_TRINPROG = 0x00000080  # Transfer in progress
+    CSW_HPROT = 0x02000000  # Hprot
+    CSW_MASTER_DEBUG = 0x20000000  # Master debug
+    CSW_DBGSWENABLE = 0x80000000  # Debug software enable
+
+    CSW_FULL_DEBUG = (
+        CSW_MASTER_DEBUG
+        | CSW_HPROT
+        | CSW_DEVICEEN
+        | CSW_DBGSWENABLE
+        | CSW_SIZE_32BIT
+        | CSW_ADDRINC_SINGLE
+    )  # Enables full debug capabilities with 32-bit access and single address increment
+
+    # Constants for register addresses
+    CSW_REG = 0x00
+    TAR_REG = 0x04
+    DRW_REG = 0x0C
 
     def __init__(self, hardware_id: str, options: Optional[dict[str, str]] = None) -> None:
         """This is general initialization function for SPSDK library to support various DEBUG PROBES.
@@ -279,11 +350,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                     self._mem_reg_write(
                                         mem_ap_ix=i,
                                         addr=self.DHCSR_REG,
-                                        data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_DEBUGEN),
-                                    )
-                                    self._mem_reg_write(
-                                        mem_ap_ix=i,
-                                        addr=self.DHCSR_REG,
                                         data=self.DHCSR_DEBUGKEY,
                                     )
                                 if not status:
@@ -317,17 +383,17 @@ class DebugProbeCoreSightOnly(DebugProbe):
         try:
             self.coresight_reg_write(
                 access_port=True,
-                addr=self.get_coresight_ap_address(mem_ap_ix, 0 * 4),
-                data=0x22000012,
+                addr=self.get_coresight_ap_address(mem_ap_ix, self.CSW_REG),
+                data=self.CSW_FULL_DEBUG,
             )
             self.coresight_reg_write(
                 access_port=True,
-                addr=self.get_coresight_ap_address(mem_ap_ix, 1 * 4),
+                addr=self.get_coresight_ap_address(mem_ap_ix, self.TAR_REG),
                 data=addr,
             )
 
             return self.coresight_reg_read(
-                access_port=True, addr=self.get_coresight_ap_address(mem_ap_ix, 3 * 4)
+                access_port=True, addr=self.get_coresight_ap_address(mem_ap_ix, self.DRW_REG)
             )
         except SPSDKError as exc:
             self.clear_sticky_errors()
@@ -359,17 +425,17 @@ class DebugProbeCoreSightOnly(DebugProbe):
         try:
             self.coresight_reg_write(
                 access_port=True,
-                addr=self.get_coresight_ap_address(mem_ap_ix, 0 * 4),
-                data=0x22000012,
+                addr=self.get_coresight_ap_address(mem_ap_ix, self.CSW_REG),
+                data=self.CSW_FULL_DEBUG,
             )
             self.coresight_reg_write(
                 access_port=True,
-                addr=self.get_coresight_ap_address(mem_ap_ix, 1 * 4),
+                addr=self.get_coresight_ap_address(mem_ap_ix, self.TAR_REG),
                 data=addr,
             )
             self.coresight_reg_write(
                 access_port=True,
-                addr=self.get_coresight_ap_address(mem_ap_ix, 3 * 4),
+                addr=self.get_coresight_ap_address(mem_ap_ix, self.DRW_REG),
                 data=data,
             )
             self.coresight_reg_read(access_port=False, addr=self.DP_CTRL_STAT_REG)
@@ -388,6 +454,126 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :param data: the data to be written into register
         """
         return self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=addr, data=data)
+
+    @get_mem_ap
+    def mem_block_read(self, addr: int, size: int) -> bytes:
+        """Read a block of memory from the MCU, handling non-aligned addresses and sizes.
+
+        This method implements a chunked reading approach to overcome the 1KB auto-increment
+        limitation of the ARM Cortex Debug Access Port (DAP).
+
+        :param addr: The starting address to read from.
+        :param size: The number of bytes to read.
+        :return: The read data as a bytes object.
+        """
+        result = bytearray()
+        aligned_addr = addr & ~0x3
+        end_addr = addr + size
+        aligned_end = (end_addr + 3) & ~0x3
+
+        while aligned_addr < aligned_end:
+            chunk_size = min(0x400, aligned_end - aligned_addr)
+
+            # Set up for block transfer
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(self.mem_ap_ix, self.CSW_REG),
+                data=self.CSW_FULL_DEBUG,  # Auto-increment enabled
+            )
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(self.mem_ap_ix, self.TAR_REG),
+                data=aligned_addr,
+            )
+
+            # Read data in blocks
+            for _ in range(0, chunk_size, 4):
+                value = self.coresight_reg_read(
+                    access_port=True,
+                    addr=self.get_coresight_ap_address(self.mem_ap_ix, self.DRW_REG),
+                )
+                result.extend(value.to_bytes(4, "little"))
+
+            aligned_addr += chunk_size
+
+        # Trim the result to the exact requested size
+        return bytes(result[addr - (addr & ~0x3) : addr - (addr & ~0x3) + size])
+
+    @get_mem_ap
+    def mem_block_write(self, addr: int, data: bytes) -> None:
+        """Write a block of memory to the MCU, handling unaligned addresses and sizes.
+
+        This method implements a three-stage writing approach:
+        1. Handles initial unaligned bytes using 8-bit writes.
+        2. Performs bulk 32-bit aligned writes for the main data block.
+        3. Handles any remaining bytes using 8-bit writes.
+
+        This approach ensures efficient writing for aligned data while correctly
+        handling unaligned start and end addresses.
+
+        :param addr: The starting address to write to.
+        :param data: The data to be written, as a bytes object.
+        :raises SPSDKDebugProbeTransferError: If there's an error during the write operation.
+        """
+        end_addr = addr + len(data)
+        data_index = 0
+
+        # Handle initial unaligned bytes
+        if addr % 4 != 0:
+            aligned_addr = addr & ~0x3
+            word = self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=aligned_addr)
+            bytes_to_write = min(4 - (addr % 4), end_addr - addr)
+            for i in range(bytes_to_write):
+                byte_pos = (addr + i) % 4
+                word &= ~(0xFF << (byte_pos * 8))
+                word |= data[data_index + i] << (byte_pos * 8)
+
+            self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=aligned_addr, data=word)
+
+            addr += bytes_to_write
+            data_index += bytes_to_write
+
+        # Handle 32-bit aligned writes
+        while addr + 4 <= end_addr:
+            chunk_end = min((addr + 0x400) & ~0x3FF, end_addr)
+            chunk_size = chunk_end - addr
+
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(self.mem_ap_ix, self.CSW_REG),
+                data=self.CSW_FULL_DEBUG,
+            )
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(self.mem_ap_ix, self.TAR_REG),
+                data=addr,
+            )
+
+            for _ in range(0, chunk_size, 4):
+                value = int.from_bytes(data[data_index : data_index + 4], "little")
+                self.coresight_reg_write(
+                    access_port=True,
+                    addr=self.get_coresight_ap_address(self.mem_ap_ix, self.DRW_REG),
+                    data=value,
+                )
+                addr += 4
+                data_index += 4
+
+        # Handle remaining bytes
+        while addr < end_addr:
+            aligned_addr = addr & ~0x3
+            word = self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=aligned_addr)
+            bytes_to_write = min(4 - (addr % 4), end_addr - addr)
+
+            for i in range(bytes_to_write):
+                byte_pos = (addr + i) % 4
+                word &= ~(0xFF << (byte_pos * 8))
+                word |= data[data_index + i] << (byte_pos * 8)
+
+            self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=aligned_addr, data=word)
+
+            addr += bytes_to_write
+            data_index += bytes_to_write
 
     def clear_sticky_errors(self) -> None:
         """Clear sticky errors of Debug port interface."""
@@ -507,6 +693,33 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 f"Selected AP: {(self.last_accessed_ap & self.APSEL)>>self.APSEL_SHIFT}, "
                 f"Bank: {hex((self.last_accessed_ap & self.APBANKSEL) >> self.APBANK_SHIFT)}"
             )
+
+    @get_mem_ap
+    def debug_halt(self) -> None:
+        """Halt the CPU execution."""
+        self._mem_reg_write(
+            mem_ap_ix=self.mem_ap_ix,
+            addr=self.DHCSR_REG,
+            data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_HALT | self.DHCSR_C_DEBUGEN),
+        )
+
+    @get_mem_ap
+    def debug_resume(self) -> None:
+        """Resume the CPU execution."""
+        self._mem_reg_write(
+            mem_ap_ix=self.mem_ap_ix,
+            addr=self.DHCSR_REG,
+            data=(self.DHCSR_DEBUGKEY),
+        )
+
+    @get_mem_ap
+    def debug_step(self) -> None:
+        """Step the CPU execution."""
+        self._mem_reg_write(
+            mem_ap_ix=self.mem_ap_ix,
+            addr=self.DHCSR_REG,
+            data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_STEP | self.DHCSR_C_DEBUGEN),
+        )
 
     def __del__(self) -> None:
         """General Debug Probe 'END' event handler."""

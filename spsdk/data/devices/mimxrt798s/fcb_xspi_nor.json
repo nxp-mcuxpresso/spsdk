@@ -344,7 +344,7 @@
                     "offset_int": "0x46",
                     "reg_width": "8",
                     "name": "serialClkFreq",
-                    "description": " [0x046-0x046] Serial Flash Frequencey 1: 30 MHz 2: 50 MHz 3: 60 MHz 4: 80 MHz 5: 100 MHz 6: 120 MHz 7: 133 MHz 8: 166 MHz 9: 200 MHz ",
+                    "description": " [0x046-0x046] Serial Flash Frequency 1: 30 MHz 2: 50 MHz 3: 60 MHz 4: 80 MHz 5: 100 MHz 6: 120 MHz 7: 133 MHz 8: 166 MHz 9: 200 MHz ",
                     "reset_value_int": "0x0"
                 },
                 {
@@ -1716,7 +1716,7 @@
                     "offset_int": "0x20f",
                     "reg_width": "8",
                     "name": "needRestoreNoCmdMode",
-                    "description": " [0x20f-0x20f] Need to Restore NoCmd mode after IP commmand execution ",
+                    "description": " [0x20f-0x20f] Need to Restore NoCmd mode after IP command execution ",
                     "reset_value_int": "0x0"
                 },
                 {

@@ -1,0 +1,25 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+# =====================================  Certification Block for MC56xx template  ======================================
+
+# ======================================================================================================================
+#                                             == ISK Certificate Settings ==
+# ======================================================================================================================
+selfSigned: true
+# ---------------------------------===== ISK public key [Conditionally required] =====----------------------------------
+# Description: Path to ISK public key.
+iskPublicKey: ec_secp256r1_sign_cert.pem
+# -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
+# Description: Path to Main root Certification Private Key.
+signPrivateKey: ec_pk_secp256r1_sign_cert.pem
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+# signProvider: type=file;file_path=root_prv_key.pem
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== cert block filename [Required] =====--------------------------------------
+# Description: Generated cert block filename.
+containerOutputFile: ../workspace/cert_block.bin

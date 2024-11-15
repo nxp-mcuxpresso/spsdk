@@ -1,0 +1,14 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mimxrt595s_template.yaml
+user_cfg: _data/dck_rsa_2048.yaml
+custom_command: "%! nxpdebugmbox -f mimxrt595s dat dc get-template -o workspace/mimxrt595s_template.yaml --force"
+
+comments:
+  rot_id: "0-based index representing the private key that will be used with respect to `rot_meta`"
+  rotk: "This is not needed as it is replaced by sign_provider parameter."
+  sign_provider: "The configuration of signature provider defining the actual signature provider type and its parameters."
+

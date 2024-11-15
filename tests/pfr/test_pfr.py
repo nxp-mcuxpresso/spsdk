@@ -245,8 +245,8 @@ def test_invalid_key_size(data_dir):
 
 def test_base_config_area_invalid_device_revision():
     with pytest.raises(
-        SPSDKError, match="SPSDK: Cannot load the device 'bb' - Doesn't exists in database."
+        SPSDKError, match="Cannot load the device 'bb' - Doesn't exists in database."
     ):
         BaseConfigArea(family="bb")
-    with pytest.raises(SPSDKError, match="SPSDK: Requested revision HH is not supported."):
+    with pytest.raises(SPSDKError, match="Requested revision HH is not supported."):
         BaseConfigArea(family="lpc55s6x", revision="HH")

@@ -51,6 +51,8 @@ master_doc = "index"
 autoclass_content = "both"
 suppress_warnings = ["autosectionlabel.*", "myst.header"]
 
+autodoc_mock_imports = ["ftd2xx"]
+
 # we don't want to execute notebooks during docs build because many of them require HW boards
 nbsphinx_execute = "never"
 nb_execution_mode = "off"
@@ -116,3 +118,6 @@ html_css_files = [
 ]
 
 html_extra_path = ["html_schemas"]
+
+# Myst extensions
+myst_enable_extensions = ["html_image"]

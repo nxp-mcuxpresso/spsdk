@@ -48,6 +48,9 @@ class Rot:
         """Export RoT."""
         return self.rot_obj.export()
 
+    def __str__(self) -> str:
+        return str(self.rot_obj)
+
     @classmethod
     def get_supported_families(cls) -> list[str]:
         """Get all supported families."""
@@ -90,6 +93,10 @@ class RotBase:
     def export(self) -> bytes:
         """Calculate ROT table."""
 
+    @abstractmethod
+    def __str__(self) -> str:
+        """Return string representation of the RoT object."""
+
 
 class RotCertBlockv1(RotBase):
     """Root of Trust for certificate block v1 class."""
@@ -115,6 +122,9 @@ class RotCertBlockv1(RotBase):
     def export(self) -> bytes:
         """Export RoT."""
         return self.rkht.export()
+
+    def __str__(self) -> str:
+        return str(self.rkht)
 
 
 class RotCertBlockv21(RotBase):
@@ -142,6 +152,9 @@ class RotCertBlockv21(RotBase):
         """Export RoT."""
         return self.rkht.export()
 
+    def __str__(self) -> str:
+        return str(self.rkht)
+
 
 class RotSrkTableAhab(RotBase):
     """Root of Trust for AHAB SrkTable class."""
@@ -161,8 +174,11 @@ class RotSrkTableAhab(RotBase):
                 SRKRecord.create_from_key(RKHT.convert_key(key, password, search_paths))
                 for key in keys_or_certs
             ]
-        )  # TODO Add srk_flags - CA flag
+        )
         self.srk.update_fields()
+        verifier = self.srk.verify()
+        if verifier.has_errors:  # Check for errors
+            raise SPSDKError(verifier.draw())
 
     def calculate_hash(self) -> bytes:
         """Calculate ROT hash."""
@@ -171,6 +187,9 @@ class RotSrkTableAhab(RotBase):
     def export(self) -> bytes:
         """Export RoT."""
         return self.srk.export()
+
+    def __str__(self) -> str:
+        return str(self.srk)
 
 
 class RotSrkTableAhabV2(RotBase):
@@ -193,8 +212,11 @@ class RotSrkTableAhabV2(RotBase):
                 )
                 for key_id, key in enumerate(keys_or_certs)
             ]
-        )  # TODO Add srk_flags - CA flag
+        )
         self.srk.update_fields()
+        verifier = self.srk.verify()
+        if verifier.has_errors:  # Check for errors
+            raise SPSDKError(verifier.draw())
 
     def calculate_hash(self) -> bytes:
         """Calculate ROT hash."""
@@ -203,6 +225,9 @@ class RotSrkTableAhabV2(RotBase):
     def export(self) -> bytes:
         """Export RoT."""
         return self.srk.export()
+
+    def __str__(self) -> str:
+        return str(self.srk)
 
 
 class RotSrkTableHab(RotBase):
@@ -253,3 +278,6 @@ class RotSrkTableHab(RotBase):
             return Certificate.parse(certificate)
         except SPSDKError as exc:
             raise SPSDKError("Unable to load certificate.") from exc
+
+    def __str__(self) -> str:
+        return str(self.srk)

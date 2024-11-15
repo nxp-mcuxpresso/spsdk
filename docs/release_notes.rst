@@ -11,6 +11,30 @@ Release Notes
 =============
 
 ------------------------
+2.4.0 (15-November-2024)
+------------------------
+
+**New features**
+
+* :ref:`el2go-host`:
+    - implement parallel download of Secure Objects using database
+    - speed up repeated calls to EL2GO server
+    - allow to specify scope of Secure Objects to download
+* :ref:`nxpdebugmbox`:
+    - support halt, resume commands
+    - AHB access test address remove as an option and move into database
+    - support for block memory transfer over debug probes
+* :ref:`nxpmemcfg`:
+    - add support for RT700
+
+**Bugfixes**
+
+* :ref:`el2go-host`:
+    - fix memory buffer used for data exchange for KW45
+* :ref:`nxpimage`:
+    - allow to parse AHAB image with empty image hash for rt118x
+
+------------------------
 2.3.0 (11-October-2024)
 ------------------------
 
@@ -25,7 +49,7 @@ Current version introduces breaking changes, which are described in details in `
 * :ref:`el2go-host`:
     - unify subcommands for RW61x
     - add get-otp-binary command
-    - addd UUID harvesting
+    - add UUID harvesting
     - add default handler to unknown errors while assigning device to a group
     - add checker for max amount of Secure Objects and their size
     - add Remote Database for Secure Objects for Azurewave
@@ -61,8 +85,8 @@ Current version introduces breaking changes, which are described in details in `
     - implement lightweight Chain-of-Trust checker for DevCert located in the device
 * support MCXC series (blhost)
 * support RT7xx
-* support MNCXN23x, MCXN9xx, KW45xx EL2Go
-* support MCXW71 and its wariants
+* support MCXN23x, MCXN9xx, KW45xx EL2Go
+* support MCXW71 and its variants
 
 **Bugfixes**
 

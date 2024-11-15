@@ -1,0 +1,171 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ======================================  Shadow register configuration template  ======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Optional] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s, mimxrt798s, rw610, rw612>
+family: rw612
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a1, a2, latest>
+revision: latest
+# -----------------------------------===== Shadow registers Settings [Required] =====-----------------------------------
+registers:
+  # ------------------------------------------===== BOOT_CFG0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x4000A03C, Width: 32b; Boot configuration fuse word 0.
+  BOOT_CFG0:
+    # ------------------------------------===== PRIMARY_BOOT_SOURCE [Optional] =====------------------------------------
+    # Description: Offset: 0b, Width: 4b, Primary boot source. (a.k.a. Master boot source)
+    # - ISP_PIN_BOOT, (0): ISP pins will determine boot source.
+    # - FLEXSPI_BOOT, (1): Boot from FlexSPI flash device using FlexSPI interface pins.
+    # - SDIO_BOOT, (3): Boot from SDIO (Serial) port.
+    # - SPI_BOOT, (4): Boot using SPI slave interface using master boot mode.
+    # - I2C_BOOT, (5): I2C boot mode.
+    # - UART_BOOT, (6): Boot using UART interface using master boot mode.
+    # - Reserved, (7): Reserved.
+    # - USBHID_BOOT, (8): USB-HID boot mode.
+    # - ISP_MODE, (9): Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface.
+    # - Test_MODE, (10): Reserved
+    # - QSPI_FALLBACK_SPINOR_BOOT, (12): Boot from Octal/Quad SPI flash device using FlexSPI channel A interface pins.
+    # If image is not found check recovery boot using SPI flash device through FlexComm.
+    # Possible options: <ISP_PIN_BOOT, FLEXSPI_BOOT, SDIO_BOOT, SPI_BOOT, I2C_BOOT, UART_BOOT, Reserved, USBHID_BOOT,
+    # ISP_MODE, Test_MODE, QSPI_FALLBACK_SPINOR_BOOT>
+    PRIMARY_BOOT_SOURCE: FLEXSPI_BOOT
+    # -------------------------------------===== DEFAULT_ISP_MODE [Optional] =====--------------------------------------
+    # Description: Offset: 4b, Width: 3b, ISP boot mode
+    # - AUTO_ISP, (0): Auto detect ISP mode. The RW61x probes active peripheral from one of the below serial interfaces
+    # and download image from the probed peripherals: UART, I2C, SPI, USB-HID.
+    # - USB_HID_ISP, (1): The USB HID class is used to download the image of the USB0 port.
+    # - UART_ISP, (2): Support ISP command interface on UART port only.
+    # - SPI_ISP, (3): Support ISP command interface on SPI port only.
+    # - I2C_ISP, (4): Support ISP command interface on I2C port only.
+    # - DISABLE_ISP, (7): Disable ISP fall through when proper image is not found on primary boot device.
+    # Possible options: <AUTO_ISP, USB_HID_ISP, UART_ISP, SPI_ISP, I2C_ISP, DISABLE_ISP>
+    DEFAULT_ISP_MODE: AUTO_ISP
+    # --------------------------------------===== BOOT_CLK_SPEED [Optional] =====---------------------------------------
+    # Description: Offset: 7b, Width: 1b, Defines clock speeds during boot.
+    BOOT_CLK_SPEED: 0
+    # --------------------------------------===== STOP_ON_FAILURE [Optional] =====--------------------------------------
+    # Description: Offset: 10b, Width: 1b, If set, then enables GPIO Port and PIN information upon failure.
+    STOP_ON_FAILURE: 0
+    # --------------------------------------===== TZM_IMAGE_TYPE [Optional] =====---------------------------------------
+    # Description: Offset: 12b, Width: 2b, TrustZone-M mode
+    # - IGNORED, (0): Ignored
+    # - ENFORCE_PRESET_VALUE, (1): Enforce preset TZM data in image manifest.
+    # - ENFORCE_PRESET_VALUE, (2): Enforce preset TZM data in image manifest.
+    # - ENFORCE_PRESET_VALUE, (3): Enforce preset TZM data in image manifest.
+    # Possible options: <IGNORED, ENFORCE_PRESET_VALUE, ENFORCE_PRESET_VALUE, ENFORCE_PRESET_VALUE>
+    TZM_IMAGE_TYPE: IGNORED
+    # ------------------------------------===== REDUNDANT_SPI_PORT [Optional] =====-------------------------------------
+    # Description: Offset: 16b, Width: 3b, FlexComm port to use for redundant SPI flash boot.
+    # - FC0, (0): Use FlexCom0 pins P0_0 (SCK), P0_1 (MISO), P0_2 (MOSI), P0_3 (SEL).
+    # - FC1, (1): Use FlexCom1 pins P0_7 (SCK), P0_8 (MISO), P0_9 (MOSI), P0_10 (SEL).
+    # - FC2, (2): Use FlexCom2 pins P0_14 (SCK), P0_15 (MISO), P0_16 (MOSI), P0_17 (SEL).
+    # - FC3, (3): Use FlexCom3 pins P0_21 (SCK), P0_22 (MISO), P0_23 (MOSI), P0_24 (SEL).
+    # - FC4, (4): Use FlexCom4 pins P0_28 (SCK), P0_29 (MISO), P0_30 (MOSI), P0_31 (SEL).
+    # - FC5, (5): Use FlexCom5 pins P1_3 (SCK), P1_4 (MISO), P1_5 (MOSI), P1_6 (SEL).
+    # - FC6, (6): Use FlexCom6 pins P3_25 (SCK), P3_26 (MISO), P3_27 (MOSI), P3_28 (SEL).
+    # - FC7, (7): Use FlexCom7 pins P4_0 (SCK), P4_1 (MISO), P4_2 (MOSI), P4_3 (SEL).
+    # Possible options: <FC0, FC1, FC2, FC3, FC4, FC5, FC6, FC7>
+    REDUNDANT_SPI_PORT: FC0
+    # --------------------------------------===== SECURE_BOOT_EN [Optional] =====---------------------------------------
+    # Description: Offset: 19b, Width: 2b, Secure boot enable config
+    # - DISABLED, (0): Allow non-secure images with and without CRC. Used during development.
+    # - DISABLED, (1): RFU
+    # - ENABLED, (2): Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)
+    # - ENABLED, (3): Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)
+    # Possible options: <DISABLED, DISABLED, ENABLED, ENABLED>
+    SECURE_BOOT_EN: DISABLED
+    # ---------------------------------------===== DICE_INC_OTP [Optional] =====----------------------------------------
+    # Description: Offset: 22b, Width: 1b, Include OTP fuse area in DICE computation
+    # - NOT_INCLUDED, (0): Not included
+    # - INCLUDED, (1): Included
+    # Possible options: <NOT_INCLUDED, INCLUDED>
+    DICE_INC_OTP: NOT_INCLUDED
+    # -----------------------------------------===== DICE_SKIP [Optional] =====-----------------------------------------
+    # Description: Offset: 23b, Width: 1b, Skip DICE computation
+    # - NO_SKIP, (0): Enable DICE
+    # - SKIP, (1): Disable DICE
+    # Possible options: <NO_SKIP, SKIP>
+    DICE_SKIP: SKIP
+    # --------------------------------------===== BOOT_FAIL_PORT [Optional] =====---------------------------------------
+    # Description: Offset: 24b, Width: 3b, GPIO port number to use for indicating boot failure. Defines GPIO port
+    # number.
+    BOOT_FAIL_PORT: 0
+    # ---------------------------------------===== BOOT_FAIL_PIN [Optional] =====---------------------------------------
+    # Description: Offset: 27b, Width: 5b, Defines GPIO pin number.
+    # Note: Please note GPIO[22:27] can not be used as BOOT_FAIL pins.
+    BOOT_FAIL_PIN: 0
+  # ------------------------------------------===== BOOT_CFG2 [Optional] =====------------------------------------------
+  # Description: Offset: 0x4000A044, Width: 32b; Boot configuration word specifying settings for FlexSPI image.
+  BOOT_CFG2:
+    # ------------------------------------===== FLEXSPI_IMAGE_SIZE [Optional] =====-------------------------------------
+    # Description: Offset: 0b, Width: 4b, The size of the flash memory to use for a boot image.
+    # - SIZE_OFFSET, (0): The size of the boot image is considered to be equal to the offset of the second image.
+    # - SIZE_1MB, (1): Size of remapped area is 1MByte.
+    # - SIZE_2MB, (2): Size of remapped area is 2MByte.
+    # - SIZE_3MB, (3): Size of remapped area is 3MByte.
+    # - SIZE_4MB, (4): Size of remapped area is 4MByte.
+    # - SIZE_5MB, (5): Size of remapped area is 5MByte.
+    # - SIZE_6MB, (6): Size of remapped area is 6MByte.
+    # - SIZE_7MB, (7): Size of remapped area is 7MByte.
+    # - SIZE_8MB, (8): Size of remapped area is 8MByte.
+    # - SIZE_9MB, (9): Size of remapped area is 9MByte.
+    # - SIZE_10MB, (10): Size of remapped area is 10MByte.
+    # - SIZE_11MB, (11): Size of remapped area is 11MByte.
+    # - SIZE_12MB, (12): Size of remapped area is 12MByte.
+    # - SIZE_256KB, (13): Size of remapped area is 256KByte.
+    # - SIZE_512KB, (14): Size of remapped area is 512KByte.
+    # - SIZE_768KB, (15): Size of remapped area is 768KByte.
+    # Possible options: <SIZE_OFFSET, SIZE_1MB, SIZE_2MB, SIZE_3MB, SIZE_4MB, SIZE_5MB, SIZE_6MB, SIZE_7MB, SIZE_8MB,
+    # SIZE_9MB, SIZE_10MB, SIZE_11MB, SIZE_12MB, SIZE_256KB, SIZE_512KB, SIZE_768KB>
+    FLEXSPI_IMAGE_SIZE: SIZE_OFFSET
+    # ----------------------------------===== FLEXSPI_DELAY_CELL_NUM [Optional] =====-----------------------------------
+    # Description: Offset: 4b, Width: 7b, Delay cell numbers for flash read sampling via DQS (either internal loopback
+    # or external DQS).
+
+    # delay = 1600ps, if value = 0
+    # delay = value * 100ps
+    FLEXSPI_DELAY_CELL_NUM: 0
+    # -----------------------------------===== FLEXSPI_IMAGE_OFFSET [Optional] =====------------------------------------
+    # Description: Offset: 11b, Width: 10b, The offset in flash memory where the second boot image starts. The offset to
+    # the second image is X * 256 KB.
+    FLEXSPI_IMAGE_OFFSET: 0x01
+  # --------------------------------------===== LIFE_CYCLE_STATE [Optional] =====---------------------------------------
+  # Description: Offset: 0x4000A0B4, Width: 16b; Life cycle state of rw61x platform.
+  LIFE_CYCLE_STATE:
+    # --------------------------------------------===== LCS [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Possible values of rw61x lifecycle states
+    # - Blank, (0): Initial state in NXP factory.
+    # - Provisioned, (1): NXP provisioned state.
+    # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
+    # - Develop2, (7): Optional customer development state. Used for development of NS world code.
+    # - In-Field, (15): In-field application state for end-customer use.
+    # - Field Return OEM, (31): Field return state.
+    # - Failure Analysis (FA), (63): NXP field return state (CQC).
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - Shredded, (255): Bricked state to prevent device use.
+    # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
+    # Field Locked, Shredded>
+    LCS: Develop2
+    # ---------------------------------------===== LCS_REDUNDANT [Optional] =====---------------------------------------
+    # Description: Offset: 8b, Width: 8b, Repeat values of lifecycle state due to a security
+    # - Blank, (0): Initial state in NXP factory.
+    # - Provisioned, (1): NXP provisioned state.
+    # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
+    # - Develop2, (7): Optional customer development state. Used for development of NS world code.
+    # - In-Field, (15): In-field application state for end-customer use.
+    # - Field Return OEM, (31): Field return state.
+    # - Failure Analysis (FA), (63): NXP field return state (CQC).
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - Shredded, (255): Bricked state to prevent device use.
+    # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
+    # Field Locked, Shredded>
+    LCS_REDUNDANT: Develop2

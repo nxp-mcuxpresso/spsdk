@@ -80,15 +80,26 @@ def test_app_parse_export(cli_runner: CliRunner, tmpdir, family, peripheral, ow)
         assert f"0x{x:08X}" in ret.output
 
 
-def test_app_parse_export_all(cli_runner: CliRunner, tmpdir):
+@pytest.mark.parametrize(
+    "peripheral,mem_type,interfaces",
+    [
+        ("flexspi_nor", "nor", ["octal_spi", "quad_spi", "hyper_flash"]),
+        ("flexspi_nand", "nand", ["quad_spi"]),
+        ("semc_nor", "nor", ["parallel"]),
+        ("sd", "sd", ["instance_0", "instance_1", "instance_2", "instance_3"]),
+    ],
+)
+def test_app_parse_export_all(
+    cli_runner: CliRunner, tmpdir, peripheral: str, mem_type: str, interfaces: list[str]
+):
     """Test of family info command."""
-    memories = MemoryConfig.get_all_known_memories()
+    memories = MemoryConfig.get_known_memories(mem_type=mem_type, interfaces=interfaces)
     for memory in memories:
-        cmd = f"parse -f mimxrt1189 -p {memory.peripheral} "
-        for ow in memory.option_words:
+        cmd = f"parse -f mimxrt1189 -p {peripheral} "
+        for ow in memory.interfaces[0].option_words:
             cmd += f"-w {str(ow)} "
         cfg_file = os.path.join(
-            tmpdir, f"{memory.manufacturer}_{memory.name}_{memory.interface}.yaml"
+            tmpdir, f"{memory.manufacturer}_{memory.name}_{memory.interfaces[0].name}.yaml"
         ).replace("\\", "/")
         cmd += f"-o {cfg_file}"
         ret = cli_runner.invoke(nxpmemcfg.main, cmd)
@@ -97,7 +108,7 @@ def test_app_parse_export_all(cli_runner: CliRunner, tmpdir):
         ret = cli_runner.invoke(nxpmemcfg.main, f"export -c {cfg_file}")
 
         assert ret.exit_code == 0
-        for ow in memory.option_words:
+        for ow in memory.interfaces[0].option_words:
             assert f"0x{ow:08X}" in ret.output
 
 
@@ -110,10 +121,11 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
 
 
 @pytest.mark.parametrize(
-    "family,instance,interface,chip_name,fcb,secure_address,output_checks",
+    "family,peripheral,instance,interface,chip_name,fcb,secure_address,output_checks",
     [
         (
             "mimxrt1189",
+            "flexspi_nor",
             1,
             "quad_spi",
             "W25QxxxJV",
@@ -121,15 +133,15 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
             False,
             [
                 "fill-memory 0x1FFE0000 4 0xCF900001",
-                "fill-memory 0x1FFE0000 4 0xCF900001",
-                "fill-memory 0x1FFE0000 4 0xC0000207",
+                "fill-memory 0x1FFE0000 4 0xC0000007",
                 "configure-memory 9 0x1FFE0000",
                 "fill-memory 0x1FFE0000 4 0xF000000F",
                 "read-memory 0x28000400 0x200",
             ],
         ),
         (
-            "rt118x",
+            "mimxrt1189",
+            "flexspi_nor",
             1,
             "quad_spi",
             "W25QxxxJV",
@@ -141,6 +153,7 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
         ),
         (
             "mimxrt1189",
+            "flexspi_nand",
             2,
             "quad_spi",
             "W25N01G",
@@ -155,7 +168,8 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
             ],
         ),
         (
-            "rt5xx",
+            "mimxrt595s",
+            "flexspi_nor",
             0,
             "quad_spi",
             "W25QxxxJV",
@@ -163,7 +177,7 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
             False,
             [
                 "fill-memory 0x0010C000 4 0xCF900000",
-                "fill-memory 0x0010C000 4 0xC0000207",
+                "fill-memory 0x0010C000 4 0xC0000007",
                 "configure-memory 9 0x0010C000",
                 "fill-memory 0x0010C000 4 0xF000000F",
                 "read-memory",
@@ -174,6 +188,7 @@ def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
 def test_blhost_script(
     cli_runner: CliRunner,
     family: str,
+    peripheral: str,
     instance: int,
     interface: str,
     chip_name: str,
@@ -187,7 +202,8 @@ def test_blhost_script(
     output_cfg = output + "/cfg.yaml"
     output_fcb = output + "/fcb.bin"
     ret = cli_runner.invoke(
-        nxpmemcfg.main, f"parse -f {family} -m {chip_name} -i {interface} -o {output_cfg}"
+        nxpmemcfg.main,
+        f"parse -f {family} -p {peripheral} -m {chip_name} -i {interface} -o {output_cfg}",
     )
     assert ret.exit_code == 0
     ret = cli_runner.invoke(
@@ -207,7 +223,8 @@ def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: str, tmpdi
         output_cfg = output + "/cfg.yaml"
         output_fcb = output + "/fcb.bin"
         ret = cli_runner.invoke(
-            nxpmemcfg.main, f"parse -f {family} -m W25QxxxJV -i quad_spi -o {output_cfg}"
+            nxpmemcfg.main,
+            f"parse -f {family} -p flexspi_nor -m W25QxxxJV -i quad_spi -o {output_cfg}",
         )
         assert ret.exit_code == 0
         instances = MemoryConfig.get_peripheral_instances(family, "flexspi_nor")

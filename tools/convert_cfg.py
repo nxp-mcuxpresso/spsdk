@@ -15,6 +15,8 @@ import click
 import colorama
 
 from spsdk.apps.utils.utils import catch_spsdk_error
+from spsdk.dat.dar_packet import DebugAuthenticateResponse
+from spsdk.dat.debug_credential import DebugCredentialCertificate
 from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
@@ -22,10 +24,13 @@ from spsdk.image.bee import BeeNxp
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mbi.mbi import get_mbi_class
+from spsdk.image.mem_type import MemoryType
 from spsdk.image.trustzone import TrustZone
 from spsdk.image.xmcd.xmcd import XMCD
+from spsdk.pfr.pfr import CFPA, CMACTABLE, CMPA, ROMCFG
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31
+from spsdk.shadowregs.shadowregs import ShadowRegisters
 from spsdk.utils.crypto.cert_blocks import CertBlockV21
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp
@@ -177,7 +182,7 @@ def get_schemas_fcb(config: dict[str, Any]) -> list[dict[str, Any]]:
     """
     check_config(config, FCB.get_validation_schemas_family())
     chip_family = config["family"]
-    mem_type = config["type"]
+    mem_type = MemoryType.from_label(config.get("type", "Unknown"))
     revision = config.get("revision", "latest")
     schemas = FCB.get_validation_schemas(chip_family, mem_type, revision)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -193,7 +198,7 @@ def get_schemas_bootable_image(config: dict[str, Any]) -> list[dict[str, Any]]:
     """
     check_config(config, BootableImage.get_validation_schemas_family())
     chip_family = config["family"]
-    mem_type = config["memory_type"]
+    mem_type = MemoryType.from_label(config["memory_type"])
     revision = config.get("revision", "latest")
     schemas = BootableImage.get_validation_schemas(chip_family, mem_type, revision)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -252,13 +257,100 @@ def get_schemas_binary_image(config: dict[str, Any]) -> list[dict[str, Any]]:
     return schemas
 
 
+def get_schemas_pfr_cmpa(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for PFR CMPA configurations.
+
+    :param config: Any configuration of PFR CMPA
+    :return: Validation JSON schemas
+    """
+    schemas = CMPA.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_pfr_cfpa(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for PFR CFPA configurations.
+
+    :param config: Any configuration of PFR CFPA
+    :return: Validation JSON schemas
+    """
+    schemas = CFPA.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_ifr_romcfg(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for IFR ROMCFG configurations.
+
+    :param config: Any configuration of IFR ROMCFG
+    :return: Validation JSON schemas
+    """
+    schemas = ROMCFG.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_ifr_cmactable(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for IFR CMACTABLE configurations.
+
+    :param config: Any configuration of IFR CMACTABLE
+    :return: Validation JSON schemas
+    """
+    schemas = CMACTABLE.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_shadowregs(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for Shadow register configurations.
+
+    :param config: Any configuration of Shadow  registers
+    :return: Validation JSON schemas
+    """
+    schemas = ShadowRegisters.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_dc(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for DC file configurations.
+
+    :param config: Any configuration of DC file
+    :return: Validation JSON schemas
+    """
+    schemas = DebugCredentialCertificate.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_dat(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for DAT configurations.
+
+    :param config: Any configuration of DAT
+    :return: Validation JSON schemas
+    """
+    schemas = DebugAuthenticateResponse.get_validation_schemas(
+        family=config["family"], revision=config.get("revision", "latest")
+    )
+    check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
 CONVERTORS = {
     "mbi": (get_schemas_mbi, "Master Boot Image"),
     "sb31": (get_schemas_sb31, "Secure Binary v3.1"),
-    "devhsm": (
-        get_schemas_devhsm,
-        "Device HSM",
-    ),  # It is important that SB3.1 config MUST be ahead of devhsm
     "cert_block": (get_schemas_cert_block, "Certification block"),
     "ahab": (get_schemas_ahab, "AHAB"),
     "signed-msg": (get_schemas_signed_message, "Signed Message"),
@@ -270,6 +362,17 @@ CONVERTORS = {
     "bee": (get_schemas_bee, "BEE"),
     "tz": (get_schemas_trust_zone, "Trust Zone"),
     "binary-image": (get_schemas_binary_image, "Binary Image merge"),
+    "pfr-cmpa": (get_schemas_pfr_cmpa, "PFR CMPA"),
+    "pfr-cfpa": (get_schemas_pfr_cfpa, "PFR CFPA"),
+    "ifr-romcfg": (get_schemas_ifr_romcfg, "IFR ROMCFG"),
+    "ifr-cmactable": (get_schemas_ifr_cmactable, "IFR CMACTABLE"),
+    "shadow-regs": (get_schemas_shadowregs, "Shadow Registers"),
+    "dc": (get_schemas_dc, "Debug Credential file"),
+    "dat": (get_schemas_dat, "Debug Authentication procedure"),
+    "devhsm": (
+        get_schemas_devhsm,
+        "Device HSM",
+    ),  # It is important that SB3.1 config MUST be ahead of devhsm
 }
 
 
@@ -297,9 +400,11 @@ def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
             pass
 
     if schemas:
-        ret = CommentedConfig(
-            main_title=f"{tool_name} converted config.", schemas=schemas
-        ).get_config(configuration)
+        main_title = f"{tool_name} Configuration"
+        family = configuration.get("family")
+        if family:
+            main_title += f" for {family}"
+        ret = CommentedConfig(main_title=main_title, schemas=schemas).get_config(configuration)
         click.echo(
             colorama.Fore.GREEN + f"Converted {tool_name} configuration" + colorama.Fore.RESET
         )

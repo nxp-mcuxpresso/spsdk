@@ -432,7 +432,7 @@ class Otfad:
             kek = bytes.fromhex(kek)
         scramble_enabled = key_scramble_mask is not None and key_scramble_align is not None
         if scramble_enabled:
-            assert key_scramble_mask and key_scramble_align
+            assert isinstance(key_scramble_mask, int) and isinstance(key_scramble_align, int)
             if key_scramble_mask >= 1 << 32:
                 raise SPSDKValueError("OTFAD Key scramble mask has invalid length")
             if key_scramble_align >= 1 << 8:
@@ -447,7 +447,7 @@ class Otfad:
         scrambled = bytes()
         for i, key_blob in enumerate(self._key_blobs):
             if scramble_enabled:
-                assert key_scramble_mask and key_scramble_align
+                assert isinstance(key_scramble_mask, int) and isinstance(key_scramble_align, int)
                 scrambled = bytearray(kek)
                 long_ix = (key_scramble_align >> (i * 2)) & 0x03
                 for j in range(4):
@@ -518,7 +518,10 @@ class OtfadNxp(Otfad):
         self.byte_swap = self.db.get_bool(DatabaseManager.OTFAD, "byte_swap")
         self.key_blob_rec_size = self.db.get_int(DatabaseManager.OTFAD, "key_blob_rec_size")
         self.keyblob_byte_swap_cnt = self.db.get_int(DatabaseManager.OTFAD, "keyblob_byte_swap_cnt")
-        assert self.keyblob_byte_swap_cnt in [0, 2, 4, 8, 16]
+        if self.keyblob_byte_swap_cnt not in [0, 2, 4, 8, 16]:
+            raise SPSDKValueError(
+                f"Invalid value of keyblob_byte_swap_cnt: {self.keyblob_byte_swap_cnt}"
+            )
         self.binaries = binaries
 
         if key_blobs:

@@ -467,7 +467,7 @@
                             "name": "ST_CPU0_DBGEN",
                             "access": "RO",
                             "reset_value_int": "0x0",
-                            "description": "When CPU0 (CM33) \"deben\" input is state 1, this bit indicates state 1"
+                            "description": "When CPU0 (CM33) \"dbgen\" input is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit5",
@@ -503,7 +503,7 @@
                             "name": "ST_CPU1_DBGEN",
                             "access": "RO",
                             "reset_value_int": "0x0",
-                            "description": "When CPU1 (CM33) \"deben\" input is state 1, this bit indicates state 1."
+                            "description": "When CPU1 (CM33) \"dbgen\" input is state 1, this bit indicates state 1."
                         },
                         {
                             "id": "field9E0-bit9",
@@ -807,18 +807,18 @@
                             "id": "field9F8-bit5",
                             "offset": "0x5",
                             "width": "1",
-                            "name": "FLAG_LVD_CORE_OCCURED",
+                            "name": "FLAG_LVD_CORE_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when VDD_CORE LVD event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_CORE_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LVD_CORE_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_CORE_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LVD_CORE_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -836,18 +836,18 @@
                             "id": "field9F8-bit8",
                             "offset": "0x8",
                             "width": "1",
-                            "name": "FLAG_WDT0_RESET_OCCURED",
+                            "name": "FLAG_WDT0_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 0 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_RESET_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_RESET_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_RESET_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_RESET_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -857,18 +857,18 @@
                             "id": "field9F8-bit9",
                             "offset": "0x9",
                             "width": "1",
-                            "name": "FLAG_CWDT0_RESET_OCCURED",
+                            "name": "FLAG_CWDT0_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 0 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_RESET_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_RESET_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_RESET_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_RESET_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -878,18 +878,18 @@
                             "id": "field9F8-bit10",
                             "offset": "0xa",
                             "width": "1",
-                            "name": "FLAG_WDT0_IRQ_OCCURED",
+                            "name": "FLAG_WDT0_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 0 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -899,18 +899,18 @@
                             "id": "field9F8-bit11",
                             "offset": "0xb",
                             "width": "1",
-                            "name": "FLAG_CWDT0_IRQ_OCCURED",
+                            "name": "FLAG_CWDT0_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 0 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1025,18 +1025,18 @@
                             "id": "field9F8-bit17",
                             "offset": "0x11",
                             "width": "1",
-                            "name": "FLAG_SEC_VIOL_IRQ_OCURRED",
+                            "name": "FLAG_SEC_VIOL_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when security violation is indicated from FLASH sub-system or AHB bus matrix.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_SEC_VIOL_IRQ_OCURRED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_SEC_VIOL_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_SEC_VIOL_IRQ_OCURRED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_SEC_VIOL_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1046,18 +1046,18 @@
                             "id": "field9F8-bit18",
                             "offset": "0x12",
                             "width": "1",
-                            "name": "FLAG_CPU0_NS_C_ACC_OCCURED",
+                            "name": "FLAG_CPU0_NS_C_ACC_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when CPU0 (CM33) makes non-secure code transactions. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_C_ACC_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_C_ACC_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_C_ACC_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_C_ACC_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1067,18 +1067,18 @@
                             "id": "field9F8-bit19",
                             "offset": "0x13",
                             "width": "1",
-                            "name": "FLAG_CPU0_NS_D_ACC_OCCURED",
+                            "name": "FLAG_CPU0_NS_D_ACC_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when CPU0 (CM33) makes non-secure data transactions. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_D_ACC_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_D_ACC_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_D_ACC_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_D_ACC_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1088,18 +1088,18 @@
                             "id": "field9F8-bit20",
                             "offset": "0x14",
                             "width": "1",
-                            "name": "FLAG_LVD_VSYS_OCCURED",
+                            "name": "FLAG_LVD_VSYS_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when VDD_SYS LVD event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VSYS_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VSYS_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VSYS_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VSYS_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1109,18 +1109,18 @@
                             "id": "field9F8-bit21",
                             "offset": "0x15",
                             "width": "1",
-                            "name": "FLAG_LVD_VDDIO_OCCURED",
+                            "name": "FLAG_LVD_VDDIO_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when VDD LVD event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VDDIO_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VDDIO_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VDDIO_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VDDIO_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1130,18 +1130,18 @@
                             "id": "field9F8-bit22",
                             "offset": "0x16",
                             "width": "1",
-                            "name": "FLAG_WDT1_RESET_OCCURED",
+                            "name": "FLAG_WDT1_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 1 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_RESET_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_RESET_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_RESET_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_RESET_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1151,18 +1151,18 @@
                             "id": "field9F8-bit23",
                             "offset": "0x17",
                             "width": "1",
-                            "name": "FLAG_CWDT1_RESET_OCCURED",
+                            "name": "FLAG_CWDT1_RESET_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 1 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_RESET_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_RESET_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_RESET_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_RESET_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1172,18 +1172,18 @@
                             "id": "field9F8-bit24",
                             "offset": "0x18",
                             "width": "1",
-                            "name": "FLAG_WDT1_IRQ_OCCURED",
+                            "name": "FLAG_WDT1_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 1 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1193,18 +1193,18 @@
                             "id": "field9F8-bit25",
                             "offset": "0x19",
                             "width": "1",
-                            "name": "FLAG_CWDT1_IRQ_OCCURED",
+                            "name": "FLAG_CWDT1_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 1 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1214,18 +1214,18 @@
                             "id": "field9F8-bit26",
                             "offset": "0x1a",
                             "width": "1",
-                            "name": "FLAG_TEMPTAMPER_DET_IRQ_OCCURED",
+                            "name": "FLAG_TEMPTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when temperature temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_TEMPTAMPER_DET_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_TEMPTAMPER_DET_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_TEMPTAMPER_DET_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_TEMPTAMPER_DET_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1235,18 +1235,18 @@
                             "id": "field9F8-bit27",
                             "offset": "0x1b",
                             "width": "1",
-                            "name": "FLAG_VOLTAMPER_DET_IRQ_OCCURED",
+                            "name": "FLAG_VOLTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when voltage temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_VOLTAMPER_DET_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_VOLTAMPER_DET_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_VOLTAMPER_DET_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_VOLTAMPER_DET_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1256,18 +1256,18 @@
                             "id": "field9F8-bit28",
                             "offset": "0x1c",
                             "width": "1",
-                            "name": "FLAG_LHTTAMPER_DET_IRQ_OCCURED",
+                            "name": "FLAG_LHTTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when light temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LHTTAMPER_DET_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LHTTAMPER_DET_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LHTTAMPER_DET_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_LHTTAMPER_DET_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1277,18 +1277,18 @@
                             "id": "field9F8-bit29",
                             "offset": "0x1d",
                             "width": "1",
-                            "name": "FLAG_CLKTAMPER_DET_IRQ_OCCURED",
+                            "name": "FLAG_CLKTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
                             "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when clock temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CLKTAMPER_DET_IRQ_OCCURED_DISABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CLKTAMPER_DET_IRQ_OCCURRED_DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CLKTAMPER_DET_IRQ_OCCURED_ENABLE",
+                                    "name": "ELS_AS_FLAG0_FLAG_CLKTAMPER_DET_IRQ_OCCURRED_ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }

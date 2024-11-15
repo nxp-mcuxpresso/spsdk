@@ -428,7 +428,7 @@ class SegmentImageVersion(Segment):
         """
         if not self.is_present:
             return 0
-        assert self.raw_block is not None
+        assert isinstance(self.raw_block, bytes)
         return int.from_bytes(self.raw_block[:4], Endianness.LITTLE.value)
 
     def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
@@ -473,7 +473,7 @@ class SegmentImageVersionAntiPole(Segment):
         """
         if not self.is_present:
             return 0
-        assert self.raw_block is not None
+        assert isinstance(self.raw_block, bytes)
         return int.from_bytes(self.raw_block[:2], Endianness.LITTLE.value)
 
     def load_config(self, config: dict[str, Any], search_paths: Optional[list[str]] = None) -> None:
@@ -1181,7 +1181,7 @@ def get_segments() -> dict[BootableImageSegment, Type[Segment]]:
     for var in globals():
         obj = globals()[var]
         if isclass(obj) and issubclass(obj, Segment) and obj is not Segment:
-            assert issubclass(obj, Segment)
+            assert issubclass(obj, Segment)  # pylint: disable=assert-instance
             ret[obj.NAME] = obj
     return ret
 

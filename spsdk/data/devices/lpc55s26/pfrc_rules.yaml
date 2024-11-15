@@ -1,17 +1,19 @@
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-- req_id: "lpc55xx_4.1"
-  desc: By default (blank device), the RoTKx_EN values are set to 0b00 which means
-    invalid. When secure boot is enabled (SEC_BOOT_EN != 0) there must be at
-    least one RoTKx_EN which is set to 0b01 (enabled) to allow device to boot
-    successfully.
-  msg: Secure boot is enabled. Make sure at least one Root of Trust Key Enable bit is set.
-  cond: CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and not (CFPA.ROTKH_REVOKE.RoTK3_EN == 1 or CFPA.ROTKH_REVOKE.RoTK2_EN == 1 or CFPA.ROTKH_REVOKE.RoTK1_EN == 1 or CFPA.ROTKH_REVOKE.RoTK0_EN == 1)
+rules:
+  - req_id: "lpc55xx_4.1"
+    desc:
+      By default (blank device), the RoTKx_EN values are set to 0b00 which means
+      invalid. When secure boot is enabled (SEC_BOOT_EN != 0) there must be at
+      least one RoTKx_EN which is set to 0b01 (enabled) to allow device to boot
+      successfully.
+    msg: Secure boot is enabled. Make sure at least one Root of Trust Key Enable bit is set.
+    cond: CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and not (CFPA.ROTKH_REVOKE.RoTK3_EN == 1 or CFPA.ROTKH_REVOKE.RoTK2_EN == 1 or CFPA.ROTKH_REVOKE.RoTK1_EN == 1 or CFPA.ROTKH_REVOKE.RoTK0_EN == 1)
 
-- req_id: "lpc55xx_5.1"
-  desc: Inverse value (upper 16 bits) of VENDOR_USAGE must be always
-    valid.
-  msg: Inverse values are generated automatically based on configuration.
-  cond: CFPA.VENDOR_USAGE != 0 and (~(CFPA.VENDOR_USAGE>>int(16)) & 0xFFFF) != (CFPA.VENDOR_USAGE & 0xFFFF)
+  - req_id: "lpc55xx_5.1"
+    desc: Inverse value (upper 16 bits) of VENDOR_USAGE must be always
+      valid.
+    msg: Inverse values are generated automatically based on configuration.
+    cond: CFPA.VENDOR_USAGE != 0 and (~(CFPA.VENDOR_USAGE>>int(16)) & 0xFFFF) != (CFPA.VENDOR_USAGE & 0xFFFF)

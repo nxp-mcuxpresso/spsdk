@@ -104,7 +104,7 @@ class Certificate(BaseClass):
                 else padding.PKCS1v15()
             )
         return Certificate(
-            crt.sign(issuer_private_key.key, hashes.SHA256(), rsa_padding=rsa_padding)  # type: ignore
+            crt.sign(issuer_private_key.key, hashes.SHA256(), rsa_padding=rsa_padding)
         )
 
     def save(
@@ -230,7 +230,7 @@ class Certificate(BaseClass):
         :raises SPSDKError: Unsupported key type in Certificate
         :return: true/false whether certificate is valid or not
         """
-        assert subject_certificate.signature_hash_algorithm
+        assert isinstance(subject_certificate.signature_hash_algorithm, hashes.HashAlgorithm)
         return self.get_public_key().verify_signature(
             subject_certificate.signature,
             subject_certificate.tbs_certificate_bytes,
@@ -244,7 +244,7 @@ class Certificate(BaseClass):
         :raises SPSDKError: Unsupported key type in Certificate
         :return: true/false whether certificate is valid or not
         """
-        assert self.signature_hash_algorithm
+        assert isinstance(self.signature_hash_algorithm, hashes.HashAlgorithm)
         return issuer_certificate.get_public_key().verify_signature(
             self.signature,
             self.tbs_certificate_bytes,
@@ -257,8 +257,11 @@ class Certificate(BaseClass):
 
         :return: true/false depending whether ca flag is set or not
         """
-        extension = self.extensions.get_extension_for_oid(SPSDKExtensionOID.BASIC_CONSTRAINTS)
-        return extension.value.ca  # type: ignore # mypy can not handle property definition in cryptography
+        try:
+            extension = self.extensions.get_extension_for_oid(SPSDKExtensionOID.BASIC_CONSTRAINTS)
+            return extension.value.ca  # type: ignore # mypy can not handle property definition in cryptography
+        except ExtensionNotFound:
+            return False
 
     @property
     def self_signed(self) -> bool:

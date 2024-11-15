@@ -205,7 +205,7 @@ def test_load_file(data_dir):
     assert text == "Hello\nworld"
 
     text2 = load_file(os.path.join(data_dir, "file_special.txt"))
-    assert text2 == "AÁBCČDĎEÉĚFGHChIÍJKLMNŇOÓPQRŘSŠTŤUÚŮVWXYÝZŽ\n"
+    assert text2 == "AÁBCČDĎEÉĚFGHChIÍJKLMNŇOÓPQRŘSŠTŤUÚŮVWXYÝZŽ\n"  # cspell: disable-line
 
 
 def test_write_file(data_dir, tmpdir):

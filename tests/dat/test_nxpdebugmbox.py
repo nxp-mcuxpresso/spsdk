@@ -11,6 +11,7 @@ import os
 import pytest
 
 from spsdk.apps.nxpdebugmbox import main
+from spsdk.utils.database import get_device, get_families
 from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
@@ -20,6 +21,21 @@ def test_command_line_interface_main(cli_runner: CliRunner):
     """Test for main menu options."""
     result = cli_runner.invoke(main, ["--help"])
     assert "Show this message and exit." in result.output
+
+
+def get_all_devices_and_revision(feature: str, append_latest: bool = True) -> list:
+    """Get list of tuples with complete device list with all revisions
+
+    :param feature: Name of feature
+    :param append_latest: Add also latest revision
+    """
+    ret = []
+    families = get_families(feature)
+    for family in families:
+        device = get_device(family)
+        for rev in device.revisions.revision_names(append_latest=append_latest):
+            ret.append((family, rev))
+    return ret
 
 
 @pytest.mark.parametrize(
@@ -181,39 +197,7 @@ def test_generate_rsa_with_elf2sb(tmpdir, data_dir, config):
 
 @pytest.mark.parametrize(
     "family, revision",
-    [
-        ("rt5xx", "a0"),
-        ("rt5xx", "latest"),
-        ("rt6xx", "b0"),
-        ("rt6xx", "latest"),
-        ("lpc55s0x", "a1"),
-        ("lpc55s0x", "latest"),
-        ("lpc55s1x", "a1"),
-        ("lpc55s1x", "latest"),
-        ("lpc55s2x", "a1"),
-        ("lpc55s2x", "latest"),
-        ("lpc55s6x", "a1"),
-        ("lpc55s6x", "latest"),
-        ("lpc55s3x", "a1"),
-        ("lpc55s3x", "latest"),
-        ("kw45xx", "a1"),
-        ("kw45xx", "latest"),
-        ("k32w1xx", "a1"),
-        ("k32w1xx", "latest"),
-        ("mcxn9xx", "a0"),
-        ("mcxn9xx", "a1"),
-        ("mcxn9xx", "latest"),
-        ("rw61x", "a2"),
-        ("rw61x", "latest"),
-        ("mx8ulp", "a0"),
-        ("mx8ulp", "latest"),
-        ("mx93", "a0"),
-        ("mx93", "latest"),
-        ("mx95", "a0"),
-        ("mx95", "latest"),
-        ("mimxrt1189", "a0"),
-        ("mimxrt1189", "latest"),
-    ],
+    get_all_devices_and_revision("dat"),
 )
 def test_nxpdebugmbox_get_template(cli_runner: CliRunner, tmpdir, family, revision):
     """Test nxpdebugmbox CLI - Generation template."""

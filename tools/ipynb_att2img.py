@@ -39,7 +39,6 @@ def export_images(filepath: str, output_dir: str) -> None:
         if cell.get("cell_type") == "markdown":
             attachments: Optional[dict[str, dict[str, str]]] = cell.get("attachments")
             if attachments:
-                assert attachments
                 att_solved: list[str] = []
                 for k, v in attachments.items():
                     new_location = os.path.join(img_store_path, f"{c_id}_{k}")

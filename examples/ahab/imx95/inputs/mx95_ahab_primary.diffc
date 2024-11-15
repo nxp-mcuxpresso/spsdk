@@ -1,0 +1,22 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/mx95_uboot_primary.yaml
+custom_command: "%! nxpimage ahab get-template -r a0 -f mimx9596 -o workspace/ahab_template.yaml --force"
+
+comments:
+  revision: "IMPORTANT! Change the revision to A0, latest B0 revision has different container format"
+  binary_container: "Define the path to the EdgeLock Enclave Firmware container"
+  srk_table: "All attributes related to the signing might be removed"
+  lpddr_imem: "Add path to the LPDDR IMEM image"
+  lpddr_dmem_qb: "Optionally add path to the LPDDR DMEM quick boot image"
+  lpddr_dmem: "Add path to the LPDDR DMEM image"
+  lpddr_dmem_qb: "Optionally add path to the LPDDR DMEM quick boot image"
+  oei_ddr: "Add path to the OEI DDR image"
+  oei_tcm: "Add path to the OEI TCM image"
+  system_manager: "Add path to system manager"
+  cortex_m7_app: "Optionally Add path to the Cortex M7 application"
+  spl: "Add path to the U-Boot SPL image"
+  v2x_dummy: "This is a dummy image that has to be present in the container for A0"
+  blob: "And finally remove unused parts for AHAB Certificate and Encryption blob"
+

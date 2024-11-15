@@ -38,7 +38,7 @@ def test_cfpa_translation_with_no_configuration():
     translator = Translator()
     with pytest.raises(
         SPSDKPfrcMissingConfigError,
-        match="SPSDK: Cannot translate IMG0_CMAC0. CFPA config not defined",
+        match="Cannot translate IMG0_CMAC0. CFPA config not defined",
     ):
         translator.translate("CFPA.IMG0_CMAC0")
 
@@ -47,6 +47,6 @@ def test_cmpa_translation_with_no_configuration():
     translator = Translator()
     with pytest.raises(
         SPSDKPfrcMissingConfigError,
-        match="SPSDK: Cannot translate BOOT_CFG. CMPA config not defined",
+        match="Cannot translate BOOT_CFG. CMPA config not defined",
     ):
         translator.translate("CMPA.BOOT_CFG")

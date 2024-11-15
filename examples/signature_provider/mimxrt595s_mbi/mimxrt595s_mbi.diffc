@@ -1,0 +1,14 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mimxrt595s_xip_signed.yaml
+user_cfg: _data/mimxrt595s_xip_signed.yaml
+custom_command: "%! nxpimage mbi get-templates -f mimxrt595s -o workspace/ --force"
+
+comments:
+  trustZonePresetFile: "This is not needed as TrustZone is disabled"
+  signPrivateKey: "This is not needed as it is replaced by signProvider parameter."
+  signProvider: "The configuration of signature provider defining the actual signature provider type and its parameters."
+

@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cfg_opt_templates/ow_flexspi_nor.yaml
+user_cfg: inputs/ow_flexspi_nor.yaml
+custom_command: "%! nxpmemcfg get-templates -f mimxrt1189 -o workspace/cfg_opt_templates/ --force"
+
+comments:
+  ConfigOption1: Example of removing ConfigOption1, that is not used
+

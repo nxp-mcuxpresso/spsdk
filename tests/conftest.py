@@ -24,6 +24,7 @@ except ImportError:
     collect_ignore_glob = ["tp*"]
 
 environ["SPSDK_ENV_CACHE_DISABLED"] = "False"
+environ["SPSDK_DEBUG_LOGGING_DISABLED"] = "True"
 
 
 @pytest.fixture

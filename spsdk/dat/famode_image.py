@@ -12,8 +12,7 @@ import os
 import struct
 from typing import Any, Type
 
-import platformdirs
-
+import spsdk
 from spsdk.exceptions import SPSDKError
 from spsdk.image.mbi.mbi import MasterBootImage, create_mbi_class
 from spsdk.utils.database import DatabaseManager, get_db, get_families
@@ -139,7 +138,7 @@ def modify_input_config(config: dict[str, Any]) -> dict[str, Any]:
     socc = db.get_int(DatabaseManager.DAT, "socc")
     srk_set = 2 if "nxp" in config["outputImageAuthenticationType"] else 1
     data = struct.pack(FAMODE_DATA_FORMAT, socc, srk_set, bytes(56))
-    filename = os.path.join(platformdirs.user_runtime_dir("spsdk"), "famode_data.bin")
+    filename = os.path.join(spsdk.SPSDK_PLATFORM_DIRS.user_runtime_dir, "famode_data.bin")
     logger.debug(f"FAMode data binary path: {filename}")
     write_file(data, filename, "wb")
     config["inputImageFile"] = filename
@@ -152,7 +151,7 @@ def check_famode_data(mbi: MasterBootImage) -> None:
     :param mbi: MBI with FA mode data.
     :raises SPSDKError: In case that the data are not in FA mode format.
     """
-    assert mbi.app
+    assert isinstance(mbi.app, bytes)
     socc, srk_set, fill = struct.unpack(FAMODE_DATA_FORMAT, mbi.app)
     db = get_db(mbi.family)
     req_socc = db.get_int(DatabaseManager.DAT, "socc")

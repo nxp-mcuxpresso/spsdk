@@ -8,18 +8,6 @@ APIs
 
 .. note:: See how to install *SPSDK* in :ref:`Installation Guide` chapter.
 
------------------
-APIs Connectivity
------------------
-
-SPSDK library communicates with NXP devices connected to the host PC. Details on how to configure the connectivity could be found in the following chapters:
-
-.. toctree::
-    :maxdepth: 1
-
-    uart
-    usb
-
 ----------
 APIs Usage
 ----------
@@ -27,7 +15,6 @@ APIs Usage
 Please check *SPSDK* examples:
 
 - :ref:`Jupyter notebooks`
-- :ref:`Crypto examples`
 
 Development guides for various SPSDK modules are bellow:
 
@@ -42,14 +29,10 @@ Development guides for various SPSDK modules are bellow:
 - :ref:`SDP Module API`
 - :ref:`Utils Module API`
 
-Find user guides for various SPSDK modules bellow:
 
 .. toctree::
     :maxdepth: 1
 
-    image
-    sbfile
-    mboot
-    sdp
+    logger
 
 

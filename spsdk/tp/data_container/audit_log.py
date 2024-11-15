@@ -273,7 +273,7 @@ class AuditLog(list[AuditLogRecord]):
         """
         command = (SELECT_SLICE_COMMAND, id_slice) if id_slice else (SELECT_COMMAND,)
         with sqlite_cursor(file_path) as cursor:
-            cursor.execute(*command)  # type: ignore
+            cursor.execute(*command)
             for item in cursor:
                 yield item[0], AuditLogRecord.from_tuple(item)
 

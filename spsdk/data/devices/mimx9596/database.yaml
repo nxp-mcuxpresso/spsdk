@@ -177,6 +177,8 @@ features:
     ele_cnt_version: 1
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]
+    test_address: 0x2048_0000
+    dmbox_ap_ix: 0
 
   # ======== FCB section ========
   # fcb:

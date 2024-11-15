@@ -14,23 +14,93 @@ info:
   # Web page of MCU representative
   web: https://www.nxp.com
   memory_map:
-    {} # Memory map basic info
-    # internal-flash:
-    #   start_int: 0x0
-    #   size_int: 0x80000
-    #   external: false
-    # sram:
-    #   start_int: 0x20000000
-    #   size_int: 0x10000
-    #   external: false
-    # sram4:
-    #   start_int: 0x20040000
-    #   size_int: 0x4000
-    #   external: false
-    # sramx:
-    #   start_int: 0x4000000
-    #   size_int: 0x8000
-    #   external: false
+    code-tcm_ns:
+      start_int: 0x0FFC0000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    code-tcm_s:
+      start_int: 0x1FFC0000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    system-tcm_ns:
+      start_int: 0x20000000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    system-tcm_s:
+      start_int: 0x30000000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    ocram_ns:
+      start_int: 0x22020000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    ocram_s:
+      start_int: 0x32020000
+      size_int: 0x40000
+      external: false
+      non_xip_type: int_ram
+    flexspi0_ns:
+      start_int: 0x04000000
+      size_int: 0x08000000
+      external: true
+      mirror_of: flexspi0_s
+    flexspi0_s:
+      start_int: 0x14000000
+      size_int: 0x08000000
+      external: true
+    flexspi1_ns:
+      start_int: 0x40000000
+      size_int: 0x10000000
+      external: true
+      mirror_of: flexspi1_s
+    flexspi1_s:
+      start_int: 0x50000000
+      size_int: 0x08000000
+      external: true
+    flexspi2_ns:
+      start_int: 0x60000000
+      size_int: 0x10000000
+      external: true
+      mirror_of: flexspi2_s
+    flexspi2_s:
+      start_int: 0x70000000
+      size_int: 0x08000000
+      external: true
+    dram1_ns:
+      start_int: 0x80000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram1_s:
+      start_int: 0x90000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram2_ns:
+      start_int: 0xA0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram2_s:
+      start_int: 0xB0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram3_ns:
+      start_int: 0xC0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram3_s:
+      start_int: 0xD0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
   isp:
     rom:
       protocol: sdps
@@ -59,6 +129,8 @@ features:
   dat:
     socc: 0x4D580008 # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    test_address: 0x22020000
+    dmbox_ap_ix: 0
 
   # ======== AHAB section ========
   ahab:
@@ -143,7 +215,7 @@ features:
   # ======== Misc signing section ========
   signing:
     pss_padding: true
-  
+
   # ======== Fastboot ========
   fastboot:
     address: 0x8280_0000

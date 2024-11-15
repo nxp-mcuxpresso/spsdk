@@ -1,0 +1,149 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =====================================  Shadow Registers Configuration for rw612  =====================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Optional] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s, mimxrt798s, rw610, rw612>
+family: rw612
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a1, a2, latest>
+revision: latest
+# -----------------------------------===== Shadow registers Settings [Required] =====-----------------------------------
+registers:
+  # ------------------------------------------===== BOOT_CFG0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x4000A03C, Width: 32b; Boot configuration fuse word 0.
+  BOOT_CFG0:
+    # ------------------------------------===== PRIMARY_BOOT_SOURCE [Optional] =====------------------------------------
+    # Description: Offset: 0b, Width: 4b, Primary boot source. (a.k.a. Master boot source)
+    # - ISP_PIN_BOOT, (0): ISP pins will determine boot source.
+    # - FLEXSPI_BOOT, (1): Boot from FlexSPI flash device using FlexSPI interface pins.
+    # - SDIO_BOOT, (3): Boot from SDIO (Serial) port.
+    # - SPI_BOOT, (4): Boot using SPI slave interface using master boot mode.
+    # - I2C_BOOT, (5): I2C boot mode.
+    # - UART_BOOT, (6): Boot using UART interface using master boot mode.
+    # - Reserved, (7): Reserved.
+    # - USBHID_BOOT, (8): USB-HID boot mode.
+    # - ISP_MODE, (9): Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface.
+    # - Test_MODE, (10): Reserved
+    # - QSPI_FALLBACK_SPINOR_BOOT, (12): Boot from Octal/Quad SPI flash device using FlexSPI channel A interface pins.
+    # If image is not found check recovery boot using SPI flash device through FlexComm.
+    # Possible options: <ISP_PIN_BOOT, FLEXSPI_BOOT, SDIO_BOOT, SPI_BOOT, I2C_BOOT, UART_BOOT, Reserved, USBHID_BOOT,
+    # ISP_MODE, Test_MODE, QSPI_FALLBACK_SPINOR_BOOT>
+    PRIMARY_BOOT_SOURCE: FLEXSPI_BOOT
+    # --------------------------------------===== SECURE_BOOT_EN [Optional] =====---------------------------------------
+    # Description: Offset: 19b, Width: 2b, Secure boot enable config
+    # - DISABLED, (0): Allow non-secure images with and without CRC. Used during development.
+    # - DISABLED, (1): RFU
+    # - ENABLED, (2): Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)
+    # - ENABLED, (3): Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)
+    # Possible options: <DISABLED, DISABLED, ENABLED, ENABLED>
+    SECURE_BOOT_EN: ENABLED
+    # -----------------------------------------===== DICE_SKIP [Optional] =====-----------------------------------------
+    # Description: Offset: 23b, Width: 1b, Skip DICE computation
+    # - NO_SKIP, (0): Enable DICE
+    # - SKIP, (1): Disable DICE
+    # Possible options: <NO_SKIP, SKIP>
+    DICE_SKIP: SKIP
+
+  # ---------------------------------------===== DCFG_CC_SOCU_NS [Optional] =====---------------------------------------
+  # Description: Offset: 0x4000A07C, Width: 32b; The DCFG_CC_SOCU_NS configuration fields can be used to increase the
+  # restriction level specified in DCFG_CC_SOCU. With TZ-M, the part can be sold by level 1 customers (secure code
+  # developer) to level-2 customers who develops non-secure code only.
+  #     - In this scenario, or easy of development, Level-I customer releases the part to always allow non-secure debug.
+  #     - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used.
+  #     - ROM will use this word to further restrict the debug access.
+  #     - Layout of this word is same as DCFG_CC_SOCU.
+  #     - Combinations of PINNED_xxxEN and DFLT_xxxEN bits and resulting access restriction levels are:
+
+  # 1. PINNED_xxxEN=1,DFLT_xxxEN=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is
+  # provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions
+  # before final deployment of the product.
+  # 2. PINNED_xxxEN=0,DFLT_xxxEN=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access
+  # can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC)
+  # certificate.
+  # 3. PINNED_xxxEN=0,DFLT_xxxEN=1: Illegal setting. Part will lock-up if this setting is selected.
+  # 4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be
+  # reversed. This setting offers the highest level of restriction.
+  DCFG_CC_SOCU_NS:
+    # ------------------------------------===== PINNED_ISPCMDEN_NS [Optional] =====-------------------------------------
+    # Description: Offset: 28b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
+    # issued after authentication.
+    # - DAR_CC, (0): Debug Authentication Response determines the state.
+    # - FIXED, (1): Enabled
+    # Possible options: <DAR_CC, FIXED>
+    PINNED_ISPCMDEN_NS: FIXED
+  # ----------------------------------------===== DCFG_CC_SOCU [Optional] =====-----------------------------------------
+  # Description: Offset: 0x4000A084, Width: 32b; The DCFG_CC_SOCU configuration field specifies the debug access
+  # restrictions per debug domain. The DCFG_CC_SOCU_NS fields can be used to increase the restriction level specified in
+  # DCFG_CC_SOCU but cannot be used to reduce the restriction level.
+  #     - Combinations of PINNED_xxxEN and DFLT_xxxEN bits and resulting access restriction levels are:
+
+  #  1. PINNED_xxxEN=1,DFLT_xxxEN=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is
+  # provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions
+  # before final deployment of the product.
+  #  2. PINNED_xxxEN=0,DFLT_xxxEN=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the
+  # access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC)
+  # certificate.
+  #  3. PINNED_xxxEN=0,DFLT_xxxEN=1: Illegal setting. Part will lock-up if this setting is selected.
+  #  4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be
+  # reversed. This setting offers the highest level of restriction.
+  DCFG_CC_SOCU:
+    # ---------------------------------------===== DFLT_ISPCMDEN [Optional] =====---------------------------------------
+    # Description: Offset: 17b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
+    # issued after authentication.
+    # - DISABLED, (0): Disabled
+    # - ENABLED, (1): Enabled
+    # Possible options: <DISABLED, ENABLED>
+    DFLT_ISPCMDEN: ENABLED
+    # --------------------------------------===== PINNED_ISPCMDEN [Optional] =====--------------------------------------
+    # Description: Offset: 28b, Width: 1b, Controls whether ISP boot flow DM-AP command (command code: 0x05) can be
+    # issued after authentication.
+    # - DAR_CC, (0): Debug Authentication Response determines the state.
+    # - FIXED, (1): Enabled
+    # Possible options: <DAR_CC, FIXED>
+    PINNED_ISPCMDEN: FIXED
+  # --------------------------------------===== LIFE_CYCLE_STATE [Optional] =====---------------------------------------
+  # Description: Offset: 0x4000A0B4, Width: 16b; Life cycle state of rw61x platform.
+  LIFE_CYCLE_STATE:
+    # --------------------------------------------===== LCS [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Possible values of rw61x lifecycle states
+    # - Blank, (0): Initial state in NXP factory.
+    # - Provisioned, (1): NXP provisioned state.
+    # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
+    # - Develop2, (7): Optional customer development state. Used for development of NS world code.
+    # - In-Field, (15): In-field application state for end-customer use.
+    # - Field Return OEM, (31): Field return state.
+    # - Failure Analysis (FA), (63): NXP field return state (CQC).
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - Shredded, (255): Bricked state to prevent device use.
+    # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
+    # Field Locked, Shredded>
+    LCS: In-Field
+    # ---------------------------------------===== LCS_REDUNDANT [Optional] =====---------------------------------------
+    # Description: Offset: 8b, Width: 8b, Repeat values of lifecycle state due to a security
+    # - Blank, (0): Initial state in NXP factory.
+    # - Provisioned, (1): NXP provisioned state.
+    # - Develop, (3): Initial customer development state after leaving NXP manufacturing.
+    # - Develop2, (7): Optional customer development state. Used for development of NS world code.
+    # - In-Field, (15): In-field application state for end-customer use.
+    # - Field Return OEM, (31): Field return state.
+    # - Failure Analysis (FA), (63): NXP field return state (CQC).
+    # - In-Field Locked, (207): Alternative in-field application state that disables debug capability and prevents use
+    # of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state.
+    # - Shredded, (255): Bricked state to prevent device use.
+    # Possible options: <Blank, Provisioned, Develop, Develop2, In-Field, Field Return OEM, Failure Analysis (FA), In-
+    # Field Locked, Shredded>
+    LCS_REDUNDANT: In-Field
+  # --------------------------------------------===== RKTH [Optional] =====---------------------------------------------
+  # Description: Offset: 0x4000A1A0, Width: 384b; ROTKH field is compounded by 12 32-bit fields and contains Root key
+  # table hash. For ECC P-256 keys RKTH is a 32-byte SHA-256 digest of four SHA-256 digests computed over four OEM
+  # public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case
+  # that ECC P-384 keys are used, RKTH is 48-byte SHA-384 digest.
+  RKTH: 'e2cca7cf09a45d2f1942969fda1c68ecaad78fad416d143292dad2f618291ddd'

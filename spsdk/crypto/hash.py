@@ -27,6 +27,7 @@ class EnumHashAlgorithm(SpsdkEnum):
     SHA512 = (3, "sha512", "SHA512")
     MD5 = (4, "md5", "MD5")
     SM3 = (5, "sm3", "SM3")
+    NONE = (254, "none", "NONE")
 
 
 def get_hash_algorithm(algorithm: EnumHashAlgorithm) -> hashes.HashAlgorithm:

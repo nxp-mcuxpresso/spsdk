@@ -1,8 +1,10 @@
-[
-    {
-        "req_id": "0.2",
-        "desc": "Example of incorrectly written condition",
-        "msg": "Should we even display this?!",
-        "cond": "no[one(_would(write[this.right?"
-    }
-]
+{
+    "rules": [
+        {
+            "req_id": "0.2",
+            "desc": "Example of incorrectly written condition",
+            "msg": "Should we even display this?!",
+            "cond": "no[one(_would(write[this.right?"
+        }
+    ]
+}
