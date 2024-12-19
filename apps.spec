@@ -220,6 +220,7 @@ a_el2go = analyze(["spsdk/apps/el2go.py"])
 a_dk6prog = analyze(["spsdk/apps/dk6prog.py"])
 a_lpcprog = analyze(["spsdk/apps/lpcprog.py"])
 a_nxpdice = analyze(["spsdk/apps/nxpdice.py"])
+a_nxpfuses = analyze(["spsdk/apps/nxpfuses.py"])
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
 MERGE(
@@ -242,6 +243,7 @@ MERGE(
     (a_dk6prog, "dk6prog", "dk6prog"),
     (a_lpcprog, "lpcprog", "lpcprog"),
     (a_nxpdice, "lnxpdice", "lnxpdice"),
+    (a_nxpfuses, "nxpfuses", "nxpfuses"),
 )
 
 
@@ -269,6 +271,9 @@ exe_el2go = executable(a_el2go, "el2go-host", "tools/pyinstaller/el2go_version_i
 exe_dk6prog = executable(a_dk6prog, "dk6prog", "tools/pyinstaller/dk6prog_version_info.txt")
 exe_lpcprog = executable(a_lpcprog, "lpcprog", "tools/pyinstaller/lpcprog_version_info.txt")
 exe_nxpdice = executable(a_nxpdice, "nxpdice", "tools/pyinstaller/nxpdice_version_info.txt")
+exe_nxpfuses = executable(
+    a_nxpfuses, "nxpfuses", "tools/pyinstaller/nxpfuses_version_info.txt"
+)
 
 # collect all bundles together
 coll_apps = COLLECT(

@@ -9,7 +9,8 @@
 import logging
 import os
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from types import TracebackType
+from typing import Optional, Type
 
 from hexdump import restore
 from serial import Serial, SerialException
@@ -100,6 +101,18 @@ class UbootSerial:
         if interrupt_autoboot:
             self._interrupt_autoboot(self.retries)
         self.is_opened = True
+
+    def __enter__(self) -> "UbootSerial":
+        self.open()
+        return self
+
+    def __exit__(
+        self,
+        exception_type: Optional[Type[Exception]] = None,
+        exception_value: Optional[Exception] = None,
+        traceback: Optional[TracebackType] = None,
+    ) -> None:
+        self.close()
 
     def is_serial_console_open(self) -> bool:
         """Check if we are already dropped to uboot serial console .
@@ -256,6 +269,18 @@ class UbootFastboot:
     def close(self) -> None:
         """Close uboot device."""
         self.is_opened = False
+
+    def __enter__(self) -> "UbootFastboot":
+        self.open()
+        return self
+
+    def __exit__(
+        self,
+        exception_type: Optional[Type[Exception]] = None,
+        exception_value: Optional[Exception] = None,
+        traceback: Optional[TracebackType] = None,
+    ) -> None:
+        self.close()
 
     def open_fastboot_in_uboot(self) -> None:
         """Open fastboot in uboot serial console."""

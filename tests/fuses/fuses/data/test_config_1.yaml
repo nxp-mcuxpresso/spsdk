@@ -1,0 +1,165 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+family: dev2
+revision: latest
+
+# =============================================  Fuses template for dev2.  =============================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ----------------------------------------===== Fuses Settings [Required] =====-----------------------------------------
+registers:
+  # --------------------------------------------===== LOCK0 [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Lock fuse.
+  LOCK0: '0x00000001'
+  # --------------------------------------------===== REG1 [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000010, Width: 32b; Register 1, used for testing antipole register and some computed
+  # fields.
+  REG1:
+    # -------------------------------------------===== CRC8 [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 8b, CRC-8/ITU of upper 3 bytes of this register. Polynomial=0x07, initial value=
+    # 0x00, XorOut=0x55.
+    CRC8: 0
+    # -----------------------------------------===== BITFIELD1 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 1b, BitField 1.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD1: ENABLED
+    # -----------------------------------------===== BITFIELD2 [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 1b, Bitfield 2.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD2: ENABLED
+    # -----------------------------------------===== BITFIELD3 [Optional] =====-----------------------------------------
+    # Description: Offset: 10b, Width: 1b, Bitfield 3.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD3: DISABLED
+    # -----------------------------------------===== BITFIELD4 [Optional] =====-----------------------------------------
+    # Description: Offset: 11b, Width: 1b, Bitfield 4.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD4: DISABLED
+    # -----------------------------------------===== BITFIELD5 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 1b, Bitfield 5.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD5: DISABLED
+    # -----------------------------------------===== BITFIELD6 [Optional] =====-----------------------------------------
+    # Description: Offset: 13b, Width: 1b, Bitfield 6.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD6: DISABLED
+    # -----------------------------------------===== BITFIELD7 [Optional] =====-----------------------------------------
+    # Description: Offset: 14b, Width: 1b, Bitfield 7.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD7: DISABLED
+    # -----------------------------------------===== BITFIELD8 [Optional] =====-----------------------------------------
+    # Description: Offset: 15b, Width: 1b, Bitfield 8.
+    # - DISABLED, (0): Disabled.
+    # - ENABLED, (1): Enabled.
+    # Possible options: <DISABLED, ENABLED>
+    BITFIELD8: DISABLED
+    # -----------------------------------------===== BITFIELD9 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 1b, Bitfield 9
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD9: CLOSE
+    # ----------------------------------------===== BITFIELD10 [Optional] =====-----------------------------------------
+    # Description: Offset: 17b, Width: 1b, Bitfield 10.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD10: CLOSE
+    # ----------------------------------------===== BITFIELD11 [Optional] =====-----------------------------------------
+    # Description: Offset: 18b, Width: 1b, Bitfield 11.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD11: CLOSE
+    # ----------------------------------------===== BITFIELD12 [Optional] =====-----------------------------------------
+    # Description: Offset: 19b, Width: 1b, Bitfield 12.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD12: CLOSE
+    # ----------------------------------------===== BITFIELD13 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 1b, Bitfield 13.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD13: CLOSE
+    # ----------------------------------------===== BITFIELD14 [Optional] =====-----------------------------------------
+    # Description: Offset: 21b, Width: 1b, Bitfield 14.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD14: CLOSE
+    # ----------------------------------------===== BITFIELD15 [Optional] =====-----------------------------------------
+    # Description: Offset: 22b, Width: 1b, Bitfield 15.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD15: CLOSE
+    # ----------------------------------------===== BITFIELD16 [Optional] =====-----------------------------------------
+    # Description: Offset: 23b, Width: 1b, Bitfield 16.
+    # - CLOSE, (0): Close property.
+    # - OPEN, (1): Open property.
+    # Possible options: <CLOSE, OPEN>
+    BITFIELD16: CLOSE
+    # ----------------------------------------===== BITFIELD17 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 1b, Bitfield 17.
+    BITFIELD17: 0
+    # ----------------------------------------===== DEV_TEST_EN [Optional] =====----------------------------------------
+    # Description: Offset: 31b, Width: 1b, Enable test mode.
+    # This bit should be clear in OTP words. But during development to test different
+    # DCFG_CC_SOCU settings without programming OTP words, developers can write the
+    # values to shadow registers corresponding to OTP words (95 & 104) with this bit set.
+    # - 0, (0): Value 0.
+    # - 1, (1): Value 1.
+    # Possible options: <0, 1>
+    DEV_TEST_EN: '0'
+  # --------------------------------------------===== REG2 [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000014, Width: 16b; Register 2 used for shadow registers testing.
+  REG2:
+    # ----------------------------------------===== BITFIELD 1 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 4b, BitField 1.
+    BITFIELD 1: 0x5
+    # ----------------------------------------===== BITFIELD 2 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 1b, BitField 2.
+    BITFIELD 2: 0
+    # ----------------------------------------===== BITFIELD 3 [Optional] =====-----------------------------------------
+    # Description: Offset: 5b, Width: 2b, BitField 3.
+    BITFIELD 3: 0
+    # ----------------------------------------===== BITFIELD 4 [Optional] =====-----------------------------------------
+    # Description: Offset: 7b, Width: 1b, BitField 4.
+    # - STOP, (0): Stop operation.
+    # - RUN, (1): Start operation.
+    # Possible options: <STOP, RUN>
+    BITFIELD 4: RUN
+    # ----------------------------------------===== BITFIELD 5 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 1b, BitField 5.
+    # - HALT, (0): Halt operation.
+    # - STOP, (1): Stop operation.
+    # Possible options: <HALT, STOP>
+    BITFIELD 5: HALT
+    # ----------------------------------------===== BITFIELD 6 [Optional] =====-----------------------------------------
+    # Description: Offset: 9b, Width: 1b, BitField 6.
+    # - GREEN, (0): Green option.
+    # - RED, (1): Red option.
+    # Possible options: <GREEN, RED>
+    BITFIELD 6: GREEN
+    # -----------------------------------------===== RESERVED [Optional] =====------------------------------------------
+    # Description: Offset: 10b, Width: 11b, Reserved
+    RESERVED: 0

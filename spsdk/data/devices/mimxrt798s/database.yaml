@@ -41,7 +41,7 @@ info:
   purpose: i.MX RT Crossover MCUs
   spsdk_predecessor_name: rt7xx
   # Web page of MCU representative
-  web: https://www.nxp.com
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt700-crossover-mcu-with-arm-cortex-m33-npu-dsp-and-gpu-cores:i.MX-RT700
   isp:
     rom:
       protocol: mboot

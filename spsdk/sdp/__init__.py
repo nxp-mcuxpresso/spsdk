@@ -7,6 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module implementing the SDP communication protocol."""
-from spsdk.sdp.interfaces.uart import SdpUARTInterface
-from spsdk.sdp.interfaces.usb import SdpUSBInterface
-from spsdk.sdp.sdp import SDP
+from spsdk.sdp.interfaces.uart import SdpUARTInterface as SdpUARTInterface
+from spsdk.sdp.interfaces.usb import SdpUSBInterface as SdpUSBInterface
+from spsdk.sdp.sdp import SDP as SDP

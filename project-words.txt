@@ -732,6 +732,7 @@ milli
 mimx
 MIMXRT
 mkimage
+MLDSA
 mline
 mlist
 MLPK
@@ -756,6 +757,7 @@ MXRT
 myapp
 mystnb
 mywpc
+namedtype
 nand
 NAND
 nandbcb
@@ -817,6 +819,7 @@ NXPDEVSCAN
 nxpdice
 nxpele
 NXPELE
+nxpfuses
 nxpimage
 NXPIMAGE
 nxpkeygen
@@ -861,6 +864,7 @@ OTMPK
 OTPC
 otpmk
 OTPMK
+OTPS
 OUTOFRANGEVAL
 overgeneral
 Oykl
@@ -965,6 +969,7 @@ PYLIBFTDI
 pylink
 pylint
 pyocd
+pyparsing
 pypemicro
 pypi
 pyproject

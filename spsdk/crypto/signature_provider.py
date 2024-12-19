@@ -455,7 +455,7 @@ def get_signature_provider(
         params: dict[str, Union[str, list[str]]] = {}
         params.update(SignatureProvider.convert_params(sp_cfg))
         for k, v in kwargs.items():
-            if not k in params:
+            if k not in params:
                 params[k] = v
         signature_provider = SignatureProvider.create(params=params)
     elif local_file_key:

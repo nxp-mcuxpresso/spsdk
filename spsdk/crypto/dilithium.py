@@ -6,11 +6,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Integration submodule for PQC."""
+import importlib.util
 
-try:
-    import spsdk_pqc  # pylint: disable=unused-import
-
-    IS_DILITHIUM_SUPPORTED = True
-
-except ImportError:
-    IS_DILITHIUM_SUPPORTED = False
+IS_DILITHIUM_SUPPORTED = importlib.util.find_spec("spsdk_pqc") is not None

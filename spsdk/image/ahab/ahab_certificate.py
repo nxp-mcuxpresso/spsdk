@@ -695,7 +695,7 @@ class AhabCertificate(HeaderContainer):
         sch = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)
         sch_family = DatabaseManager().db.get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], AhabCertificate.get_supported_families(), family
+            sch_family["properties"], AhabCertificate.get_supported_families(), family, revision
         )
         return [sch_family, sch["ahab_certificate"]]
 

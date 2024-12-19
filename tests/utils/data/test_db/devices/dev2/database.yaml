@@ -35,7 +35,9 @@ features:
     sub_features: [sub_feature1]
 
   # ======== Feature Fuses Testing ========
-  fuses: {}
+  fuses:
+    tool: test_operator
+
 
   # ======== Feature Shadow registers Testing ========
   shadow_regs:

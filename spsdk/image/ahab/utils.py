@@ -14,6 +14,7 @@ from typing import Callable, Optional
 from spsdk.apps.utils.utils import SPSDKError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.signature_provider import SignatureProvider
+from spsdk.fuses.fuses import FuseScript
 from spsdk.image.ahab.ahab_blob import AhabBlob
 from spsdk.image.ahab.ahab_data import AhabChipContainerConfig, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
@@ -23,7 +24,6 @@ from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import SegmentAhab
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.database import DatabaseManager, get_db
-from spsdk.utils.fuses import FuseScript
 from spsdk.utils.misc import (
     get_abs_path,
     get_printable_path,
@@ -280,6 +280,9 @@ def write_ahab_fuses(
     for cnt_ix, container in enumerate(ahab.ahab_containers):
         if container.flag_srk_set == FlagsSrkSet.NXP:
             logger.debug("Skipping generating hashes for NXP container")
+            continue
+        if container.image_array_len > 0 and container.image_array[0].flags_core_id_name == "v2x-1":
+            logger.debug("Skipping generating hashes for v2x-1 container")
             continue
         if container.signature_block:
             for srk_id in range(container.signature_block.SUPPORTED_SIGNATURES_CNT):

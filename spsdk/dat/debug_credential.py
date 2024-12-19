@@ -460,6 +460,7 @@ class DebugCredentialCertificate:
             sch_family["properties"],
             devices=DebugCredentialCertificate.get_supported_families(),
             family=family,
+            revision=revision,
         )
 
         ret.append(sch_family)
@@ -942,7 +943,6 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         )
 
     def __eq__(self, value: object) -> bool:
-
         if not isinstance(value, DebugCredentialEdgeLockEnclaveV2):
             return False
         return self.certificate == value.certificate

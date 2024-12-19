@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 """Lexer for command (BD) files used by parser."""
 
 from typing import Union
@@ -13,6 +14,7 @@ from sly import Lexer
 from sly.lex import Token
 
 
+# ruff: noqa: F821
 # pylint: disable=undefined-variable,invalid-name,no-self-use
 # undefined-variable : the lexer uses '_' as a decorator, which throws undefined
 #   variable error. We can't do much with it.

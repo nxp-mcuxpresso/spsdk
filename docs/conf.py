@@ -61,11 +61,11 @@ nb_execution_mode = "off"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "copy_examples",
     "generate_schemas",
     "generate_table",
     "generate_apps_img",
     "generate_readme",
-    "copy_examples",
     "generate_project_struct_doc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",

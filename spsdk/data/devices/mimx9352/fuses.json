@@ -1,5 +1,5 @@
 {
-    "cpu": "MIMXRT1189",
+    "cpu": "MIMX9352",
     "groups": [
         {
             "group": {
@@ -231,8 +231,8 @@
                 },
                 {
                     "id": "fuse2",
-                    "name": "002",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "ELE_OTFAD1_KEY_LOCK",
+                    "description": "Fuse 2",
                     "index_int": "0x0002",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -242,8 +242,50 @@
                         {
                             "width": 3,
                             "id": "fuse2-bits-3-5",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "ELE_OTFAD1_KEY_LOCK",
+                            "description": "ELE OTFAD1 Key Lock;\nxx1 - WP (Write Protect, the controlled field can not be burned);\nx1x - OP (Over-ride Protect, the controlled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from shadow registers);",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WP",
+                                    "value": 1,
+                                    "description": "WP"
+                                },
+                                {
+                                    "name": "OP",
+                                    "value": 2,
+                                    "description": "OP"
+                                },
+                                {
+                                    "name": "OP+WP",
+                                    "value": 3,
+                                    "description": "OP+WP"
+                                },
+                                {
+                                    "name": "RP",
+                                    "value": 4,
+                                    "description": "RP"
+                                },
+                                {
+                                    "name": "RP+WP",
+                                    "value": 5,
+                                    "description": "RP+WP"
+                                },
+                                {
+                                    "name": "RP+OP",
+                                    "value": 6,
+                                    "description": "RP+OP"
+                                },
+                                {
+                                    "name": "RP+OP+WP",
+                                    "value": 7,
+                                    "description": "RP+OP+WP"
+                                }
+                            ]
                         },
                         {
                             "width": 26
@@ -252,8 +294,8 @@
                 },
                 {
                     "id": "fuse4",
-                    "name": "004",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "ELE_OEM_SRKH_LOCK",
+                    "description": "Fuse 4",
                     "index_int": "0x0004",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -263,8 +305,50 @@
                         {
                             "width": 3,
                             "id": "fuse4-bits-12-14",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "ELE_OEM_SRKH_LOCK",
+                            "description": "ELE OEM SRK Hash Lock;\nxx1 - WP (Write Protect, the controlled field can not be burned);\nx1x - OP (Over-ride Protect, the controlled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from shadow registers);",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WP",
+                                    "value": 1,
+                                    "description": "WP"
+                                },
+                                {
+                                    "name": "OP",
+                                    "value": 2,
+                                    "description": "OP"
+                                },
+                                {
+                                    "name": "OP+WP",
+                                    "value": 3,
+                                    "description": "OP+WP"
+                                },
+                                {
+                                    "name": "RP",
+                                    "value": 4,
+                                    "description": "RP"
+                                },
+                                {
+                                    "name": "RP+WP",
+                                    "value": 5,
+                                    "description": "RP+WP"
+                                },
+                                {
+                                    "name": "RP+OP",
+                                    "value": 6,
+                                    "description": "RP+OP"
+                                },
+                                {
+                                    "name": "RP+OP+WP",
+                                    "value": 7,
+                                    "description": "RP+OP+WP"
+                                }
+                            ]
                         },
                         {
                             "width": 17
@@ -273,8 +357,8 @@
                 },
                 {
                     "id": "fuse6",
-                    "name": "006",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "ELE_OTFAD2_KEY_LOCK",
+                    "description": "Fuse 6",
                     "index_int": "0x0006",
                     "individual_write_lock": "none",
                     "bitfields": [
@@ -284,8 +368,50 @@
                         {
                             "width": 3,
                             "id": "fuse6-bits-12-14",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "ELE_OTFAD2_KEY_LOCK",
+                            "description": "ELE OTFAD Key Lock;\nxx1 - WP (Write Protect, the controlled field can not be burned);\nx1x - OP (Over-ride Protect, the controlled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from shadow registers);",
+                            "values": [
+                                {
+                                    "name": "Unlocked",
+                                    "value": 0,
+                                    "description": "Unlocked"
+                                },
+                                {
+                                    "name": "WP",
+                                    "value": 1,
+                                    "description": "WP"
+                                },
+                                {
+                                    "name": "OP",
+                                    "value": 2,
+                                    "description": "OP"
+                                },
+                                {
+                                    "name": "OP+WP",
+                                    "value": 3,
+                                    "description": "OP+WP"
+                                },
+                                {
+                                    "name": "RP",
+                                    "value": 4,
+                                    "description": "RP"
+                                },
+                                {
+                                    "name": "RP+WP",
+                                    "value": 5,
+                                    "description": "RP+WP"
+                                },
+                                {
+                                    "name": "RP+OP",
+                                    "value": 6,
+                                    "description": "RP+OP"
+                                },
+                                {
+                                    "name": "RP+OP+WP",
+                                    "value": 7,
+                                    "description": "RP+OP+WP"
+                                }
+                            ]
                         },
                         {
                             "width": 17
@@ -2476,19 +2602,32 @@
                             "width": 1
                         }
                     ]
+                },
+                {
+                    "id": "fuse32",
+                    "name": "BOOT_CFG8",
+                    "description": "XMCD CRC32 sum value",
+                    "index_int": "0x0020",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+					}
                 }
             ]
         },
         {
             "group": {
-                "name": "128-135",
-                "description": "Description is available in restricted data, see documentation for more details."
+                "name": "OEM_SRKH",
+                "description": "OEM SRK Hash"
             },
             "registers": [
                 {
                     "id": "fuse128",
-                    "name": "128",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH7",
+                    "description": "OEM SRK HASH7",
                     "index_int": "0x0080",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2500,8 +2639,8 @@
                 },
                 {
                     "id": "fuse129",
-                    "name": "129",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH6",
+                    "description": "OEM SRK HASH6",
                     "index_int": "0x0081",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2513,8 +2652,8 @@
                 },
                 {
                     "id": "fuse130",
-                    "name": "130",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH5",
+                    "description": "OEM SRK HASH5",
                     "index_int": "0x0082",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2526,8 +2665,8 @@
                 },
                 {
                     "id": "fuse131",
-                    "name": "131",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH4",
+                    "description": "OEM SRK HASH4",
                     "index_int": "0x0083",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2539,8 +2678,8 @@
                 },
                 {
                     "id": "fuse132",
-                    "name": "132",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH3",
+                    "description": "OEM SRK HASH3",
                     "index_int": "0x0084",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2552,8 +2691,8 @@
                 },
                 {
                     "id": "fuse133",
-                    "name": "133",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH2",
+                    "description": "OEM SRK HASH2",
                     "index_int": "0x0085",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2565,8 +2704,8 @@
                 },
                 {
                     "id": "fuse134",
-                    "name": "134",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH1",
+                    "description": "OEM SRK HASH1",
                     "index_int": "0x0086",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2578,8 +2717,8 @@
                 },
                 {
                     "id": "fuse135",
-                    "name": "135",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OEM_SRKH0",
+                    "description": "OEM SRK HASH0",
                     "index_int": "0x0087",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2593,14 +2732,14 @@
         },
         {
             "group": {
-                "name": "178-189",
-                "description": "Description is available in restricted data, see documentation for more details."
+                "name": "OTFAD",
+                "description": "OTFAD configuration"
             },
             "registers": [
                 {
                     "id": "fuse178",
-                    "name": "178",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD2_KEY3",
+                    "description": "OTFAD2 key 3",
                     "index_int": "0x00B2",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2613,8 +2752,8 @@
                 },
                 {
                     "id": "fuse179",
-                    "name": "179",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD2_KEY2",
+                    "description": "OTFAD2 key 2",
                     "index_int": "0x00B3",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2627,8 +2766,8 @@
                 },
                 {
                     "id": "fuse180",
-                    "name": "180",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD2_KEY1",
+                    "description": "OTFAD2 key 1",
                     "index_int": "0x00B4",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2641,8 +2780,8 @@
                 },
                 {
                     "id": "fuse181",
-                    "name": "181",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD2_KEY0",
+                    "description": "OTFAD2 key 0",
                     "index_int": "0x00B5",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2655,8 +2794,8 @@
                 },
                 {
                     "id": "fuse182",
-                    "name": "182",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD2_CFG",
+                    "description": "Fuse 182",
                     "index_int": "0x00B6",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2673,48 +2812,120 @@
                         {
                             "width": 1,
                             "id": "fuse182-bit-3",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_ENABLE",
+                            "description": "OTFAD2 enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse182-bit-4",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_DISABLE_OVERRIDE",
+                            "description": "OTFAD2 disable override",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse182-bit-5",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_KEY_BLOB_EN",
+                            "description": "OTFAD2 key blob enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "access": "WO",
                             "id": "fuse182-bit-6",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_KEY_SCRAMBLE_CRC_EN",
+                            "description": "OTFAD2 key scramble CRC enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "access": "WO",
                             "id": "fuse182-bit-7",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_KEY_SCRAMBLE_EN",
+                            "description": "OTFAD2 key scramble enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 8,
                             "access": "WO",
                             "id": "fuse182-bits-8-15",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_KEY_SCRAMBLE_ALIGN",
+                            "description": "OTFAD2 key scramble align, write-only"
                         },
                         {
                             "width": 1,
                             "access": "WO",
                             "id": "fuse182-bit-16",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD2_RESTRICT_OTFAD_IPS",
+                            "description": "OTFAD2 restrictOTFAD IPS, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 15,
@@ -2724,8 +2935,8 @@
                 },
                 {
                     "id": "fuse183",
-                    "name": "183",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD2_KEY_SCRAMBLE",
+                    "description": "OTFAD2 key scramble",
                     "index_int": "0x00B7",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2738,8 +2949,8 @@
                 },
                 {
                     "id": "fuse184",
-                    "name": "184",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD1_KEY3",
+                    "description": "OTFAD1 key 3",
                     "index_int": "0x00B8",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2752,8 +2963,8 @@
                 },
                 {
                     "id": "fuse185",
-                    "name": "185",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD1_KEY2",
+                    "description": "OTFAD1 key 2",
                     "index_int": "0x00B9",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2766,8 +2977,8 @@
                 },
                 {
                     "id": "fuse186",
-                    "name": "186",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD1_KEY1",
+                    "description": "OTFAD1 key 1",
                     "index_int": "0x00BA",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2780,8 +2991,8 @@
                 },
                 {
                     "id": "fuse187",
-                    "name": "187",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD1_KEY0",
+                    "description": "OTFAD1 key 0",
                     "index_int": "0x00BB",
                     "is_readable": false,
                     "individual_write_lock": "implicit",
@@ -2794,8 +3005,8 @@
                 },
                 {
                     "id": "fuse188",
-                    "name": "188",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD1_CFG",
+                    "description": "Fuse 188",
                     "index_int": "0x00BC",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2812,48 +3023,120 @@
                         {
                             "width": 1,
                             "id": "fuse188-bit-3",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_ENABLE",
+                            "description": "OTFAD1 enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse188-bit-4",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_DISABLE_OVERRIDE",
+                            "description": "OTFAD1 disable override",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse188-bit-5",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_KEY_BLOB_EN",
+                            "description": "OTFAD1 key blob enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "access": "WO",
                             "id": "fuse188-bit-6",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_KEY_SCRAMBLE_CRC_EN",
+                            "description": "OTFAD1 key scramble CRC enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "access": "WO",
                             "id": "fuse188-bit-7",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_KEY_SCRAMBLE_EN",
+                            "description": "OTFAD1 key scramble enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 8,
                             "access": "WO",
                             "id": "fuse188-bits-8-15",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_KEY_SCRAMBLE_ALIGN",
+                            "description": "OTFAD1 key scramble align, write-only"
                         },
                         {
                             "width": 1,
                             "access": "WO",
                             "id": "fuse188-bit-16",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "name": "OTFAD1_RESTRICT_OTFAD_IPS",
+                            "description": "OTFAD1RESTRICT OTFAD IPS, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 15,
@@ -2863,8 +3146,8 @@
                 },
                 {
                     "id": "fuse189",
-                    "name": "189",
-                    "description": "Description is available in restricted data, see documentation for more details.",
+                    "name": "OTFAD1_KEY_SCRAMBLE",
+                    "description": "OTFAD1 key scramble",
                     "index_int": "0x00BD",
                     "is_readable": false,
                     "individual_write_lock": "implicit",

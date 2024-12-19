@@ -183,18 +183,21 @@ class PropertyTag(SpsdkEnum):
     FLASH_SECURITY_STATE       = (0x11, "FlashSecurityState", "Security State")
     UNIQUE_DEVICE_IDENT        = (0x12, "UniqueDeviceIdent", "Unique Device Identification")
     FLASH_FAC_SUPPORT          = (0x13, "FlashFacSupport", "Flash Fac. Support")
-    FLASH_ACCESS_SEGMENT_SIZE  = (0x14, "FlashAccessSegmentSize", "Flash Access Segment Size",)
-    FLASH_ACCESS_SEGMENT_COUNT = (0x15, "FlashAccessSegmentCount", "Flash Access Segment Count",)
+    FLASH_ACCESS_SEGMENT_SIZE  = (0x14, "FlashAccessSegmentSize", "Flash Access Segment Size")
+    FLASH_ACCESS_SEGMENT_COUNT = (0x15, "FlashAccessSegmentCount", "Flash Access Segment Count")
     FLASH_READ_MARGIN          = (0x16, "FlashReadMargin", "Flash Read Margin")
     QSPI_INIT_STATUS           = (0x17, "QspiInitStatus", "QuadSPI Initialization Status")
     TARGET_VERSION             = (0x18, "TargetVersion", "Target Version")
-    EXTERNAL_MEMORY_ATTRIBUTES = (0x19, "ExternalMemoryAttributes", "External Memory Attributes",)
+    EXTERNAL_MEMORY_ATTRIBUTES = (0x19, "ExternalMemoryAttributes", "External Memory Attributes")
     RELIABLE_UPDATE_STATUS     = (0x1A, "ReliableUpdateStatus", "Reliable Update Status")
     FLASH_PAGE_SIZE            = (0x1B, "FlashPageSize", "Flash Page Size")
     IRQ_NOTIFIER_PIN           = (0x1C, "IrqNotifierPin", "Irq Notifier Pin")
     PFR_KEYSTORE_UPDATE_OPT    = (0x1D, "PfrKeystoreUpdateOpt", "PFR Keystore Update Opt")
     BYTE_WRITE_TIMEOUT_MS      = (0x1E, "ByteWriteTimeoutMs", "Byte Write Timeout in ms")
     FUSE_LOCKED_STATUS         = (0x1F, "FuseLockedStatus", "Fuse Locked Status")
+    BOOT_STATUS_REGISTER       = (0x20, "BootStatusRegister", "Boot Status Register")
+    FIRMWARE_VERSION           = (0x21, "FirmwareVersion", "Firmware Version")
+    FUSE_PROGRAM_VOLTAGE       = (0x22, "FuseProgramVoltage", "Fuse Program Voltage")
     UNKNOWN                    = (0xFF, "Unknown", "Unknown property")
 
 
@@ -202,9 +205,17 @@ class PropertyTagKw45xx(SpsdkEnum):
     """McuBoot Properties."""
 
     VERIFY_ERASE               = (0x0A, "VerifyErase", "Verify Erase")
-    BOOT_STATUS_REGISTER       = (0x14, "BootStatusRegister", "Boot Status Register",)
-    FIRMWARE_VERSION           = (0x15, "FirmwareVersion", "Firmware Version",)
+    BOOT_STATUS_REGISTER       = (0x14, "BootStatusRegister", "Boot Status Register")
+    FIRMWARE_VERSION           = (0x15, "FirmwareVersion", "Firmware Version")
     FUSE_PROGRAM_VOLTAGE       = (0x16, "FuseProgramVoltage", "Fuse Program Voltage")
+
+class PropertyTagKw47xx(SpsdkEnum):
+    """McuBoot Properties."""
+
+    VERIFY_ERASE               = (0x0A, "VerifyErase", "Verify Erase")
+    BOOT_STATUS_REGISTER       = (0x14, "BootStatusRegister", "Boot Status Register")
+    FIRMWARE_VERSION           = (0x15, "FirmwareVersion", "Firmware Version")
+    FUSE_PROGRAM_VOLTAGE       = (0x22, "FuseProgramVoltage", "Fuse Program Voltage")
 
 class PropertyTagMcxa1xx(SpsdkEnum):
     """McuBoot Properties For mcxa1xx."""
@@ -824,6 +835,21 @@ PROPERTIES: dict[int, dict] = {
         "class": FuseLockedStatus,
         "kwargs": {},
     },
+    PropertyTag.BOOT_STATUS_REGISTER.tag: {
+        "class": IntValue,
+        "kwargs": {"str_format": "int32"},
+    },
+    PropertyTag.FIRMWARE_VERSION.tag: {
+        "class": IntValue,
+        "kwargs": {"str_format": "int32"},
+    },
+    PropertyTag.FUSE_PROGRAM_VOLTAGE.tag: {
+        "class": BoolValue,
+        "kwargs": {
+            "true_string": "Over Drive Voltage (2.5 V)",
+            "false_string": "Normal Voltage (1.8 V)",
+        },
+    },
     PropertyTag.UNKNOWN.tag: {
         "class": IntListValue,
         "kwargs": {"str_format": "hex"},
@@ -852,6 +878,29 @@ PROPERTIES_KW45XX = {
     },
 }
 
+PROPERTIES_KW47XX = {
+    PropertyTagKw47xx.VERIFY_ERASE.tag: {
+        "class": BoolValue,
+        "kwargs": {"true_string": "ENABLE", "false_string": "DISABLE"},
+    },
+    PropertyTagKw47xx.BOOT_STATUS_REGISTER.tag: {
+        "class": IntValue,
+        "kwargs": {"str_format": "hex"},
+    },
+    PropertyTagKw47xx.FIRMWARE_VERSION.tag: {
+        "class": IntValue,
+        "kwargs": {"str_format": "int32"},
+    },
+    PropertyTagKw47xx.FUSE_PROGRAM_VOLTAGE.tag: {
+        "class": BoolValue,
+        "kwargs": {
+            "true_string": "Over Drive Voltage (2.5 V)",
+            "false_string": "Normal Voltage (1.8 V)",
+        },
+    },
+}
+
+
 PROPERTIES_MCXA1XX = {
     PropertyTagMcxa1xx.LIFE_CYCLE_STATE.tag: {
         "class": BoolValue,
@@ -865,10 +914,12 @@ PROPERTIES_MCXA1XX = {
 }
 
 PROPERTIES_OVERRIDE = {
+    "kw47_series": PROPERTIES_KW47XX,
     "kw45_series": PROPERTIES_KW45XX,
     "mcxa1_series": PROPERTIES_MCXA1XX,
 }
 PROPERTY_TAG_OVERRIDE = {
+    "kw47_series": PropertyTagKw47xx,
     "kw45_series": PropertyTagKw45xx,
     "mcxa1_series": PropertyTagMcxa1xx,
 }

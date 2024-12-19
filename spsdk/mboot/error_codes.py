@@ -47,6 +47,7 @@ class StatusCode(SpsdkEnum):
     FLASH_COMPARE_ERROR               = (117, "FlashCompareError", "FLASH Driver: Destination And Source Memory Contents Do Not Match")
     FLASH_REGULATION_LOSS             = (118, "FlashRegulationLoss", "FLASH Driver: Loss Of Regulation During Read")
     FLASH_INVALID_WAIT_STATE_CYCLES   = (119, "FlashInvalidWaitStateCycles", "FLASH Driver: Wait State Cycle Set To Read/Write Mode Is Invalid")
+    FLASH_COMMAND_ABORT_OPTION        = (121, "FlashCommandAbortOption", "FLASH Driver: Operation is aborted")
     FLASH_OUT_OF_DATE_CFPA_PAGE       = (132, "FlashOutOfDateCfpaPage", "FLASH Driver: Out Of Date CFPA Page")
     FLASH_BLANK_IFR_PAGE_DATA         = (133, "FlashBlankIfrPageData", "FLASH Driver: Blank IFR Page Data")
     FLASH_ENCRYPTED_REGIONS_ERASE_NOT_DONE_AT_ONCE = (134, "FlashEncryptedRegionsEraseNotDoneAtOnce", "FLASH Driver: Encrypted Regions Erase Not Done At Once")
@@ -97,12 +98,12 @@ class StatusCode(SpsdkEnum):
     # SDMMC driver errors.
 
     # FlexSPI statuses.
-    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT_RT5xx = (6000, "FLEXSPI_SequenceExecutionTimeout_RT5xx", "FLEXSPI: Sequence Execution Timeout")
-    FLEXSPI_INVALID_SEQUENCE_RT5xx           = (6001, "FLEXSPI_InvalidSequence_RT5xx", "FLEXSPI: Invalid Sequence")
-    FLEXSPI_DEVICE_TIMEOUT_RT5xx             = (6002, "FLEXSPI_DeviceTimeout_RT5xx", "FLEXSPI: Device Timeout")
-    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT       = (7000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
-    FLEXSPI_INVALID_SEQUENCE                 = (7001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
-    FLEXSPI_DEVICE_TIMEOUT                   = (7002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
+    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT_1 = (6000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
+    FLEXSPI_INVALID_SEQUENCE_1   = (6001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
+    FLEXSPI_DEVICE_TIMEOUT_1    = (6002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
+    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT_2       = (7000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
+    FLEXSPI_INVALID_SEQUENCE_2                 = (7001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
+    FLEXSPI_DEVICE_TIMEOUT_2                   = (7002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
 
     # Bootloader errors.
     UNKNOWN_COMMAND             = (10000, "UnknownCommand", "Unknown Command")
@@ -190,9 +191,9 @@ class StatusCode(SpsdkEnum):
     SERIAL_NOR_EEPROM_COMMAND_INVALID   = (10704, "SerialNorEepromCommandInvalid", "SerialNorEeprom: Command Invalid")
 
     # ROM API statuses.
-    ROM_API_NEED_MORE_DATA              = (10800, "RomApiNeedMoreData", "RomApi: Need More Data")
-    ROM_API_BUFFER_SIZE_NOT_ENOUGH      = (10801, "RomApiBufferSizeNotEnough", "RomApi: Buffer Size Not Enough")
-    ROM_API_INVALID_BUFFER              = (10802, "RomApiInvalidBuffer", "RomApi: Invalid Buffer")
+    ROM_API_NEED_MORE_DATA              = (10801, "RomApiNeedMoreData", "RomApi: Need More Data")
+    ROM_API_BUFFER_SIZE_NOT_ENOUGH      = (10802, "RomApiBufferSizeNotEnough", "RomApi: Buffer Size Not Enough")
+    ROM_API_INVALID_BUFFER              = (10803, "RomApiInvalidBuffer", "RomApi: Invalid Buffer")
 
     # FlexSPI NAND statuses.
     FLEXSPINAND_READ_PAGE_FAIL          = (20000, "FlexSPINANDReadPageFail", "FlexSPINAND: Read Page Fail")
@@ -340,7 +341,6 @@ class StatusCode(SpsdkEnum):
     TP_SHA_CHECK_CRITICAL_ERROR     = (80107, "TP_SHA_CHECK_CRITICAL_ERROR", "TP: SHA check verification failed")
 
     # IAP statuses.
-    IAP_INVALID_ARGUMENT       = (100001, "IAP_InvalidArgument", "IAP: Invalid Argument Detected During API Execution")
     IAP_OUT_OF_MEMORY          = (100002, "IAP_OutOfMemory", "IAP: Heap Size Not Large Enough During API Execution")
     IAP_READ_DISALLOWED        = (100003, "IAP_ReadDisallowed ", "IAP: Read Memory Operation Disallowed During API Execution")
     IAP_CUMULATIVE_WRITE       = (100004, "IAP_CumulativeWrite", "IAP: Flash Memory Region To Be Programmed Is Not Empty")

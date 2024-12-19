@@ -8,7 +8,9 @@
 
 import json
 import logging
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Generic, Iterator, Mapping, Optional, Type, TypeVar, Union
+
+from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import get_db, get_whole_db
@@ -29,11 +31,40 @@ from spsdk.utils.misc import (
     value_to_int,
     write_file,
 )
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 HTMLDataElement = Mapping[str, Union[str, dict, list]]
 HTMLData = list[HTMLDataElement]
 
 logger = logging.getLogger(__name__)
+
+
+class Access(SpsdkEnum):
+    """Access mode enum."""
+
+    NONE = (0, "none", "Not applicable")
+    RO = (1, "RO", "Read-only")
+    RW = (2, "RW", "Read/Write")
+    WO = (3, "WO", "Write-only")
+
+    @property
+    def is_readable(self) -> bool:
+        """Return True if the object is readable."""
+        return self in [Access.RO, Access.RW]
+
+    @property
+    def is_writable(self) -> bool:
+        """Return True if the object is writeable."""
+        return self in [Access.WO, Access.RW]
+
+    @classmethod
+    def from_label(cls, label: str) -> Self:
+        """Get enum member with given label.
+
+        :param label: Label to be used for searching
+        :return: Found enum member
+        """
+        return super().from_label(label.replace("/", ""))  # accept also R/W, R/O etc.
 
 
 class RegsEnum:
@@ -57,7 +88,7 @@ class RegsEnum:
         self.max_width = max_width
 
     @classmethod
-    def create_from_spec(cls, spec: dict[str, Any], maxwidth: int = 0) -> "RegsEnum":
+    def create_from_spec(cls, spec: dict[str, Any], maxwidth: int = 0) -> Self:
         """Initialization Enum from specification.
 
         :param spec: Input specification with enumeration data.
@@ -232,14 +263,14 @@ class RegsBitField:
 
     def __init__(
         self,
-        parent: "RegsRegister",
+        parent: "Register",
         name: str,
         offset: int,
         width: int,
         uid: str,
         description: Optional[str] = None,
         reset_val: Optional[Any] = None,
-        access: str = "RW",
+        access: Access = Access.RW,
         hidden: bool = False,
         config_processor: Optional[ConfigProcessor] = None,
     ) -> None:
@@ -272,7 +303,7 @@ class RegsBitField:
 
     @classmethod
     def create_from_spec(
-        cls, spec: dict[str, Any], offset: int, parent: "RegsRegister"
+        cls, spec: dict[str, Any], offset: int, parent: "Register"
     ) -> "RegsBitField":
         """Initialization bitfield by specification.
 
@@ -287,7 +318,7 @@ class RegsBitField:
         name = spec.get("name", hidden_name)
         hidden = bool(name == hidden_name)
         description = spec.get("description", "N/A")
-        access = spec.get("access", "R/W")
+        access = Access.from_label(spec.get("access", "RW"))
         reset_value = value_to_int(spec.get("reset_value_int", 0))
         config_processor = ConfigProcessor.from_spec(spec.get("config_preprocess"))
 
@@ -328,7 +359,7 @@ class RegsBitField:
         spec["width"] = str(self.width)
         if not self.hidden:
             spec["name"] = self.name
-        spec["access"] = self.access
+        spec["access"] = self.access.label
         spec["reset_value_int"] = hex(self.get_reset_value())
         spec["description"] = self.description
         enums = []
@@ -475,7 +506,7 @@ class RegsBitField:
         output += f"Name:     {self.name}\n"
         output += f"Offset:   {self.offset} bits\n"
         output += f"Width:    {self.width} bits\n"
-        output += f"Access:   {self.access} bits\n"
+        output += f"Access:   {self.access.label} bits\n"
         output += f"Reset val:{self.reset_value}\n"
         output += f"Description: \n {self.description}\n"
         if self.hidden:
@@ -492,7 +523,7 @@ class RegsBitField:
         return f"<BitField {self.name} = {self.get_hex_value()}>"
 
 
-class RegsRegister:
+class Register:
     """Initialization register by input information."""
 
     def __init__(
@@ -503,15 +534,12 @@ class RegsRegister:
         uid: str,
         description: Optional[str] = None,
         reverse: bool = False,
-        access: Optional[str] = None,
+        access: Access = Access.RW,
         config_as_hexstring: bool = False,
-        otp_index: Optional[int] = None,
         reverse_subregs_order: bool = False,
         base_endianness: Endianness = Endianness.BIG,
         alt_widths: Optional[list[int]] = None,
         hidden: bool = False,
-        shadow_register_offset: Optional[int] = None,
-        shadow_register_base_addr: int = 0,
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
 
@@ -523,13 +551,10 @@ class RegsRegister:
         :param reverse: Multi byte register value could be printed in reverse order.
         :param access: Access type of register.
         :param config_as_hexstring: Config is stored as a hex string.
-        :param otp_index: Index of OTP fuse.
         :param reverse_subregs_order: Reverse order of sub registers.
         :param base_endianness: Base endianness for bytes import/export of value.
         :param alt_widths: List of alternative widths.
         :param hidden: The register will be hidden from standard searches.
-        :param shadow_register_offset: The optional shadow register offset.
-        :param shadow_register_base_addr: The Shadow register base address.
         """
         if width % 8 != 0:
             raise SPSDKValueError("SPSDK Register supports only widths in multiply 8 bits.")
@@ -538,23 +563,20 @@ class RegsRegister:
         self.width = width
         self.uid = uid
         self.description = description or "N/A"
-        self.access = access or "RW"
+        self.access = access
         self.reverse = reverse
         self._bitfields: list[RegsBitField] = []
         self._value = 0
         self._reset_value = 0
         self.config_as_hexstring = config_as_hexstring
-        self._otp_index = otp_index
         self.reverse_subregs_order = reverse_subregs_order
         self.base_endianness = base_endianness
         self.alt_widths = alt_widths
         self._alias_names: list[str] = []
         self.hidden = hidden
-        self.shadow_register_offset = shadow_register_offset
-        self.shadow_register_base_addr = shadow_register_base_addr
 
         # Grouped register members
-        self.sub_regs: list["RegsRegister"] = []
+        self.sub_regs: list[Self] = []
         self._sub_regs_width_init = False
         self._sub_regs_width = 0
 
@@ -578,7 +600,7 @@ class RegsRegister:
         return True
 
     @classmethod
-    def create_from_spec(cls, spec: dict[str, Any]) -> "RegsRegister":
+    def create_from_spec(cls, spec: dict[str, Any]) -> Self:
         """Initialization register by specification.
 
         :param spec: Input specification with register data.
@@ -589,20 +611,8 @@ class RegsRegister:
         offset = value_to_int(spec.get("offset_int", 0))
         width = value_to_int(spec.get("reg_width", 32))
         description = spec.get("description", "N/A")
-        access = spec.get("access", "N/A")
-        otp_index = value_to_int(spec.get("index_int", -1))
-        shadow_register_offset = (
-            value_to_int(spec.get("shadow_reg_offset_int", 0))
-            if "shadow_reg_offset_int" in spec
-            else None
-        )
+        access = Access.from_label(spec.get("access", "RW"))
         reserved = value_to_bool(spec.get("is_reserved", False))
-        # List of unused configuration members in SPSDK from the data file
-        # is_readable
-        # write_priority
-        # individual_write_lock
-        # calculated
-        # lock
         reg = cls(
             name=name,
             offset=offset,
@@ -611,9 +621,7 @@ class RegsRegister:
             description=description,
             reverse=False,
             access=access,
-            otp_index=otp_index,
             hidden=reserved,
-            shadow_register_offset=shadow_register_offset,
         )
         reg._reset_value = value_to_int(spec.get("reset_value_int", 0))
         if reg._reset_value:
@@ -625,16 +633,6 @@ class RegsRegister:
             offset += bitfield.width
             reg.add_bitfield(bitfield)
         return reg
-
-    @property
-    def real_offset(self) -> int:
-        """The register real offset - it count also with shadow registers.
-
-        :return: Real offset of register.
-        """
-        if self.shadow_register_offset is not None:
-            return self.shadow_register_base_addr + self.shadow_register_offset
-        return self.offset
 
     def _get_uid(self) -> str:
         """Get UID of register."""
@@ -657,8 +655,6 @@ class RegsRegister:
         spec["name"] = self.name
         spec["description"] = self.description
         spec["reset_value_int"] = hex(self.get_reset_value())
-        if self._otp_index:
-            spec["otp_index"] = str(self._otp_index)
         bitfields = []
         bitfields_offset = 0
         for bitfield in sorted(self._bitfields, key=lambda x: x.offset):
@@ -679,7 +675,7 @@ class RegsRegister:
 
         :param alias: Register name alias.
         """
-        if not alias in self._alias_names:
+        if alias not in self._alias_names:
             self._alias_names.append(alias)
 
     def has_group_registers(self) -> bool:
@@ -689,16 +685,7 @@ class RegsRegister:
         """
         return len(self.sub_regs) > 0
 
-    @property
-    def otp_index(self) -> Optional[int]:
-        """Get OTP Index."""
-        if self._otp_index is None:
-            return None
-        if self._otp_index < 0:
-            return None
-        return self._otp_index
-
-    def _add_group_reg(self, reg: "RegsRegister") -> None:
+    def _add_group_reg(self, reg: Self) -> None:
         """Add group element for this register.
 
         :param reg: Register member of this register group.
@@ -713,10 +700,8 @@ class RegsRegister:
             else:
                 self._sub_regs_width_init = True
                 self._sub_regs_width = reg.width
-            if self.access == "RW":
+            if self.access == Access.RW:
                 self.access = reg.access
-            if self.shadow_register_offset is None:
-                self.shadow_register_offset = reg.shadow_register_offset
         else:
             # There is strong rule that supported group MUST be in one row in memory! But in case that
             # this is just description of OTP fuses, the rule is disabled
@@ -727,10 +712,6 @@ class RegsRegister:
                     )
                 self.width += reg.width
             else:
-                if reg.otp_index is None and self.offset + self.width // 8 <= reg.offset:
-                    raise SPSDKRegsErrorRegisterGroupMishmash(
-                        f"The register {reg.name} doesn't follow the previous one."
-                    )
                 self._sub_regs_width += reg.width
                 if self._sub_regs_width > self.width:
                     raise SPSDKRegsErrorRegisterGroupMishmash(
@@ -744,12 +725,8 @@ class RegsRegister:
                 raise SPSDKRegsErrorRegisterGroupMishmash(
                     f"The register {reg.name} has different access type."
                 )
-            if self.shadow_register_offset is not None and reg.shadow_register_offset is None:
-                raise SPSDKRegsErrorRegisterGroupMishmash(
-                    f"The register {reg.name} doesn't support shadow register feature as its group parent."
-                )
+
         reg.base_endianness = self.base_endianness
-        reg.shadow_register_base_addr = self.shadow_register_base_addr
         self.sub_regs.append(reg)
 
     def set_value(self, val: Any, raw: bool = False) -> None:
@@ -968,11 +945,8 @@ class RegsRegister:
         output += f"Name:   {self.name}\n"
         output += f"Offset: 0x{self.offset:04X}\n"
         output += f"Width:  {self.width} bits\n"
-        output += f"Access:   {self.access}\n"
+        output += f"Access:   {self.access.label}\n"
         output += f"Description: \n {self.description}\n"
-        if self._otp_index:
-            output += f"OTP Word: \n {self._otp_index}\n"
-
         i = 0
         for bitfield in self._bitfields:
             output += f"Bitfield #{i}: \n" + str(bitfield)
@@ -981,12 +955,16 @@ class RegsRegister:
         return output
 
     def __repr__(self) -> str:
-        return f"<Register {self.name} = {self.get_hex_value()}>"
+        return f"<{self.__class__.__name__} {self.name} = {self.get_hex_value()}>"
 
 
-class Registers:
-    """SPSDK Class for registers handling."""
+RegisterClassT = TypeVar("RegisterClassT", bound=Register)
 
+
+class _RegistersBase(Generic[RegisterClassT]):
+    """SPSDK Generic class for registers handling."""
+
+    register_class: Type[RegisterClassT]
     TEMPLATE_NOTE = (
         "All registers is possible to define also as one value although the bitfields are used. "
         "Instead of bitfields: ... field, the value: ... definition works as well."
@@ -1011,11 +989,10 @@ class Registers:
         :param just_standard_library_data: The specification is gets from embedded library if True,
             otherwise Restricted data takes in count
         """
-        self._registers: list[RegsRegister] = []
+        self._registers: list[RegisterClassT] = []
         self.family = family
         self.revision = revision
         self.base_endianness = base_endianness
-        self.shadow_reg_base_addr = 0
         self.feature = feature
         self.base_key = base_key
 
@@ -1036,6 +1013,14 @@ class Registers:
                 f"Loading of database failed, inform SPSDK team about this error: {str(exc)}"
                 f"\n Family: {family}, Feature: {feature}, Revision: {revision}"
             )
+
+    def __iter__(self) -> Iterator[RegisterClassT]:
+        """Return an iterator."""
+        return iter(self._registers)
+
+    def __len__(self) -> int:
+        """Number of registers."""
+        return len(self._registers)
 
     def _create_key(self, key: str) -> Union[str, list[str]]:
         """Create the final key path.
@@ -1060,7 +1045,7 @@ class Registers:
         ret = obj._registers == self._registers
         return ret
 
-    def find_reg(self, name: str, include_group_regs: bool = False) -> RegsRegister:
+    def find_reg(self, name: str, include_group_regs: bool = False) -> RegisterClassT:
         """Returns the instance of the register by its name.
 
         :param name: The name of the register.
@@ -1069,7 +1054,7 @@ class Registers:
         :raises SPSDKRegsErrorRegisterNotFound: The register doesn't exist.
         """
 
-        def check_reg(reg: RegsRegister) -> bool:
+        def check_reg(reg: RegisterClassT) -> bool:
             if name == reg.name:
                 return True
             if name in reg._alias_names:
@@ -1090,7 +1075,7 @@ class Registers:
             f"The {name} is not found in loaded registers for {self.family} device."
         )
 
-    def get_reg(self, uid: str) -> RegsRegister:
+    def get_reg(self, uid: str) -> RegisterClassT:
         """Returns the instance of the register by its UID.
 
         :param uid: The unique ID of the register.
@@ -1109,15 +1094,15 @@ class Registers:
             f"The UID:{uid} is not found in loaded registers for {self.family} device."
         )
 
-    def add_register(self, reg: RegsRegister) -> None:
+    def add_register(self, reg: RegisterClassT) -> None:
         """Adds register into register list.
 
         :param reg: Register to add to the class.
         :raises SPSDKError: Invalid type has been provided.
         :raises SPSDKRegsError: Cannot add register with same name
         """
-        if not isinstance(reg, RegsRegister):
-            raise SPSDKError("The 'reg' has invalid type.")
+        if not isinstance(reg, self.register_class):
+            raise SPSDKError(f"The register has invalid type: {type(reg)}.")
 
         if reg.name in self.get_reg_names():
             raise SPSDKRegsError(f"Cannot add register with same name: {reg.name}.")
@@ -1134,7 +1119,6 @@ class Registers:
                 return
         # update base endianness for all registers in group
         reg.base_endianness = self.base_endianness
-        reg.shadow_register_base_addr = self.shadow_reg_base_addr
         self._registers.append(reg)
 
     def remove_registers(self) -> None:
@@ -1147,7 +1131,7 @@ class Registers:
 
     def get_registers(
         self, exclude: Optional[list[str]] = None, include_group_regs: bool = False
-    ) -> list[RegsRegister]:
+    ) -> list[RegisterClassT]:
         """Returns list of the registers.
 
         Method allows exclude some register by their names.
@@ -1260,17 +1244,15 @@ class Registers:
             r.offset -= base_offset
 
     def get_diff(
-        self, other: "Registers"
-    ) -> list[Union[tuple[RegsBitField, RegsBitField], tuple[RegsRegister, RegsRegister]]]:
+        self, other: Self
+    ) -> list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, Register]]]:
         """Return registers and bitfields containing different value.
 
         The tuples contain "expected" and "actual" value respectively.
         If a register doesn't contain bitfields the whole register is included.
         If a register contains bitfields, only non-matching bitfields are included.
         """
-        diffs: list[Union[tuple[RegsBitField, RegsBitField], tuple[RegsRegister, RegsRegister]]] = (
-            []
-        )
+        diffs: list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, Register]]] = []
         for r1, r2 in zip(self.get_registers(), other.get_registers()):
             if len(r1.get_bitfields()) == 0:
                 if r1.get_value() != r2.get_value():
@@ -1376,50 +1358,35 @@ class Registers:
 
             properties[reg.name] = {
                 "title": f"{reg.name}",
-                "description": f"Offset: 0x{reg.real_offset:08X}, Width: {reg.width}b; {reg.description}",
+                "description": f"Offset: 0x{reg.offset:08X}, Width: {reg.width}b; {reg.description}",
                 "oneOf": reg_schema,
             }
 
         return {"type": "object", "title": self.family, "properties": properties}
 
-    def _load_spec(
-        self,
-        spec_file: str,
-        grouped_regs: Optional[list[dict]] = None,
+    @classmethod
+    def _get_register_group(
+        cls, reg: RegisterClassT, grouped_regs: Optional[list[dict]] = None
+    ) -> Optional[dict]:
+        """Help function to recognize if the register should be part of group."""
+        if grouped_regs:
+            for group in grouped_regs:
+                if reg.uid in group["sub_regs"]:
+                    return group
+        return None
+
+    def _load_from_spec(
+        self, config: dict[str, Any], grouped_regs: Optional[list[dict]] = None
     ) -> None:
-        """Function loads the registers from the given JSON.
-
-        :param spec_file: Input JSON file path.
-        :param grouped_regs: List of register prefixes names to be grouped into one.
-        :raises SPSDKError: JSON parse problem occurs.
-        """
-
-        def is_reg_in_group(reg: RegsRegister) -> Optional[dict]:
-            """Help function to recognize if the register should be part of group."""
-            if grouped_regs:
-                for group in grouped_regs:
-                    if reg.uid in group["sub_regs"]:
-                        return group
-            return None
-
-        try:
-            with open(spec_file, "r") as f:
-                spec = json.load(f)
-        except json.JSONDecodeError as exc:
-            raise SPSDKError(
-                f"Cannot load register specification: {spec_file}. {str(exc)}"
-            ) from exc
-        # Load all registers into the class
-        self.shadow_reg_base_addr = value_to_int(spec.get("shadow_reg_base_addr_int", 0))
-        for spec_group in spec.get("groups", []):
+        for spec_group in config.get("groups", []):
             for spec_reg in spec_group.get("registers", []):
-                reg = RegsRegister.create_from_spec(spec_reg)
-                group = is_reg_in_group(reg)
+                reg = self.register_class.create_from_spec(spec_reg)
+                group = self._get_register_group(reg, grouped_regs)
                 if group:
                     try:
                         group_reg = self.get_reg(group["uid"])
                     except SPSDKRegsErrorRegisterNotFound:
-                        group_reg = RegsRegister(
+                        group_reg = self.register_class(
                             name=group["name"],
                             offset=value_to_int(group.get("offset", 0)),
                             width=value_to_int(group.get("width", 0)),
@@ -1428,16 +1395,31 @@ class Registers:
                                 "description", f"Group of {group['name']} registers."
                             ),
                             reverse=value_to_bool(group.get("reversed", False)),
-                            access=group.get("access", None),
+                            access=Access.from_label(group.get("access", "RW")),
                             config_as_hexstring=group.get("config_as_hexstring", False),
                             reverse_subregs_order=group.get("reverse_subregs_order", False),
                             alt_widths=group.get("alternative_widths"),
-                            otp_index=group.get("otp_index"),
                         )
                         self.add_register(group_reg)
                     group_reg._add_group_reg(reg)
                 else:
                     self.add_register(reg)
+
+    def _load_spec(self, spec_file: str, grouped_regs: Optional[list[dict]] = None) -> None:
+        """Function loads the registers from the given JSON.
+
+        :param spec_file: Input JSON file path.
+        :param grouped_regs: List of register prefixes names to be grouped into one.
+        :raises SPSDKError: JSON parse problem occurs.
+        """
+        try:
+            with open(spec_file, "r") as f:
+                spec = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise SPSDKError(
+                f"Cannot load register specification: {spec_file}. {str(exc)}"
+            ) from exc
+        self._load_from_spec(spec, grouped_regs)
 
     def write_spec(self, file_name: str) -> None:
         """Write loaded register structures into JSON file.
@@ -1474,7 +1456,7 @@ class Registers:
                 raise exc
 
             # Try to load the configuration with standard database names and convert it to restricted data names
-            std_regs = Registers(
+            std_regs = self.__class__(
                 family=self.family,
                 feature=self.feature,
                 base_key=self.base_key,
@@ -1580,3 +1562,9 @@ class Registers:
                 ret[reg.name] = reg.get_hex_value()
 
         return ret
+
+
+class Registers(_RegistersBase[Register]):
+    """SPSDK class for registers handling."""
+
+    register_class = Register

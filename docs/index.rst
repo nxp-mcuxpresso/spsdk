@@ -144,6 +144,7 @@ All products, including those with advanced security features, may be subject to
     examples/lpcprog/lpcprog
     examples/mbi/index
     examples/memcfg/index
+    examples/otfad/index
     examples/sb/index
     examples/sdp/index
     examples/shadowregs/index

@@ -22,6 +22,7 @@ from spsdk.crypto.keys import (
     PublicKey,
     PublicKeyDilithium,
     PublicKeyEcc,
+    PublicKeyMLDSA,
     PublicKeyRsa,
     PublicKeySM2,
 )
@@ -114,8 +115,8 @@ class SRKRecordBase(HeaderContainerInverted):
         0x6: (384, 4),  # RSA3072
         0x7: (512, 4),  # RSA4096
         0x8: (32, 32),  # SM2
-        0x9: (1952, 0),  # Dilithium 3
-        0xA: (2596, 0),  # Dilithium 5
+        0x9: (1952, 0),  # Dilithium 3 / ML-DSA-65
+        0xA: (2596, 0),  # Dilithium 5 / ML-DSA-87
     }
 
     FLAGS_CA_MASK = 0x80
@@ -346,7 +347,7 @@ class SRKRecordBase(HeaderContainerInverted):
             par_y: int = public_key.y
             key_size = cls.ECC_KEY_TYPE[public_key.curve]
 
-            if not public_key.key_size in [256, 384, 521]:
+            if public_key.key_size not in [256, 384, 521]:
                 raise SPSDKValueError(
                     f"Unsupported ECC key for AHAB container: {public_key.key_size}"
                 )
@@ -770,7 +771,7 @@ class SRKRecordV2(SRKRecordBase):
             signing_algorithm = cls.SIGN_ALGORITHM_ENUM.ECDSA
             key_size = cls.ECC_KEY_TYPE[public_key.curve]
 
-            if not public_key.key_size in [256, 384, 521]:
+            if public_key.key_size not in [256, 384, 521]:
                 raise SPSDKValueError(
                     f"Unsupported ECC key for AHAB container: {public_key.key_size}"
                 )
@@ -792,6 +793,14 @@ class SRKRecordV2(SRKRecordBase):
                 3: cls.HASH_ALGORITHM_ENUM.SHA384,
                 5: cls.HASH_ALGORITHM_ENUM.SHA512,
             }[public_key.level]
+        elif IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyMLDSA):
+            signing_algorithm = cls.SIGN_ALGORITHM_ENUM.ML_DSA
+            key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
+            hash_type = {
+                3: cls.HASH_ALGORITHM_ENUM.SHA384,
+                5: cls.HASH_ALGORITHM_ENUM.SHA512,
+            }[public_key.level]
+
         else:
             raise SPSDKValueError("Unsupported public key by AHAB SPSDK support.")
 
@@ -972,7 +981,7 @@ class SRKData(HeaderContainer):
             par_y: int = public_key.y
             key_size = SRKRecordV2.ECC_KEY_TYPE[public_key.curve]
 
-            if not public_key.key_size in [256, 384, 521]:
+            if public_key.key_size not in [256, 384, 521]:
                 raise SPSDKValueError(
                     f"Unsupported ECC key for AHAB container: {public_key.key_size}"
                 )

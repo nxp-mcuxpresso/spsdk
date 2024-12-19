@@ -224,16 +224,41 @@ def get_template(family: str, output: str) -> None:
     directory=True,
     help="Path to optional directory where to store generated OEM shares.",
 )
+@click.option(
+    "-ir/-IR",
+    "--initial-reset/--no-init-reset",
+    default=True,
+    help=(
+        "Reset device BEFORE DevHSM operation. The DevHSM operation can run only once between resets. "
+        "Do not enable this option on Linux/Mac when using USB. By default this reset is DISABLED."
+    ),
+)
+@click.option(
+    "-ba",
+    "--buffer-address",
+    type=INT(),
+    help="Override the communication buffer base address. The default address is family-specific.",
+)
 def gen_master_share(
-    interface: MbootProtocolBase, family: str, oem_share_input: str, output: str
+    interface: MbootProtocolBase,
+    family: str,
+    oem_share_input: str,
+    output: str,
+    initial_reset: bool,
+    buffer_address: int,
 ) -> None:
     """Generate OEM SHARE on target and optionally store results."""
     seed_data = DevHsm.get_oem_share_input(oem_share_input)
 
     with McuBoot(interface=interface) as mboot:
-        mboot.reset(timeout=500, reopen=True)
+        if initial_reset:
+            mboot.reset(timeout=500, reopen=True)
         devhsm = DevHsmSB31(
-            mboot=mboot, oem_share_input=seed_data, initial_reset=True, family=family
+            mboot=mboot,
+            oem_share_input=seed_data,
+            initial_reset=True,
+            family=family,
+            buffer_address=buffer_address,
         )
         enc_oem_share, enc_oem_master_share, oem_cert = devhsm.oem_generate_master_share()
 
@@ -264,12 +289,22 @@ def gen_master_share(
     required=True,
     help="Path to OEM ENC MASTER SHARE.",
 )
+@click.option(
+    "-ba",
+    "--buffer-address",
+    type=INT(),
+    help="Override the communication buffer base address. The default address is family-specific.",
+)
 def set_master_share(
-    interface: MbootProtocolBase, family: str, oem_share_input: str, enc_oem_master_share: str
+    interface: MbootProtocolBase,
+    family: str,
+    oem_share_input: str,
+    enc_oem_master_share: str,
+    buffer_address: int,
 ) -> None:
     """Set OEM SHARE."""
     with McuBoot(interface=interface) as mboot:
-        devhsm = DevHsmSB31(mboot=mboot, family=family)
+        devhsm = DevHsmSB31(mboot=mboot, family=family, buffer_address=buffer_address)
         devhsm.oem_set_master_share(
             oem_seed=load_binary(oem_share_input),
             enc_oem_share=load_binary(enc_oem_master_share),
@@ -282,12 +317,18 @@ def set_master_share(
 @spsdk_family_option(families=DevHsmSB31.get_supported_families())
 @click.option("-i", "--cust-mk-sk", type=click.Path(exists=True, dir_okay=False), required=True)
 @spsdk_output_option(directory=True)
+@click.option(
+    "-ba",
+    "--buffer-address",
+    type=INT(),
+    help="Override the communication buffer base address. The default address is family-specific.",
+)
 def wrap_cust_mk_sk(
-    interface: MbootProtocolBase, family: str, cust_mk_sk: str, output: str
+    interface: MbootProtocolBase, family: str, cust_mk_sk: str, output: str, buffer_address: int
 ) -> None:
     """Wrap CUST_MK_SK key."""
     with McuBoot(interface=interface) as mboot:
-        devhsm = DevHsmSB31(mboot=mboot, family=family)
+        devhsm = DevHsmSB31(mboot=mboot, family=family, buffer_address=buffer_address)
         wrapped_key = devhsm.wrap_key(load_binary(cust_mk_sk))
     write_file(wrapped_key, os.path.join(output, "CUST_MK_SK_BLOB.bin"), mode="wb")
     click.echo("Wrapped CUST_MK_SK successfully created.")
@@ -311,12 +352,19 @@ def wrap_cust_mk_sk(
     help="Path to OEM ENC MASTER SHARE.",
 )
 @spsdk_output_option(directory=True)
+@click.option(
+    "-ba",
+    "--buffer-address",
+    type=INT(),
+    help="Override the communication buffer base address. The default address is family-specific.",
+)
 def get_cust_fw_auth(
     interface: MbootProtocolBase,
     family: str,
     oem_share_input: str,
     enc_oem_master_share: str,
     output: str,
+    buffer_address: int,
 ) -> None:
     """Generate CUST FW AUTH key."""
     with McuBoot(interface=interface) as mboot:
@@ -327,7 +375,9 @@ def get_cust_fw_auth(
         uuid = str(uuid_obj.to_int())
 
         # allow for previously set OEM Shares
-        devhsm = DevHsmSB31(mboot=mboot, family=family, oem_share_input=bytes())
+        devhsm = DevHsmSB31(
+            mboot=mboot, family=family, oem_share_input=bytes(), buffer_address=buffer_address
+        )
         if oem_share_input and enc_oem_master_share:
             devhsm.oem_set_master_share(
                 oem_seed=load_binary(oem_share_input),

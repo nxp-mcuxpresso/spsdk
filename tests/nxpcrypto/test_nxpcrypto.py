@@ -28,6 +28,7 @@ from spsdk.crypto.keys import (
     PrivateKeyRsa,
     PublicKey,
     PublicKeyRsa,
+    PublicKeyDilithium,
 )
 from spsdk.crypto.crc import Crc, CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKKeyError, SPSDKSyntaxError
@@ -36,7 +37,7 @@ from tests.cli_runner import CliRunner
 from tests.misc import GetPassMock
 
 if IS_DILITHIUM_SUPPORTED:
-    from spsdk_pqc.wrapper import KEY_INFO
+    from spsdk_pqc.wrapper import KEY_INFO, DILITHIUM_LEVEL
 
     from spsdk.crypto.keys import PrivateKeyDilithium
 
@@ -560,9 +561,11 @@ def test_nxpcrypto_create_signature_algorithm_dilithium(
     assert os.path.isfile(output_file)
 
     pub = PublicKey.load(pub_key)
+
+    assert isinstance(pub, PublicKeyDilithium)
     signature = load_binary(output_file)
 
-    assert len(signature) == KEY_INFO[level].signature_size
+    assert len(signature) == KEY_INFO[DILITHIUM_LEVEL[level]].signature_size
     assert pub.verify_signature(signature, load_binary(input_file))
 
 
@@ -628,7 +631,10 @@ def test_nxpcrypto_signature_create_signature_encoding(
     if "rsa" in key_type:
         assert len(signature) == {"rsa2048": 256, "rsa4096": 512}[key_type]
     if "dil" in key_type:
-        assert len(signature) == KEY_INFO[int(key_type.replace("dil", ""))].signature_size
+        assert (
+            len(signature)
+            == KEY_INFO[DILITHIUM_LEVEL[int(key_type.replace("dil", ""))]].signature_size
+        )
 
 
 @patch("spsdk.crypto.keys.getpass", GetPassMock("test1234"))

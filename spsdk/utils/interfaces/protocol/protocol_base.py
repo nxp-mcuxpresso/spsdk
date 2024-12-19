@@ -32,7 +32,6 @@ class SpsdkNoDeviceFoundError(SPSDKError):
         self.scan_params = scan_params
 
     def __str__(self) -> str:
-
         return (
             f"No devices for given interface '{self.interface}' "
             f"and parameters '{self.scan_params}' was found."

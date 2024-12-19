@@ -915,7 +915,6 @@ class SignatureBlockV2(HeaderContainer):
         target_ver = ret
 
         if signature_cnt < 2:
-
             if self.signature_2:
                 target_ver.add_record(
                     "PQC Signature",

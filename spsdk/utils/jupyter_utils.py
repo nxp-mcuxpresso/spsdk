@@ -12,10 +12,10 @@ import logging
 import re
 import textwrap
 
-logger = logging.getLogger(__name__)
-
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.utils.misc import load_configuration, load_text
+
+logger = logging.getLogger(__name__)
 
 try:
     import ipywidgets as widgets
@@ -144,7 +144,7 @@ try:
             :return: The line with a comment bubble added if applicable
             """
             for key, comment in self.comments_dict.items():
-                if key in line and ":" in line and not "#" in line:
+                if key in line and ":" in line and "#" not in line:
                     line = (
                         f'{line} <span style="background-color: #FFFF00; border-radius: 5px;'
                         + f' padding: 2px 6px; margin-left: 5px; font-size: 0.8em;">{comment}</span>'

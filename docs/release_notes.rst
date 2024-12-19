@@ -11,6 +11,38 @@ Release Notes
 =============
 
 ------------------------
+2.5.0 (20-December-2024)
+------------------------
+
+**New features**
+
+* :ref:`nxpdevscan`:
+    - add timeout option
+* :ref:`el2go-host`:
+    - enablement on i.MX 93
+* support i.MX RT735S and i.MX RT758S
+* support i.MX RT1043 and i.MX RT1046
+* support mcxa13x variants
+* support Python 3.13
+* drop pyocd requirement and replace by spsdk-mcu-link and spsdk-pyocd
+* support kw47xx and mcxw72x devices
+* add loading of OTPS-encoded public keys
+* add nxpfuses tool for handling operations with fuses
+
+**Bugfixes**
+
+* :ref:`nxpimage`:
+    - fix encryption in OTFAD
+    - fix bootableimage creation with just one bootable image
+* :ref:`nxpdevscan`:
+    - fix filtering the correct serial port devices on macOS
+
+**Known issues**
+
+* :ref:`nxpdebugmbox`:
+    - interface mcu-link is not working on Ubuntu 24.04
+
+------------------------
 2.4.0 (15-November-2024)
 ------------------------
 

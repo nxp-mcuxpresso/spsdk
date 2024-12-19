@@ -28,11 +28,8 @@ info:
       external: false
   isp:
     rom:
-      interfaces: ["uart", "usb", "spi", "i2c"]
+      interfaces: ["uart", "spi", "i2c"]
       protocol: mboot
-      usb:
-        vid: 0x15a2
-        pid: 0x0073
 
 features:
   # ======== Communication buffer section ========

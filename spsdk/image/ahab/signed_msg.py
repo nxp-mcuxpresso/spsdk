@@ -1728,7 +1728,7 @@ class SignedMessageContainer(AHABContainerBase):
         sch = get_schema_file(DatabaseManager.SIGNED_MSG)
         sch_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], SignedMessage.get_supported_families(), family
+            sch_family["properties"], SignedMessage.get_supported_families(), family, revision
         )
         return [sch_family, sch["signed_message"]]
 
@@ -1758,7 +1758,7 @@ class SignedMessageContainerV2(SignedMessageContainer):
         sch = get_schema_file(DatabaseManager.SIGNED_MSG)
         sch_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], SignedMessage.get_supported_families(), family
+            sch_family["properties"], SignedMessage.get_supported_families(), family, revision
         )
 
         sch["signed_message"]["properties"]["container_version"][

@@ -1,10 +1,87 @@
+[project]
+name = "spsdk"
+dynamic = ["dependencies", "version"]
+description = "Open Source Secure Provisioning SDK for NXP MCU/MPU"
+authors = [{name = "NXP", email = "michal.starecek@nxp.com"}]
+license = {text = "BSD-3-Clause"}
+requires-python = ">=3.9"
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
+	"Operating System :: POSIX :: Linux",
+	"Operating System :: Microsoft :: Windows",
+	"Operating System :: MacOS :: MacOS X",
+	"License :: OSI Approved :: BSD License",
+	"Topic :: Scientific/Engineering",
+	"Topic :: Software Development :: Embedded Systems",
+	"Topic :: System :: Hardware",
+	"Topic :: Utilities",
+]
+
+[tool.setuptools]
+packages = ["spsdk"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[project.urls]
+"Code" = "https://github.com/NXPmicro/spsdk"
+"Issue tracker" = "https://github.com/NXPmicro/spsdk/issues"
+"Documentation" = "https://spsdk.readthedocs.io"
+
+[project.optional-dependencies]
+tp = ["pyscard==2.0.2"]
+examples = ["flask", "requests", "ipython", "notebook", "ipywidgets"]
+dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
+oscca = ["gmssl>=3.2,<4"]
+can = ["python-can<4.5,>=4.4"]
+pqc = ["spsdk-pqc<1.0,>=0.5.0"]
+all = [
+    "spsdk[tp]",
+    "spsdk[examples]",
+    "spsdk[dk6]",
+    "spsdk[oscca]",
+    "spsdk[can]",
+    "spsdk[pqc]",
+]
+
+[project.scripts]
+pfr = "spsdk.apps.pfr:safe_main"
+blhost = "spsdk.apps.blhost:safe_main"
+sdphost = "spsdk.apps.sdphost:safe_main"
+sdpshost = "spsdk.apps.sdpshost:safe_main"
+spsdk = "spsdk.apps.spsdk_apps:safe_main"
+nxpdebugmbox = "spsdk.apps.nxpdebugmbox:safe_main"
+nxpcrypto = "spsdk.apps.nxpcrypto:safe_main"
+nxpdevscan = "spsdk.apps.nxpdevscan:safe_main"
+nxpdevhsm = "spsdk.apps.nxpdevhsm:safe_main"
+nxpele = "spsdk.apps.nxpele:safe_main"
+nxpdice = "spsdk.apps.nxpdice:safe_main"
+nxpimage = "spsdk.apps.nxpimage:safe_main"
+nxpmemcfg = "spsdk.apps.nxpmemcfg:safe_main"
+nxpuuu = "spsdk.apps.nxpuuu:safe_main"
+nxpwpc = "spsdk.apps.nxpwpc:safe_main"
+shadowregs = "spsdk.apps.shadowregs:safe_main"
+nxpfuses = "spsdk.apps.nxpfuses:safe_main"
+ifr = "spsdk.apps.ifr:safe_main"
+tpconfig = "spsdk.apps.tpconfig:safe_main"
+tphost = "spsdk.apps.tphost:safe_main"
+dk6prog = "spsdk.apps.dk6prog:safe_main"
+el2go-host = "spsdk.apps.el2go:safe_main"
+lpcprog = "spsdk.apps.lpcprog:safe_main"
+
+
 [build-system]
 requires = ["setuptools_scm<8.2", "setuptools>=72.1,<74", "wheel"]
-# build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 100
-target-version = ['py39', 'py310', 'py311', 'py312']
+target-version = ['py39', 'py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 force-exclude = '''
 '''
@@ -114,7 +191,7 @@ root_package = "spsdk"
 "LGPL-2.0" = ["GPL-2.0-or-later"]
 "LGPL-2.1" = ["LGPL-2.1-or-later"]
 "ISC" = ["ISC license"]
-"Unlincense" = ["The Unlicense"]
+"Unlincense" = ["The Unlicense", "The Unlicense (Unlicense)"]
 
 [tool.nxp_codecheck]
 # Reports output directory
@@ -126,14 +203,15 @@ jupyter_check_paths = ["examples"]
 checkers = [
     { "pytest" = { timeout = 1200 } },
     { "gitcov" = { info_only = true } },
-    "pylint",
-    "mypy",
+    {"pylint" = { timeout = 300 } },
+    { "mypy" = { timeout = 300 } },
     "dependencies",
     "pydocstyle",
-    { "radon_c" = { info_only = true } },
-    "radon_d",
+    "ruff",
+    { "radon_c" = { info_only = true, timeout = 60 } },
+    { "radon_d" = { timeout = 60 } },
     { "black" = { timeout = 120 } },
-    "isort",
+    { "isort" = { timeout = 60 } },
     "copyright",
     "py_headers",
     { "cyclic" = { info_only = true, check_paths = [

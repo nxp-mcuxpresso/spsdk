@@ -65,13 +65,27 @@ el2go_tp:
       title: Download Timeout
       description: Timeout for overall download process including waiting for Secure Objects creation
       template_value: 300
+
+  required: [api_key, device_group_id, nc12, family]
+
+prov_fw_path:
+  properties:
     prov_fw_path:
       type: string
       format: file
-      title: Provisioning FW path
-      description: Path to OEM Provisioning Firmware SB file
+      title: NXP EL2GO Provisioning FW path
+      description: Path to NXP EL2GO Provisioning Firmware SB file. If you don't want to use the Provisioning FW, please comment out the line below
       template_value: oem_tp_fw.sb
-  required: [api_key, device_group_id, nc12, family, prov_fw_path]
+  required: ["prov_fw_path"]
+
+uboot_path:
+  properties:
+    uboot_path:
+      type: string
+      format: file
+      title: Path to U-Boot binary
+      description: Path to U-Boot binary that will be used for writing assets to EMMC/SD
+      template_value: u-boot.bin
 
 fw_load_address:
   properties:

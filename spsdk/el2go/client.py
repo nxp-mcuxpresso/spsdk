@@ -128,7 +128,10 @@ class EL2GOClient(HTTPClientBase):
         prov_fw_path = config_data.pop("prov_fw_path", None)
         if prov_fw_path:
             prov_fw_path = find_file(file_path=prov_fw_path, search_paths=search_paths)
-        return cls(api_key=api_key, prov_fw_path=prov_fw_path, **config_data)
+        uboot_path = config_data.pop("uboot_path", None)
+        if uboot_path:
+            uboot_path = find_file(file_path=uboot_path, search_paths=search_paths)
+        return cls(api_key=api_key, prov_fw_path=prov_fw_path, uboot_path=uboot_path, **config_data)
 
     @classmethod
     def from_config_file(cls, config_file: str) -> Self:

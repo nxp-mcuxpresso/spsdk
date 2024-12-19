@@ -107,6 +107,7 @@ class BDParser(Parser):
         ("right", "LNOT", "NOT"),
     )
 
+    # ruff: noqa: F821, F811
     # pylint: disable=undefined-variable,function-redefined,no-self-use,unused-argument
     # undefined-variable : the module uses underscore decorator to define
     #   each rule, however, this causes issues to mypy and pylint.

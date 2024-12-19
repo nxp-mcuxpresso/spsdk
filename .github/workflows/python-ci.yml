@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3.13"]
 
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:

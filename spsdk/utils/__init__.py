@@ -14,3 +14,11 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
+
+__all__ = [
+    "SPSDKRegsError",
+    "SPSDKRegsErrorBitfieldNotFound",
+    "SPSDKRegsErrorEnumNotFound",
+    "SPSDKRegsErrorRegisterGroupMishmash",
+    "SPSDKRegsErrorRegisterNotFound",
+]

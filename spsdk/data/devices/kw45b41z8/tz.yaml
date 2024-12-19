@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -7,7 +7,7 @@ TZM info which data are initialized (tzm_control): "0x0"
 CM33 Secure vector table address (cm33_vtor_addr): "0x0"
 CM33 Non-secure vector table address (cm33_vtor_ns_addr): "0x0"
 CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0): "0x0"
-CM33 Interrupt target non-secure register 1((cm33_nvic_itns1): "0x0"
+CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1): "0x0"
 Miscellaneous CM33 settings (cm33_misc_ctrl): "0x0"
 CM33 Non-secure Access Control Register (cm33_nsacr): "0x0"
 CM33 Coprocessor Power Control Register (cm33_cppwr): "0x0"

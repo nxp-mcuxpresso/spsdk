@@ -661,11 +661,24 @@ def get_property(
     29 or 'pfr-keystore_update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
     31 or 'fuse-locked-status'          Fuse Locked Status
+    32 or 'boot status'                 Value of Boot Status Register
+    33 or 'loadable-fw-version'         LoadableFWVersion
+
+    \b
     for kw45xx/k32w1xx devices:
     10 or 'verify-erases'               Verify Erases flag
     20 or 'boot status'                 Value of Boot Status Register
     21 or 'loadable-fw-version'         LoadableFWVersion
     22 or 'fuse-program-voltage'        Fuse Program Voltage
+
+    \b
+    for kw47xx devices:
+    10 or 'verify-erases'               Verify Erases flag
+    20 or 'boot status'                 Value of Boot Status Register
+    21 or 'loadable-fw-version'         LoadableFWVersion
+    34 or 'fuse-program-voltage'        Fuse Program Voltage
+
+    \b
     for mcxa1xx devices:
     17 or 'life-cycle'                  Life Cycle
 
@@ -714,9 +727,16 @@ def set_property(
     28 or 'irq-notify-pin'              Interrupt notifier pin
     29 or 'pfr-keystore_update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
+
+    \b
     for kw45xx/k32w1xx devices:
     10 or 'verify-erases'               Verify Erases flag
     22 or 'fuse-program-voltage'        Fuse Program Voltage
+
+    \b
+    for kw47xx devices:
+    10 or 'verify-erases'               Verify Erases flag
+    34 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
     Note: Not all properties can be set on all devices.

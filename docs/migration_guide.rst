@@ -2,6 +2,31 @@
 Migration guide
 ===============
 
+Changes in SPSDK 3.0
+====================
+(This version is not release yet)
+
+BREAKING CHANGES
+----------------
+
+* Overriding values from configuration file on command line (this will effect API and CLI)
+* Using device family and revision (this will effect API)
+
+
+
+Changes in SPSDK 2.5
+====================
+
+API changes
+-----------
+
+* SPSDK will no longer contain code for specific debuggers (spsdk/debuggers) Debuggers will be installed via plugins
+
+  * the default installation of SPSDK will install PyOCD and MCU-Link
+  * user may install/uninstall support for additional debuggers. (NXP offers some debugger plugins via `spsdk plugins <https://github.com/nxp-mcuxpresso/spsdk_plugins>`_)
+
+
+
 Changes in SPSDK 2.3
 ====================
 

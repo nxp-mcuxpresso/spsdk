@@ -222,7 +222,6 @@ class AHABImage:
         ret.add_image(ahab_containers)
 
         for cnt_ix, container in enumerate(self.ahab_containers):
-
             container_image = container.image_info()
             container_image.name = container_image.name + f" {cnt_ix}"
             container_image.offset = container.get_container_offset(cnt_ix)
@@ -584,7 +583,7 @@ class AHABImage:
         sch_family = get_schema_file("general")
         sch = get_schema_file(DatabaseManager.AHAB)
         update_validation_schema_family(
-            sch_family["family"]["properties"], AHABImage.get_supported_families(), family
+            sch_family["family"]["properties"], AHABImage.get_supported_families(), family, revision
         )
         sch["whole_ahab_image"]["properties"]["container_version"][
             "skip_in_template"
@@ -595,7 +594,6 @@ class AHABImage:
         if not certificate_supported:
             sch_cnt.pop("certificate")
         if container_type_2:
-
             sch_cnt["check_all_signatures"]["skip_in_template"] = False
             sch_cnt["fast_boot"]["skip_in_template"] = False
             sch_cnt["srk_table"]["properties"]["srk_table_#2"]["skip_in_template"] = False

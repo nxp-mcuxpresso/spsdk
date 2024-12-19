@@ -624,14 +624,14 @@ def test_multiple_images_with_relocation_table(data_dir):
     assert _compare_image(mbi, os.path.join(data_dir, "multicore"), "expected_output.bin")
 
 
-def test_loading_relocation_table(data_dir):
+def test_loading_relocation_table(tests_root_dir, data_dir):
     """Test of relocation table mixin support."""
 
     class TestAppTable(Mbi_MixinRelocTable):
         def __init__(self) -> None:
             self.app = bytes(100)
             self.app_table = None
-            self.search_paths = None
+            self.search_paths = [tests_root_dir]
 
     test_cls = TestAppTable()
     cfg = load_configuration(os.path.join(data_dir, "test_app_table.yaml"))
@@ -639,7 +639,7 @@ def test_loading_relocation_table(data_dir):
     schemas = []
     schema_cfg = get_schema_file(DatabaseManager.MBI)
     schemas.append(schema_cfg["app_table"])
-    check_config(cfg, schemas)
+    check_config(cfg, schemas, search_paths=[tests_root_dir])
     # Test Load
     test_cls.mix_load_from_config(cfg)
 

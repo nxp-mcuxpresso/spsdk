@@ -18,14 +18,13 @@ from enum import Enum
 from typing import Optional
 
 import click
-import requests
 from packaging.requirements import Requirement
 from packaging.specifiers import Specifier
 from packaging.version import Version
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(THIS_DIR, ".."))
-REQUIRED_PYTHON = (3, 8)
+REQUIRED_PYTHON = (3, 9)
 
 
 class NextVersion(str, Enum):
@@ -137,12 +136,12 @@ class RequirementsList(list[RequirementsRecord]):
     @staticmethod
     def normalize_name(name: str) -> str:
         """Normalize to standard name format."""
-        return name.replace("-", "_").lower()
+        return name.replace("-", "_").replace(".", "_").lower()
 
     @staticmethod
     def from_pip() -> "RequirementsList":
         """Get Requirements from pip package."""
-        output = subprocess.check_output(f"{sys.executable} -m pip freeze", text=True).splitlines()
+        output = subprocess.check_output("uv pip freeze".split(), text=True).splitlines()
         return RequirementsList.from_lines(req_lines=output)
 
     @staticmethod
@@ -236,33 +235,29 @@ def prepare() -> None:
     """Removes version info from a requirements file."""
     prepare_file("requirements.txt")
     prepare_file("requirements-develop.txt")
-    click.echo("Now update your venv by running the following commands:")
-    click.echo("python -m pip install --upgrade pip")
-    click.echo('pip install --upgrade --force-reinstall --editable ".[tp]"')
-    click.echo("pip install --upgrade --force-reinstall --requirement requirements-develop.txt")
-    click.echo("After that, update the requirements files using `req_update.py finalize`")
+    ctx = click.get_current_context()
+    # the command is called as a standalone command, not from batch
+    if ctx.parent and ctx.parent.invoked_subcommand is not None:
+        click.echo("Now update your venv by running the following commands:")
+        click.echo("uv pip install --upgrade --force-reinstall .")
+        click.echo(
+            "uv pip install --upgrade --force-reinstall --requirement requirements-develop.txt"
+        )
+        click.echo("After that, update the requirements files using `req_update.py finalize`")
 
 
 @main.command("update")
 def update() -> None:
     """Update all dependencies."""
     try:
-        click.echo("Updating pip")
-        subprocess.check_call(f"{sys.executable} -m pip install --upgrade pip".split())
         click.echo("Updating project")
-        subprocess.check_call(
-            f'{sys.executable} -m pip install --upgrade --force-reinstall -e ".[tp]"'.split(),
-        )
+        subprocess.check_call("uv pip install --upgrade --force-reinstall -e .".split())
         click.echo("Updating development requirements")
         subprocess.check_call(
-            f"{sys.executable} -m pip install --upgrade --force-reinstall -r requirements-develop.txt".split(),
+            "uv pip install --upgrade --force-reinstall -r requirements-develop.txt".split()
         )
-    except subprocess.CalledProcessError:
-        click.secho("Automated venv update failed! Please run the following commands:", fg="red")
-        click.echo("python -m pip install --upgrade pip")
-        click.echo('pip install --upgrade --force-reinstall --editable ".[tp]"')
-        click.echo("pip install --upgrade --force-reinstall --requirement requirements-develop.txt")
-        click.echo("After that, update the requirements files using `req_update.py finalize`")
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Automated venv update failed: {e}") from e
 
 
 @main.command("finalize")
@@ -312,7 +307,7 @@ def branch(branch_name: str) -> None:
             subprocess.check_call(f"{git_path} branch -d {branch_name}".split())
             subprocess.check_call(f"{git_path} checkout -b {branch_name}".split())
 
-    subprocess.check_call(f"{git_path} add .".split())
+    subprocess.check_call(f"{git_path} add requirements.txt requirements-develop.txt".split())
     subprocess.check_call([git_path, "commit", "-m", "Changes in requirements versions"])
     subprocess.check_call(f"{git_path} push origin {branch_name}".split())
 
@@ -336,6 +331,8 @@ def branch(branch_name: str) -> None:
 )
 def pull_request(auth_token_path: str, src_branch: str, dest_branch: str) -> None:
     """Create pull request."""
+    import requests
+
     token = get_token(auth_token_path)
     git_path = shutil.which("git")
     if not git_path:
@@ -355,7 +352,7 @@ def pull_request(auth_token_path: str, src_branch: str, dest_branch: str) -> Non
         "Authorization": f"Bearer {token}",
     }
     commit_datetime_str = subprocess.check_output(
-        f'{git_path} log -1 --format="%cI"'.split(), text=True
+        f"{git_path} log -1 --format=%cI".split(), text=True
     ).strip()
     commit_datetime = datetime.fromisoformat(commit_datetime_str)
     # This is the minimal set of data required for API call
@@ -375,12 +372,14 @@ def pull_request(auth_token_path: str, src_branch: str, dest_branch: str) -> Non
         },
     }
     response = requests.post(url, headers=headers, data=json.dumps(data), timeout=10)
-    if response.status_code in [200, 201]:
+    try:
+        response.raise_for_status()
         click.secho("Pull request created", fg="green")
         click.echo(f"Visit: {response.json()['links']['self'][0]['href']}")
-    else:
-        click.secho("Pull request creation failed!", fg="red")
-        click.echo(json.dumps(response.json(), sort_keys=True, indent=4))
+    except requests.HTTPError as e:
+        raise RuntimeError(
+            f"Pull request creation failed!:{json.dumps(response.json(), sort_keys=True, indent=4)}"
+        ) from e
 
 
 @main.command("batch")

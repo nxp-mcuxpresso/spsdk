@@ -9,7 +9,9 @@
 
 import json
 import logging
+import math
 import os
+import shlex
 import sys
 import time
 from datetime import datetime, timedelta
@@ -17,28 +19,28 @@ from typing import Optional, Union
 
 import click
 
-from spsdk.apps.blhost_helper import display_output
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     spsdk_apps_common_options,
     spsdk_config_option,
+    spsdk_el2go_interface,
     spsdk_family_option,
-    spsdk_mboot_interface,
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, SPSDKError, catch_spsdk_error
 from spsdk.el2go.api_utils import EL2GOTPClient, get_el2go_otp_binary
 from spsdk.el2go.bulk import ServiceDB
 from spsdk.el2go.database import SecureObjectsDB
+from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.el2go.secure_objects import SecureObjects
-from spsdk.mboot.mcuboot import McuBoot, StatusCode, stringify_status_code
-from spsdk.mboot.properties import PropertyTag
-from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.misc import load_binary, load_configuration, write_file
+from spsdk.utils.misc import load_binary, load_configuration, load_text, write_file
 
 # use the same set of interfaces for all commands
-el2go_fw_interface = spsdk_mboot_interface(sdio=False, can=False, plugin=False)
+el2go_fw_interface = spsdk_el2go_interface(sdio=False, can=False, plugin=False)
+el2go_optional_fw_interface = spsdk_el2go_interface(
+    sdio=False, can=False, plugin=False, required=False
+)
 
 
 def extract_device_id(uuid_list: list) -> str:
@@ -61,23 +63,9 @@ def main(log_level: int) -> int:
 
 @main.command(name="get-fw-version", no_args_is_help=True)
 @el2go_fw_interface
-def get_version_command(interface: MbootProtocolBase) -> None:
+def get_version_command(interface: EL2GOInterfaceHandler) -> None:
     """Return EdgeLock 2GO NXP Provisioning Firmware's version."""
-    get_version(interface=interface)
-
-
-def get_version(interface: MbootProtocolBase) -> None:
-    """Return EdgeLock 2GO NXP Provisioning Firmware's version."""
-    with McuBoot(interface=interface, cmd_exception=True) as mboot:
-        version_list = mboot.el2go_get_version()
-    if not version_list:
-        raise SPSDKAppError(f"Unable to get FW version. Error: {mboot.status_string}")
-
-    display_output(version_list, mboot.status_code)
-    if mboot.status_code == StatusCode.SUCCESS:
-        version = "{}".format(", ".join(hex(x) for x in version_list))
-        version = "v" + version[2] + "." + version[3:5] + "." + version[5:7]
-        click.echo(f"Firmware version: {version}")
+    click.echo(f"Firmware version: {interface.get_version()}")
 
 
 @main.command(name="prepare-device", no_args_is_help=True)
@@ -108,7 +96,7 @@ def get_version(interface: MbootProtocolBase) -> None:
     help="Clean deployed Secure objects from last run (if applicable for given device).",
 )
 def prepare_device_command(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     secure_objects_file: str,
     database: str,
@@ -118,6 +106,7 @@ def prepare_device_command(
     """Prepare device for Trust Provisioning.
 
     \b
+    0) Execute optional interface preparation step
     1) Get UUID from the target
     2) Download Secure Objects from EL2GO
     3) Upload Secure Objects to the target
@@ -137,7 +126,7 @@ def prepare_device_command(
 
 
 def prepare_device(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     secure_objects_file: Optional[str] = None,
     database: Optional[str] = None,
@@ -146,6 +135,7 @@ def prepare_device(
 ) -> None:
     """Prepare device for Trust Provisioning."""
     client = _create_client(config)
+    interface.prepare(client.loader)
     prov_data = _retrieve_secure_objects(
         interface=interface,
         client=client,
@@ -167,7 +157,7 @@ def prepare_device(
     help="Do not perform the actual provisioning, just simulate it. Note: not all devices support this feature.",
 )
 def run_provisioning_command(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     dry_run: bool,
 ) -> None:
@@ -181,11 +171,16 @@ def run_provisioning_command(
     """
     client = _create_client(config)
 
-    _run_provisioning(client=client, interface=interface, dry_run=dry_run)
+    interface.run_provisioning(
+        tp_data_address=client.tp_data_address,
+        use_dispatch_fw=client.use_dispatch_fw,
+        prov_fw=client.prov_fw,
+        dry_run=dry_run,
+    )
 
 
 @main.command(name="get-secure-objects", no_args_is_help=True)
-@spsdk_mboot_interface(sdio=False, can=False, plugin=False, required=False)
+@el2go_optional_fw_interface  # TODO: This might be optional
 @spsdk_config_option()
 @click.option(
     "-e",
@@ -231,7 +226,7 @@ def run_provisioning_command(
 )
 def get_secure_objects_command(
     config: str,
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     output: str,
     encoding: str,
     database: str,
@@ -260,7 +255,7 @@ def get_secure_objects_command(
 
 def get_secure_objects(
     config: str,
-    interface: Optional[MbootProtocolBase] = None,
+    interface: Optional[EL2GOInterfaceHandler] = None,
     output: Optional[str] = None,
     encoding: str = "bin",
     database: Optional[str] = None,
@@ -310,7 +305,8 @@ def get_secure_objects(
             raise SPSDKAppError("Interface to a target must be defined when not using database")
         if not output:
             raise SPSDKAppError("Path to output file must be defined when not using database")
-        uuid = _get_uuid(interface=interface)
+        interface.prepare(client.loader)
+        uuid = interface.get_uuid()
         client.assign_device_to_devicegroup(device_id=uuid, allow_reassignment=re_assign)
         provisionings = client.download_provisionings(device_id=uuid)
 
@@ -337,28 +333,19 @@ def get_secure_objects(
     type=str,
     help="URL to the remote database",
 )
-def get_uuid_command(interface: MbootProtocolBase, database: str, remote_database: str) -> None:
+def get_uuid_command(interface: EL2GOInterfaceHandler, database: str, remote_database: str) -> None:
     """Get UUID from the target and store it in a database."""
     get_uuid(interface=interface, database=database, remote_database=remote_database)
 
 
-def get_uuid(interface: MbootProtocolBase, database: str, remote_database: str) -> None:
+def get_uuid(interface: EL2GOInterfaceHandler, database: str, remote_database: str) -> None:
     """Get UUID from the target and store it in a database."""
-    uuid = _get_uuid(interface=interface)
+    uuid = interface.get_uuid()
     db = SecureObjectsDB.create(file_path=database, host=remote_database)
     with db:
         result = db.add_uuid(uuid=uuid)
     if result:
         click.echo(f"UUID {uuid} stored in the database")
-
-
-def _get_uuid(interface: MbootProtocolBase) -> str:
-    with McuBoot(interface) as mboot:
-        uuid_list = mboot.get_property(PropertyTag.UNIQUE_DEVICE_IDENT)
-        if not uuid_list:
-            raise SPSDKAppError(f"Unable to get UUID. Error: {mboot.status_string}")
-    uuid = extract_device_id(uuid_list=uuid_list)
-    return uuid
 
 
 @main.command(name="provision-objects", no_args_is_help=True)
@@ -395,7 +382,7 @@ def _get_uuid(interface: MbootProtocolBase) -> str:
     help="Do not perform the actual provisioning, just simulate it. (if applicable for given device).",
 )
 def provision_objects_commands(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     secure_objects_file: str,
     database: str,
@@ -416,7 +403,7 @@ def provision_objects_commands(
 
 
 def provision_objects(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     secure_objects_file: Optional[str] = None,
     database: Optional[str] = None,
@@ -436,7 +423,9 @@ def provision_objects(
         clean=clean,
     )
 
-    _run_provisioning(client=client, interface=interface, dry_run=dry_run)
+    interface.run_provisioning(
+        client.tp_data_address, client.use_dispatch_fw, client.prov_fw, dry_run
+    )
 
 
 @main.command(name="provision-device", no_args_is_help=True)
@@ -467,7 +456,7 @@ def provision_objects(
     help="Do not perform the actual provisioning, just simulate it. (if applicable for given device).",
 )
 def provision_device_command(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     workspace: str,
     re_assign: bool,
@@ -494,7 +483,7 @@ def provision_device_command(
 
 
 def provision_device(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     config: str,
     workspace: Optional[str] = None,
     re_assign: bool = False,
@@ -506,7 +495,7 @@ def provision_device(
         os.makedirs(workspace, exist_ok=True)
 
     client = _create_client(config)
-    uuid = _get_uuid(interface=interface)
+    uuid = interface.get_uuid()
     if workspace:
         write_file(uuid, os.path.join(workspace, "uuid.txt"), mode="w")
     client.assign_device_to_devicegroup(device_id=uuid, allow_reassignment=re_assign)
@@ -526,7 +515,12 @@ def provision_device(
         clean=clean,
     )
 
-    _run_provisioning(client=client, interface=interface, dry_run=dry_run)
+    interface.run_provisioning(
+        tp_data_address=client.tp_data_address,
+        use_dispatch_fw=client.use_dispatch_fw,
+        prov_fw=client.prov_fw,
+        dry_run=dry_run,
+    )
 
 
 def _create_client(config: str) -> EL2GOTPClient:
@@ -536,7 +530,7 @@ def _create_client(config: str) -> EL2GOTPClient:
 
 
 def _retrieve_secure_objects(
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     client: EL2GOTPClient,
     database: Optional[str] = None,
     remote_database: Optional[str] = None,
@@ -544,7 +538,7 @@ def _retrieve_secure_objects(
 ) -> bytes:
     if database or remote_database:
         db = SecureObjectsDB.create(file_path=database, host=remote_database)
-        uuid = _get_uuid(interface=interface)
+        uuid = interface.get_uuid()
         with db:
             prov_data = db.get_secure_object(uuid=uuid)
         if not prov_data:
@@ -563,7 +557,7 @@ def _retrieve_secure_objects(
 
 def _upload_data(
     client: EL2GOTPClient,
-    interface: MbootProtocolBase,
+    interface: EL2GOInterfaceHandler,
     secure_objects: bytes,
     workspace: Optional[str] = None,
     clean: bool = False,
@@ -578,58 +572,45 @@ def _upload_data(
     so_list = SecureObjects.parse(secure_objects)
     so_list.validate(family=client.family)
 
-    with McuBoot(interface=interface, cmd_exception=True) as mboot:
-        if clean:
-            click.echo("Performing cleanup method")
-            client.run_cleanup_method(mboot=mboot)
-        if client.use_dispatch_fw:
-            click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
-            mboot.write_memory(address=user_data_address, data=secure_objects)
+    if clean:
+        click.echo("Performing cleanup method")
+        client.run_cleanup_method(interface=interface)
+    if client.use_dispatch_fw:
+        click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
+        interface.write_memory(address=user_data_address, data=secure_objects)
+        if client.prov_fw:
             click.echo("Uploading ProvFW")
-            mboot.write_memory(address=client.fw_load_address, data=client.prov_fw)
+            interface.write_memory(address=client.fw_load_address, data=client.prov_fw)
             click.echo("Resetting the device (Starting Provisioning FW)")
-            mboot.reset(reopen=False)
-        elif client.use_user_config:
-            click.echo(f"Writing User config data to: {hex(fw_read_address)}")
-            mboot.write_memory(address=fw_read_address, data=user_config)
-            click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
-            mboot.write_memory(address=user_data_address, data=secure_objects)
-        elif client.use_data_split:
-            internal, external = so_list.split_int_ext()
-            if internal:
-                if workspace:
-                    write_file(internal, os.path.join(workspace, "internal_so.bin"), mode="wb")
-                click.echo(f"Writing Internal Secure Objects to: {hex(fw_read_address)}")
-                mboot.write_memory(address=fw_read_address, data=internal)
-            if external:
-                if workspace:
-                    write_file(external, os.path.join(workspace, "external_so.bin"), mode="wb")
-                click.echo(f"Writing External Secure Objects to: {hex(user_data_address)}")
-                mboot.write_memory(address=user_data_address, data=external)
-        else:
-            raise SPSDKAppError("Unsupported provisioning method")
+            interface.reset()
+    elif client.use_oem_app:
+        click.echo(f"Writing Secure Objects to MMC/SD FAT: {hex(user_data_address)}")
+        interface.write_memory(address=user_data_address, data=secure_objects)
+        output = interface.send_command(
+            f"fatwrite mmc 0:1 {user_data_address:x} secure_objects.bin {len(secure_objects):x}"
+        )
+        click.echo(f"Data written {output}")
+
+    elif client.use_user_config:
+        click.echo(f"Writing User config data to: {hex(fw_read_address)}")
+        interface.write_memory(address=fw_read_address, data=user_config)
+        click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
+        interface.write_memory(address=user_data_address, data=secure_objects)
+    elif client.use_data_split:
+        internal, external = so_list.split_int_ext()
+        if internal:
+            if workspace:
+                write_file(internal, os.path.join(workspace, "internal_so.bin"), mode="wb")
+            click.echo(f"Writing Internal Secure Objects to: {hex(fw_read_address)}")
+            interface.write_memory(address=fw_read_address, data=internal)
+        if external:
+            if workspace:
+                write_file(external, os.path.join(workspace, "external_so.bin"), mode="wb")
+            click.echo(f"Writing External Secure Objects to: {hex(user_data_address)}")
+            interface.write_memory(address=user_data_address, data=external)
+    else:
+        raise SPSDKAppError("Unsupported provisioning method")
     click.echo("Secure Objects uploaded successfully")
-
-
-def _run_provisioning(
-    client: EL2GOTPClient,
-    interface: MbootProtocolBase,
-    dry_run: bool = False,
-) -> None:
-    with McuBoot(interface=interface, cmd_exception=True) as mboot:
-        if client.use_dispatch_fw:
-            click.echo("Starting provisioning process")
-            status = mboot.el2go_close_device(client.tp_data_address, dry_run=dry_run)
-            if status is None:
-                raise SPSDKAppError("Provisioning failed. No response from the firmware.")
-            if status != StatusCode.EL2GO_PROV_SUCCESS.tag:
-                raise SPSDKAppError(
-                    f"Provisioning failed with status: {stringify_status_code(status)}"
-                )
-        else:
-            click.echo("Uploading ProvFW (Starting provisioning process)")
-            mboot.receive_sb_file(client.prov_fw)
-    click.echo("Secure Objects provisioned successfully")
 
 
 @main.command(name="get-template", no_args_is_help=True)
@@ -730,13 +711,100 @@ def combine_uuid_db(output: str, input_sources: list[str]) -> None:
             click.echo(f"Processing {file}")
             try:
                 db_source = SecureObjectsDB.create(file_path=file)
+                with db_source:
+                    for uuid in db_source.get_uuids():
+                        db.add_uuid(uuid)
             except SPSDKError as e:
-                click.secho(f"Skipping {file}: {e.description}", fg="yellow")
-                continue
-            with db_source:
-                for uuid in db_source.get_uuids():
-                    db.add_uuid(uuid)
+                click.secho(f"File {file}: {e.description}. Attempting text file parsing")
+                text_data = load_text(file)
+                uuids = shlex.split(text_data, comments=True)
+                for uuid in uuids:
+                    db.add_uuid(uuid=uuid)
+
     click.echo(f"UUID databases combined into {output}")
+
+
+@main.command(name="parse-uuid-db")
+@click.option(
+    "-i",
+    "--input",
+    "input_db",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to DB file to parse",
+)
+@spsdk_output_option(
+    required=False,
+    directory=True,
+    help="Path to directory where to extract Secure Objects.",
+)
+def parse_uuid_db_command(output: str, input_db: str) -> None:
+    """Parse Information about DB file. Optionally extract Secure Objects."""
+    parse_uuid_db(output=output, input_db=input_db)
+
+
+def parse_uuid_db(output: str, input_db: str) -> None:
+    """Parse Information about DB file. Optionally extract Secure Objects."""
+    db = SecureObjectsDB.create(file_path=input_db)
+    with db:
+        empty = db.get_count(empty=True)
+        total = db.get_count(empty=False)
+        click.echo(f"Total records (UUIDs):          {total}")
+        click.echo(f"Records with Secure Objects:    {total - empty}")
+        click.echo(f"Records without Secure Objects: {empty}")
+        if output:
+            os.makedirs(output, exist_ok=True)
+            for uuid in db.get_uuids(empty=False):
+                data = db.get_secure_object(uuid=uuid)
+                if not data:
+                    continue
+                write_file(data, os.path.join(output, f"{uuid}.bin"), mode="wb")
+            click.echo(f"{total - empty} records(s) extracted to {output}")
+
+
+@main.command(name="unclaim", no_args_is_help=True)
+@spsdk_config_option()
+@click.option(
+    "-db",
+    "--database",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Unclaim devices only in this database",
+)
+def unclaim(config: str, database: str) -> None:
+    """Unclaim devices: Remove UUIDs from Device Group.
+
+    If a database is specified, unclaim only UUIDs in database and remove Secure Objects from database.
+    """
+    client = _create_client(config=config)
+    click.echo(f"Loading UUIDs registered in Device Group: {client.device_group_id}")
+    remote_uuids = client.get_uuids()
+    click.echo(f"Found {len(remote_uuids)} UUIDs")
+    if len(remote_uuids) == 0:
+        return
+    uuids = set(remote_uuids)
+
+    if database:
+        click.echo(f"Loading UUIDs from local database: {database}")
+        db = SecureObjectsDB.create(file_path=database)
+        with db:
+            local_uuids = db.get_uuids(empty=False)
+        click.echo(f"Found {len(local_uuids)} UUIDs")
+        uuids = uuids & set(local_uuids)
+
+    click.secho(
+        f"You're about to remove {len(uuids)} UUIDs from Device Group: {client.device_group_id}",
+        fg="yellow",
+    )
+    click.confirm("Are you sure you want to continue?", abort=True)
+
+    client._unassign_device_from_group(device_id=list(uuids), wait_time=0)
+
+    if database:
+        db = SecureObjectsDB.create(file_path=database)
+        click.echo(f"Removing {len(uuids)} Secure Objects from database.")
+        with db:
+            db.remove_secure_object(uuid=list(uuids))
+    click.echo("Un-claim completed")
 
 
 @main.command(name="bulk-so-download", no_args_is_help=True)
@@ -751,26 +819,26 @@ def combine_uuid_db(output: str, input_sources: list[str]) -> None:
 @click.option(
     "-l",
     "--limit",
-    type=int,
+    type=click.IntRange(0),
     default=0,
     help="Number of devices to download (default: 0 = all)",
 )
 @click.option(
     "-t",
     "--time-per-device",
-    type=int,
+    type=click.FloatRange(0),
     default=5,
     help="Time per device in seconds (default: 5)",
 )
 @click.option(
     "-s",
     "--max-job-size",
-    type=int,
+    type=click.IntRange(1, 500),
     default=500,
     help="Max chunk size for one job (default: 500)",
 )
 def bulk_so_download_command(
-    config: str, database: str, limit: int, time_per_device: int, max_job_size: int
+    config: str, database: str, limit: int, time_per_device: float, max_job_size: int
 ) -> None:
     """Download Secure Objects for all UUIDs in the database."""
     bulk_so_download(
@@ -783,7 +851,7 @@ def bulk_so_download_command(
 
 
 def bulk_so_download(
-    config: str, database: str, limit: int, time_per_device: int, max_job_size: int
+    config: str, database: str, limit: int, time_per_device: float, max_job_size: int
 ) -> None:
     """Download Secure Objects for all UUIDs in the database.
 
@@ -823,9 +891,11 @@ def bulk_so_download(
                 wait_times = [job.calc_wait_time(time_per_device) for job in incomplete_jobs]
                 wt_filtered = [time for time in wait_times if time is not None]
                 wait_time = min(wt_filtered) if wt_filtered else 0.0
-                next_check = datetime.now() + timedelta(seconds=wait_time)
+                wait_time_delta = timedelta(seconds=math.ceil(wait_time))
+                next_check = datetime.now() + wait_time_delta
                 click.echo(
-                    f"Next Jobs status check in {wait_time:.0f} seconds at {next_check.strftime('%H:%M:%S')}"
+                    f"Next Jobs status check in {wait_time_delta} ({wait_time_delta.total_seconds():.0f} seconds) "
+                    f"at {next_check.strftime('%H:%M:%S')}"
                 )
                 time.sleep(wait_time)
 

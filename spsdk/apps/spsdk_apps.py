@@ -28,6 +28,7 @@ from spsdk.apps.nxpdevhsm import main as nxpdevhsm_main
 from spsdk.apps.nxpdevscan import main as nxpdevscan_main
 from spsdk.apps.nxpdice import main as nxpdice_main
 from spsdk.apps.nxpele import main as nxpele_main
+from spsdk.apps.nxpfuses import main as nxpfuses_main
 from spsdk.apps.nxpimage import main as nxpimage_main
 from spsdk.apps.nxpmemcfg import main as nxpmemcfg_main
 from spsdk.apps.nxpuuu import main as nxpuuu_main
@@ -57,6 +58,7 @@ def main() -> int:
 
 
 main.add_command(blhost_main, name="blhost")
+main.add_command(nxpfuses_main, name="nxpfuses")
 main.add_command(ifr_main, name="ifr")
 main.add_command(nxpcrypto_main, name="nxpcrypto")
 main.add_command(nxpdebugmbox_main, name="nxpdebugmbox")

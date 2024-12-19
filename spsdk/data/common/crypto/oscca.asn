@@ -2,11 +2,6 @@
 
 OSCCA DEFINITIONS ::= BEGIN
 
-    SM2Key ::= CHOICE {
-        private     Private,
-        public      Public
-    }
-
     Signature ::= SEQUENCE {
         r       INTEGER,
         s       INTEGER
@@ -21,13 +16,12 @@ OSCCA DEFINITIONS ::= BEGIN
     Private ::= SEQUENCE {
         number      INTEGER,
         ids         SEQUENCE OF OBJECT IDENTIFIER,
-        keyset      OCTET STRING (CONTAINING KeySet)
+        keyset      OCTET STRING
     }
 
     Public ::= SEQUENCE {
         ids     SEQUENCE OF OBJECT IDENTIFIER,
         puk     BIT STRING
-
     }
 
 END

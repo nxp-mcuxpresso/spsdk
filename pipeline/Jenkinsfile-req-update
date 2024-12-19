@@ -5,6 +5,9 @@ pipeline {
         label 'linux-spsdk'
     }
 
+    options {
+        timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
+    }
     environment {
         BB_AUTH_TOKEN = credentials("bitbucket-token")
     }
@@ -18,7 +21,7 @@ pipeline {
         stage('Update') {
             steps {
                 withVenv(
-        			'uv pip install requests click packaging pip',
+        			'uv pip install requests click packaging',
         			'python tools/req_update.py batch'
     			)
             }

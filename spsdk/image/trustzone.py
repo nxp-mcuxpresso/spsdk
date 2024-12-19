@@ -172,7 +172,7 @@ class TrustZone:
                 sch_cfg["tz"]["properties"]["trustZonePreset"].pop("patternProperties")
             sch_cfg["tz"]["properties"]["trustZonePreset"]["properties"] = preset_properties
             update_validation_schema_family(
-                sch_family["properties"], cls.get_supported_families(), family
+                sch_family["properties"], cls.get_supported_families(), family, revision
             )
             return [sch_family, sch_cfg["tz"]]
         except (KeyError, SPSDKError) as exc:

@@ -17,8 +17,8 @@ from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_xts_encrypt
 from spsdk.exceptions import SPSDKError
+from spsdk.fuses.fuses import FuseScript
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
-from spsdk.utils.fuses import FuseScript
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     Endianness,

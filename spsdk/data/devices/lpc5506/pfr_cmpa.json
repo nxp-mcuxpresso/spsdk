@@ -28,8 +28,7 @@
                                 {
                                     "name": "AUTO_ISP",
                                     "value": 0,
-                                    "description": "Auto ISP",
-                                    "CONFIG_PREPROCESS": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                                    "description": "Auto ISP"
                                 },
                                 {
                                     "name": "UART_ISP",

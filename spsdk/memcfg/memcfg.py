@@ -189,7 +189,7 @@ class MemoryConfig(BaseClass):
         sch_family = get_schema_file("general")["family"]
 
         update_validation_schema_family(
-            sch_family["properties"], self.get_supported_families(), self.family
+            sch_family["properties"], self.get_supported_families(), self.family, self.revision
         )
         sch_cfg["base"]["properties"]["peripheral"]["template_value"] = self.peripheral
         sch_cfg["base"]["properties"]["peripheral"]["enum"] = self.get_supported_peripherals(
@@ -379,7 +379,7 @@ class MemoryConfig(BaseClass):
         runtime_instance = self.db.get_bool(
             DatabaseManager.MEMCFG, ["peripherals", self.peripheral, "runtime_instance"], False
         )
-        if instance is not None and ((not instance in instances) or not runtime_instance):
+        if instance is not None and ((instance not in instances) or not runtime_instance):
             raise SPSDKValueError(
                 f"Unsupported runtime instance switch for {self.family}:{self.peripheral}\n"
                 "Possible reasons:\n"
@@ -409,7 +409,7 @@ class MemoryConfig(BaseClass):
         if fcb_output_name:
             fcb_output_name = fcb_output_name.replace("\\", "/")
 
-            if not mem_region in self.SUPPORTS_FCB_CREATION:
+            if mem_region not in self.SUPPORTS_FCB_CREATION:
                 ret += "\n#FCB read back is supported just only for FlexSPI NOR configuration"
                 logger.warning("FCB read back is supported just only for FlexSPI NOR configuration")
                 return ret

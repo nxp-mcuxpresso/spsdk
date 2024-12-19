@@ -375,11 +375,11 @@ def get_templates(family: str, output: str) -> None:
             note="Note for settings:\n" + Registers.TEMPLATE_NOTE,
         ).get_template()
 
-        full_file_name = os.path.join(output, f"ow_{peripheral}.yaml")
+        full_file_path = os.path.join(output, f"ow_{peripheral}.yaml")
+        write_file(yaml_data, full_file_path)
         click.echo(
-            f"The Memory Configuration template for {family} has been saved into {get_printable_path(output)} YAML file"
+            f"The Memory Configuration template has been saved into '{get_printable_path(full_file_path)}' YAML file"
         )
-        write_file(yaml_data, full_file_name)
 
 
 @catch_spsdk_error

@@ -26,6 +26,7 @@ from spsdk.utils.misc import (
     reverse_bytes_in_longs,
     use_working_directory,
     value_to_bytes,
+    value_to_int,
 )
 from tests.cli_runner import CliRunner
 from tests.nxpimage.test_nxpimage_cert_block import process_config_file
@@ -532,7 +533,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir, data_dir):
 
         for fuse_ix in range(8):
             value = srk_rev[fuse_ix * 4 : fuse_ix * 4 + 4]
-            assert f"efuse-program-once {fuse_start+fuse_ix} 0x{value.hex().upper()}" in fuses
+            assert f"efuse-program-once {fuse_start+fuse_ix} 0x{value_to_int(value):X}" in fuses
 
         # Change family to mx93
         with open(new_config, "r") as f:
@@ -554,7 +555,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir, data_dir):
         for fuse_ix in range(8):
             value = srk_rev[fuse_ix * 4 : fuse_ix * 4 + 4]
             assert (
-                f"write-fuse --index {fuse_start+fuse_ix} --data 0x{value.hex().upper()}" in fuses
+                f"write-fuse --index {fuse_start+fuse_ix} --data 0x{value_to_int(value):X}" in fuses
             )
 
 

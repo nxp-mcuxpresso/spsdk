@@ -79,7 +79,6 @@ def test_repr():
             0x15A2,
             0x0073,
             [
-                "mcxc041",
                 "mcxc141",
                 "mcxc142",
                 "mcxc143",
@@ -94,6 +93,8 @@ def test_repr():
                 "mimxrt1020",
                 "mimxrt1024",
                 "mimxrt1040",
+                "mimxrt1043",
+                "mimxrt1046",
                 "mimxrt1050",
                 "mimxrt1060",
                 "mimxrt1064",
@@ -115,7 +116,7 @@ def test_repr():
                 "mwct2d17s",
             ],
         ),
-        (0x1FC9, 0x0135, ["mimxrt1040", "mimxrt1060", "mimxrt1064"]),
+        (0x1FC9, 0x0135, ["mimxrt1040", "mimxrt1043", "mimxrt1046", "mimxrt1060", "mimxrt1064"]),
     ],
 )
 def test_get_device_name2(vid, pid, expected_result):
@@ -131,7 +132,6 @@ def test_get_device_name2(vid, pid, expected_result):
             0x15A2,
             0x0073,
             [
-                "mcxc041",
                 "mcxc141",
                 "mcxc142",
                 "mcxc143",
@@ -146,6 +146,8 @@ def test_get_device_name2(vid, pid, expected_result):
                 "mimxrt1020",
                 "mimxrt1024",
                 "mimxrt1040",
+                "mimxrt1043",
+                "mimxrt1046",
                 "mimxrt1050",
                 "mimxrt1060",
                 "mimxrt1064",

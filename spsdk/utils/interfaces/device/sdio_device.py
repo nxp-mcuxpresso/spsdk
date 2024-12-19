@@ -16,7 +16,7 @@ from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
 from spsdk.utils.exceptions import SPSDKTimeoutError
-from spsdk.utils.interfaces.device.base import DeviceBase, logger
+from spsdk.utils.interfaces.device.base import DeviceBase
 from spsdk.utils.misc import Timeout
 
 logger = logging.getLogger(__name__)

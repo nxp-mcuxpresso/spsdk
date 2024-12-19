@@ -136,18 +136,19 @@ MT25QLxxxA:
   interfaces:
     quad_spi:
       option_words: [0xc0000007]
-RW303-MT35XUxxxABA1G:
+MT35XUxxxABA1G:
   manufacturer: Micron
   type: nor
   interfaces:
     octal_spi:
-      option_words: [0xC0603005]
-RW304-MT35XUxxxABA2G:
+      option_words: [0xC0703005]
+MT35XUxxxABA2G:
   manufacturer: Micron
   type: nor
   interfaces:
     octal_spi:
       option_words: [0xC0633005]
+      tested: True
 MT28EW128ABA:
   manufacturer: Micron
   type: nor
@@ -275,7 +276,6 @@ A25LQxxx:
 # ***********************************************************************
 #                            NAND
 # ***********************************************************************
-
 
 # Winbond
 W25N01G:

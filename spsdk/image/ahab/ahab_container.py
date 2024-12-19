@@ -20,6 +20,7 @@ from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.fuses.fuses import FuseScript
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
@@ -37,7 +38,6 @@ from spsdk.image.ahab.ahab_iae import ImageArrayEntry, ImageArrayEntryTemplates,
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
 from spsdk.image.ahab.ahab_srk import SRKTableArray
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.fuses import FuseScript
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import align, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum

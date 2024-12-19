@@ -559,7 +559,7 @@ class CommentedConfig:
             )
 
         ret: Optional[Union[CMap, CSeq, str, int, float]] = None
-        if "oneOf" in block and not "properties" in block:
+        if "oneOf" in block and "properties" not in block:
             ret = self._handle_one_of_block(block["oneOf"], custom_value)
             if not ret:
                 ret = get_custom_or_template()
@@ -648,7 +648,7 @@ class CommentedConfig:
             key
             for key in schema["properties"]
             if (
-                schema["properties"][key].get("skip_in_template", False) == False
+                schema["properties"][key].get("skip_in_template", False) is False
                 or self.creating_configuration
             )
         ]
@@ -799,7 +799,10 @@ class CommentedConfig:
 
 
 def update_validation_schema_family(
-    sch: dict[str, Any], devices: list[str], family: Optional[str] = None
+    sch: dict[str, Any],
+    devices: list[str],
+    family: Optional[str] = None,
+    revision: Optional[str] = None,
 ) -> None:
     """Update validation family schema to proper validate and show the families.
 
@@ -807,6 +810,7 @@ def update_validation_schema_family(
     :param devices: List of supported devices.
     :param family: Optional family name, if used the the template value will be
         updated and the correct list of revisions will be used.
+    :param revision: Family revision.
     """
     family_sch = sch["family"]
 
@@ -820,4 +824,4 @@ def update_validation_schema_family(
             revision_sch = sch["revision"]
             device = get_db(family).device
             revision_sch["enum"] = device.revisions.revision_names(append_latest=True)
-            revision_sch["template_value"] = "latest"
+            revision_sch["template_value"] = revision or "latest"

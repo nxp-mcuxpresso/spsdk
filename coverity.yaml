@@ -10,7 +10,7 @@ capture:
     include: [python]
   files:
     include-regex: "spsdk|examples"
-    exclude-regex: "venv|tests|docs"
+    exclude-regex: "venv|tests|docs|build"
 
 analyze:
   aggressiveness-level: high

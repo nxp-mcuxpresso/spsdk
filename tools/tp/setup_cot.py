@@ -77,10 +77,10 @@ def gen_pc_cert(glob_key: str, output_folder: str) -> None:
 
     prod_private_key = PrivateKeyEcc.generate_key(EccCurve.SECP256R1)
     prod_public_key = prod_private_key.get_public_key()
-    dest_path = os.path.join(output_folder, f"nxp_prod_devattest_prk.pem")
+    dest_path = os.path.join(output_folder, "nxp_prod_devattest_prk.pem")
     prod_private_key.save(dest_path)
     print(f"NXP PROD prk saved to: {dest_path}")
-    dest_path = os.path.join(output_folder, f"nxp_prod_devattest_puk.pem")
+    dest_path = os.path.join(output_folder, "nxp_prod_devattest_puk.pem")
     prod_public_key.save(dest_path)
     print(f"NXP PROD puk saved to: {dest_path}")
 
@@ -90,7 +90,7 @@ def gen_pc_cert(glob_key: str, output_folder: str) -> None:
         subject_public_key=prod_public_key,
         issuer_private_key=glob_private_key,
     )
-    dest_path = os.path.join(output_folder, f"nxp_prod_devattest_cert.crt")
+    dest_path = os.path.join(output_folder, "nxp_prod_devattest_cert.crt")
     prod_cert.save(dest_path)
     print(f"NXP PROD crt saved to: {dest_path}")
 

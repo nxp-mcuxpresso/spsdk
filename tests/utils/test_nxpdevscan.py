@@ -188,6 +188,9 @@ list_port_info_mock = [
 ]
 
 
+@pytest.mark.skipif(
+    platform.system() == "Darwin", reason="macOS is not supported due to filtering of devices"
+)
 @patch("spsdk.utils.nxpdevscan.MbootUARTInterface.scan", mock_mb_scan_uart)
 @patch("spsdk.utils.nxpdevscan.SDP.read_status", mock_sdp_read_status)
 @patch(
@@ -214,11 +217,26 @@ def test_uart_device_search():
         assert str(dev) == str(res)
 
 
+@pytest.mark.skipif(
+    platform.system() == "Darwin", reason="macOS is not supported due to filtering of devices"
+)
 @patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))
 def test_uart_device_search_no_scan():
     """Test, that search method returns all NXP Uart devices without scanning."""
     devices = nds.search_nxp_uart_devices(scan=False)
     assert len(devices) == 4
+
+
+@pytest.mark.skipif(platform.system() != "Darwin", reason="This test is only for macOS")
+@patch(
+    "spsdk.utils.nxpdevscan.comports",
+    MagicMock(return_value=[ListPortInfo(device="/dev/cu.usbmodem")]),
+)
+def test_uart_device_search_no_scan_macos():
+    """Test, that search method returns all NXP Uart devices on macOS without scanning."""
+    devices = nds.search_nxp_uart_devices(scan=False)
+    assert len(devices) == 1
+    assert devices[0].name == "/dev/cu.usbmodem"
 
 
 # following mock functions are only for `test_sdio_device_search usage`
@@ -280,7 +298,6 @@ def test_sdio_device_search_no_device_found():
             0x15A2,
             0x0073,
             [
-                "mcxc041",
                 "mcxc141",
                 "mcxc142",
                 "mcxc143",
@@ -295,6 +312,8 @@ def test_sdio_device_search_no_device_found():
                 "mimxrt1020",
                 "mimxrt1024",
                 "mimxrt1040",
+                "mimxrt1043",
+                "mimxrt1046",
                 "mimxrt1050",
                 "mimxrt1060",
                 "mimxrt1064",
@@ -316,7 +335,7 @@ def test_sdio_device_search_no_device_found():
                 "mwct2d17s",
             ],
         ),
-        (0x1FC9, 0x0135, ["mimxrt1040", "mimxrt1060", "mimxrt1064"]),
+        (0x1FC9, 0x0135, ["mimxrt1040", "mimxrt1043", "mimxrt1046", "mimxrt1060", "mimxrt1064"]),
     ],
 )
 def test_get_device_name(vid, pid, expected_result):
@@ -447,6 +466,9 @@ def mock_ping(self):
     pass
 
 
+@pytest.mark.skipif(
+    platform.system() == "Darwin", reason="macOS is not supported due to filtering of devices"
+)
 @patch("spsdk.utils.interfaces.device.serial_device.Serial", PermissionTestMockSerial)
 @patch("spsdk.mboot.interfaces.uart.MbootUARTInterface._ping", mock_ping)
 @patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))

@@ -149,6 +149,7 @@ class DriverInterface:
 
         if self.backend == Backend.FTD2xx:
             try:
+                # ruff: noqa: F401
                 import ftd2xx  # pylint: disable=unused-import
             except ImportError as e:
                 raise SPSDKError(

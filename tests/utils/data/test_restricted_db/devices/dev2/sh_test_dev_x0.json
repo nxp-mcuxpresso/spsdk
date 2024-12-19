@@ -9,13 +9,30 @@
             },
             "registers": [
                 {
+                    "id": "lock0",
+                    "offset_int": "0x0",
+                    "index_int": "0x400",
+                    "shadow_reg_offset_int": "0x0",
+                    "reg_width": "32",
+                    "name": "LOCK0",
+                    "description": "Lock fuse.",
+                    "reset_value_int": "0x0"
+                },
+                {
                     "id": "field010",
                     "offset_int": "0x010",
+                    "index_int": "0x0",
                     "shadow_reg_offset_int": "0x010",
                     "reg_width": "32",
                     "name": "RESTRICTED_NAME_REG1",
                     "description": "Register 1, used for testing antipole register and some computed fields.",
                     "reset_value_int": "0x0",
+                    "lock": {
+                        "register_id": "lock0",
+                        "write_lock_int": "0x1",
+                        "read_lock_int": "0x2",
+                        "operation_lock_int": "0x4"
+                    },
                     "bitfields": [
                         {
                             "id": "field010-bits0-7",
@@ -410,6 +427,7 @@
                 {
                     "id": "field014",
                     "offset_int": "0x014",
+                    "index_int": "0x1",
                     "shadow_reg_offset_int": "0x014",
                     "reg_width": "16",
                     "name": "REG2",
@@ -520,6 +538,7 @@
                 {
                     "id": "field020",
                     "offset_int": "0x020",
+                    "index_int": "0x2",
                     "shadow_reg_offset_int": "0x020",
                     "reg_width": "32",
                     "name": "REG_INVERTED_AP",
@@ -529,6 +548,7 @@
                 {
                     "id": "field0E0",
                     "offset_int": "0x0e0",
+                    "index_int": "0x3",
                     "shadow_reg_offset_int": "0x0e0",
                     "reg_width": "32",
                     "name": "REG_BIG0",
@@ -539,6 +559,7 @@
                 {
                     "id": "field0E4",
                     "offset_int": "0x0e4",
+                    "index_int": "0x4",
                     "shadow_reg_offset_int": "0x0e4",
                     "reg_width": "32",
                     "name": "REG_BIG1",
@@ -549,6 +570,7 @@
                 {
                     "id": "field0E8",
                     "offset_int": "0x0e8",
+                    "index_int": "0x5",
                     "shadow_reg_offset_int": "0x0e8",
                     "reg_width": "32",
                     "name": "REG_BIG2",
@@ -559,6 +581,7 @@
                 {
                     "id": "field0EC",
                     "offset_int": "0x0ec",
+                    "index_int": "0x6",
                     "shadow_reg_offset_int": "0x0ec",
                     "reg_width": "32",
                     "name": "REG_BIG3",
@@ -569,6 +592,7 @@
                 {
                     "id": "field0F0",
                     "offset_int": "0x0f0",
+                    "index_int": "0x7",
                     "shadow_reg_offset_int": "0x0f0",
                     "reg_width": "32",
                     "name": "REG_BIG4",
@@ -579,6 +603,7 @@
                 {
                     "id": "field0F4",
                     "offset_int": "0x0f4",
+                    "index_int": "0x8",
                     "shadow_reg_offset_int": "0x0f4",
                     "reg_width": "32",
                     "name": "REG_BIG5",
@@ -589,6 +614,7 @@
                 {
                     "id": "field0F8",
                     "offset_int": "0x0f8",
+                    "index_int": "0x9",
                     "shadow_reg_offset_int": "0x0f8",
                     "reg_width": "32",
                     "name": "REG_BIG6",
@@ -599,6 +625,7 @@
                 {
                     "id": "field0FC",
                     "offset_int": "0x0fc",
+                    "index_int": "0xa",
                     "shadow_reg_offset_int": "0x0fc",
                     "reg_width": "32",
                     "name": "REG_BIG7",
@@ -609,6 +636,7 @@
                 {
                     "id": "field1E0",
                     "offset_int": "0x1e0",
+                    "index_int": "0xb",
                     "shadow_reg_offset_int": "0x1e0",
                     "reg_width": "32",
                     "name": "REG_BIG_REV0",
@@ -619,6 +647,7 @@
                 {
                     "id": "field1E4",
                     "offset_int": "0x1e4",
+                    "index_int": "0xc",
                     "shadow_reg_offset_int": "0x1e4",
                     "reg_width": "32",
                     "name": "REG_BIG_REV1",
@@ -629,6 +658,7 @@
                 {
                     "id": "field1E8",
                     "offset_int": "0x1e8",
+                    "index_int": "0xd",
                     "shadow_reg_offset_int": "0x1e8",
                     "reg_width": "32",
                     "name": "REG_BIG_REV2",
@@ -639,6 +669,7 @@
                 {
                     "id": "field1EC",
                     "offset_int": "0x1ec",
+                    "index_int": "0xe",
                     "shadow_reg_offset_int": "0x1ec",
                     "reg_width": "32",
                     "name": "REG_BIG_REV3",
@@ -649,6 +680,7 @@
                 {
                     "id": "field1F0",
                     "offset_int": "0x1f0",
+                    "index_int": "0xf",
                     "shadow_reg_offset_int": "0x1f0",
                     "reg_width": "32",
                     "name": "REG_BIG_REV4",
@@ -659,6 +691,7 @@
                 {
                     "id": "field1F4",
                     "offset_int": "0x1f4",
+                    "index_int": "0x10",
                     "shadow_reg_offset_int": "0x1f4",
                     "reg_width": "32",
                     "name": "REG_BIG_REV5",
@@ -669,6 +702,7 @@
                 {
                     "id": "field1F8",
                     "offset_int": "0x1f8",
+                    "index_int": "0x11",
                     "shadow_reg_offset_int": "0x1f8",
                     "reg_width": "32",
                     "name": "REG_BIG_REV6",
@@ -679,12 +713,53 @@
                 {
                     "id": "field1FC",
                     "offset_int": "0x1fc",
+                    "index_int": "0x12",
                     "shadow_reg_offset_int": "0x1fc",
                     "reg_width": "32",
                     "name": "REG_BIG_REV7",
                     "description": "BIG REGISTER REVERSED.",
                     "reset_value_int": "0x0",
                     "otp_index": "227"
+                },
+                {
+                    "id": "field200",
+                    "offset_int": "0x200",
+                    "index_int": "0x13",
+                    "shadow_reg_offset_int": "0x200",
+                    "reg_width": "32",
+                    "name": "WRITE_ONLY_REG",
+                    "description": "Register used for testing the write-only access.",
+                    "reset_value_int": "0x0",
+                    "otp_index": "228",
+                    "access": "WO"
+                },
+                {
+                    "id": "field204",
+                    "offset_int": "0x204",
+                    "index_int": "0x14",
+                    "shadow_reg_offset_int": "0x204",
+                    "reg_width": "32",
+                    "name": "READ_ONLY_REG",
+                    "description": "Register used for testing the read-only access.",
+                    "reset_value_int": "0x0",
+                    "otp_index": "229",
+                    "access": "RO"
+                },
+                {
+                    "id": "field208",
+                    "offset_int": "0x0208",
+                    "index_int": "0x15",
+                    "shadow_reg_offset_int": "0x208",
+                    "reg_width": "32",
+                    "name": "REGISTER_LOCKED",
+                    "description": "Register used for testing the locking functionality.",
+                    "reset_value_int": "0x0",
+                    "lock": {
+                        "register_id": "lock0",
+                        "write_lock_int": "0x1",
+                        "read_lock_int": "0x2",
+                        "operation_lock_int": "0x4"
+                    }
                 },
                 {
                     "id": "field000",
@@ -696,6 +771,7 @@
                     "reset_value_int": "0x0",
                     "otp_index": "1600"
                 }
+
             ]
         }
     ]

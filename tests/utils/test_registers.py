@@ -27,7 +27,7 @@ from spsdk.utils.misc import (
     value_to_bytes,
     value_to_int,
 )
-from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
+from spsdk.utils.registers import Access, Registers, RegsBitField, RegsEnum, Register
 
 TEST_DEVICE_NAME = "TestDevice1"
 TEST_REG_NAME = "TestReg"
@@ -38,7 +38,7 @@ TEST_REG_UID = "field400"
 TEST_REG_UID2 = "UID_test_reg2"
 TEST_REG_DESCR = "TestReg Description"
 TEST_REG_REV = False
-TEST_REG_ACCESS = "RW"
+TEST_REG_ACCESS = Access.RW
 TEST_REG_VALUE = 0xA5A5A5A5
 
 TEST_BITFIELD_NAME = "TestBitfield"
@@ -48,7 +48,7 @@ TEST_BITFIELD_WIDTH = 5
 TEST_BITFIELD_UID = "UID_bitfield"
 TEST_BITFIELD_UID2 = "UID_bitfield2"
 TEST_BITFIELD_RESET_VAL = 30
-TEST_BITFIELD_ACCESS = "RW"
+TEST_BITFIELD_ACCESS = Access.RW
 TEST_BITFIELD_DESCR = "Test Bitfield Description"
 TEST_BITFIELD_SAVEVAL = 29
 TEST_BITFIELD_OUTOFRANGEVAL = 70
@@ -71,7 +71,7 @@ def create_simple_regs():
     """Create simple reg structure with basic cases."""
     regs = Registers(family=TEST_DEVICE_NAME, feature="test")
 
-    reg1 = RegsRegister(
+    reg1 = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -81,7 +81,7 @@ def create_simple_regs():
         TEST_REG_ACCESS,
     )
 
-    reg2 = RegsRegister(
+    reg2 = Register(
         TEST_REG_NAME + "_2",
         TEST_REG_OFFSET + 4,
         TEST_REG_WIDTH,
@@ -130,7 +130,7 @@ def test_basic_regs(tmpdir):
 
     assert regs.family == TEST_DEVICE_NAME
 
-    reg1 = RegsRegister(
+    reg1 = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -164,7 +164,7 @@ def test_basic_regs(tmpdir):
 
 def test_register():
     """Basic registers test."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -206,7 +206,7 @@ def test_register():
 
 def test_register_duplicate():
     """Test registers add duplicate."""
-    reg = RegsRegister(
+    reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -215,7 +215,7 @@ def test_register_duplicate():
         TEST_REG_REV,
         TEST_REG_ACCESS,
     )
-    reg1 = RegsRegister(
+    reg1 = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -233,7 +233,7 @@ def test_register_duplicate():
 
 def test_register_invalid_val():
     """Invalid value register test."""
-    reg = RegsRegister(
+    reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -310,7 +310,7 @@ def test_enum_invalidval():
 
 def test_bitfield():
     """Basic bitfield test."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -349,7 +349,7 @@ def test_bitfield():
 
 def test_bitfield_find():
     """Test bitfield find function."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -383,7 +383,7 @@ def test_bitfield_find():
 
 def test_bitfields_names():
     """Test bitfield get names function."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -437,7 +437,7 @@ def test_bitfields_names():
 
 def test_bitfield_has_enums():
     """Test bitfield has enums function."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -471,7 +471,7 @@ def test_bitfield_has_enums():
 
 def test_bitfield_value():
     """Test bitfield functionality about values."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -503,7 +503,7 @@ def test_bitfield_value():
 
 def test_bitfield_invalidvalue():
     """Test bitfield INVALID value."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -528,7 +528,7 @@ def test_bitfield_invalidvalue():
 
 def test_bitfield_enums():
     """Test bitfield enums."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -586,7 +586,7 @@ def test_bitfield_enums():
 
 def test_bitfield_enums_invalid_name():
     """Test bitfield enums with invalid enum name."""
-    parent_reg = RegsRegister(
+    parent_reg = Register(
         TEST_REG_NAME,
         TEST_REG_OFFSET,
         TEST_REG_WIDTH,
@@ -765,22 +765,6 @@ def test_basic_grouped_register_reversed_value(data_dir):
             }
         ],
         [{"uid": "test_grp", "name": "TestCorrupted1Reg", "sub_regs": ["field500", "field508"]}],
-        [
-            {
-                "uid": "test_grp",
-                "name": "TestCorrupted1Reg",
-                "sub_regs": ["field500", "field508"],
-                "width": 64,
-            }
-        ],
-        [
-            {
-                "uid": "test_grp",
-                "name": "TestRegA",
-                "sub_regs": ["field400", "field404", "field408", "field40C"],
-                "access": "R",
-            }
-        ],
     ],
 )
 def test_grouped_register_invalid_params(data_dir, group_reg):

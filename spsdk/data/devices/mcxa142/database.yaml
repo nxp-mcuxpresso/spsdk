@@ -26,6 +26,7 @@ info:
   isp:
     rom:
       protocol: mboot
+      interfaces: ["usb","uart", "spi", "i2c"]
       usb:
         vid: 0x1FC9
         pid: 0x0155

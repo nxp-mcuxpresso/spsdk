@@ -17,13 +17,13 @@ from enum import Enum
 from typing import Optional, Union
 
 from spsdk.el2go.client import EL2GOApiResponse, EL2GOClient, SPSDKHTTPClientError
+from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.el2go.secure_objects import SecureObjects
 from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation
-from spsdk.mboot.mcuboot import McuBoot
+from spsdk.fuses.fuse_registers import FuseRegister, FuseRegisters
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.misc import Timeout, load_binary, value_to_int
-from spsdk.utils.registers import Registers, RegsRegister
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,7 @@ OK_STATES = [
 ]
 BAD_STATES = [GenStatus.GENERATION_FAILED.value[0], GenStatus.PROVISIONING_FAILED.value[0]]
 WAIT_STATES = [GenStatus.GENERATION_TRIGGERED.value[0]]
-NO_DATA_STATES = [
-    GenStatus.GENERATION_ON_CONNECTION.value[0],
-    GenStatus.PROVISIONING_COMPLETED.value[0],
-]
+NO_DATA_STATES = [GenStatus.GENERATION_ON_CONNECTION.value[0]]
 
 
 class ProvisioningMethod(str, Enum):
@@ -64,6 +61,7 @@ class ProvisioningMethod(str, Enum):
     DISPATCH_FW = "dispatch_fw"
     FW_USER_CONFIG = "fw_user_config"
     FW_DATA_SPLIT = "fw_data_split"
+    OEM_APP = "oem_app"
 
 
 class CleanMethod(str, Enum):
@@ -129,6 +127,8 @@ class EL2GOTPClient(EL2GOClient):
 
         self.prov_fw_path = kwargs.pop("prov_fw_path")
         self._prov_fw: Optional[bytes] = None
+        self.uboot_path = kwargs.pop("uboot_path", None)
+
         self.tp_data_address = value_to_int(kwargs.pop("secure_objects_address"))
         self.clean_method = CleanMethod(self.db.get_str(DatabaseManager.EL2GO_TP, "clean_method"))
         self.domains = self._sanitize_domains(kwargs.pop("domains", EL2GO_DOMAINS))  # type: ignore
@@ -136,11 +136,16 @@ class EL2GOTPClient(EL2GOClient):
         super().__init__(api_key=api_key, url=url, timeout=timeout, raise_exceptions=True, **kwargs)
 
     @property
-    def prov_fw(self) -> bytes:
+    def loader(self) -> Optional[str]:
+        """Return path to optional loader app that is loaded before provisioning."""
+        return self.uboot_path
+
+    @property
+    def prov_fw(self) -> Optional[bytes]:
         """Provisioning firmware binary."""
         if self._prov_fw is None:
             if not self.prov_fw_path:
-                raise SPSDKError("Provisioning firmware path is not set")
+                return None
             self._prov_fw = load_binary(self.prov_fw_path)
         return self._prov_fw
 
@@ -278,17 +283,7 @@ class EL2GOTPClient(EL2GOClient):
         """Serialize Secure Objects from JSON object to bytes."""
         data = bytes()
         for dev_prov in provisionings:
-            for rtp_prov in dev_prov["rtpProvisionings"]:
-                if rtp_prov["state"] == GenStatus.GENERATION_COMPLETED.value[0]:
-                    data += base64.b64decode(rtp_prov["apdus"]["createApdu"]["apdu"])
-                if rtp_prov["state"] == GenStatus.GENERATION_ON_CONNECTION.value[0]:
-                    logger.warning(
-                        f"Provisioning ID: {rtp_prov['provisioningId']} will be created upon connection"
-                    )
-                if rtp_prov["state"] == GenStatus.PROVISIONING_COMPLETED.value[0]:
-                    logger.warning(
-                        f"Provisioning ID {rtp_prov['provisioningId']} already provisioned ({rtp_prov['state']})"
-                    )
+            data += self._serialize_single_provisioning(dev_prov)
         return data
 
     def _serialize_single_provisioning(self, provisioning: dict) -> bytes:
@@ -304,7 +299,28 @@ class EL2GOTPClient(EL2GOClient):
                 logger.warning(
                     f"Provisioning ID {rtp_prov['provisioningId']} already provisioned ({rtp_prov['state']})"
                 )
+                data += base64.b64decode(rtp_prov["apdus"]["createApdu"]["apdu"])
         return data
+
+    def get_uuids(self) -> list[str]:
+        """Get UUIDs registered in Device Group."""
+
+        def _extract_uuids(data: dict) -> list[str]:
+            devices = [device_info["device"]["id"] for device_info in data["content"]]
+            return devices
+
+        devices = []
+        page = 0
+        while True:
+            url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/devices?size=100&page={page}"
+            response = self._handle_el2go_request(method=self.Method.GET, url=url)
+            self.response_handling(response=response, url=url)
+            devices.extend(_extract_uuids(data=response.json_body))
+            if response.json_body["next"] is None:
+                break
+            page += 1
+
+        return devices
 
     def _find_device_group_id(
         self, device_id: str, group_id: Optional[Union[str, int]] = None
@@ -345,7 +361,7 @@ class EL2GOTPClient(EL2GOClient):
         return response, url
 
     def _unassign_device_from_group(
-        self, device_id: Union[str, list[str]], group_id: Optional[str] = None
+        self, device_id: Union[str, list[str]], group_id: Optional[str] = None, wait_time: int = 10
     ) -> tuple[EL2GOApiResponse, str]:
         """Unassign a device from the device group."""
         url = f"/api/v1/products/{self.nc12}/device-groups/{group_id or self.device_group_id}/devices/unclaim"
@@ -354,9 +370,9 @@ class EL2GOTPClient(EL2GOClient):
         }
         response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
         # attempt to minimize the impact of el2go race conditions
-        wait_time = 10
-        logger.info(f"Waiting for {wait_time} seconds to allow EL2GO to process the request")
-        time.sleep(wait_time)
+        if wait_time:
+            logger.info(f"Waiting for {wait_time} seconds to allow EL2GO to process the request")
+            time.sleep(wait_time)
         return response, url
 
     def get_test_connection_response(self) -> EL2GOApiResponse:
@@ -439,6 +455,9 @@ class EL2GOTPClient(EL2GOClient):
         if self.prov_method == ProvisioningMethod.DISPATCH_FW:
             return b"", 0, self.tp_data_address
 
+        if self.prov_method == ProvisioningMethod.OEM_APP:
+            return b"", 0, self.tp_data_address
+
         raise SPSDKUnsupportedOperation(
             f"Provisioning method '{self.prov_method}' is not supported by '{self.family}'"
         )
@@ -458,7 +477,12 @@ class EL2GOTPClient(EL2GOClient):
         """Device family uses TP FW with dispatch (trigger via blhost)."""
         return self.prov_method == ProvisioningMethod.DISPATCH_FW
 
-    def run_cleanup_method(self, mboot: McuBoot) -> None:
+    @property
+    def use_oem_app(self) -> bool:
+        """Use OEM APP TP method."""
+        return self.prov_method == ProvisioningMethod.OEM_APP
+
+    def run_cleanup_method(self, interface: EL2GOInterfaceHandler) -> None:
         """Run cleanup method."""
         if self.clean_method == CleanMethod.NONE:
             logger.info(f"Device {self.family} doesn't have a registered cleanup method")
@@ -472,7 +496,7 @@ class EL2GOTPClient(EL2GOClient):
             cmpa_data = cmpa.export(draw=False)
             cmpa_address = self.db.get_int(DatabaseManager.PFR, ["cmpa", "address"])
 
-            mboot.write_memory(address=cmpa_address, data=cmpa_data)
+            interface.write_memory(address=cmpa_address, data=cmpa_data)
             return
 
         raise SPSDKUnsupportedOperation(f"Unsupported cleanup method {self.clean_method}")
@@ -493,12 +517,18 @@ class EL2GOTPClient(EL2GOClient):
         #     schema["required"].extend(schema_file["fw_load_address"]["required"])
 
         use_additional_data = db.get_bool(DatabaseManager.EL2GO_TP, "use_additional_data")
+        use_uboot = "oem_app" == db.get_str(DatabaseManager.EL2GO_TP, "prov_method")
         if use_additional_data:
             schema["properties"].update(schema_file["additional_data_address"]["properties"])
             schema["required"].extend(schema_file["additional_data_address"]["required"])
         else:
             schema["properties"].update(schema_file["secure_objects_address"]["properties"])
             schema["required"].extend(schema_file["secure_objects_address"]["required"])
+        if use_uboot:
+            schema["properties"].update(schema_file["uboot_path"]["properties"])
+        else:
+            schema["properties"].update(schema_file["prov_fw_path"]["properties"])
+            schema["required"].extend(schema_file["prov_fw_path"]["required"])
 
         return schema
 
@@ -536,9 +566,9 @@ def get_el2go_otp_binary(config_data: Union[list, dict], family: Optional[str] =
         # schema validation goes here
         family = config_data["family"]
 
-    user_regs: list[RegsRegister] = []
+    user_regs: list[FuseRegister] = []
     assert isinstance(family, str)
-    defaults = Registers(family=family, feature=DatabaseManager.FUSES)
+    defaults = FuseRegisters(family=family)
 
     if isinstance(config_data, list):
         # SEC Tool's config file

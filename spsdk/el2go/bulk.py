@@ -48,7 +48,7 @@ class JobInfo:
             downloaded=int(info[6]),
         )
 
-    def calc_wait_time(self, time_per_device: int = 5) -> Optional[float]:
+    def calc_wait_time(self, time_per_device: float = 5.0) -> Optional[float]:
         """Calculate remaining time for the job to finish."""
         if self.percentage == 100:
             return None

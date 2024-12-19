@@ -1,0 +1,59 @@
+{
+    "cpu": "General",
+    "shadow_reg_base_addr_int": "0x40018000",
+    "groups": [
+        {
+            "group": {
+                "name": "Locks",
+                "description": "Locks"
+            },
+            "registers": [
+                {
+                    "id": "fuse0",
+                    "name": "LOCK_CFG0",
+                    "description": "LOCK_CFG0",
+                    "index_int": "0",
+                    "shadow_reg_offset_int": "0",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "bitfields": []
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "BOOT_CFG",
+                "description": "Boot configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse159",
+                    "name": "SDHC_CFGF1",
+                    "description": "SDHC_CFGF1 register",
+                    "index_int": "0x9f",
+                    "shadow_reg_offset_int": "0x27c",
+                    "individual_write_lock": "always_lock",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1",
+                        "read_lock_int": "0x4",
+                        "operation_lock_int": "0x2"
+                    }
+                },
+                {
+                    "id": "fuse160",
+                    "name": "BOOT_CFG8",
+                    "description": "BOOT_CFG8 register",
+                    "index_int": "0xa0",
+                    "shadow_reg_offset_int": "0x280",
+                    "individual_write_lock": "none"
+                }
+            ]
+        }
+    ]
+}

@@ -1,3 +1,5 @@
+@Library('shared-lib') _
+
 pipeline {
     agent { label 'linux-spsdk' }
     // agent any
@@ -8,7 +10,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // checkout SPSDK repository
                 checkout([
                         $class: 'GitSCM',
                         branches: scm.branches,
@@ -17,18 +18,14 @@ pipeline {
                         submoduleCfg: [],
                         userRemoteConfigs: scm.userRemoteConfigs
                     ])
-            // checkout scm
             }
         }
         stage('Codecheck') {
             steps {
-                sh '''
-                    git clean -dfx
-                    uv venv venv
-                    . ./venv/bin/activate
-                    uv pip install tox-uv
-                    tox -e py39 -- --info-check gitcov
-                '''
+                withVenv(
+        			'uv pip install tox-uv',
+        			'tox -e py39 -- --info-check gitcov'
+    			)
             }
         }
     }

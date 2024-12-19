@@ -1,0 +1,11 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+fuses:
+  type: object
+  required: [registers]
+  properties:
+    registers:
+      type: object
+      title: Fuses Settings

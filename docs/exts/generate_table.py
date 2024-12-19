@@ -70,6 +70,7 @@ OTHER_FEATURES_MAPPING = {
     "wpc": "nxpwpc",
     "el2go_tp": "el2go-host",
     "dice": "nxpdice",
+    "fuse_tool": "nxpfuses",
 }
 ALL_FEATURES_MAPPING = {**NXPIMAGE_FEATURES_MAPPING, **OTHER_FEATURES_MAPPING}
 SUPPORTED_CHAR = "\u2705"
@@ -441,13 +442,13 @@ def get_jupyters_for_device(
     jupyters = []
     for root, _, files in os.walk(os.path.join(DOC_PATH, "examples")):
         for file in files:
-            relative_path = os.path.relpath(root, DOC_PATH)
+            relative_path = os.path.relpath(root, DOC_PATH).replace(os.sep, "/")
             if file.endswith(".ipynb") and (
                 device in relative_path.lower() or alternative_device_name in relative_path.lower()
                 if alternative_device_name
                 else False
             ):
-                jupyters.append(os.path.join(relative_path, file))
+                jupyters.append(os.path.join(relative_path, file).replace(os.sep, "/"))
     return jupyters
 
 
@@ -532,7 +533,7 @@ def generate_devices_list(
                 lines.append("\n")
                 for jupyter in jupyters:
                     header = get_notebook_header(jupyter)
-                    lines.append(f"* `{header} <{jupyter}>`_\n")
+                    lines.append(f"* `{header} <{jupyter}>`__\n")
                 lines.append("\n")
 
             # Jupyters for alias
@@ -549,7 +550,7 @@ def generate_devices_list(
                 lines.append("\n")
                 for jupyter in jupyters:
                     header = get_notebook_header(jupyter)
-                    lines.append(f"* `{header} <{jupyter}>`_\n")
+                    lines.append(f"* `{header} <{jupyter}>`__\n")
                 lines.append("\n")
 
             # Jupyters for features
@@ -562,7 +563,7 @@ def generate_devices_list(
                     lines.append("\n")
                     for jupyter in jupyters:
                         header = get_notebook_header(jupyter)
-                        lines.append(f"* `{header} <{jupyter}>`_\n")
+                        lines.append(f"* `{header} <{jupyter}>`__\n")
                     lines.append("\n")
 
     with open(output_file, "w", encoding="utf-8") as f:

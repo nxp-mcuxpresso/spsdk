@@ -151,7 +151,7 @@ class FCB(SegmentBase):
         sch_family = get_schema_file("general")["family"]
         try:
             update_validation_schema_family(
-                sch_family["properties"], FCB.get_supported_families(), family
+                sch_family["properties"], FCB.get_supported_families(), family, revision
             )
             sch_cfg["memory_type"]["properties"]["type"]["enum"] = [
                 mem_type.label

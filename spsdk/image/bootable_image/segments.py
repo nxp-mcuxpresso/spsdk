@@ -960,7 +960,7 @@ class SegmentAhab(Segment):
         :param search_paths: List of paths where to search for the file, defaults to None
         """
         # Try to load AHAB from configuration as a first attempt
-        cfg_value = config[self.cfg_key()]
+        cfg_value = config.get(self.cfg_key())
         if not cfg_value:
             raise SPSDKSegmentNotPresent(
                 f"The segment '{self.NAME.label}' is not present in the config file"

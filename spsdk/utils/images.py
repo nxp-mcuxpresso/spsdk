@@ -11,7 +11,7 @@ import math
 import os
 import re
 import textwrap
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 import colorama
 
@@ -28,10 +28,6 @@ from spsdk.utils.misc import (
     write_file,
 )
 from spsdk.utils.schema_validator import CommentedConfig
-
-if TYPE_CHECKING:
-    # bincopy will be loaded lazily as needed, this is just to satisfy type-hint checkers
-    import bincopy
 
 logger = logging.getLogger(__name__)
 

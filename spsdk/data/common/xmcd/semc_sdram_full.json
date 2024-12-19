@@ -36,7 +36,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "configOption",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0xff",
                             "description": "Config option",
                             "values": [
@@ -78,7 +78,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "portSize",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x2",
                             "description": "Port size of SDRAM",
                             "values": [
@@ -114,7 +114,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "pinConfigPull",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x3",
                             "description": "Pull config of the SDRAM GPIO pin",
                             "values": [
@@ -155,7 +155,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "pinConfigDriveStrength",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Driver config of SDRAM GPIO pin",
                             "values": [
@@ -186,7 +186,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "muxRdy",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "SDRAM CSn device selection",
                             "values": [
@@ -222,7 +222,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "muxCsx0",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "SDRAM CSn device selection",
                             "values": [
@@ -258,7 +258,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "muxCsx1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "SDRAM CSn device selection",
                             "values": [
@@ -294,7 +294,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "muxCsx2",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "SDRAM CSn device selection",
                             "values": [
@@ -330,7 +330,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "muxCsx3",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "SDRAM CSn device selection",
                             "values": [
@@ -366,7 +366,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "bank",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Bank numbers of SDRAM device",
                             "values": [
@@ -397,7 +397,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "burstLen",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Burst length",
                             "values": [
@@ -438,7 +438,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "columnAddrBitNum",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Column address bit number",
                             "values": [
@@ -484,7 +484,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "casLatency",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "CAS Latency",
                             "values": [

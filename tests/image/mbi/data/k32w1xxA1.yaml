@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ==================================  Trust Zone Configuration template for k32w1xx.  ==================================
@@ -35,8 +35,8 @@ trustZonePreset:
   # Description: Preset for CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0)
   CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for CM33 Interrupt target non-secure register 1((cm33_nvic_itns1)
-  CM33 Interrupt target non-secure register 1((cm33_nvic_itns1): '0x0'
+  # Description: Preset for CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1)
+  CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Miscellaneous CM33 settings (cm33_misc_ctrl)
   Miscellaneous CM33 settings (cm33_misc_ctrl): '0x0'

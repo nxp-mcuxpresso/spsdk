@@ -9,6 +9,7 @@
 
 
 import logging
+import platform
 import struct
 from typing import Any, Optional
 
@@ -154,13 +155,14 @@ def search_uuu_usb_devices() -> list[UUUDeviceDescription]:
 
 
 def search_nxp_uart_devices(
-    scan: bool = True, all_devices: bool = True, scan_uboot: bool = True
+    scan: bool = True, all_devices: bool = True, scan_uboot: bool = True, timeout: int = 50
 ) -> list[UartDeviceDescription]:
     """Returns a list of all NXP devices connected via UART.
 
     :scan: whether to scan for mboot and SDP devices
     :all_devices: whether to return all devices or only NXP devices
     :scan_uboot: whether to scan for U-Boot console devices
+    :timeout: timeout for UART scan in ms
     :retval: list of UartDeviceDescription devices from devicedescription module
     """
     retval = []
@@ -171,6 +173,14 @@ def search_nxp_uart_devices(
     else:
         # Get only NXP devices
         ports = [port for port in comports() if port.vid in NXP_USB_DEVICE_VIDS]
+
+    # on macOS, we need to filter out ports that are not serial ports
+    if platform.system() == "Darwin":
+        ports = [
+            port
+            for port in ports
+            if port.device.startswith("/dev/cu.usb") or port.device.startswith("/dev/tty.usb")
+        ]
 
     if not scan:
         return [
@@ -183,7 +193,7 @@ def search_nxp_uart_devices(
 
     # Iterate over every com port we have and check, whether mboot or sdp responds
     for port in ports:
-        if MbootUARTInterface.scan(port=port.device, timeout=50):
+        if MbootUARTInterface.scan(port=port.device, timeout=timeout):
             uart_dev = UartDeviceDescription(name=port.device, dev_type="mboot device")
             retval.append(uart_dev)
             continue
@@ -196,7 +206,7 @@ def search_nxp_uart_devices(
         # we get a response, we are connected to an SDP device.
         sdp_com = None
         try:
-            device = SerialDevice(port=port.device, timeout=50)
+            device = SerialDevice(port=port.device, timeout=timeout)
             sdp_com = SDP(SdpUARTInterface(device))
             if sdp_com.read_status() is not None:
                 uart_dev = UartDeviceDescription(name=port.device, dev_type="SDP device")

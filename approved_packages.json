@@ -501,17 +501,17 @@
       }
     },
     {
-        "home_page": "https://github.com/tox-dev/filelock",
+      "home_page": "https://github.com/tox-dev/filelock",
+      "name": "filelock",
+      "package": {
         "name": "filelock",
-        "package": {
-          "name": "filelock",
-          "license": "The Unlicense"
-        },
-        "github": {
-          "project_name": "tox-dev/filelock",
-          "license": "The Unlicense"
-        }
+        "license": "The Unlicense (Unlicense)"
       },
+      "github": {
+        "project_name": "tox-dev/filelock",
+        "license": "The Unlicense"
+      }
+    },
     {
       "home_page": "",
       "name": "Flask",
@@ -1245,7 +1245,7 @@
       "name": "prettytable",
       "package": {
         "name": "prettytable",
-        "license": "BSD (3 clause)"
+        "license": "BSD License"
       },
       "github": {
         "project_name": "jazzband/prettytable",
@@ -1324,6 +1324,18 @@
       "github": {
         "project_name": "alexmojaki/pure_eval",
         "license": "MIT"
+      }
+    },
+    {
+      "home_page": "https://github.com/pyasn1/pyasn1",
+      "name": "pyasn1",
+      "package": {
+        "name": "pyasn1",
+        "license": "BSD-2-Clause"
+      },
+      "github": {
+        "project_name": "pyasn1/pyasn1",
+        "license": "BSD-2-Clause"
       }
     },
     {
@@ -1655,7 +1667,7 @@
       "name": "requests",
       "package": {
         "name": "requests",
-        "license": "Apache 2.0"
+        "license": "Apache-2.0"
       },
       "manual": {
         "license": "Apache-2.0"
@@ -1827,6 +1839,42 @@
       }
     },
     {
+      "home_page": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/master/jlink",
+      "name": "spsdk-jlink",
+      "package": {
+        "name": "spsdk-jlink",
+        "license": "BSD-3-Clause"
+      },
+      "github": {
+        "project_name": "nxp-mcuxpresso/spsdk_plugins/tree/master/jlink",
+        "license": ""
+      }
+    },
+    {
+      "home_page": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/master/pemicro",
+      "name": "spsdk-pyocd",
+      "package": {
+        "name": "spsdk-pyocd",
+        "license": "BSD-3-Clause"
+      },
+      "github": {
+        "project_name": "nxp-mcuxpresso/spsdk_plugins/tree/master/pemicro",
+        "license": ""
+      }
+    },
+    {
+      "home_page": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/master/mcu_link",
+      "name": "spsdk_mcu_link",
+      "package": {
+        "name": "spsdk_mcu_link",
+        "license": "BSD-3-Clause"
+      },
+      "github": {
+        "project_name": "nxp-mcuxpresso/spsdk_plugins/tree/master/mcu_link",
+        "license": ""
+      }
+    },
+    {
       "home_page": "http://github.com/alexmojaki/stack_data",
       "name": "stack-data",
       "package": {
@@ -1945,6 +1993,18 @@
       "github": {
         "project_name": "urllib3/urllib3",
         "license": "MIT"
+      }
+    },
+    {
+      "home_page": "https://github.com/bytecodealliance/wasmtime-py",
+      "name": "wasmtime",
+      "package": {
+        "name": "wasmtime",
+        "license": "Apache-2.0 WITH LLVM-exception"
+      },
+      "github": {
+        "project_name": "bytecodealliance/wasmtime-py",
+        "license": "Apache-2.0"
       }
     },
     {

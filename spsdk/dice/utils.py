@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 from spsdk.dice.exceptions import SPSDKDICEError
 from spsdk.utils.database import DatabaseManager, get_db, get_families
-from spsdk.utils.registers import Registers, RegsBitField, RegsRegister
+from spsdk.utils.registers import Register, Registers, RegsBitField
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def serialize_ecc_key(key: ec.EllipticCurvePublicKey) -> str:
     ).decode("utf-8")
 
 
-HADDifferences = list[Union[tuple[RegsBitField, RegsBitField], tuple[RegsRegister, RegsRegister]]]
+HADDifferences = list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, Register]]]
 
 
 class HADDiff:
@@ -93,7 +93,7 @@ class HADDiff:
 
         critical_differences: HADDifferences = []
         for d1, d2 in differences:
-            if isinstance(d1, RegsRegister) and isinstance(d2, RegsRegister):
+            if isinstance(d1, Register) and isinstance(d2, Register):
                 if d1.name in self.critical_registers:
                     critical_differences.append((d1, d2))
             else:

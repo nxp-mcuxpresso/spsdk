@@ -37,7 +37,7 @@ from spsdk.dice.utils import HADDiff, HADDifferences, get_supported_devices
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.misc import write_file
-from spsdk.utils.registers import RegsBitField, RegsRegister
+from spsdk.utils.registers import Register, RegsBitField
 
 logger = logging.getLogger(__name__)
 
@@ -515,7 +515,7 @@ def display_had_diff_table(
         return f"{b.get_value():{form}}"
 
     for d1, d2 in differences:
-        if isinstance(d1, RegsRegister):
+        if isinstance(d1, Register):
             table.add_row(
                 [
                     d1.name,

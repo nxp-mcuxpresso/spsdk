@@ -1626,11 +1626,11 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
         blhost_script = None
         blhost_script = otfad.get_blhost_script_otp_kek(index)
         if blhost_script:
-            blhost_script_filename = os.path.join(
-                output_folder, f"otfad{index}_{otfad.family}_blhost.bcf"
-            )
+            blhost_script_filename = os.path.join(output_folder, f"otfad{index}_{otfad.family}.bcf")
             write_file(blhost_script, blhost_script_filename)
-            click.echo(f"Created OTFAD BLHOST load fuses script:\n{blhost_script_filename}")
+            click.echo(
+                f"Created OTFAD BLHOST load fuses script:\n{get_printable_path(blhost_script_filename)}"
+            )
 
     click.echo("Success. OTFAD files have been created")
 
@@ -1710,7 +1710,7 @@ def otfad_get_template_command(family: str, output: str) -> None:
 
 def otfad_get_template(family: str, output: str) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"Creating {get_printable_path(output)} template file.")
     write_file(OtfadNxp.generate_config_template(family)[f"{family}_otfad"], output)
 
 
@@ -1935,7 +1935,9 @@ def bootable_image_parse(
     bimg_image_info = bimg_image.image_info()
     logger.info(f"Parsed Bootable image memory map: {bimg_image_info.draw()}")
     bimg_image.store_config(output)
-    click.echo(f"Success. (Bootable Image: {binary} has been parsed and stored into {output} .)")
+    click.echo(
+        f"Success. (Bootable Image: {binary} has been parsed and stored into {get_printable_path(output)} .)"
+    )
 
 
 @bootable_image_group.command(name="get-templates", no_args_is_help=True)
@@ -2596,7 +2598,7 @@ def binary_get_template_command(output: str) -> None:
 
 def binary_get_template(output: str) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"Creating {get_printable_path(output)} template file.")
     write_file(BinaryImage.generate_config_template(), output)
 
 

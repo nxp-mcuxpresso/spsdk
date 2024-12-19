@@ -18,6 +18,7 @@ from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
 from spsdk.dat.debug_credential import DebugCredentialCertificate
 from spsdk.exceptions import SPSDKError
+from spsdk.fuses.shadowregs import ShadowRegisters
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
 from spsdk.image.bee import BeeNxp
@@ -30,7 +31,6 @@ from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.pfr.pfr import CFPA, CMACTABLE, CMPA, ROMCFG
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31
-from spsdk.shadowregs.shadowregs import ShadowRegisters
 from spsdk.utils.crypto.cert_blocks import CertBlockV21
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp

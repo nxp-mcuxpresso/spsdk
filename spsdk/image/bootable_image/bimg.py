@@ -141,7 +141,7 @@ class BootableImage(BaseClass):
             prev_seg: Optional[Segment] = None
             for seg in segments:
                 if seg == segment:
-                    if prev_seg == None:
+                    if prev_seg is None:
                         raise SPSDKError(
                             "Cannot get dynamically offset of segment because"
                             " there is no any previous segment with static offset."
@@ -333,7 +333,7 @@ class BootableImage(BaseClass):
         sch_cfg = get_schema_file(DatabaseManager.BOOTABLE_IMAGE)
         sch_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], bimg.get_supported_families(), family
+            sch_family["properties"], bimg.get_supported_families(), family, revision
         )
         sch_cfg["memory_type"]["properties"]["memory_type"]["template_value"] = mem_type.label
         schemas = [sch_family, sch_cfg["memory_type"], sch_cfg["init_offset"]]

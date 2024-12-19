@@ -1,0 +1,17 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: kw47b42zb7
+
+# General MCU information
+info:
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: "0x0"
+      size_int: "0x20_0000"
+      external: false
+    sram:
+      start_int: "0x2000_0000"
+      size_int: "0x4_2000"
+      external: false

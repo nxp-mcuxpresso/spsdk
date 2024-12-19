@@ -196,8 +196,13 @@ def open_debug_probe(
         interface=interface, hardware_id=serial_no, options=debug_probe_params
     )
     selected_probe = select_probe(debug_probes, print_func=print_func, input_func=input_func)
-    debug_probe = selected_probe.get_probe(debug_probe_params)
-    debug_probe.open()
+    try:
+        debug_probe = selected_probe.get_probe(debug_probe_params)
+        debug_probe.open()
+    except SPSDKError as exc:
+        raise SPSDKDebugProbeError(
+            f"Cannot open selected probe: {selected_probe}. Maybe, it has been disconnected from system."
+        ) from exc
     try:
         yield debug_probe
     except SPSDKError as exc:

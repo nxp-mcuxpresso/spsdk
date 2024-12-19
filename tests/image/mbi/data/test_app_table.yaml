@@ -1,14 +1,14 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 applicationTable:
-  - binary: tests/image/mbi/data/testfffffff.bin
+  - binary: image/mbi/data/testfffffff.bin
     destAddress: "0x1234"
     load: True
-  - binary: tests/image/mbi/data/testfffffff.bin
+  - binary: image/mbi/data/testfffffff.bin
     destAddress: "0x5678"
     load: True
-  - binary: tests/image/mbi/data/testfffffff.bin
+  - binary: image/mbi/data/testfffffff.bin
     destAddress: "0xabcd"
     load: True

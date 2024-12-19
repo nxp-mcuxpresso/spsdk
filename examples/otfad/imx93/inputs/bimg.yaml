@@ -1,0 +1,61 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =======================================  Binary Image Configuration template.  =======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== Image name [Optional] =====-------------------------------------------
+# Description: The optional image name used just during prints to console during merging.
+name: OTFAD encrypted AHAB image with FCB
+# -------------------------------------===== Overall size of image [Optional] =====-------------------------------------
+
+# ======================================================================================================================
+#                                              == Binary images to merge ==
+# ======================================================================================================================
+# --------------------------------===== Array of defined binary regions [Optional] =====--------------------------------
+# Description: The array of individual regions to merge into final image.
+regions:
+  - # ----------------------------------------===== Binary file [Required] =====----------------------------------------
+    binary_file:
+      # ---------------------------------------===== Image name [Optional] =====----------------------------------------
+      # Description: The optional image name used just during prints to console during merging.
+      name: OTFAD keyblob
+      # ---------------------------------------===== Binary file [Required] =====---------------------------------------
+      # Description: The path to binary file to merge into final image
+      path: ../workspace/encrypted/OTFAD_Table.bin
+      # -------------------------------------===== Offset of image [Optional] =====-------------------------------------
+      # Description: The offset of image to be merge on. The offset could be also negative - for example to 'erase'
+      # security bit from address. In case that offset definition is omitted, the block will be placed after previous
+      # one with defined alignment.
+      offset: 0
+
+  - # ----------------------------------------===== Binary file [Required] =====----------------------------------------
+    binary_file:
+      # ---------------------------------------===== Image name [Optional] =====----------------------------------------
+      # Description: The optional image name used just during prints to console during merging.
+      name: FCB
+      # ---------------------------------------===== Binary file [Required] =====---------------------------------------
+      # Description: The path to binary file to merge into final image
+      path: ../workspace/fcb.bin
+      # -------------------------------------===== Offset of image [Optional] =====-------------------------------------
+      # Description: The offset of image to be merge on. The offset could be also negative - for example to 'erase'
+      # security bit from address. In case that offset definition is omitted, the block will be placed after previous
+      # one with defined alignment.
+      offset: 0x400
+
+  - #  =========================== [Example of possible configuration: #0 , erase if not used] ============================
+    # ----------------------------------------===== Binary file [Required] =====----------------------------------------
+    binary_file:
+      # ---------------------------------------===== Image name [Optional] =====----------------------------------------
+      # Description: The optional image name used just during prints to console during merging.
+      name: OTFAD encrypted blob
+      # ---------------------------------------===== Binary file [Required] =====---------------------------------------
+      # Description: The path to binary file to merge into final image
+      path: ../workspace/encrypted/encrypted_blobs.bin
+      # -------------------------------------===== Offset of image [Optional] =====-------------------------------------
+      # Description: The offset of image to be merge on. The offset could be also negative - for example to 'erase'
+      # security bit from address. In case that offset definition is omitted, the block will be placed after previous
+      # one with defined alignment.
+      offset: 0x1000

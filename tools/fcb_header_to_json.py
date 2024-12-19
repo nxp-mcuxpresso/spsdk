@@ -17,7 +17,7 @@ from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_file, value_to_int
-from spsdk.utils.registers import Registers, RegsBitField, RegsRegister
+from spsdk.utils.registers import Register, Registers, RegsBitField
 
 logger = logging.getLogger(__name__)
 
@@ -133,10 +133,10 @@ class StructMemberIter:
         return StructMember(mem_type, mem_array, mem_name, mem_descr)
 
 
-def get_reg(member: StructMember, offset: int, header: str) -> RegsRegister:
+def get_reg(member: StructMember, offset: int, header: str) -> Register:
     """Get register class from structure member."""
     if member.is_standard_type():
-        return RegsRegister(
+        return Register(
             name=member.name,
             offset=offset,
             width=member.get_type_size() * 8,
@@ -145,7 +145,7 @@ def get_reg(member: StructMember, offset: int, header: str) -> RegsRegister:
         )
     # Get bitfields
     fields_struct = get_struct(header, member.mem_type)
-    reg = RegsRegister(
+    reg = Register(
         name=member.name,
         offset=offset,
         width=0,
@@ -168,7 +168,7 @@ def get_reg(member: StructMember, offset: int, header: str) -> RegsRegister:
     return reg
 
 
-def add_to_regs(regs: Registers, reg: RegsRegister) -> None:
+def add_to_regs(regs: Registers, reg: Register) -> None:
     """Add a register to registers group."""
     if reg.name in regs.get_reg_names():
         index = re.match(r"\d+$", reg.name)

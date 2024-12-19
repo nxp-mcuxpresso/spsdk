@@ -73,7 +73,7 @@ class BinaryPattern:
         try:
             value_to_int(pattern)
         except SPSDKError:
-            if not pattern in BinaryPattern.SPECIAL_PATTERNS:
+            if pattern not in BinaryPattern.SPECIAL_PATTERNS:
                 raise SPSDKValueError(  # pylint: disable=raise-missing-from
                     f"Unsupported input pattern {pattern}"
                 )

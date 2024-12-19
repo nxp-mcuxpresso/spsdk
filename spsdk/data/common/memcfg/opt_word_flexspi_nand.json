@@ -22,7 +22,54 @@
                             "name": "MaxFreq",
                             "access": "R/W",
                             "reset_value_int": "0x0",
-                            "description": "The maximum work frequency for specified Flash device; 0 - Don't change FlexSPI clock setting. See System Boot Chapter for more details"
+                            "description": "The maximum work frequency for specified Flash device",
+                            "values": [
+                                {
+                                    "name": "NoChange",
+                                    "value": 0,
+                                    "description": "Don't change FlexSPI clock setting"
+                                },
+                                {
+                                    "name": "30Mhz",
+                                    "value": 1,
+                                    "description": "30MHz"
+                                },
+                                {
+                                    "name": "50Mhz",
+                                    "value": 2,
+                                    "description": "50MHz"
+                                },
+                                {
+                                    "name": "60Mhz",
+                                    "value": 3,
+                                    "description": "60MHz"
+                                },
+                                {
+                                    "name": "80Mhz",
+                                    "value": 4,
+                                    "description": "80MHz"
+                                },
+                                {
+                                    "name": "100Mhz",
+                                    "value": 5,
+                                    "description": "100MHz"
+                                },
+                                {
+                                    "name": "120Mhz",
+                                    "value": 6,
+                                    "description": "120MHz"
+                                },
+                                {
+                                    "name": "133Mhz",
+                                    "value": 7,
+                                    "description": "133MHz"
+                                },
+                                {
+                                    "name": "166Mhz",
+                                    "value": 8,
+                                    "description": "166MHz"
+                                }
+                            ]
                         },
                         {
                             "id": "field000-bits4-7",

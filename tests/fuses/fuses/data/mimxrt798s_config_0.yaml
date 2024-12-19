@@ -1,0 +1,81 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================================  Fuses template for mimxrt798s.  ==========================================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <k32w148, kw45b41z5, kw45b41z8, lpc5534, lpc5536, lpc55s36, mcxn546, mcxn547, mcxn946, mcxn947,
+# mcxw716a, mcxw716c, mimx9131, mimx9352, mimx9596, mimxrt1010, mimxrt1015, mimxrt1020, mimxrt1024, mimxrt1040,
+# mimxrt1050, mimxrt1060, mimxrt1064, mimxrt1165, mimxrt1166, mimxrt1171, mimxrt1172, mimxrt1173, mimxrt1175,
+# mimxrt1176, mimxrt1181, mimxrt1182, mimxrt1187, mimxrt1189, mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s,
+# mimxrt735s, mimxrt758s, mimxrt798s, rw610, rw612>
+family: mimxrt798s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ----------------------------------------===== Fuses Settings [Required] =====-----------------------------------------
+registers:
+  # ------------------------------------------===== LOCK_CFG0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; LOCK_CFG0
+  LOCK_CFG0:
+    # ------------------------------------===== BOOT_CFG0_LOCK[2:0] [Optional] =====------------------------------------
+    # Description: Offset: 0b, Width: 3b, Boot Configuration Lock
+    # - Unlocked, (0): Unlocked (fuses can be read, sensed, burned or over-ridden in the corresponding OTP shadow
+    # register)
+    # - WP, (1): WP (Write Protect, the controlled field can not be burned)
+    # - OP, (2): OP (Over-ride Protect, the controlled field shadow registers can not be over-written)
+    # - OP+WP, (3): OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)
+    # - RP, (4): RP (Read Protect, the controlled field  can be sensed only, but can't be read from shadow registers)
+    # - RP+WP, (5): RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor
+    # burned)
+    # - RP+OP, (6): RP+OP (Read + Over-ride Protect, the controlled field can be sensed, burned, but can't be read nor
+    # over-written)
+    # - All Locks, (7): All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP
+    # shadow register)
+    # Possible options: <Unlocked, WP, OP, OP+WP, RP, RP+WP, RP+OP, All Locks>
+    BOOT_CFG0_LOCK[2:0]: All Locks
+    # ------------------------------------===== LOCK_CFG_LOCK[2:0] [Optional] =====-------------------------------------
+    # Description: Offset: 12b, Width: 3b, Lock for Fuse  Lock bits
+    # - Unlocked, (0): Unlocked (fuses can be read, sensed, burned or over-ridden in the corresponding OTP shadow
+    # register)
+    # - WP, (1): WP (Write Protect, the controlled field can not be burned)
+    # - OP, (2): OP (Over-ride Protect, the controlled field shadow registers can not be over-written)
+    # - OP+WP, (3): OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)
+    # - RP, (4): RP (Read Protect, the controlled field  can be sensed only, but can't be read from shadow registers)
+    # - RP+WP, (5): RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor
+    # burned)
+    # - RP+OP, (6): RP+OP (Read + Over-ride Protect, the controlled field can be sensed, burned, but can't be read nor
+    # over-written)
+    # - All Locks, (7): All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP
+    # shadow register)
+    # Possible options: <Unlocked, WP, OP, OP+WP, RP, RP+WP, RP+OP, All Locks>
+    LOCK_CFG_LOCK[2:0]: Unlocked
+  # --------------------------------------------===== RKTH [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000000, Width: 384b; ROTKH field is compounded by 12 32-bit fields and contains Root key
+  # table hash. For ECC P-256 keys RKTH is a 32-byte SHA-256 digest of four SHA-256 digests computed over four OEM
+  # public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case
+  # that ECC P-384 keys are used, RKTH is 48-byte SHA-384 digest.
+  RKTH: '0000000000000000000000000000000000000000000000000000000000000000'
+  # ---------------------------------------===== XSPI0_IPED_CTX1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; XSPI0_IPED_CTX1 register
+  XSPI0_IPED_CTX1:
+    # -----------------------------------===== XSPI0_START_OFFSET_1 [Optional] =====------------------------------------
+    # Description: Offset: 0b, Width: 16b, START_OFFSET (4KB aligned)
+    XSPI0_START_OFFSET_1: 0
+    # --------------------------------------===== XSPI0_LENGTH_1 [Optional] =====---------------------------------------
+    # Description: Offset: 16b, Width: 16b, LENGTH (4KB block counts)
+    XSPI0_LENGTH_1: 0
+  # ---------------------------------------===== XSPI0_IPED_CTX2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; XSPI0_IPED_CTX2 register
+  XSPI0_IPED_CTX2:
+    # -----------------------------------===== XSPI0_START_OFFSET_2 [Optional] =====------------------------------------
+    # Description: Offset: 0b, Width: 16b, START_OFFSET (4KB aligned)
+    XSPI0_START_OFFSET_2: 0
+    # --------------------------------------===== XSPI0_LENGTH_2 [Optional] =====---------------------------------------
+    # Description: Offset: 16b, Width: 16b, LENGTH (4KB block counts)
+    XSPI0_LENGTH_2: 0

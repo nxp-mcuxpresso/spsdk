@@ -60,6 +60,29 @@ info:
       size_int: 0x40000000
       external: true
       non_xip_type: ext_ram_ddr
+    flexspi1_ns:
+      start_int: 0x28000000
+      size_int: 0x08000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+      mirror_of: flexspi1_s
+    flexspi1_s:
+      start_int: 0x38000000
+      size_int: 0x08000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+    flexspi2_ns:
+      start_int: 0x04000000
+      size_int: 0x04000000
+      external: true
+      non_xip_type: ext_ram_flexspi
+      mirror_of: flexspi2_s
+      evk_default: true
+    flexspi2_s:
+      start_int: 0x14000000
+      size_int: 0x04000000
+      external: true
+      non_xip_type: ext_ram_flexspi
   isp:
     interfaces: [usb]
     rom:
@@ -77,6 +100,22 @@ features:
   fuses:
     tool: nxpele
     grouped_registers:
+      - uid: otfad1_key
+        name: OTFAD1_KEY
+        width: 128
+        reverse_subregs_order: True
+        reversed: True
+        config_as_hexstring: true
+        description: OTFAD1 Key known as KEK.
+        sub_regs: [fuse184, fuse185, fuse186, fuse187]
+      - uid: otfad2_key
+        name: OTFAD2_KEY
+        width: 128
+        reverse_subregs_order: True
+        reversed: True
+        config_as_hexstring: true
+        description: OTFAD2 Key known as KEK.
+        sub_regs: [fuse178, fuse179, fuse180, fuse181]
       - uid: srkh
         name: SRKH
         width: 256
@@ -193,6 +232,7 @@ features:
       fuse183: __key_scramble_mask # OTFAD Scramble Key
       otfad2_key: __kek # OTFAD Key
 
+    additional_template: ["otfad_scramble"]
     additional_template_text: |
       Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
       For example:
@@ -245,3 +285,10 @@ features:
 
   # ======== nxpuuu ==========
   nxpuuu: {}
+
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_interface: uboot_fastboot
+    el2go_name: IMX9
+    prov_method: oem_app
+    validation_method: max_count=16;max_total_size=16384

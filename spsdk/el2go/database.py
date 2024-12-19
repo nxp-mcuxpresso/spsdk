@@ -10,7 +10,7 @@ import datetime
 import logging
 import sqlite3
 from types import TracebackType
-from typing import Optional, Type
+from typing import Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -43,6 +43,10 @@ class SecureObjectsDB(abc.ABC):
     @abc.abstractmethod
     def add_secure_object(self, uuid: str, so: bytes) -> None:
         """Add Secure Objects for given UUID."""
+
+    @abc.abstractmethod
+    def remove_secure_object(self, uuid: Union[str, list[str]]) -> bool:
+        """Remove Secure Objects for given UUID(s)."""
 
     @abc.abstractmethod
     def get_uuids(self, empty: bool = True, limit: int = 0) -> list[str]:
@@ -183,6 +187,21 @@ class LocalSecureObjectsDB(SecureObjectsDB):
         cursor.execute("UPDATE objects SET so = ? WHERE uuid = ?", (so, uuid))
         cursor.connection.commit()
 
+    def remove_secure_object(self, uuid: Union[str, list[str]]) -> bool:
+        """Remove Secure Objects for given UUID(s)."""
+        is_single = isinstance(uuid, str)
+        logger.info(
+            f"Removing Secure Objects for {f'UUID {uuid}' if is_single else f'{len(uuid)} UUIDs.'}"
+        )
+        cursor = self._sanitize_cursor()
+        if is_single:
+            cursor.execute("UPDATE objects SET so = null WHERE uuid = ?", (uuid,))
+        else:
+            args = [(i,) for i in uuid]
+            cursor.executemany("UPDATE objects SET so = null WHERE uuid = ?", args)
+        cursor.connection.commit()
+        return True
+
     def get_uuids(self, empty: bool = True, limit: int = 0) -> list[str]:
         """Get iterator to UUIDs.
 
@@ -248,6 +267,10 @@ class RemoteSecureObjectsDB(HTTPClientBase, SecureObjectsDB):
         )
         if not response.ok:
             raise SPSDKError(f"Failed to add Secure Object for UUID {uuid}")
+
+    def remove_secure_object(self, uuid: Union[str, list[str]]) -> bool:
+        """Remove Secure Objects for given UUID(s)."""
+        raise NotImplementedError()
 
     def get_uuids(self, empty: bool = True, limit: int = 0) -> list[str]:
         """Get iterator to UUIDs."""

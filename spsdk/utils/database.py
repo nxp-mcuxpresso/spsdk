@@ -553,7 +553,7 @@ class MemBlock:
         """
         ret = ""
         if core:
-            if not core in cls.CORES:
+            if core not in cls.CORES:
                 raise SPSDKError(
                     f"Cannot create full memory block name cause unknown core name: {core}"
                 )
@@ -977,7 +977,7 @@ class Devices:
             raise SPSDKErrorMissingDevice("The device name (family) is not specified.")
         if DatabaseManager()._quick_info:
             name = DatabaseManager().quick_info.devices.get_correct_name(name)
-        if not name in self._devices_names:
+        if name not in self._devices_names:
             self._load_and_append_device(name)
         dev = find_first(self.devices, lambda dev: dev.name == name)
         if not dev:
@@ -998,7 +998,7 @@ class Devices:
         :return: Tuple of Device name, revision name and items value.
         """
         for device in self.devices:
-            if not feature in device.features_list:
+            if feature not in device.features_list:
                 continue
             for rev in device.revisions:
                 value = rev.features[feature].get(key)
@@ -1091,7 +1091,7 @@ class DevicesQuickInfo:
             info = DeviceQuickInfo(dev.revisions.get(), dev.info)
             p_name = info.info.spsdk_predecessor_name
             if p_name:
-                if not p_name in pl:
+                if p_name not in pl:
                     pl[p_name] = dev.name
 
             dqi[dev.name] = info
@@ -1620,13 +1620,11 @@ class DatabaseManager:
         """Clear SPSDK cache directory."""
         path = get_spsdk_cache_dirname()
         if not os.path.exists(path):
-
             logger.error(f"Cache directory '{path}' does not exist, nothing to clear.")
             return
         try:
             shutil.rmtree(path)
         except (PermissionError, OSError) as exc:
-
             logger.error(f"Cannot clear cache directory '{path}': {str(exc)}")
 
     @staticmethod
@@ -1643,7 +1641,6 @@ class DatabaseManager:
                 os.path.join(SPSDK_RESTRICTED_DATA_FOLDER, "metadata.yaml")
             )["version"]
         except SPSDKError:
-
             logger.error("The Restricted data has invalid folder or METADATA")
             return None
         major, minor = rd_version.split(".", maxsplit=2)

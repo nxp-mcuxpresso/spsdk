@@ -30,10 +30,12 @@ from abc import abstractmethod
 from types import TracebackType
 from typing import Optional, Type, Union
 
+from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.ele.ele_constants import ResponseStatus
 from spsdk.ele.ele_message import EleMessage
 from spsdk.exceptions import SPSDKError, SPSDKLengthError
 from spsdk.mboot.mcuboot import McuBoot
+from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.uboot.uboot import UbootFastboot, UbootSerial
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import value_to_bytes
@@ -143,6 +145,62 @@ class EleMessageHandler:
         """
         if self.device.is_opened:
             self.device.close()
+
+    @classmethod
+    def get_message_handler(
+        cls,
+        family: str,
+        revision: str = "latest",
+        device: Optional[str] = None,
+        fb_addr: Optional[int] = None,
+        fb_size: Optional[int] = None,
+        buffer_addr: Optional[int] = None,
+        buffer_size: Optional[int] = None,
+        port: Optional[str] = None,
+        usb: Optional[str] = None,
+        buspal: Optional[str] = None,
+        lpcusbsio: Optional[str] = None,
+        timeout: int = 5000,
+    ) -> "EleMessageHandler":
+        """Get Ele message handler."""
+        default_device = device or EleMessageHandler.get_ele_device(family, revision)
+        if default_device == EleDevice.UBOOT_FASTBOOT:
+            db = get_db(device=family, revision=revision)
+            fb_buff_addr = fb_addr or db.get_int(DatabaseManager.FASTBOOT, "address")
+            fb_buff_size = fb_size or db.get_int(DatabaseManager.FASTBOOT, "size")
+
+            uboot_device = UbootFastboot(
+                timeout=timeout,
+                buffer_address=fb_buff_addr,
+                buffer_size=fb_buff_size,
+                serial_port=port,
+            )
+            return EleMessageHandlerUBoot(
+                device=uboot_device,
+                family=family,
+                revision=revision,
+                comm_buffer_address_override=buffer_addr,
+                comm_buffer_size_override=buffer_size,
+            )
+
+        if default_device == EleDevice.UBOOT_SERIAL:
+            if not port:
+                raise SPSDKError("Port must be specified")
+            uboot_serial = UbootSerial(port, timeout)
+            return EleMessageHandlerUBoot(uboot_serial, family, revision)
+        iface_params = load_interface_config(
+            {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
+        )
+        interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
+        interface = interface_cls.scan_single(**iface_params.get_scan_args())
+        mboot = McuBoot(interface, cmd_exception=True)
+        return EleMessageHandlerMBoot(
+            device=mboot,
+            family=family,
+            revision=revision,
+            comm_buffer_address_override=buffer_addr,
+            comm_buffer_size_override=buffer_size,
+        )
 
 
 class EleMessageHandlerMBoot(EleMessageHandler):
@@ -357,7 +415,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         except (SPSDKError, IndexError) as exc:
             raise SPSDKError(f"ELE Communication failed with UBoot: {str(exc)}") from exc
 
-        if not "Error" in output:
+        if "Error" not in output:
             if not response or len(response) < 4 * msg.RESPONSE_HEADER_WORDS_COUNT:
                 raise SPSDKLengthError("ELE Message - Invalid response read-back operation.")
             # 3. Decode the response

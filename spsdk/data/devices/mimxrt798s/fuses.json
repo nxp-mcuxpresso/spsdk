@@ -2634,10 +2634,10 @@
                     "shadow_reg_offset_int": "0x0224",
                     "individual_write_lock": "none",
                     "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
+                        "register_id": "fuse5",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0100",
+                        "operation_lock_int": "0x0080"
                     },
                     "bitfields": [
                         {

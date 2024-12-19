@@ -7,6 +7,7 @@
 
 import logging
 from os import environ, path
+import os
 
 import pytest
 from cryptography.hazmat.backends.openssl import backend
@@ -43,6 +44,12 @@ def data_dir(request):
     data_path = path.join(path.dirname(request.fspath), "data")
     logging.debug(f"data_dir: {data_path}")
     return data_path
+
+
+@pytest.fixture
+def tests_root_dir():
+    """Root directory of tests."""
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def pytest_addoption(parser):

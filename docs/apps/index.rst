@@ -8,11 +8,13 @@ Application User Guides
     dk6prog
     el2go-host
     ifr
+    lpcprog
     nxpcrypto
     nxpdebugmbox
     nxpdevhsm
     nxpdevscan
     nxpele
+    nxpfuses
     nxpimage
     nxpmemcfg
     pfr

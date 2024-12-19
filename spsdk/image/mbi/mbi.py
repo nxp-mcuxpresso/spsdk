@@ -71,7 +71,7 @@ def create_mbi_class(name: str, family: str, revision: str = "latest") -> Type["
     db = get_db(family, revision)
     mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")
 
-    if not name in mbi_classes:
+    if name not in mbi_classes:
         raise SPSDKValueError(f"Unsupported MBI class to create: {name}")
 
     class_descr: dict[str, Any] = mbi_classes[name]
@@ -83,7 +83,7 @@ def create_mbi_class(name: str, family: str, revision: str = "latest") -> Type["
         mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
         if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
             for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
-                if not member in members:
+                if member not in members:
                     members[member] = init_value
         base_classes.append(mixin_cls)
 
@@ -505,17 +505,18 @@ class MasterBootImage:
         return [schema_family]
 
     @classmethod
-    def get_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
+    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
         """Create the validation schema for current image type.
 
         :param family: Family description.
+        :param revision: Family revision.
         :return: Validation schema.
         """
         schemas = []
         schema_cfg = get_schema_file(DatabaseManager.MBI)
         schema_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            schema_family["properties"], mbi_get_supported_families(), family
+            schema_family["properties"], mbi_get_supported_families(), family, revision
         )
         schemas.append(schema_family)
         schemas.append(schema_cfg["image_type"])

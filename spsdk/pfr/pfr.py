@@ -20,7 +20,7 @@ from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.misc import BinaryPattern, Endianness, value_to_int
-from spsdk.utils.registers import Registers, RegsRegister
+from spsdk.utils.registers import Register, Registers
 from spsdk.utils.schema_validator import check_config, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class BaseConfigArea:
                 logger.debug(f"Hiding bitfield: {bitfield} in {reg}")
         return registers
 
-    def compute_register(self, reg: RegsRegister, method: str) -> None:
+    def compute_register(self, reg: Register, method: str) -> None:
         """Recalculate register value.
 
         :param reg: Register to be recalculated.
@@ -153,7 +153,7 @@ class BaseConfigArea:
         sch_cfg = get_schema_file(DatabaseManager.PFR)
         sch_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], cls.get_supported_families(), family
+            sch_family["properties"], cls.get_supported_families(), family, revision
         )
         try:
             regs = cls._load_registers(family=family, revision=revision)
@@ -200,7 +200,7 @@ class BaseConfigArea:
                 reg = self.registers.get_reg(reg_uid)
                 for bitfield_uid, method in bitfields_rec.items():
                     bitfield_name = reg.get_bitfield(bitfield_uid).name
-                    compute = isinstance(cfg[reg_name], dict) and not bitfield_name in cfg[reg_name]
+                    compute = isinstance(cfg[reg_name], dict) and bitfield_name not in cfg[reg_name]
                     if compute:
                         self.compute_register(reg, method)
                         logger.warning(

@@ -7,17 +7,17 @@ pytest<8.4
 voluptuous<0.16
 # metrics
 types-requests<2.33,>=2.26
-types-setuptools<75.3
+types-setuptools<75.7
 types-pyyaml<6.1
 # codestyle
 black<24.11,>=24.3.0
-nxp_codecheck<0.3,>=0.1.16
+nxp_codecheck<0.4,>=0.3.1
 spsdk-pylint-plugins<0.3,>=0.2.0
 # pip dependency should be moved to codecheck
 pip
 # cli executables
 pyinstaller<6.12
-pyinstaller-hooks-contrib<2024.10
+pyinstaller-hooks-contrib<2024.11
 # developement/CI tools
 pre-commit<4.1
 openpyxl<3.2
@@ -25,7 +25,7 @@ cachier<3.2
 jira<3.9
 inquirerpy<0.4
 # examples
-flask<3.1
+flask<3.2
 ipython<8.19
-notebook<7.3
-pytest-notebook<0.11
+notebook<7.4
+pytest-notebook<0.11,>=0.10

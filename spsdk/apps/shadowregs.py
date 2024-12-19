@@ -35,13 +35,36 @@ from spsdk.debuggers.utils import (
     open_debug_probe,
 )
 from spsdk.exceptions import SPSDKError
-from spsdk.shadowregs.shadowregs import ShadowRegisters, enable_debug
+from spsdk.fuses.fuse_registers import FuseRegister
+from spsdk.fuses.shadowregs import ShadowRegisters, enable_debug
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import get_printable_path, load_configuration, write_file
 from spsdk.utils.plugins import load_plugin_from_source
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
+
+
+def print_register_info(fuse_register: FuseRegister, rich: bool = False) -> None:
+    """Print info about a fuse register.
+
+    :param fuse_register: Fuse register to be printed
+    :param rich: Print additional information
+    """
+    click.echo(f"Shadow Register name:        {fuse_register.name}")
+    value = fuse_register.get_hex_value()
+    click.echo(f"Shadow Register value:       {fuse_register.get_hex_value()}")
+    click.echo(f"Shadow Register access:      {fuse_register.access.description}")
+    locks = fuse_register.get_active_locks()
+    click.echo(
+        f"Shadow Register locks:       {','.join([lock.label for lock in locks]) if locks else 'No locks'}"
+    )
+    if value != fuse_register.get_hex_value(raw=True):
+        click.echo(f"Shadow Register raw value:   {fuse_register.get_hex_value(raw=True)}")
+    if rich:
+        click.echo(f"Shadow Register description: {fuse_register.description}")
+        click.echo(f"Shadow Register address:     0x{fuse_register.shadow_register_addr:08X}")
+        click.echo(f"Shadow Register width:       {fuse_register.width} bits")
 
 
 @dataclass
@@ -57,7 +80,7 @@ class DebugProbeCfg:
 
         :param test_address: New overriding address.
         """
-        if self.debug_probe_params is not None and not "test_address" in self.debug_probe_params:
+        if self.debug_probe_params is not None and "test_address" not in self.debug_probe_params:
             self.debug_probe_params["test_address"] = test_address
 
 
@@ -276,13 +299,7 @@ def print_regs(pass_obj: dict, rich: bool = False) -> None:
             shadow_regs.reload_registers()
 
             for reg in shadow_regs.registers.get_registers():
-                click.echo(f"Register Name:        {reg.name}")
-                click.echo(f"Register value:       {reg.get_hex_value()}")
-                click.echo(f"Register raw value:   {reg.get_hex_value(raw=True)}")
-                if rich:
-                    click.echo(f"Register description: {reg.description}")
-                    click.echo(f"Register address:     0x{reg.real_offset:08X}")
-                    click.echo(f"Register width:       {reg.width} bits")
+                print_register_info(reg, rich)
                 click.echo()
     except SPSDKError as exc:
         raise SPSDKError(f"Print of Shadow registers failed! ({str(exc)})") from exc

@@ -92,6 +92,9 @@ PROPERTIES_NAMES = {
     29: "pfr-keystore_update-opt",
     30: "byte-write-timeout-ms",
     31: "fuse-locked-status",
+    32: "boot-status",
+    33: "loadable-fw-version",
+    34: "fuse-program-voltage",
 }
 # TODO move to database
 KW45XX = {
@@ -101,12 +104,21 @@ KW45XX = {
     22: "fuse-program-voltage",
 }
 
+KW47XX = {
+    10: "verify-erase",
+    20: "boot-status",
+    21: "loadable-fw-version",
+    34: "fuse-program-voltage",
+}
+
+
 MCXA1XX = {
     17: "life-cycle",
 }
 
 PROPERTIES_OVERRIDE = {
     "kw45_series": KW45XX,
+    "kw47_series": KW47XX,
     "mcxa1_series": MCXA1XX,
 }
 

@@ -10,7 +10,7 @@ import functools
 import logging
 from abc import ABC, abstractmethod
 from time import sleep
-from typing import Any, Optional, Type, no_type_check
+from typing import Optional, Type, no_type_check
 
 import colorama
 import prettytable
@@ -298,8 +298,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
         self.last_accessed_ap = -1
 
     @no_type_check
-    # pylint: disable=no-self-argument
-    def get_mem_ap(func: Any) -> Any:
+    # pylint: disable=no-self-argument,missing-type-doc
+    def get_mem_ap(func):
         """Decorator function that secure the getting right MEM AP ix for first use.
 
         :param func: Decorated function.
@@ -308,7 +308,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
         DEFAULT_TEST_MEM_AP_ADDRESS = 0x2000_0000
 
         @functools.wraps(func)
-        def wrapper(self: "DebugProbeCoreSightOnly", *args, **kwargs) -> Any:
+        def wrapper(self: "DebugProbeCoreSightOnly", *args, **kwargs):
             status = False
             test_address = value_to_int(
                 self.options.get("test_address", DEFAULT_TEST_MEM_AP_ADDRESS)

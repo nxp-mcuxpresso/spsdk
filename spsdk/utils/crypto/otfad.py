@@ -19,8 +19,8 @@ from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_key_wrap
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.fuses.fuses import FuseScript
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
-from spsdk.utils.fuses import FuseScript
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     Endianness,
@@ -388,9 +388,9 @@ class Otfad:
         addr = base_addr
         for block in split_data(image, self.OTFAD_DATA_UNIT):
             for key_blob in self._key_blobs:
-                if key_blob.matches_range(addr, addr + len(block)):
+                if key_blob.matches_range(addr, addr + len(block) - 1) and key_blob.is_encrypted:
                     logger.debug(
-                        f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
+                        f"Encrypting {hex(addr)}:{hex(len(block) + addr - 1)}"
                         f" with keyblob: \n {str(key_blob)}"
                     )
                     encrypted_data[addr - base_addr : len(block) + addr - base_addr] = (
@@ -697,6 +697,26 @@ class OtfadNxp(Otfad):
         update_validation_schema_family(
             family_schema["properties"], OtfadNxp.get_supported_families(), family
         )
+        # Update address in the schema template
+        try:
+            flexspi_base = database.device.info.memory_map.get_memory(
+                block_name="flexspi1_ns"
+            ).base_address
+            schemas["otfad"]["properties"]["otfad_table_address"]["template_value"] = hex(
+                flexspi_base
+            )
+            schemas["otfad"]["properties"]["data_blobs"]["items"]["properties"]["address"][
+                "template_value"
+            ] = hex(flexspi_base + 0x1000)
+            schemas["otfad"]["properties"]["key_blobs"]["items"]["properties"]["start_address"][
+                "template_value"
+            ] = hex(flexspi_base + 0x1000)
+            schemas["otfad"]["properties"]["key_blobs"]["items"]["properties"]["end_address"][
+                "template_value"
+            ] = hex(flexspi_base + 0x10000)
+        except (SPSDKError, KeyError):
+            pass
+
         ret = [family_schema, schemas["otfad_output"], schemas["otfad"]]
         additional_schemes = database.get_list(
             DatabaseManager.OTFAD, "additional_template", default=[]

@@ -9,6 +9,7 @@ API Development Guide
     debuggers
     dk6
     ele_msg
+    fuses
     image
     lpcprog
     mboot

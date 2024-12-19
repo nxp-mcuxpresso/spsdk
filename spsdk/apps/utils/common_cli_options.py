@@ -22,7 +22,9 @@ from click_command_tree import _build_command_tree, _CommandWrapper
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.interface_helper import load_interface_config
-from spsdk.apps.utils.utils import SPSDKAppError
+from spsdk.apps.utils.utils import INT, SPSDKAppError
+from spsdk.el2go.interface import EL2GOInterfaceHandler
+from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
@@ -336,6 +338,50 @@ def interface_plugin_option() -> Callable[[FC], FC]:
         - Any number of optional <key>=<value> scan settings separated by comma can be defined
         - The <key>=<value> pairs are used as keyword parameters for 'scan' method of a plugin class
         """,
+    )
+
+
+def el2go_interface_option() -> Callable[[FC], FC]:
+    """Click decorator handling El2Go interface configuration."""
+    return click.option(
+        "-d",
+        "--device",
+        type=click.Choice(
+            EL2GOInterfaceHandler.get_supported_el2go_interfaces(),
+            case_sensitive=False,
+        ),
+        required=False,
+        help="Select connection method for El2Go communication, otherwise default from DB will be used",
+    )
+
+
+def fb_buffer_address() -> Callable[[FC], FC]:
+    """Click decorator handling Fastboot buffer address configuration.
+
+    Provides: `fb_buffer_address: int` a buffer address.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "--fb-addr",
+        type=INT(),
+        required=False,
+        help="Override default buffer address for fastboot",
+    )
+
+
+def fb_buffer_size() -> Callable[[FC], FC]:
+    """Click decorator handling Fastboot buffer size configuration.
+
+    Provides: `fb_buffer_size: int` a buffer size.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "--fb-size",
+        type=INT(),
+        required=False,
+        help="Override default buffer size for fastboot",
     )
 
 
@@ -720,6 +766,111 @@ def spsdk_mboot_interface(
     return decorator
 
 
+def spsdk_el2go_interface(
+    port: bool = True,
+    usb: bool = True,
+    sdio: bool = True,
+    lpcusbsio: bool = True,
+    buspal: bool = True,
+    can: bool = True,
+    device: bool = True,
+    plugin: bool = True,
+    timeout: int = 5000,
+    identify_by_family: bool = True,
+    use_long_timeout_form: bool = False,
+    required: bool = True,
+    fb_addr: bool = True,
+    fb_size: bool = True,
+) -> Callable:
+    """Click decorator handling EL2Go interface.
+
+    Provides: `interface: str` an instance of MbootInterface class.
+
+    :return: Click decorator.
+    """
+
+    def decorator(func: Callable[[FC], FC]) -> Callable:
+        @functools.wraps(func)
+        @click.pass_context
+        def wrapper(
+            ctx: click.Context,
+            timeout: int,
+            *args: Any,
+            port: Optional[str] = None,
+            usb: Optional[str] = None,
+            sdio: Optional[str] = None,
+            buspal: Optional[str] = None,
+            can: Optional[str] = None,
+            lpcusbsio: Optional[str] = None,
+            plugin: Optional[str] = None,
+            device: Optional[str] = None,
+            family: Optional[str] = None,
+            revision: Optional[str] = None,
+            fb_addr: Optional[int] = None,
+            fb_size: Optional[int] = None,
+            **kwargs: Any,
+        ) -> Any:
+            # if --help is provided anywhere on command line, skip interface lookup
+            if is_click_help(ctx, sys.argv):
+                return None
+
+            if identify_by_family:
+                usb = (
+                    usb or family
+                    if not (port or buspal or lpcusbsio or sdio or can or plugin)
+                    else usb
+                )
+
+            cli_params = {
+                "port": port,
+                "usb": usb,
+                "sdio": sdio,
+                "buspal": buspal,
+                "can": can,
+                "lpcusbsio": lpcusbsio,
+                "plugin": plugin,
+                "timeout": timeout,
+            }
+
+            try:
+                interface_params = load_interface_config(cli_params)
+                interface_handler = EL2GOInterfaceHandler.get_el2go_interface_handler(
+                    interface_params, family, revision, device, fb_addr, fb_size
+                )
+                kwargs["interface"] = interface_handler
+            except SPSDKError:
+                if required:
+                    raise
+                kwargs["interface"] = None
+            return func(*args, **kwargs)
+
+        interface_options: dict[Callable, tuple[bool, dict]] = {
+            interface_plugin_option: (plugin, {}),
+            buspal_option: (buspal, {}),
+            can_option: (can, {}),
+            lpcusbsio_option: (lpcusbsio, {}),
+            sdio_option: (sdio, {}),
+            usb_option: (usb, {"identify_by_family": identify_by_family}),
+            port_option: (port, {"baud_rate": MbootUARTInterface.default_baudrate}),
+            el2go_interface_option: (device, {}),
+            fb_buffer_address: (fb_addr, {}),
+            fb_buffer_size: (fb_size, {}),
+        }
+
+        wrapper = timeout_option(timeout, use_long_timeout_form)(wrapper)
+        wrapper = spsdk_family_option(
+            EL2GOInterfaceHandler.get_supported_families(), required=False
+        )(wrapper)
+        wrapper = spsdk_revision_option(wrapper)
+
+        for option, (_is_used, decorator_args) in interface_options.items():
+            if _is_used:
+                wrapper = option(**decorator_args)(wrapper)
+        return wrapper
+
+    return decorator
+
+
 class GetFamiliesCommand(click.Command):
     """Shows the full families information for commands in this group."""
 
@@ -926,6 +1077,6 @@ def is_click_help(ctx: click.Context, argv: list[str]) -> bool:
         return True
     if "--help" in argv[1:]:
         return True
-    if ctx.command.name and not ctx.command.name in argv[0]:
+    if ctx.command.name and ctx.command.name not in argv[0]:
         return False
     return check_commands(argv[1:], ctx.command)

@@ -36,7 +36,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "configOption",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Config option",
                             "values": [
@@ -78,7 +78,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "portSize",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x2",
                             "description": "Port size of SDRAM",
                             "values": [

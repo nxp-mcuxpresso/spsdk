@@ -1,0 +1,14 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/otfad_template.yaml
+user_cfg: inputs/otfad_mx93.yaml
+custom_command: "%! nxpimage otfad get-template -f mimx9352 -o workspace/otfad_template.yaml --force"
+
+comments:
+  output_folder: "Change the output folder to the workspace"
+  kek: "Define a key encryption key that will be programmed to fuses"
+  data: "Define the data that will be encrypted"
+  aes_key: "Define the AES key that will be used for encryption"
+  key_blobs: "Define up to 4 contexts for encryption"
+  start_address: "Define the start address of the data that will be encrypted by the keyblob"
+  key_scramble: "This might be removed if you don't want to use key scrambling"

@@ -55,7 +55,7 @@
                             "id": "field9D0-bit11",
                             "offset": "0xb",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -81,7 +81,7 @@
                             "id": "field9D0-bit14",
                             "offset": "0xe",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -98,7 +98,7 @@
                             "id": "field9D0-bit16",
                             "offset": "0x10",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -169,7 +169,7 @@
                             "id": "field9D0-bits30-31",
                             "offset": "0x1e",
                             "width": "2",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         }
@@ -187,7 +187,7 @@
                             "id": "field9D4-bit0",
                             "offset": "0x0",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -249,7 +249,7 @@
                             "id": "field9D4-bit7",
                             "offset": "0x7",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -302,7 +302,7 @@
                             "id": "field9D4-bits13-31",
                             "offset": "0xd",
                             "width": "19",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         }
@@ -373,7 +373,7 @@
                             "id": "field9E0-bits8-9",
                             "offset": "0x8",
                             "width": "2",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -390,7 +390,7 @@
                             "id": "field9E0-bit11",
                             "offset": "0xb",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "N/A"
                         },
@@ -398,7 +398,7 @@
                             "id": "field9E0-bit12",
                             "offset": "0xc",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "N/A"
                         },
@@ -433,7 +433,7 @@
                             "id": "field9E0-bits16-31",
                             "offset": "0x10",
                             "width": "16",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         }
@@ -505,7 +505,7 @@
                             "id": "field9E4-bits16-31",
                             "offset": "0x10",
                             "width": "16",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         }
@@ -540,7 +540,7 @@
                             "id": "field9F0-bit1",
                             "offset": "0x1",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -548,7 +548,7 @@
                             "id": "field9F0-bit2",
                             "offset": "0x2",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -556,7 +556,7 @@
                             "id": "field9F0-bit3",
                             "offset": "0x3",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -654,7 +654,7 @@
                             "id": "field9F0-bit14",
                             "offset": "0xe",
                             "width": "1",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         },
@@ -707,7 +707,7 @@
                             "id": "field9F0-bits20-31",
                             "offset": "0x14",
                             "width": "12",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "N/A"
                         }

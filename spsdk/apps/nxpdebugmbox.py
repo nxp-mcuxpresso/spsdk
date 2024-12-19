@@ -410,7 +410,6 @@ def auth(
         logger.info("Starting Debug Authentication")
 
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
-
             debug_cred_data = load_binary(config["certificate"], search_paths)
             debug_cred = DebugCredentialCertificate.parse(debug_cred_data)
             dac_rsp_len = 18 + debug_cred.rot_hash_length // 4
@@ -456,7 +455,7 @@ def auth(
                     exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
                     logger.debug(f"Exit response: {exit_response}")
                 except SPSDKError:
-                    logger.debug("Exit command failed. Maybe too early reset happen on hardware.")
+                    logger.error("Exit command failed. Maybe too early reset happen on hardware.")
                 # Re-open debug probe
                 mail_box.debug_probe.close()
                 mail_box.debug_probe.open()

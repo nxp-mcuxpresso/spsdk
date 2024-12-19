@@ -79,6 +79,7 @@ class AHABSignAlgorithmV2(AHABSignAlgorithm):
     ECDSA = (0x27, "ECDSA", "Elliptic Curve Digital Signature Algorithm")
     SM2 = (0x28, "SM2", "Chinese national cryptography standard")
     DILITHIUM = (0xD1, "DILITHIUM", "Post quantum cryptography standard candidate")
+    ML_DSA = (0xD2, "ML-DSA", "Post quantum cryptography standard candidate")
 
 
 class AHABSignHashAlgorithm(SpsdkEnum):

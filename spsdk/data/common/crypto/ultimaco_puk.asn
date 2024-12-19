@@ -1,0 +1,25 @@
+-- Definition based on OTPS HSM implementation
+-- To generate Python code use 'asn1ate' with pyparsing<3
+
+OTPS DEFINITIONS ::= BEGIN
+
+    AlgorithmIdentifier ::= SEQUENCE {
+        algorithm            OBJECT IDENTIFIER,
+        parameters           ANY DEFINED BY algorithm  OPTIONAL
+    }
+
+    SubjectPublicKeyInfo ::= SEQUENCE {
+        algorithm            AlgorithmIdentifier,
+        subjectPublicKey     BIT STRING
+    }
+
+    IdentifiedSubjectPublicKeyInfo ::= SEQUENCE {
+        identifier           [0] IMPLICIT IA5String,
+        version              [1] IMPLICIT INTEGER,
+        typeName             [2] IMPLICIT IA5String,
+        owner                [3] IMPLICIT IA5String OPTIONAL,
+        usage                [4] IMPLICIT INTEGER,
+        subjectPublicKeyInfo SubjectPublicKeyInfo
+    }
+
+END

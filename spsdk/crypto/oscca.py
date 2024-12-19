@@ -7,121 +7,63 @@
 
 """Support for OSCCA SM2/SM3."""
 
-from spsdk import SPSDK_DATA_FOLDER
-from spsdk.utils.misc import Endianness
+import importlib.util
 
-try:
-    # this import is to find out whether OSCCA support is installed or not
-    # pylint: disable=unused-import
-    import gmssl
-
-    IS_OSCCA_SUPPORTED = True
-except ImportError:
-    IS_OSCCA_SUPPORTED = False
+IS_OSCCA_SUPPORTED = importlib.util.find_spec("gmssl") is not None
 
 
 if IS_OSCCA_SUPPORTED:
     import base64
-    import os
-    from typing import Any, NamedTuple, Optional, Type, TypeVar
+    from typing import NamedTuple
 
+    import spsdk.crypto._oscca_asn1 as oscca_asn1
     from spsdk.exceptions import SPSDKError
+    from spsdk.utils.misc import SingletonMeta  # pylint:disable=unused-import
 
-    OSCCA_ASN_DEFINITION_FILE = os.path.join(SPSDK_DATA_FOLDER, "common", "crypto", "oscca.asn")
-    SM2_OID = "1.2.156.10197.1.301"
-
-    class SM2KeySet(NamedTuple):
+    class SM2PrivateKey(NamedTuple):
         """Bare-bone representation of a SM2 Key."""
 
         private: str
-        public: Optional[str]
+        public: str
 
     class SM2PublicKey(NamedTuple):
         """Bare-bone representation of a SM2 Public Key."""
 
         public: str
 
-    _T = TypeVar("_T")
-
-    def singleton(class_: Type[_T]) -> Type[_T]:
-        """Decorator providing Singleton functionality for classes."""
-        instances = {}
-
-        def getinstance(*args: Any, **kwargs: Any) -> _T:
-            # args/kwargs should be part of cache key
-            if class_ not in instances:
-                instances[class_] = class_(*args, **kwargs)
-            return instances[class_]
-
-        return getinstance  # type: ignore  # why are we even using Mypy?!
-
-    @singleton
-    class SM2Encoder:
+    class SM2Encoder(metaclass=SingletonMeta):
         """ASN1 Encoder/Decoder for SM2 keys and signature."""
 
-        def __init__(self, asn_file: str = OSCCA_ASN_DEFINITION_FILE) -> None:
-            """Create ASN encoder/decoder based on provided ASN file."""
-            try:
-                import asn1tools
-            except ImportError as import_error:
-                raise SPSDKError(
-                    "asn1tools package is missing, "
-                    "please install it with pip install 'spsdk[oscca]' in order to use OSCCA"
-                ) from import_error
-
-            self.parser = asn1tools.compile_files(asn_file)
-
-        def decode_private_key(self, data: bytes) -> SM2KeySet:
+        def decode_private_key(self, data: bytes) -> SM2PrivateKey:
             """Parse private SM2 key set from binary data."""
-            result = self.parser.decode("Private", data)
-            key_set = self.parser.decode("KeySet", result["keyset"])
-            return SM2KeySet(private=key_set["prk"].hex(), public=key_set["puk"][0][1:].hex())
+            private, public = oscca_asn1.decode_private_key(data=data)
+            if len(public) != 128:
+                raise SPSDKError(f"Invalid length of public key data: {len(public)} expected 128")
+
+            return SM2PrivateKey(private=private, public=public)
 
         def decode_public_key(self, data: bytes) -> SM2PublicKey:
             """Parse public SM2 key set from binary data."""
-            result = self.parser.decode("Public", data)
-            return SM2PublicKey(public=result["puk"][0][1:].hex())
+            result = oscca_asn1.decode_public_key(data=data)
+            if len(result) != 128:
+                raise SPSDKError(f"Invalid length of public key data: {len(data)} expected 128")
+            return SM2PublicKey(public=result)
 
-        def encode_private_key(self, keys: SM2KeySet) -> bytes:
+        def encode_private_key(self, keys: SM2PrivateKey) -> bytes:
             """Encode private SM2 key set from keyset."""
-            assert isinstance(keys.public, str)
-            puk_array = bytearray(bytes.fromhex(keys.public))
-            puk_array[0:0] = b"\x04"  # 0x4 must be prepended
-            puk = (puk_array, 520)  # tuple contains 520
-            keyset = self.parser.encode(
-                "KeySet",
-                data={
-                    "number": 1,
-                    "prk": bytes.fromhex(keys.private),
-                    "puk": puk,
-                },
-            )
-            private_key = {"number": 0, "ids": [SM2_OID, SM2_OID], "keyset": keyset}
-            return self.parser.encode("Private", data=private_key)
+            return oscca_asn1.encode_private_key(private=keys.private, public=keys.public)
 
         def encode_public_key(self, key: SM2PublicKey) -> bytes:
             """Encode public SM2 key from SM2PublicKey."""
-            puk_array = bytearray(bytes.fromhex(key.public))
-            puk_array[0:0] = b"\x04"  # 0x4 must be prepended
-            puk = (puk_array, 520)  # tuple contains 520
-            data = {"ids": [SM2_OID, SM2_OID], "puk": puk}
-            return self.parser.encode("Public", data=data)
+            return oscca_asn1.encode_public_key(data=key.public)
 
         def decode_signature(self, data: bytes) -> bytes:
             """Decode BER signature into r||s coordinates."""
-            result = self.parser.decode("Signature", data)
-            r = int.to_bytes(result["r"], length=32, byteorder=Endianness.BIG.value)
-            s = int.to_bytes(result["s"], length=32, byteorder=Endianness.BIG.value)
-            return r + s
+            return oscca_asn1.decode_signature(data=data)
 
         def encode_signature(self, data: bytes) -> bytes:
             """Encode raw r||s signature into BER format."""
-            if len(data) != 64:
-                raise SPSDKError("SM2 signature must be 64B long.")
-            r = int.from_bytes(data[:32], byteorder=Endianness.BIG.value)
-            s = int.from_bytes(data[32:], byteorder=Endianness.BIG.value)
-            ber_signature = self.parser.encode("Signature", data={"r": r, "s": s})
-            return ber_signature
+            return oscca_asn1.encode_signature(data=data)
 
     def sanitize_pem(data: bytes) -> bytes:
         """Covert PEM data into DER."""

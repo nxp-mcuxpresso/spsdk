@@ -189,7 +189,7 @@ class HeaderContainer(Container):
                     VerifierResult.ERROR,
                     f"Invalid: {hex(tag)}, " f"expected {hex(cls.TAG)}!",
                 )
-            elif isinstance(cls.TAG, list) and not tag in cls.TAG:
+            elif isinstance(cls.TAG, list) and tag not in cls.TAG:
                 ver_tag.add_record(
                     "Value",
                     VerifierResult.ERROR,
@@ -218,7 +218,7 @@ class HeaderContainer(Container):
                 isinstance(cls.VERSION, int)
                 and version != cls.VERSION
                 or isinstance(cls.VERSION, list)
-                and not version in cls.VERSION
+                and version not in cls.VERSION
             ):
                 ver_version.add_record(
                     "Value",

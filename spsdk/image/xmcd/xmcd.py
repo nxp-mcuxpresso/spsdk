@@ -18,11 +18,11 @@ from typing_extensions import Self
 from spsdk import version as spsdk_version
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKKeyError
+from spsdk.fuses.fuses import FuseScript
 from spsdk.image.mem_type import MemoryType
 from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.fuses import FuseScript
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import (
@@ -452,7 +452,7 @@ class XMCD(SegmentBase):
         sch_cfg = get_schema_file(DatabaseManager.XMCD)
         sch_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], XMCD.get_supported_families(), family
+            sch_family["properties"], XMCD.get_supported_families(), family, revision
         )
         sch_cfg["memory_type"]["properties"]["mem_type"]["enum"] = [
             mem_type.label for mem_type in XMCD.get_supported_memory_types(family, revision)

@@ -20,7 +20,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "name": "sizeInMB",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Size in MB: 0 - Auto detection, Others - Size in MB"
                         },
@@ -29,7 +29,7 @@
                             "offset": "0x8",
                             "width": "4",
                             "name": "maximumFrequency",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x7",
                             "description": "Maximum frequency (SoC specific definitions)",
                             "values": [
@@ -85,7 +85,7 @@
                             "offset": "0xc",
                             "width": "4",
                             "name": "misc",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Misc. For HyperRAM: 0 - 1.8V, 1 - 3V",
                             "values": [
@@ -106,7 +106,7 @@
                             "offset": "0x10",
                             "width": "4",
                             "name": "reserved",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Reserved for future use"
                         },
@@ -115,7 +115,7 @@
                             "offset": "0x14",
                             "width": "4",
                             "name": "deviceType",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Device type: 0 - HyperRAM, 1 - APMemory",
                             "values": [
@@ -136,7 +136,7 @@
                             "offset": "0x18",
                             "width": "4",
                             "name": "optionSize",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x1",
                             "description": "Option Size",
                             "values": [
@@ -157,7 +157,7 @@
                             "offset": "0x1c",
                             "width": "4",
                             "name": "tag",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0xc",
                             "description": "Tag, fixed value 0xC"
                         }
@@ -176,7 +176,7 @@
                             "offset": "0x0",
                             "width": "4",
                             "name": "readDummyCycles",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Read dummy cycles: 0 - Auto detection, Others - Specified dummy cycles"
                         },
@@ -185,7 +185,7 @@
                             "offset": "0x4",
                             "width": "4",
                             "name": "writeDummyCycles",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Write dummy cycles: 0 - Auto detection, Others - Specified dummy cycles"
                         },
@@ -194,7 +194,7 @@
                             "offset": "0x8",
                             "width": "8",
                             "name": "reserved",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Reserved for future use"
                         },
@@ -203,7 +203,7 @@
                             "offset": "0x10",
                             "width": "4",
                             "name": "pinMuxGroup",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Pin mux group: 0 - Primary Group, 1 - Secondary group",
                             "values": [
@@ -224,7 +224,7 @@
                             "offset": "0x14",
                             "width": "4",
                             "name": "dqsPinmuxGroup",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "DQS pin mux group: 0 - Default Group, 1 - Secondary group",
                             "values": [
@@ -245,7 +245,7 @@
                             "offset": "0x18",
                             "width": "4",
                             "name": "reserved",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "Reserved for future use"
                         },
@@ -254,7 +254,7 @@
                             "offset": "0x1c",
                             "width": "4",
                             "name": "ramConnection",
-                            "access": "R/W",
+                            "access": "RW",
                             "reset_value_int": "0x0",
                             "description": "RAM connection: 0 - PORTA, 1 - PORTB",
                             "values": [
