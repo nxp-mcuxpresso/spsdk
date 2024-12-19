@@ -40,6 +40,12 @@ jobs:
           fi
         shell: bash
 
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+
+
       - name: Install SPSDK
         run: |
           python -m pip install --upgrade pip
