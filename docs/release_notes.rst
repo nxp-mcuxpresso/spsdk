@@ -11,6 +11,52 @@ Release Notes
 =============
 
 ------------------------
+3.0.0 - future release
+------------------------
+
+**Backwards incompatible**
+
+* BD file support for HAB will be dropped. Only the yaml configuration files will be supported. The conversion from BD file to yaml will be available
+* The obscure way of determination of private key file path from certificate in HAB path will be dropped. The public key will need to be specified explicitly
+* The family will be mandatory for most tools in SPSDK
+* The family option will be moved in most tools to sub-commands
+* Complete redesign handling of configuration files through all SPSDK
+* All backward compatibility code will be removed (deprecated commands and configurations)
+* The definition of signing local key and signature provider definition in configuration will be implemented into one configuration record
+* All data in database will be unified under one style (utility/registers.py)
+* The configuration option on CLI will be extended by new -oc/--override-config to override any configuration in CLI
+* SmartCard Trust Provisioning has been discontinued. Associated aplications (tphost, tpconfig) will be removed.
+
+------------------------
+2.6.0 (7-February-2025)
+------------------------
+
+**New features**
+
+* :ref:`el2go-host`:
+    - support iMX8ULP
+    - add possibility to save OEM app config
+* :ref:`lpcprog`:
+    - support set CRP in lpcprog
+    - add optional parameter to repeat the command several times if fails
+* :ref:`nxpimage`:
+    - support BCA and FCF configuration for mcxcxxx
+* support mcxw23x
+* support i.MX943
+* implement Key Import signed message
+* add support for RSA in DAT on RT118x
+
+**Bugfixes**
+
+* :ref:`el2go-host`:
+    - fix loading item yaml configuration
+* :ref:`nxpimage`:
+    - fix XMCD data for mimxrt798s
+    - fix invalid scramble mechanism in OTFAD
+* :ref:`nxpmemcfg`:
+    - fix wrong dict access
+
+------------------------
 2.5.0 (20-December-2024)
 ------------------------
 

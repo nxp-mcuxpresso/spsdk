@@ -1,4 +1,4 @@
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -377,3 +377,27 @@ just_header:
         Build only the boot headers (Vector table, BCA, FCB) 0x0..0x800 binary without the application.
         This is needed for device HSM provisioning file in case the user set ROP2, ROP3.
       template_value: false
+
+bca:
+  type: object
+  title: Bootloader Configuration Area (BCA)
+  properties:
+    bca:
+      type: string
+      title: BCA binary/config file
+      description: Path to bca binary or config file.
+      template_value: bca.yaml
+      format: file
+
+
+fcf:
+  type: object
+  title: Flash Configuration Fields
+  properties:
+    fcf:
+      type: string
+      title: FCF binary/config file
+      description: Path to FCF binary or config file.
+      template_value: fcf.yaml
+      format: file
+

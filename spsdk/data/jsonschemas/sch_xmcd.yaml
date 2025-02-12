@@ -1,4 +1,4 @@
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@ memory_type:
       type: string
       title: Memory type
       description: Specify type of memory used by XMCD description.
-      enum: [flexspi_ram, semc_sdram]
+      enum: [flexspi_ram, semc_sdram, xspi_ram]
       template_value: flexspi_ram
 
 config_type:

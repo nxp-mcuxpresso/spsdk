@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """LPCxxx ISP UART communication interface."""
@@ -10,9 +10,9 @@ import logging
 import time
 from typing import Optional
 
-from serial import Serial, SerialException
-
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
+from spsdk.utils.exceptions import SPSDKTimeoutError
+from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +23,11 @@ class LPCProgInterface:
     NEW_LINE = "\r\n"
     START_SYNC = "?"
     SYNC_STRING = f"Synchronized{NEW_LINE}"
-    SYNC_VERIFIED_STRING = f"OK{NEW_LINE}"
+    SYNC_VERIFIED_STRING = "OK"
 
     RC_SLEEP = 0.05
 
-    def __init__(self, device: Serial) -> None:
+    def __init__(self, device: SerialDevice) -> None:
         """Initialize the LPCProgInterface.
 
         :param device: Serial device
@@ -44,7 +44,7 @@ class LPCProgInterface:
         """
         try:
             self.device.open()
-        except SerialException as exc:
+        except SPSDKError as exc:
             raise SPSDKConnectionError(f"Cannot open UART interface: {exc}") from exc
 
     def close(self) -> None:
@@ -54,7 +54,7 @@ class LPCProgInterface:
         """
         try:
             self.device.close()
-        except Exception as exc:
+        except SPSDKError as exc:
             raise SPSDKConnectionError(f"Cannot close UART interface: {exc}") from exc
 
     def read_line(self, decode: bool = True) -> str:
@@ -65,7 +65,7 @@ class LPCProgInterface:
         :return: Data read from the device
         """
         try:
-            data = self.device.readline()
+            data = self.device._device.readline()
             logger.debug(f"<-READ DATA({len(data)}):  <{' '.join(f'{b:02x}' for b in data)}>")
             if decode:
                 data = data.decode("utf-8")
@@ -77,7 +77,7 @@ class LPCProgInterface:
         except Exception as e:
             raise SPSDKError(str(e)) from e
         if not data:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         logger.debug(f"<-READ LINE: {data}")
         return data
 
@@ -89,11 +89,11 @@ class LPCProgInterface:
         :return: Data read from the device
         """
         try:
-            data = self.device.read_all()
+            data = self.device._device.read_all()
         except Exception as e:
             raise SPSDKError(str(e)) from e
         if not data:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         logger.debug(f"<-READ ALL:  <{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
@@ -106,11 +106,11 @@ class LPCProgInterface:
         :raises SPSDKError: When reading data from device fails
         """
         try:
-            data = self.device.read(length)
+            data = self.device._device.read(length)
         except Exception as e:
             raise SPSDKError(str(e)) from e
         if not data:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         logger.debug(f"<-READ DATA({len(data)}):  <{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
@@ -122,7 +122,7 @@ class LPCProgInterface:
         """
         logger.debug(f"->WRITE DATA({len(data)}): [{' '.join(f'{b:02x}' for b in data)}]")
         try:
-            self.device.write(data)
+            self.device._device.write(data)
         except Exception as e:
             raise SPSDKError(str(e)) from e
 
@@ -159,12 +159,15 @@ class LPCProgInterface:
 
     def clear_serial(self) -> None:
         """Flush buffers."""
-        self.device.flush()
-        self.device.reset_input_buffer()
-        self.device.reset_output_buffer()
+        self.device._device.flush()
+        self.device._device.reset_input_buffer()
+        self.device._device.reset_output_buffer()
 
-    def sync_connection(self, frequency: int) -> None:
+    def sync_connection(self, frequency: int, retries: int = 10) -> None:
         """Synchronize connection.
+
+        :param frequency: Frequency of the crystal
+        :param retries: Number of retries for synchronization (10 default)
 
         1. Send ? to get baud rate
         2. Receive "Synchronized" message
@@ -173,18 +176,30 @@ class LPCProgInterface:
         """
         if self.synced:
             return
-        self.clear_serial()
-        # send ?
-        self.write_string(self.START_SYNC)
-        time.sleep(0.1)
-        # receive "Synchronized" response
-        if self.SYNC_STRING not in self.read_line():
-            raise SPSDKConnectionError("Did not receive 'Synchronized' response")
-        # send "Synchronized" message
-        self.write_string(self.SYNC_STRING + "\r\n")
-        self.read_line()
-        self.write_string(f"{frequency}\r\n")
-        if "OK" not in self.read_line():
-            raise SPSDKConnectionError("Did not receive 'OK' response")
-        logger.info("Synchronized")
-        self.synced = True
+
+        if retries <= 0:
+            raise SPSDKError("Retries for sync must be positive number")
+
+        while retries > 0:
+            self.clear_serial()
+            # send ?
+            self.write_string(self.START_SYNC)
+            time.sleep(0.1)
+            # receive "Synchronized" response
+            if self.SYNC_STRING not in self.read_line():
+                retries -= 1
+                logger.warning(f"Did not receive 'Synchronized' response, attempts left: {retries}")
+                continue
+            else:
+                logger.debug("Received synchronized response")
+                # send "Synchronized" message
+                self.write_string(self.SYNC_STRING + "\r\n")
+                self.read_line()
+                self.write_string(f"{frequency}\r\n")
+                if self.SYNC_VERIFIED_STRING not in self.read_line():
+                    raise SPSDKConnectionError("Did not receive 'OK' response")
+                logger.info("Synchronized")
+                self.synced = True
+                return
+        if not self.synced:
+            raise SPSDKConnectionError("Cannot synchronize")

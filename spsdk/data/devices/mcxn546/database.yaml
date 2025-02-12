@@ -1,13 +1,5 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 alias: mcxn946
-
-# General MCU information
-info:
-  # Web page of MCU representative
-  isp:
-    rom:
-      protocol: mboot
-      interfaces: ["uart", "can", "spi", "i2c"]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -377,11 +377,6 @@ class CommentedConfig:
 
         cfg_m = CMap()
         for key in self._get_schema_block_keys(block):
-            if key not in block["properties"]:
-                raise SPSDKError(
-                    f"Missing key ({key}, in block properties. Block title: {block.get('title', 'Unknown')})"
-                )
-
             # Skip the record in case that custom value key is defined,
             # but it has None value as a mark to not use this record
             value = custom_value.get(key, None) if custom_value else None  # type: ignore
@@ -397,13 +392,14 @@ class CommentedConfig:
             required = self.get_property_optional_required(key, block).description
             if not required:
                 raise SPSDKError(f"Required property is not defined for {key}")
-            self._add_comment(
-                cfg_m,
-                val_p,
-                key,
-                value_to_add,
-                required,
-            )
+            if not val_p.get("no_yaml_comments", False):
+                self._add_comment(
+                    cfg_m,
+                    val_p,
+                    key,
+                    value_to_add,
+                    required,
+                )
 
         self.indent -= 1
         return cfg_m

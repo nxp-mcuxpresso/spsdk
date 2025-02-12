@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,8 @@ from typing import Optional
 
 import pytest
 
-from spsdk.exceptions import SPSDKValueError
+from spsdk import SPSDK_RESTRICTED_DATA_FOLDER
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils import database
 from spsdk.utils.database import (
     Database,
@@ -360,3 +361,28 @@ def test_mem_block_names(full_name, name, core, instance, security):
     assert full_name == MemBlock.create_name(
         block_name=name, core=core, instance=instance, secure_access=security
     )
+
+
+def test_check_correct_names_of_memories():
+    """Test of all names of memories in whole database."""
+    qd = DatabaseManager().quick_info
+    for dev, qi in qd.devices.devices.items():
+        for mem_name, mem_block in qi.info.memory_map._mem_map.items():
+            try:
+                mem_block.parse_name(mem_name)
+            except SPSDKError:
+                assert False, f"Test fails on family: {dev}, block name: {mem_name}"
+
+
+@pytest.mark.skipif(
+    SPSDK_RESTRICTED_DATA_FOLDER == None, reason="Requires to have restricted data setup"
+)
+def test_restricted_data_devices():
+    db = DatabaseManager().get_db(True)
+    restricted_data = DatabaseManager.get_restricted_data()
+    assert restricted_data is not None
+    assert os.path.normpath(restricted_data) == os.path.normpath(
+        os.path.join(SPSDK_RESTRICTED_DATA_FOLDER, "data")
+    )
+    for device in os.listdir(os.path.join(restricted_data, "devices")):
+        assert db.devices.get(device)

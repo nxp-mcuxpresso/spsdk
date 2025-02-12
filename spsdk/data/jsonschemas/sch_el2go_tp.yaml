@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 el2go_tp:
   type: object
   properties:
@@ -120,3 +121,54 @@ secure_objects_address:
         Please note, that if you're using external memory, you have to configure the memory first.
       template_value: 123456
   required: ["secure_objects_address"]
+
+fatwrite:
+  properties:
+    fatwrite_filename:
+      type: string
+      title: Filename of the secure objects stored in partition
+      description: Filename of the secure objects stored in partition. Passed to U-Boot fatwrite command.
+      template_value: secure_objects.bin
+      default: secure_objects.bin
+    fatwrite_interface:
+      type: string
+      title: Interface for storing the secure objects
+      description: Interface for storing the secure objects, passed to U-Boot fatwrite command.
+      template_value: mmc
+      default: mmc
+    fatwrite_device_partition:
+      type: string
+      title: Device and partition for writing the secure objects.
+      description: Device and partition for writing the secure objects, separated by colon. Passed to U-Boot fatwrite command.
+      template_value: 0:1
+      default: 0:1
+    oem_provisioning_config_filename:
+      type: string
+      title: Filename of the configuration file for OEM Provisioning App
+      description: Filename of the configuration file for OEM Provisioning App that will be stored in partition together with the secure objects.
+      template_value: config.yaml
+      default: config.yaml
+
+linux_boot:
+  properties:
+    boot_linux:
+      type: boolean
+      title: Boot Linux
+      description: Boot Linux after provisioning
+      template_value: true
+      default: true
+    linux_boot_sequence:
+      type: array
+      title: Linux boot sequence
+      description: List of UUU commands to execute to boot Linux
+      items:
+        type: string
+        template_value:
+          [
+            "setenv mmcdev 0",
+            "setenv mmcpart 1",
+            "setenv mmcroot /dev/mmcblk0p2 rootwait rw",
+            "run loadimage",
+            "run loadfdt",
+            "run bsp_bootcmd",
+          ]

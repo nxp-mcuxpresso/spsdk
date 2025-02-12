@@ -33,7 +33,7 @@ pipeline {
             steps {
                 withVenv(
         			'uv pip install tox-uv',
-        			'tox -e py39,py313 -- --info-check gitcov'
+        			'tox --recreate -e py39,py313 -- --info-check gitcov'
     			)
             }
         }

@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +16,7 @@ info:
   purpose: Wireless Connectivity
   spsdk_predecessor_name: rw61x
   # Web page of MCU representative
-  web: https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612
+  web: https://www.nxp.com/products/wireless-connectivity/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radio-1x1-wi-fi-6-plus-bluetooth-low-energy-5-4-802-15-4:RW612
   memory_map: # Memory map basic info
     flexspi_ns:
       start_int: 0x8000000
@@ -70,7 +70,6 @@ features:
             fuse114,
             fuse115,
           ]
-        otp_index: 104
 
   # ======== Communication buffer section ========
   comm_buffer:
@@ -243,5 +242,4 @@ features:
     el2go_name: RW6
     prov_method: dispatch_fw
     fw_load_address: 0x08001000
-    ignored_otp: [104]
-    ignored_otp_ranges: [92, 103]
+    ignored_otp_ranges: [92, 103, 104, 115]

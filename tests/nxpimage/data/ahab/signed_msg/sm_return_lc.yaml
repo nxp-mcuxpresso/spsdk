@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  Signed Message converted config.  ===========
@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------------------------------
 family: mimxrt1189  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'mimxrt1189']
 revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
-output: ahab/signed_msg_oem_field_return.bin # [Required], Output file name; Output Signed Message file name
+output: ahab/signed_msg/signed_msg_oem_field_return.bin # [Required], Output file name; Output Signed Message file name
 # ----------------------------------------------------------------------------------------------------
 #                                   == Settings of Signed Message ==
 # ----------------------------------------------------------------------------------------------------

@@ -320,7 +320,7 @@ After the reset the device boots from flash and user image is programmed success
 
 .. warning::
 
-    For LPC55S0x/1x/2x/6x
+    For LPC55Sxx/K32W1xx/KW45xx/KW47xx/MCXA1xx/MCXA2xx/MCXCxxx/MCXNx3x/MCXN23x/MCXW7xx/RW61x/RT6xx/RT5xx
 
     ADDRESS – should be set to initial PC value of the image to be executed. You can read the value from the binary of the application image (second 32-bit word in the application binary)
 

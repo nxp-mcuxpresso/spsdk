@@ -1,0 +1,35 @@
+# ======================================  Bootable Image Configuration for mimx9352.  ======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s36, mcxn546, mcxn946, mcxn946, mimx8mn, mimx8mp, mimx8ulp, mimx9131, mimx9352, mimx9596, mimxrt1015, mimxrt1010,
+# mimxrt1024, mimxrt1040, mimxrt1050, mimxrt1064, mimxrt1166, mimxrt1176, mimxrt1189, mimxrt595s, mimxrt685s, rw612>
+family: mimx8ulp
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+# Possible options: <serial_downloader, flexspi_nor>
+memory_type: serial_downloader
+
+# ======================================================================================================================
+#                                      == Primary executable Segment definition ==
+# ======================================================================================================================
+# ------------------------------------===== Primary AHAB container [Optional] =====-------------------------------------
+# Description: This is primary AHAB image that is validated by ROM and usually contains DDR initialization and SPL code.
+# AHAB container image path. It could be used as pre-prepared binary form of AHAB and also YAML configuration file for
+# AHAB. In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+primary_image_container_set: u-boot-spl-container-img_config.yaml
+# ======================================================================================================================
+#                                     == Secondary executable Segment definition ==
+# ======================================================================================================================
+# -----------------------------------===== Secondary AHAB container [Optional] =====------------------------------------
+# Description: This is secondary AHAB image that is validated by SPL from primary image. AHAB container image path. It
+# could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB. In case that YAML
+# configuration file is used, the Bootable image tool build the AHAB itself.
+secondary_image_container_set: u-boot-atf-container-img_config.yaml

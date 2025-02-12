@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,7 +17,7 @@ from typing_extensions import Self
 
 from spsdk import version as spsdk_version
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
-from spsdk.exceptions import SPSDKError, SPSDKKeyError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.fuses.fuses import FuseScript
 from spsdk.image.mem_type import MemoryType
 from spsdk.image.segments_base import SegmentBase
@@ -41,6 +41,13 @@ class ConfigurationBlockType(SpsdkEnum):
 
     SIMPLIFIED = (0, "simplified", "Simplified configuration")
     FULL = (1, "full", "Full configuration")
+
+
+MEMORY_INTERFACE_TO_VALUE: dict[MemoryType, int] = {
+    MemoryType.FLEXSPI_RAM: 0,
+    MemoryType.XSPI_RAM: 0,
+    MemoryType.SEMC_SDRAM: 1,
+}
 
 
 class XMCDHeader:
@@ -88,12 +95,27 @@ class XMCDHeader:
     def mem_type(self) -> MemoryType:
         """Memory type property."""
         mem_type = self._header_reg.find_bitfield("memoryInterface").get_value()
-        return MemoryType.from_tag(mem_type)
+        for sup_mem_type in self.supported_mem_types:
+            if MEMORY_INTERFACE_TO_VALUE[sup_mem_type] == mem_type:
+                return sup_mem_type
+        raise SPSDKValueError(f"Memory type with index {mem_type} is not supported")
 
     @mem_type.setter
     def mem_type(self, value: MemoryType) -> None:
         """Memory type property setter."""
-        self._header_reg.find_bitfield("memoryInterface").set_value(value.tag)
+        if value not in self.supported_mem_types:
+            raise SPSDKValueError(f"Memory type {value.tag} is not supported")
+        self._header_reg.find_bitfield("memoryInterface").set_value(
+            MEMORY_INTERFACE_TO_VALUE[value]
+        )
+
+    @property
+    def supported_mem_types(self) -> list[MemoryType]:
+        """Get list if supported memory types."""
+        mem_types = get_db(self.family, self.revision).get_dict(
+            DatabaseManager.XMCD, "mem_types", default={}
+        )
+        return [MemoryType.from_label(mem_type) for mem_type in mem_types.keys()]
 
     @property
     def config_type(self) -> ConfigurationBlockType:
@@ -173,6 +195,11 @@ class XMCDHeader:
             self._header_reg.find_bitfield("memoryInterface").get_value(),
             min_val=0,
             max_val=1,
+        )
+        ret.add_record_contains(
+            "Memory interface is supported",
+            self._header_reg.find_bitfield("memoryInterface").get_value(),
+            collection=[MEMORY_INTERFACE_TO_VALUE[item] for item in self.supported_mem_types],
         )
         return ret
 
@@ -276,7 +303,6 @@ class XMCD(SegmentBase):
         :param family: Chip family.
         :param config_type: Configuration block type: simplified | full.
         :param revision: Optional Chip family revision.
-        :raises SPSDKValueError: Unsupported family.
         """
         super().__init__(family, revision)
         self.header = XMCDHeader(family, revision)
@@ -495,10 +521,7 @@ class XMCD(SegmentBase):
         :param revision: Chip revision specification, as default, latest is used.
         :return: Template of XMCD Block.
         """
-        try:
-            schemas = XMCD.get_validation_schemas(family, mem_type, config_type, revision)
-        except SPSDKError:
-            return ""
+        schemas = XMCD.get_validation_schemas(family, mem_type, config_type, revision)
 
         ret = CommentedConfig(
             main_title=f"External Memory Configuration Data template for {family}.",

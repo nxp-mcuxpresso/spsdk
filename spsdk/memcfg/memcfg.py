@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -30,6 +30,10 @@ from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
+
+
+class SPSDKUnsupportedInterface(SPSDKError):
+    """SPSDK Unsupported memory interface."""
 
 
 @dataclass
@@ -132,10 +136,11 @@ class MemoryConfig(BaseClass):
             revision=revision,
             base_endianness=Endianness.LITTLE,
         )
-        self.interface = (
-            interface
-            or self.get_supported_interfaces(family=self.family, peripheral=self.peripheral)[0]
-        )
+        self.interface = interface or self.supported_interfaces[0]
+        if self.interface not in self.supported_interfaces:
+            raise SPSDKUnsupportedInterface(
+                f"Interface '{self.interface}' is not supported for family '{family}' peripheral '{peripheral}'"
+            )
 
     def __repr__(self) -> str:
         """Representation string."""
@@ -196,9 +201,7 @@ class MemoryConfig(BaseClass):
             self.family
         )
         sch_cfg["base"]["properties"]["interface"]["template_value"] = self.interface
-        sch_cfg["base"]["properties"]["interface"]["enum"] = self.get_supported_interfaces(
-            self.family, peripheral=self.peripheral
-        )
+        sch_cfg["base"]["properties"]["interface"]["enum"] = self.supported_interfaces
 
         sch_cfg["settings"]["properties"]["settings"][
             "properties"
@@ -263,6 +266,11 @@ class MemoryConfig(BaseClass):
 
         ret["settings"] = settings
         return ret
+
+    @property
+    def supported_interfaces(self) -> list[str]:
+        """List of supported interfaces."""
+        return self.get_supported_interfaces(self.family, self.peripheral)
 
     @staticmethod
     def get_supported_peripherals(family: str) -> list[str]:
@@ -483,6 +491,10 @@ class MemoryConfig(BaseClass):
 
         wanted_mem_types: dict[str, set] = {}
         for p in peripherals:
+            if p not in p_db:
+                logger.error(f"The peripheral '{p}' is NOT supported!")
+                continue
+
             mt = p_db[p]["mem_type"]
             mi = p_db[p]["interfaces"]
             if mt in wanted_mem_types:

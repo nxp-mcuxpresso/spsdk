@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -137,6 +137,176 @@ class DummyEnum(SpsdkSoftEnum):
     """Dummy core id."""
 
     DUMMY = (0x00, "dummy")
+
+
+class KeyImportSigningAlgorithm(SpsdkEnum):
+    """Key Import Signing Algorithm valid values."""
+
+    CMAC = (0x01, "CMAC")
+
+
+class KeyAlgorithm(SpsdkEnum):
+    """Key Import Algorithm valid values."""
+
+    MD5 = (0x02000003, "MD5")
+    SHA1 = (0x02000005, "SHA1")
+    SHA224 = (0x02000008, "SHA224")
+    SHA256 = (0x02000009, "SHA256")
+    SHA384 = (0x0200000A, "SHA384")
+    SHA512 = (0x0200000B, "SHA512")
+    HKDF_SHA256 = (0x09020109, "HKDF SHA256")
+    HKDF_SHA384 = (0x0902010A, "HKDF SHA384")
+
+
+class KeyDerivationAlgorithm(SpsdkEnum):
+    """Key Derivation Algorithm valid values."""
+
+    HKDF_SHA256 = (0x08000109, "HKDF SHA256", "HKDF SHA256 (HMAC two-step)")
+    HKDF_SHA384 = (0x0800010A, "HKDF SHA384", "HKDF SHA384 (HMAC two-step)")
+
+
+class KeyType(SpsdkEnum):
+    """Derived Key Type valid values."""
+
+    AES = (0x2400, "AES SHA256", "Possible bit widths: 128/192/256")
+    HMAC = (0x1100, "HMAC SHA384", "Possible bit widths: 224/256/384/512")
+    DERIVE = (0x1200, "Derived key", "Possible bit widths: 256/384")
+    OEM_IMPORT_MK_SK = (0x9200, "OEM_IMPORT_MK_SK", "Possible bit widths: 128/192/256")
+    ECC = (0x7112, "ECC NIST", "Possible bit widths: 128/192/256")
+
+
+class LifeCycle(SpsdkEnum):
+    """Chip life cycle valid values."""
+
+    CURRENT = (0x00, "CURRENT", "Current device lifecycle")
+    OPEN = (0x01, "OPEN")
+    CLOSED = (0x02, "CLOSED")
+    LOCKED = (0x04, "LOCKED")
+
+
+class LifeTime(SpsdkEnum):
+    """Edgelock Enclave life time valid values."""
+
+    VOLATILE = (0x00, "VOLATILE", "Standard volatile key")
+    PERSISTENT = (0x01, "PERSISTENT", "Standard persistent key")
+    PERMANENT = (0xFF, "PERMANENT", "Standard permanent key")
+
+    ELE_KEY_IMPORT_VOLATILE = (
+        0xC0020000,
+        "ELE_KEY_IMPORT_VOLATILE",
+        "EdgeLock® secure enclave Key import volatile key",
+    )
+    ELE_KEY_IMPORT_PERSISTENT = (
+        0xC0020001,
+        "ELE_KEY_IMPORT_PERSISTENT",
+        "EdgeLock® secure enclave Key import persistent key",
+    )
+    ELE_KEY_IMPORT_PERMANENT = (
+        0xC00200FF,
+        "ELE_KEY_IMPORT_PERMANENT",
+        "EdgeLock® secure enclave Key import permanent key",
+    )
+
+    EL2GO_KEY_IMPORT_VOLATILE = (
+        0xE0000400,
+        "EL2GO_KEY_IMPORT_VOLATILE",
+        "EdgeLock® 2 GO Key Import volatile key",
+    )
+    EL2GO_KEY_IMPORT_PERSISTENT = (
+        0xE0000401,
+        "EL2GO_KEY_IMPORT_PERSISTENT",
+        "EdgeLock® 2 GO Key Import persistent key",
+    )
+    EL2GO_KEY_IMPORT_PERMANENT = (
+        0xE00004FF,
+        "EL2GO_KEY_IMPORT_PERMANENT",
+        "EdgeLock® 2 GO Key Import permanent key",
+    )
+
+    EL2GO_DATA_IMPORT_VOLATILE = (
+        0xE0800400,
+        "EL2GO_DATA_IMPORT_VOLATILE",
+        "EdgeLock® 2 GO Data Import volatile",
+    )
+    EL2GO_DATA_IMPORT_PERSISTENT = (
+        0xE0800401,
+        "EL2GO_DATA_IMPORT_PERSISTENT",
+        "EdgeLock® 2 GO Data Import persistent",
+    )
+    EL2GO_DATA_IMPORT_PERMANENT = (
+        0xE08004FF,
+        "EL2GO_DATA_IMPORT_PERMANENT",
+        "EdgeLock® 2 GO Data Import permanent",
+    )
+
+
+class KeyUsage(SpsdkEnum):
+    """Derived Key Usage valid values."""
+
+    CACHE = (
+        0x00000004,
+        "Cache",
+        (
+            "Permission to cache the key in the ELE internal secure memory. "
+            "This usage is set by default by ELE FW for all keys generated or imported."
+        ),
+    )
+    ENCRYPT = (
+        0x00000100,
+        "Encrypt",
+        (
+            "Permission to encrypt a message with the key. It could be cipher encryption,"
+            " AEAD encryption or asymmetric encryption operation."
+        ),
+    )
+    DECRYPT = (
+        0x00000200,
+        "Decrypt",
+        (
+            "Permission to decrypt a message with the key. It could be cipher decryption,"
+            " AEAD decryption or asymmetric decryption operation."
+        ),
+    )
+    SIGN_MSG = (
+        0x00000400,
+        "Sign message",
+        (
+            "Permission to sign a message with the key. It could be a MAC generation or an "
+            "asymmetric message signature operation."
+        ),
+    )
+    VERIFY_MSG = (
+        0x00000800,
+        "Verify message",
+        (
+            "Permission to verify a message signature with the key. It could be a MAC "
+            "verification or an asymmetric message signature verification operation."
+        ),
+    )
+    SIGN_HASH = (
+        0x00001000,
+        "Sign hash",
+        (
+            "Permission to sign a hashed message with the key with an asymmetric signature "
+            "operation. Setting this permission automatically sets the Sign Message usage."
+        ),
+    )
+    VERIFY_HASH = (
+        0x00002000,
+        "Sign message",
+        (
+            "Permission to verify a hashed message signature with the key with an asymmetric "
+            "signature verification operation. Setting this permission automatically sets the Verify Message usage."
+        ),
+    )
+    DERIVE = (0x00004000, "Derive", "Permission to derive other keys from this key.")
+
+
+class WrappingAlgorithm(SpsdkEnum):
+    """Enumeration of key import wrapping algorithms."""
+
+    RFC3394 = (0x01, "RFC3394", "RFC 3394 wrapping")
+    AES_CBC = (0x02, "AES_CBC", "AES-CBC wrapping (padding: ISO7816-4 padding)")
 
 
 @dataclass

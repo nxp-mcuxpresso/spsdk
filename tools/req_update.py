@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Tool for updating requirements.txt files."""
 
 
@@ -147,7 +148,7 @@ class RequirementsList(list[RequirementsRecord]):
     @staticmethod
     def load(path: str) -> "RequirementsList":
         """Get Requirements from file."""
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             req_lines = f.readlines()
         return RequirementsList.from_lines(req_lines=req_lines)
 
@@ -165,9 +166,9 @@ def prepare_file(path: str) -> None:
     :param path: File path
     """
     click.echo(f"Preparing: {path}")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         main_reqs = f.readlines()
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         for req_line in main_reqs:
             if req_line.startswith(("#", "-")):
                 f.write(req_line)
@@ -188,9 +189,9 @@ def finalize_file(
     :param use_next_version: Using a new version, defaults to NextVersion.NONE
     """
     click.echo(f"Finalizing: {path}")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         main_reqs = f.readlines()
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         for req_line in main_reqs:
             # omit pip as pip itself is by design not shown in 'pip list'
             if req_line.startswith(("#", "-")) or req_line.startswith("pip"):
@@ -209,7 +210,7 @@ def get_token(token: Optional[str]) -> str:
         raise ValueError("Token must be specified as argument or as env variable")
     token = os.path.expanduser(os.path.expandvars(token))
     if os.path.isfile(token):
-        with open(token) as f:
+        with open(token, encoding="utf-8") as f:
             return f.readline()
     return token
 

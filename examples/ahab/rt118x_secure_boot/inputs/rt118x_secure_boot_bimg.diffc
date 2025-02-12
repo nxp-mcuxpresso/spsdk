@@ -5,6 +5,6 @@ user_cfg: inputs/bootimg_rt118x_flexspi_nor.yaml
 custom_command: "%! nxpimage bootable-image get-templates -f mimxrt1189 -o workspace --force"
 
 comments:
-  xmcd: "XMCD is not necessary for this configuration
+  xmcd: "XMCD is not necessary for this configuration"
   fcb: "Path to FCB block"
   ahab_container: "Path to AHAB container"

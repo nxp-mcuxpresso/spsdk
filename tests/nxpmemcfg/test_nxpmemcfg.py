@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ import os
 import pytest
 
 from spsdk.apps import nxpmemcfg
-from spsdk.memcfg.memcfg import MemoryConfig
+from spsdk.memcfg.memcfg import MemoryConfig, SPSDKUnsupportedInterface
 from tests.cli_runner import CliRunner
 
 
@@ -233,3 +233,19 @@ def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: str, tmpdi
             f"blhost-script -c {output_cfg}{f' -ix {instances[0]}' if len(instances) > 1 else ''} --fcb {output_fcb}",
         )
         assert ret.exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "family,peripheral,interface,supported",
+    [
+        ("mimxrt798s", "xspi_nor", "hyper_flash", False),
+        ("mimxrt798s", "xspi_nor", "quad_spi", True),
+        ("mimxrt798s", "xspi_nor", "octal_spi", True),
+    ],
+)
+def test_non_supported_interface(family, peripheral, interface, supported):
+    if not supported:
+        with pytest.raises(SPSDKUnsupportedInterface):
+            MemoryConfig(family=family, peripheral=peripheral, interface=interface)
+    else:
+        assert MemoryConfig(family=family, peripheral=peripheral, interface=interface)

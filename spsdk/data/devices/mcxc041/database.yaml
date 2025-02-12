@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,11 +18,11 @@ info:
       start_int: 0x0
       size_int: 0x7FFF
       external: false
-    sram_l::
+    sram-l:
       start_int: 0x1FFF_FE00
       size_int: 0x1FF
       external: false
-    sram_u::
+    sram-u:
       start_int: 0x2000_0000
       size_int: 0x5FF
       external: false
@@ -39,3 +39,35 @@ features:
 
   # ======== Blhost section ========
   blhost: {}
+
+  # ======== BCA section ========
+  bca:
+    reg_spec: bca.json
+
+  # ======== FCF section ========
+  fcf:
+    reg_spec: fcf.json
+    grouped_registers:
+      - uid: fcf_backdoor_comparison_key
+        name: BACKDOOR_COMPARISON_KEY
+        width: 64
+        config_as_hexstring: true
+        description:
+          Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command and Unsecuring the Chip Using Backdoor Key Access.
+        sub_regs:
+          - field000
+          - field004
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinBca
+          - Mbi_MixinFcf
+          - Mbi_ExportMixinApp
+    images:
+      xip:
+        plain: plain

@@ -164,6 +164,22 @@ The *nxpdevscan* application allows users to list all connected USB and UART NXP
 
     nxpdevscan --help
 
+:ref:`nxpfuses`
+================
+
+The *nxpfuses* application allows users to:
+
+- write single fuse into device
+- write fuses from configuration into device
+- generate the template of Fuses YAML configuration file
+- generate blhost/nxpele script to burn fuses from configuration
+- save the current state of fuses to config file
+- print the current state of fuses from device
+
+.. code:: bash
+
+    nxpfuses --help
+
 :ref:`nxpimage`
 ===============
 

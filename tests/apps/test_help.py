@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test that help message for all registered CLI apps works."""
 import logging
+import os
 import sys
 from unittest.mock import patch
 
 from spsdk.apps import spsdk_apps
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
+from spsdk.utils.misc import load_text
 from tests.cli_runner import CliRunner
+from spsdk import SPSDK_DATA_FOLDER
+from spsdk.apps.spsdk_apps import main as spsdk_main
 
 try:
     import pyftdi
@@ -59,3 +63,50 @@ def test_spsdk_apps_subcommands_help_with_help_option(cli_runner: CliRunner, cap
                 test_tree_group(cmd)
 
     test_tree_group(spsdk_apps.main)
+
+
+def test_apps_spec():
+    """Test if all applications are in apps.spec."""
+
+    commands = spsdk_main.commands
+    commands.pop("utils")  # remove utils group commands
+    if "get-families" in commands:
+        commands.pop("get-families")  # remove general get-families
+    spsdk_apps_list = [name.replace("-", "_") for name in commands.keys()]
+
+    root_path = os.path.join(SPSDK_DATA_FOLDER, "..", "..")
+    apps_spec_path = os.path.join(root_path, "apps.spec")
+
+    with open(apps_spec_path, "r") as spec_file:
+        apps_spec_content = spec_file.read()
+
+    for app_name in spsdk_apps_list:
+        if app_name == "el2go_host":
+            # el2go host is different
+            continue
+        # Check apps collection
+        assert f"exe_{app_name},"
+        assert f"a_{app_name}.datas,"
+        assert f"a_{app_name}.binaries,"
+        assert f"a_{app_name}.zipfiles,"
+        # Check merge step
+        assert f'(a_{app_name}, "{app_name}", "{app_name}")' in apps_spec_content
+        # Check analyze step
+        assert f'a_{app_name} = analyze(["spsdk/apps/{app_name}.py"])' in apps_spec_content
+        # Check executables step
+        assert (
+            f'exe_{app_name} = executable(a_{app_name}, "{app_name}", "tools/pyinstaller/{app_name}_version_info.txt")'
+            in apps_spec_content
+        )
+        assert f"exe_{app_name}," in apps_spec_content
+
+        # Check if version info exists
+        pyinstaller_version_path = os.path.join(
+            root_path, "tools", "pyinstaller", f"{app_name}_version_info.txt"
+        )
+        assert os.path.exists(pyinstaller_version_path)
+
+        version_text = load_text(pyinstaller_version_path)
+
+        assert f"StringStruct(u'InternalName', u'{app_name}.exe')," in version_text
+        assert f"StringStruct(u'OriginalFileName', u'{app_name}.exe')," in version_text

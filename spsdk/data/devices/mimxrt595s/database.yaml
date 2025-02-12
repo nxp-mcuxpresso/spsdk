@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ info:
   purpose: i.MX RT Crossover MCUs
   spsdk_predecessor_name: rt5xx
   # Web page of MCU representative
-  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500
+  web: https://www.nxp.com/products/i.MX-RT500
   memory_map:
     flexspi0_ns:
       start_int: "0x08000000"

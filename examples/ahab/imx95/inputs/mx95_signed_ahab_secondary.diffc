@@ -1,0 +1,14 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/mx95_signed_uboot_secondary.yaml
+custom_command: "%! nxpimage ahab get-template -r a1 -f mimx9596 -o workspace/ahab_template.yaml --force"
+
+comments:
+  revision: "IMPORTANT! Change the revision to A0/A1, latest B0 revision has different container format"
+  srk_set: "Define set is used to authenticate the container"
+  srk_table: "All attributes related to the signing"
+  atf: "Define path to the ARM Trusted Firmware"
+  uboot: "Define path to the U-Boot binary file"
+  tee: "Define path to the TEE (Trusted Execution Environment)"
+  dek_keyblob: "All attributes related to the encrypting"

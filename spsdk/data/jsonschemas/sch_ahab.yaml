@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
@@ -265,6 +265,12 @@ whole_ahab_image:
                               description: OEI - Optional Executable Image firmware
                               template_value: oei_ddr.bin
                               format: file
+                            qb_data:
+                              type: string
+                              title: Quick Boot Data
+                              description: QB data - Optional Quick boot data, if defined a new empty record will be added just behing DDR FW entry
+                              template_value: qb_data.bin
+                              format: file
 
                         - type: object
                           template_title: OEI TCM Settings (ECC configuration etc.)
@@ -323,6 +329,34 @@ whole_ahab_image:
                               format: file
 
                         - type: object
+                          template_title: Cortex M7 second core additional application
+                          image_identifier: cortex_m7_2_app
+                          skip_in_template: True
+                          description: Cortex M7 second core additional application
+                          required: [cortex_m7_2_app]
+                          properties:
+                            cortex_m7_2_app:
+                              type: string
+                              title: Cortex M7 second core additional application
+                              description: Cortex M7 second core additional application
+                              template_value: cortex_m7_2_app.bin
+                              format: file
+
+                        - type: object
+                          template_title: Cortex M33 second core additional application
+                          image_identifier: cortex_m33_2_app
+                          skip_in_template: True
+                          description: Cortex M33 second core additional application
+                          required: [cortex_m33_2_app]
+                          properties:
+                            cortex_m33_2_app:
+                              type: string
+                              title: Cortex M33 second core additional application
+                              description: Cortex M33 second core additional application
+                              template_value: cortex_m33_2_app.bin
+                              format: file
+
+                        - type: object
                           template_title: TEE Trusted Execution Environment
                           image_identifier: tee
                           skip_in_template: True
@@ -339,6 +373,35 @@ whole_ahab_image:
                               description: TEE - Trusted Execution Environment binary
                               template_value: tee.bin
                               format: file
+
+                        - type: object
+                          template_title: uPower
+                          image_identifier: upower
+                          skip_in_template: True
+                          description: uPower firmware
+                          required: [upower]
+                          properties:
+                            upower:
+                              type: string
+                              title: uPower
+                              description: uPower firmware
+                              template_value: upower.bin
+                              format: file
+
+                        - type: object
+                          template_title: MCU Image
+                          image_identifier: mcu
+                          skip_in_template: True
+                          description: MCU Image
+                          required: [mcu]
+                          properties:
+                            mcu:
+                              type: string
+                              title: MCU Image
+                              description: MCU Image
+                              template_value: m33_image.bin
+                              format: file
+
 
                         - type: object
                           template_title: SPL
@@ -409,7 +472,8 @@ whole_ahab_image:
                             image_path:
                               type: string
                               title: Image path
-                              description: Path to image binary (absolute/relative). In case that only Image Array entry without any data image is needed, Just do not use the image path.
+                              description:
+                                Path to image binary (absolute/relative). In case that only Image Array entry without any data image is needed, Just do not use the image path.
                                 In case that the image size in container should be aligned differently then SPSDK do (4 bytes for ELE images, 1 byte otherwise), there is hidden option
                                 'image_size_alignment' where could be override image size by any custom value.
                               format: file
@@ -490,8 +554,7 @@ whole_ahab_image:
                             hash_type:
                               type: string
                               title: Images HASH type
-                              description:
-                                HASH type of image.
+                              description: HASH type of image.
                               enum: []
                               template_value: sha512
                             gap_after_image:

@@ -1887,6 +1887,18 @@
       }
     },
     {
+      "home_page": "https://github.com/exhuma/t61codec",
+      "name": "t61codec",
+      "package": {
+          "name": "t61codec",
+          "license": "MIT License"
+      },
+      "github": {
+          "project_name": "exhuma/t61codec",
+          "license": "MIT"
+      }
+    },
+    {
       "home_page": "",
       "name": "terminado",
       "package": {
@@ -1996,6 +2008,18 @@
       }
     },
     {
+      "home_page": "https://exhuma.github.io/x690/",
+      "name": "x690",
+      "package": {
+          "name": "x690",
+          "license": "MIT License"
+      },
+      "github": {
+          "project_name": "exhuma/x690",
+          "license": "MIT"
+      }
+    },
+    {
       "home_page": "https://github.com/bytecodealliance/wasmtime-py",
       "name": "wasmtime",
       "package": {
@@ -2092,6 +2116,14 @@
       "github": {
         "project_name": "GrahamDumpleton/wrapt",
         "license": "BSD-2-Clause"
+      }
+    },
+    {
+      "home_page": "https://exhuma.github.io/x690/",
+      "name": "x690",
+      "package": {
+        "name": "x690",
+        "license": "MIT"
       }
     },
     {

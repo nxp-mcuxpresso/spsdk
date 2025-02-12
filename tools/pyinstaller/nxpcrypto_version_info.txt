@@ -32,7 +32,7 @@ VSVersionInfo(
         [StringStruct(u'CompanyName', u'NXP Semiconductors'),
         StringStruct(u'FileDescription', u'MCUXpresso SPSDK Apps'),
         StringStruct(u'FileVersion', u'1.0.0.0'),
-        StringStruct(u'InternalName', u'nxpdevhsm.exe'),
+        StringStruct(u'InternalName', u'nxpcrypto.exe'),
         StringStruct(u'LegalCopyright', u'Copyright (C) 2022-2024 NXP Semiconductors'),
         StringStruct(u'OriginalFileName', u'nxpcrypto.exe'),
         StringStruct(u'ProductName', u'MCUXpresso SPSDK Apps'),

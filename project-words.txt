@@ -127,6 +127,7 @@ BLHOST
 blhost's
 blinky
 blksz
+BLOCKSIZE
 blockv
 BLTC
 BMAPCTX
@@ -1131,6 +1132,7 @@ SECRETBOX
 sectet
 SECTORFAIL
 SECU
+SEDM
 segfcb
 Segger
 selfref
@@ -1443,3 +1445,4 @@ Zeroize
 ZEROIZE
 zeroized
 zipp
+TIOCGSERIAL

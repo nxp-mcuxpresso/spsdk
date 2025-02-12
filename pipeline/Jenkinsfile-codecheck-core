@@ -1,0 +1,47 @@
+@Library('shared-lib') _
+
+// Abort older builds
+def buildNumber = BUILD_NUMBER as int
+if (buildNumber > 1) milestone(buildNumber - 1)
+milestone(buildNumber)
+
+pipeline {
+    agent { label 'linux-spsdk' }
+    options {
+        timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                        $class: 'GitSCM',
+                        branches: scm.branches,
+                        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+                        extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                        submoduleCfg: [],
+                        userRemoteConfigs: scm.userRemoteConfigs
+                    ])
+            }
+        }
+        stage('Codecheck') {
+            steps {
+                withVenv(
+                    'uv pip install tox-uv',
+                    'tox --recreate -e py39,py313 -x "testenv.extras=" -- --info-check gitcov'
+                )
+            }
+        }
+    }
+
+    post {
+        always {
+                archiveArtifacts artifacts: 'reports_py39/**/*.txt, reports_py313/**/*.txt', fingerprint: true
+
+        emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+            replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+            to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
+                                    [$class: 'RequesterRecipientProvider']]))
+        }
+    }
+}

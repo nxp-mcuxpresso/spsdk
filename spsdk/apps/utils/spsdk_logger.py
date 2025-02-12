@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -146,7 +146,7 @@ def install(
         debug_handler.setFormatter(ColoredFormatter(colored=False))
         debug_handler.setLevel(logging.DEBUG)
 
-        debug_logger = logging.getLogger()
+        debug_logger = logging.getLogger("spsdk.debug")
         debug_logger.setLevel(logging.DEBUG)
         debug_logger.propagate = False
         debug_logger.addHandler(debug_handler)

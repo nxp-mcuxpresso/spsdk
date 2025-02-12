@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -425,8 +425,7 @@ class MasterBootImage:
 
         if mbi_cls_type is None:
             raise SPSDKParsingError("Unsupported MBI type detected.")
-        mbi_cls = mbi_cls_type()
-        mbi_cls.family = family
+        mbi_cls = mbi_cls_type(family=family, revision=revision)
         mbi_cls.dek = dek
 
         # 2: Parse individual mixins what is possible

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -811,23 +811,37 @@ def start_debug_session(
     help=("Deprecated option, use in '-o test-address=0x2000_1000' in root command instead of."),
     hidden=True,
 )
+@click.option(
+    "-d",
+    "--destination",
+    type=click.Choice(["cpu_mem", "debug_port"], case_sensitive=False),
+    default="cpu_mem",
+    help="""
+        Test connection destination:
+
+         - cpu_mem: Test that is able to communicate with target memory
+
+         - debug_port: Test that is able to communicate with chip debug port (basic chip connection)
+    """,
+)
 @click.pass_obj
-def test_connection_command(pass_obj: dict, address: Optional[int]) -> None:
+def test_connection_command(pass_obj: dict, destination: str, address: Optional[int]) -> None:
     """Method just try if the device debug port is opened or not."""
     if address is not None:
         logger.warning(
             "The address option is deprecated, if you really need override test address, "
             "use '-o test-address=xx' in root command."
         )
-    ahb_access_granted = test_connection(pass_obj["debug_probe_params"])
-    access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "not-"
-    click.echo(f"The device is {access_str}accessible for debugging.{colorama.Fore.RESET}")
+    ahb_access_granted = test_connection(pass_obj["debug_probe_params"], destination=destination)
+    access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "NOT "
+    click.echo(f"The test connection ends {access_str}successfully.{colorama.Fore.RESET}")
 
 
-def test_connection(debug_probe_params: DebugProbeParams) -> bool:
+def test_connection(debug_probe_params: DebugProbeParams, destination: str) -> bool:
     """Method just try if the device debug port is opened or not.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param destination: Test destination [cpu_mem, debug_port].
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
@@ -838,8 +852,16 @@ def test_connection(debug_probe_params: DebugProbeParams) -> bool:
             print_func=click.echo,
         ) as debug_probe:
             debug_probe.connect()
-            ahb_access_granted = test_ahb_access(debug_probe)
-        return ahb_access_granted
+            if destination == "cpu_mem":
+                return test_ahb_access(debug_probe)
+            if destination == "debug_port":
+                try:
+                    dp_idr = debug_probe.read_dp_idr()
+                    logger.info(f"The debug port IDR: 0x{dp_idr:08X}")
+                    return True
+                except SPSDKError:
+                    return False
+            raise SPSDKAppError(f"Unsupported test connection destination: {destination}")
     except Exception as e:
         raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
 

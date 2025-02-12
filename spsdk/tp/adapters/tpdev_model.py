@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Device, SW model."""
@@ -629,7 +629,7 @@ class TpDevSwModel(TpDevInterface):
             file_path = self.config.get_abspath(self.config.data[file_key])
             org_file = f"{file_path}.org"
             shutil.copy(file_path, org_file)
-            with open(org_file) as org:
-                with open(file_path, "w") as f:
+            with open(org_file, encoding="utf-8") as org:
+                with open(file_path, "w", encoding="utf-8") as f:
                     data = bytes.fromhex(org.read().strip())
                     f.write(bytes(reversed(data)).hex())

@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # =============================  Secure Binary v3.1 Configuration template for kw45b41z8.  =============================
@@ -30,7 +30,7 @@ containerOutputFile: ../workspace/sb3.sb3
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
 # Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ../../_data/keys/evk_keys/RoT_key0_secp384r1_kw45xx.pem
+signPrivateKey: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pem
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'.
 # signProvider: type=file;file_path=my_prv_key.pem
@@ -45,7 +45,7 @@ certBlock: cert_block_kw45_secure.yaml
 # ======================================================================================================================
 # ----------------------------------------===== Part Common Key [Optional] =====----------------------------------------
 # Description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
-containerKeyBlobEncryptionKey: ../../_data/keys/evk_keys/sb3kdk.txt
+containerKeyBlobEncryptionKey: ../../_data/keys/EVK_keys/sb3kdk.txt
 # ----------------------------------===== Enable NXP Container format [Optional] =====----------------------------------
 # Description: Internal usage only, used for generating SB files with NXP content e.g. provisioning firmware, etc...
 isNxpContainer: false

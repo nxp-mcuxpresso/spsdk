@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -61,12 +61,6 @@ MX25UM51345G:
   interfaces:
     octal_spi:
       option_words: [0xc0403037]
-MX25UM51345G_2nd:
-  manufacturer: Macronix
-  type: nor
-  interfaces:
-    octal_spi:
-      option_words: [0xc1503051, 0x20000014]
 # GigaDevice
 GD25QxxxC:
   manufacturer: GigaDevice

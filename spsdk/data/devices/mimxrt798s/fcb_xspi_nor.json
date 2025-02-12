@@ -1,5 +1,5 @@
 {
-    "cpu": "General",
+    "cpu": "MIMXRT798s",
     "groups": [
         {
             "group": {

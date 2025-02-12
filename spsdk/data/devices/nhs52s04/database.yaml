@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,6 +8,7 @@ latest: a4
 
 # General MCU information
 info:
+  use_in_doc: True # Include this MCU in generated documentation
   purpose: Wireless Connectivity
   spsdk_predecessor_name: nhs52sxx
   # Web page of MCU representative

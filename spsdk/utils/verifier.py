@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@
 
 import textwrap
 from dataclasses import dataclass
-from typing import Optional, Type, Union
+from typing import Any, Iterable, Optional, Type, Union
 
 import colorama
 import prettytable
@@ -27,9 +27,13 @@ class VerifierResult(SpsdkEnum):
     ERROR = (2, "Error", colorama.Fore.RED)
 
     @classmethod
-    def draw(cls, res: "VerifierResult") -> str:
-        """Get string also with colors."""
-        if not res.description:
+    def draw(cls, res: "VerifierResult", colorize: bool = True) -> str:
+        """Get string also with colors.
+
+        :param res: Verifier result
+        :param colorize: Make the text colored with ANSI escape characters
+        """
+        if not res.description or not colorize:
             return res.label
         return res.description + res.label + colorama.Fore.RESET
 
@@ -57,6 +61,7 @@ class Verifier:
     """Class data general verifier info class."""
 
     MAX_LINE_LENGTH = 120
+    TITLE_FG_COLOR = colorama.Fore.CYAN
 
     def __init__(
         self,
@@ -93,40 +98,36 @@ class Verifier:
 
     def __str__(self) -> str:
         """Verifier output in string format."""
-        return self.draw()
+        return self.draw(colorize=False)
 
-    def _get_title_block(self) -> str:
+    def _get_title_block(self, colorize: bool = True) -> str:
         """Get unified title blob.
 
-        :param title: Simple title of block
-        :param description: Description of block
+        :param colorize: Make the text colored with ANSI escape characters
         :return: ASCII art block
         """
-        delimiter = colorama.Fore.CYAN + "=" * self.max_line
+        fg_color = self.TITLE_FG_COLOR if colorize else ""
+        rst_color = colorama.Fore.RESET if colorize else ""
+        delimiter = fg_color + "=" * self.max_line
         line_length = len(self.name + "  () " + self.result.label)
         rest_len = self.max_line - line_length
         odd = rest_len % 2
         fill_len = rest_len // 2
         title_str = (
-            f"{colorama.Fore.CYAN}{'='*fill_len}{colorama.Fore.RESET} {self.name} "
-            f"({VerifierResult.draw(self.result)}) {colorama.Fore.CYAN}"
-            f"{'='*fill_len }{'=' if odd else ''}{colorama.Fore.RESET}"
+            f"{fg_color}{'='*fill_len}{rst_color} {self.name} "
+            f"({VerifierResult.draw(self.result, colorize=colorize)}) {fg_color}"
+            f"{'='*fill_len }{'=' if odd else ''}{rst_color}"
         )
 
-        ret = title_str + "\n" + colorama.Fore.CYAN
+        ret = title_str + "\n" + fg_color
         if self.description:
-            ret += (
-                wrap_text(self.description, self.max_line)
-                + "\n"
-                + delimiter
-                + colorama.Fore.RESET
-                + "\n"
-            )
+            ret += wrap_text(self.description, self.max_line) + "\n" + delimiter + rst_color + "\n"
         return ret
 
-    def draw(self, results: Optional[list[VerifierResult]] = None) -> str:
+    def draw(self, results: Optional[list[VerifierResult]] = None, colorize: bool = True) -> str:
         """Draw the results.
 
+        :param colorize: Make the text colored with ANSI escape characters
         :param results: Filter for selected results, default is None
         :return: Stringified output of whole verifier object
         """
@@ -144,11 +145,13 @@ class Verifier:
                     ret = rec
             return ret
 
+        fg_color = self.TITLE_FG_COLOR if colorize else ""
+        rst_color = colorama.Fore.RESET if colorize else ""
         if results and self.result not in results:
             return ""
 
         if self.result == VerifierResult.SUCCEEDED:
-            ret = f"{colorama.Fore.CYAN}{self.name}{colorama.Fore.RESET}({VerifierResult.draw(self.result)})"
+            ret = f"{fg_color}{self.name}{rst_color}({VerifierResult.draw(self.result, colorize)})"
             if not self.important:
                 return ret + "\n"
             # print just overview
@@ -159,9 +162,11 @@ class Verifier:
                 return ret + "\n"
 
         if self.description is not None:
-            ret = self._get_title_block()
+            ret = self._get_title_block(colorize)
         else:
-            ret = f"{colorama.Fore.CYAN}{self.name}{colorama.Fore.RESET}({VerifierResult.draw(self.result)}) \n"
+            ret = (
+                f"{fg_color}{self.name}{rst_color}({VerifierResult.draw(self.result, colorize)}) \n"
+            )
         # Print all important records
         for record in self.records:
             if isinstance(record, VerifierRecord):
@@ -169,20 +174,21 @@ class Verifier:
                     results and record.result not in results
                 ):
                     continue
-                item = self._draw_record(record) + "\n"
+                item = self._draw_record(record, colorize) + "\n"
             else:
                 record.level = self.level + 1
-                item = record.draw(results=results)
+                item = record.draw(results=results, colorize=colorize)
             ret += textwrap.indent(item, " " * self.indent)
         return ret
 
-    def _draw_record(self, record: VerifierRecord) -> str:
+    def _draw_record(self, record: VerifierRecord, colorize: bool = True) -> str:
         """Draw one record in string.
 
+        :param colorize: Make the text colored with ANSI escape characters
         :param record: Record to be rewritten to string.
         :return: Stringified record
         """
-        ret = f"{record.name}({VerifierResult.draw(record.result)}): "
+        ret = f"{record.name}({VerifierResult.draw(record.result, colorize)}): "
         if record.value is not None:
             ret += str(record.value)
         if record.raw:
@@ -265,6 +271,28 @@ class Verifier:
             )
         else:
             self.add_record(name, VerifierResult.SUCCEEDED, value)
+
+    def add_record_contains(self, name: str, value: Optional[Any], collection: Iterable) -> None:
+        """Add to verifier check the presence of item in collection.
+
+        :param name: Name of record
+        :param value: Item to be checked
+        :param collection: Collection of items
+        """
+        if value is None:
+            self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
+        elif value not in collection:
+            self.add_record(
+                name,
+                VerifierResult.ERROR,
+                f"Value {value} is not in collection: {collection}",
+            )
+        else:
+            self.add_record(
+                name,
+                VerifierResult.SUCCEEDED,
+                f"Value {value} is in collection: {collection}",
+            )
 
     def add_record_bytes(
         self,
@@ -384,23 +412,27 @@ class Verifier:
                     break
         return ret
 
-    def validate(self) -> None:
+    def validate(self, colorize: bool = False) -> None:
         """Check the errors in the object.
 
+        :param colorize: Make the text colored with ANSI escape characters
         :raises SPSDKVerificationError: In case of any error it raises Whole source of errors.
         """
         if self.result is VerifierResult.ERROR:
-            raise SPSDKVerificationError(self.draw())
+            raise SPSDKVerificationError(
+                self.draw(results=[VerifierResult.ERROR], colorize=colorize)
+            )
 
-    def get_summary_table(self) -> str:
+    def get_summary_table(self, colorize: bool = True) -> str:
         """Get the summary table with verify results.
 
+        :param colorize: Make the text colored with ANSI escape characters
         :return: String table with summary results.
         """
         header: list[str] = []
         row: list[int] = []
         for res in VerifierResult:
-            header.append(VerifierResult.draw(res))
+            header.append(VerifierResult.draw(res, colorize=colorize))
             row.append(self.get_count([res]))
         pt = prettytable.PrettyTable(header)
         pt.align = "c"

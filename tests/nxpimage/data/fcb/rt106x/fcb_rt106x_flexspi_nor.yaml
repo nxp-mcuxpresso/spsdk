@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  FCB converted config.  ===========
@@ -111,189 +111,1483 @@ fcb_settings: # [Required], rt106x
     value: "0x0000" # [Required], busyOffset;  [0x07c-0x07d] Busy offset, valid value: 0-31
   busyBitPolarity: # [Optional], busyBitPolarity;  [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device is busy, 1 - busy flag is 0 when flash device is busy
     value: "0x0000" # [Required], busyBitPolarity;  [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device is busy, 1 - busy flag is 0 when flash device is busy
-  lookupTable_0: # [Optional], lookupTable_0;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x0a1804eb" # [Required], lookupTable_0;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_1: # [Optional], lookupTable_1;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x32041e00" # [Required], lookupTable_1;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_2: # [Optional], lookupTable_2;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00002604" # [Required], lookupTable_2;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_3: # [Optional], lookupTable_3;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_3;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_4: # [Optional], lookupTable_4;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x24240405" # [Required], lookupTable_4;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_5: # [Optional], lookupTable_5;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_5;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_6: # [Optional], lookupTable_6;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_6;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_7: # [Optional], lookupTable_7;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_7;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_8: # [Optional], lookupTable_8;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_8;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_9: # [Optional], lookupTable_9;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_9;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_10: # [Optional], lookupTable_10;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_10;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_11: # [Optional], lookupTable_11;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_11;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_12: # [Optional], lookupTable_12;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000406" # [Required], lookupTable_12;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_13: # [Optional], lookupTable_13;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_13;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_14: # [Optional], lookupTable_14;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_14;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_15: # [Optional], lookupTable_15;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_15;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_16: # [Optional], lookupTable_16;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_16;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_17: # [Optional], lookupTable_17;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_17;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_18: # [Optional], lookupTable_18;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_18;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_19: # [Optional], lookupTable_19;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_19;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_20: # [Optional], lookupTable_20;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_20;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_21: # [Optional], lookupTable_21;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_21;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_22: # [Optional], lookupTable_22;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_22;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_23: # [Optional], lookupTable_23;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_23;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_24: # [Optional], lookupTable_24;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_24;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_25: # [Optional], lookupTable_25;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_25;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_26: # [Optional], lookupTable_26;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_26;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_27: # [Optional], lookupTable_27;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_27;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_28: # [Optional], lookupTable_28;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_28;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_29: # [Optional], lookupTable_29;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_29;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_30: # [Optional], lookupTable_30;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_30;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_31: # [Optional], lookupTable_31;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_31;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_32: # [Optional], lookupTable_32;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_32;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_33: # [Optional], lookupTable_33;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_33;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_34: # [Optional], lookupTable_34;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_34;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_35: # [Optional], lookupTable_35;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_35;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_36: # [Optional], lookupTable_36;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_36;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_37: # [Optional], lookupTable_37;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_37;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_38: # [Optional], lookupTable_38;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_38;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_39: # [Optional], lookupTable_39;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_39;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_40: # [Optional], lookupTable_40;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_40;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_41: # [Optional], lookupTable_41;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_41;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_42: # [Optional], lookupTable_42;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_42;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_43: # [Optional], lookupTable_43;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_43;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_44: # [Optional], lookupTable_44;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_44;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_45: # [Optional], lookupTable_45;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_45;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_46: # [Optional], lookupTable_46;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_46;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_47: # [Optional], lookupTable_47;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_47;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_48: # [Optional], lookupTable_48;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_48;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_49: # [Optional], lookupTable_49;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_49;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_50: # [Optional], lookupTable_50;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_50;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_51: # [Optional], lookupTable_51;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_51;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_52: # [Optional], lookupTable_52;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_52;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_53: # [Optional], lookupTable_53;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_53;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_54: # [Optional], lookupTable_54;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_54;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_55: # [Optional], lookupTable_55;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_55;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_56: # [Optional], lookupTable_56;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_56;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_57: # [Optional], lookupTable_57;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_57;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_58: # [Optional], lookupTable_58;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_58;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_59: # [Optional], lookupTable_59;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_59;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_60: # [Optional], lookupTable_60;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_60;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_61: # [Optional], lookupTable_61;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_61;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_62: # [Optional], lookupTable_62;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_62;  [0x080-0x17f] Lookup table holds Flash command sequences
-  lookupTable_63: # [Optional], lookupTable_63;  [0x080-0x17f] Lookup table holds Flash command sequences
-    value: "0x00000000" # [Required], lookupTable_63;  [0x080-0x17f] Lookup table holds Flash command sequences
+  # -----------------------------------===== lookupTable_seq0_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000080, Width: 16b; Lookup table holds Flash command sequences 0, instruction 0
+  lookupTable_seq0_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0xEE'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  # -----------------------------------===== lookupTable_seq0_instr1 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000082, Width: 16b; Lookup table holds Flash command sequences 0, instruction 1
+  lookupTable_seq0_instr1:
+    OPERAND: '0x11'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq0_instr2:
+    OPERAND: '0x20'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: RADDR_DDR
+  lookupTable_seq0_instr3:
+    OPERAND: '0x04'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: DUMMY_DDR
+  lookupTable_seq0_instr4:
+    OPERAND: '0x04'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: READ_DDR
+  lookupTable_seq0_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq0_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq0_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq1_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000090, Width: 16b; Lookup table holds Flash command sequences 1, instruction 0
+  lookupTable_seq1_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x05'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq1_instr1:
+    OPERAND: '0x04'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: READ_SDR
+  lookupTable_seq1_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq1_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq1_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq1_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq1_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq1_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq2_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x000000A0, Width: 16b; Lookup table holds Flash command sequences 2, instruction 0
+  lookupTable_seq2_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x05'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq2_instr1:
+    OPERAND: '0xFA'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq2_instr2:
+    OPERAND: '0x20'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: RADDR_DDR
+  lookupTable_seq2_instr3:
+    OPERAND: '0x04'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: DUMMY_DDR
+  lookupTable_seq2_instr4:
+    OPERAND: '0x04'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: READ_DDR
+  lookupTable_seq2_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq2_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq2_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq3_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x000000B0, Width: 16b; Lookup table holds Flash command sequences 3, instruction 0
+  lookupTable_seq3_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x06'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq3_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq3_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq3_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq3_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq3_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq3_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq3_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq4_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x000000C0, Width: 16b; Lookup table holds Flash command sequences 4, instruction 0
+  lookupTable_seq4_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x06'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq4_instr1:
+    OPERAND: '0xF9'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq4_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq4_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq4_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq4_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq4_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq4_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq5_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x000000D0, Width: 16b; Lookup table holds Flash command sequences 5, instruction 0
+  lookupTable_seq5_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x21'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq5_instr1:
+    OPERAND: '0xDE'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq5_instr2:
+    OPERAND: '0x20'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: RADDR_DDR
+  lookupTable_seq5_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq5_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq5_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq5_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq5_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq6_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x000000E0, Width: 16b; Lookup table holds Flash command sequences 6, instruction 0
+  lookupTable_seq6_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x72'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq6_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq6_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq6_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq6_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: CMD_SDR
+  lookupTable_seq6_instr5:
+    OPERAND: '0x01'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: WRITE_SDR
+  lookupTable_seq6_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq6_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq7_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x000000F0, Width: 16b; Lookup table holds Flash command sequences 7, instruction 0
+  lookupTable_seq7_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x00'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq7_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq8_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000100, Width: 16b; Lookup table holds Flash command sequences 8, instruction 0
+  lookupTable_seq8_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0xDC'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq8_instr1:
+    OPERAND: '0x23'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq8_instr2:
+    OPERAND: '0x20'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: RADDR_DDR
+  lookupTable_seq8_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq8_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq8_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq8_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq8_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # -----------------------------------===== lookupTable_seq9_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000110, Width: 16b; Lookup table holds Flash command sequences 9, instruction 0
+  lookupTable_seq9_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x12'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq9_instr1:
+    OPERAND: '0xED'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq9_instr2:
+    OPERAND: '0x20'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: RADDR_DDR
+  lookupTable_seq9_instr3:
+    OPERAND: '0x04'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: WRITE_DDR
+  lookupTable_seq9_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq9_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq9_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq9_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ----------------------------------===== lookupTable_seq10_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000120, Width: 16b; Lookup table holds Flash command sequences 10, instruction 0
+  lookupTable_seq10_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x00'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq10_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ----------------------------------===== lookupTable_seq11_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000130, Width: 16b; Lookup table holds Flash command sequences 11, instruction 0
+  lookupTable_seq11_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x60'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 8PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq11_instr1:
+    OPERAND: '0x9F'
+    NUM_PADS: 8PAD
+    OPERATION_CODE: CMD_DDR
+  lookupTable_seq11_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq11_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq11_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq11_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq11_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq11_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ----------------------------------===== lookupTable_seq12_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000140, Width: 16b; Lookup table holds Flash command sequences 12, instruction 0
+  lookupTable_seq12_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x00'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq12_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ----------------------------------===== lookupTable_seq13_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000150, Width: 16b; Lookup table holds Flash command sequences 13, instruction 0
+  lookupTable_seq13_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x00'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq13_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ----------------------------------===== lookupTable_seq14_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000160, Width: 16b; Lookup table holds Flash command sequences 14, instruction 0
+  lookupTable_seq14_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x00'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq14_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ----------------------------------===== lookupTable_seq15_instr0 [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000170, Width: 16b; Lookup table holds Flash command sequences 15, instruction 0
+  lookupTable_seq15_instr0:
+    # ------------------------------------------===== OPERAND [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Instruction operand. Its values depends on used instruction
+    OPERAND: '0x00'
+    # -----------------------------------------===== NUM_PADS [Optional] =====------------------------------------------
+    # Description: Offset: 8b, Width: 2b, Number of pads used by instruction. Some instructions ignores this parameter.
+    # - 1PAD, (0): Single mode. One pad is used.
+    # - 2PAD, (1): Dual mode. Two pads are used.
+    # - 4PAD, (2): Quad mode. Four pads are used.
+    # - 8PAD, (3): Octal mode. Eight pads are used.
+    # Possible options: <1PAD, 2PAD, 4PAD, 8PAD>
+    NUM_PADS: 1PAD
+    # --------------------------------------===== OPERATION_CODE [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 6b, Instruction operation code.
+    # - STOP, (0): Stop execution and de-assert CS. Then, the next command sequence (to the same flash device) starts
+    # from instruction pointer 0.
+    # - CMD_SDR, (1): Transmit command code to Flash.
+    # - RADDR_SDR, (2): Transmit row address to Flash.
+    # - CADDR_SDR, (3): Transmit column address to Flash.
+    # - MODE1_SDR, (4): Transmit mode bits to Flash.
+    # - MODE2_SDR, (5): Transmit mode bits to Flash.
+    # - MODE4_SDR, (6): Transmit mode bits to Flash.
+    # - MODE8_SDR, (7): Transmit mode bits to Flash.
+    # - WRITE_SDR, (8): Transmit program data to Flash device.
+    # - READ_SDR, (9): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_SDR, (10): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_SDR, (11): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_SDR, (12): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_SDR, (13): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # - JMP_ON_CS, (31): Stop execution, de-assert CS and save operand[7:0] as the instruction start pointer for next
+    # sequence.Normally this instruction is used to support Execute-In-Place enhanced mode. See XIP enhanced mode for
+    # more details.This instruction is only allowed for AHB read commands. There is interrupt status bit set
+    # (INTR[IPCMDERR] or INTR[AHBCMDERR]) when using this instruction in IP command or AHB write command.
+    # - CMD_DDR, (33): Transmit command code to Flash.
+    # - RADDR_DDR, (34): Transmit row address to Flash.
+    # - CADDR_DDR, (35): Transmit column address to Flash.
+    # - MODE1_DDR, (36): Transmit mode bits to Flash.
+    # - MODE2_DDR, (37): Transmit mode bits to Flash.
+    # - MODE4_DDR, (38): Transmit mode bits to Flash.
+    # - MODE8_DDR, (39): Transmit mode bits to Flash.
+    # - WRITE_DDR, (40): Transmit program data to Flash device.
+    # - READ_DDR, (41): Receive read data from Flash device. Read data is put into AHB_RX_BUF or IP_RX_FIFO.
+    # - LEARN_DDR, (42): Receive read data or Preamble bit from Flash deviceThe FlexSPI controller will compare the data
+    # line bits with DLPR register to determine a correct sampling clock phase.
+    # - DATSZ_DDR, (43): Transmit read or program data size (byte number) to Flash device.
+    # - DUMMY_DDR, (44): Leave data lines undriven by the FlexSPI controller. Turnaround cycles are provided from host
+    # driving to device driving. num_pads determines the number of pads in input mode.
+    # - DUMMY_RWDS_DDR, (45): This instruction is similar to DUMMY_SDR/DUMMY_DDR instruction. The difference lies in the
+    # dummy cycle number.DQS pin is called RWDS in HyperBus specification. See Dummy instruction for more details.Set
+    # operand as 'Latency count' for HyperBus devices.
+    # Possible options: <STOP, CMD_SDR, RADDR_SDR, CADDR_SDR, MODE1_SDR, MODE2_SDR, MODE4_SDR, MODE8_SDR, WRITE_SDR,
+    # READ_SDR, LEARN_SDR, DATSZ_SDR, DUMMY_SDR, DUMMY_RWDS_SDR, JMP_ON_CS, CMD_DDR, RADDR_DDR, CADDR_DDR, MODE1_DDR,
+    # MODE2_DDR, MODE4_DDR, MODE8_DDR, WRITE_DDR, READ_DDR, LEARN_DDR, DATSZ_DDR, DUMMY_DDR, DUMMY_RWDS_DDR>
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr1:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr2:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr3:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr4:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr5:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr6:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  lookupTable_seq15_instr7:
+    OPERAND: '0x00'
+    NUM_PADS: 1PAD
+    OPERATION_CODE: STOP
+  # ---------------------------------------===== lutCustomSeq_0 [Optional] =====----------------------------------------
   lutCustomSeq_0: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
   lutCustomSeq_1: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
   lutCustomSeq_2: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
   lutCustomSeq_3: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
   lutCustomSeq_4: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
   lutCustomSeq_5: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
   lutCustomSeq_6: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
   lutCustomSeq_7: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
   lutCustomSeq_8: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
   lutCustomSeq_9: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
   lutCustomSeq_10: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
       reserved: 0 # [Optional], reserved; N/A
+  # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
   lutCustomSeq_11: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16

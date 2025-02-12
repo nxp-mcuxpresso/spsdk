@@ -1,4 +1,4 @@
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,13 +22,13 @@ common:
       title: OEM Random Share input
       description: Path to a file containing 16B of random seed data. If not specified, random seed will be generated.
       template_value: oem_seed.bin
-      format: file_name
+      format: optional_file
     oemEncMasterShare:
       type: string
       title: OEM Encrypted Master Share
       description: Path to a file containing encrypted OEM Master Share to restore a secure session
       template_value: oem_enc_master_share.bin
-      format: file_name
+      format: optional_file
     initialReset:
       type: boolean
       title: Initial device reset

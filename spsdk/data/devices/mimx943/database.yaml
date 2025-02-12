@@ -1,0 +1,339 @@
+# Copyright 2024-2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: i.MX 9 Applications Processors
+  spsdk_predecessor_name: mx943
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/i.MX94
+  memory_map:
+    code-tcm_ns:
+      start_int: 0x0FF80000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    code-tcm_s:
+      start_int: 0x1FF80000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    system-tcm_ns:
+      start_int: 0x20000000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    system-tcm_s:
+      start_int: 0x30000000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    cm7_itcm_ns:
+      start_int: 0x20380000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    cm7_itcm_s:
+      start_int: 0x30380000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    cm7_dtcm_ns:
+      start_int: 0x20400000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    cm7_dtcm_s:
+      start_int: 0x30400000
+      size_int: 0x80000
+      external: false
+      non_xip_type: int_ram
+    ocram_ns:
+      start_int: 0x20480000
+      size_int: 0x60000
+      external: false
+      non_xip_type: int_ram
+    ocram_s:
+      start_int: 0x30480000
+      size_int: 0x60000
+      external: false
+      non_xip_type: int_ram
+    flexspi1_ns:
+      start_int: 0x28000000
+      size_int: 0x08000000
+      external: true
+      mirror_of: flexspi1_s
+    flexspi1_s:
+      start_int: 0x38000000
+      size_int: 0x08000000
+      external: true
+    neutron_sram_ns:
+      start_int: 0x4AA00000
+      size_int: 0x00100000
+      external: false
+      mirror_of: neutron_sram_s
+      non_xip_type: int_ram
+    neutron_sram_s:
+      start_int: 0x5AA00000
+      size_int: 0x00100000
+      external: false
+      non_xip_type: int_ram
+    dram1_ns:
+      start_int: 0x80000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram1_s:
+      start_int: 0x90000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram2_ns:
+      start_int: 0xA0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram2_s:
+      start_int: 0xB0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram3_ns:
+      start_int: 0xC0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+    dram3_s:
+      start_int: 0xD0000000
+      size_int: 0x10000000
+      external: true
+      non_xip_type: ext_ram_ddr
+  isp:
+    rom:
+      protocol: sdps
+      interfaces: [usb]
+      usb:
+        vid: 0x1FC9
+        pid: 0x0027
+      protocol_params:
+        no_cmd: True
+        hid_ep1: True
+        hid_pack_size: 1020
+
+features:
+  # ======== Fuses description section ========
+  # fuses:
+  #   tool: nxpele
+  #   grouped_registers:
+  #     - uid: srkh
+  #       name: SRKH
+  #       width: 256
+  #       reversed: True
+  #       config_as_hexstring: True
+  #       description: "SHA256 hash digest of hash of four SRK keys"
+  #       sub_regs:
+  #         [
+  #           "fuse128",
+  #           "fuse129",
+  #           "fuse130",
+  #           "fuse131",
+  #           "fuse132",
+  #           "fuse133",
+  #           "fuse134",
+  #           "fuse135",
+  #         ]
+
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x204b_0000
+    size: 0x30000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_srk]
+    rot_type: "srk_table_ahab_v2"
+
+  # ======== DAT section ========
+  dat:
+    socc: 0x4D58005E # SOCC identification
+    based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    ele_cnt_version: 2 # DAT container is based on New AHAB container version 2
+    dac_version_is_swapped: True
+    sub_features: ["ele_pqc"]
+    test_address: 0x2048_0000
+    dmbox_ap_ix: 0
+
+  # ======== FCB section ========
+  # fcb:
+  #   mem_types: {}
+
+  # ======== AHAB section ========
+  ahab:
+    # sub_features: [certificate_supported]
+    containers_max_cnt: 3
+    valid_offset_minimal_alignment: 0x400
+    container_types: [2] # Supported container types
+    core_ids:
+      DUMMY_CORE: [0, "dummy", "Virtual dummy core (used for data)"]
+      CORTEX_M33: [1, "cortex-m33", "Cortex M33 - Boot core"]
+      CORTEX_A55: [2, "cortex-a55", "Cortex A55"]
+      ELE: [6, "ele", "EdgeLock Enclave"]
+      V2X_1: [9, "v2x-1", "V2X 1"]
+      V2X_2: [10, "v2x-2", "V2X 2"]
+      CORTEX_M7_1: [11, "cortex-m7-1", "Cortex M7 Core ID 1"]
+      CORTEX_M7_2: [12, "cortex-m7-2", "Functional Safety Cortex M7"]
+      CORTEX_M33_2: [13, "cortex-m33-2", "Functional Safety Cortex M33"]
+      DDR: [14, "ddr", "DDR Core"]
+
+    image_types:
+      application:
+        EXECUTABLE: [0x03, executable, Executable Image]
+        DATA: [0x04, data, Data Image]
+        OEI: [0x05, oei, OEI Image]
+        PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
+        DEK_VALIDATION_FCB_CHK:
+          [0x08, dek_validation_fcb_chk, DEK validation FCB check Image]
+        PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+        EXECUTABLE_FAST_BOOT_IMAGE:
+          [0x0A, executable_fast_boot_image, Executable fast boot Image]
+        OEI_DDR: [0x0D, oei_ddr, Executable boot Image]
+        V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
+      ele:
+        ELE_AS_IMAGE: [0x05, ele_as_image, EdgeLock Enclave Image in OEM Image]
+        ELE: [0x06, ele, EdgeLock Enclave Image]
+
+      v2x:
+        V2X_AS_IMAGE: [0x0A, v2x_as_image, V2X image as OEM Image]
+        V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
+        V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
+        V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
+
+    image_types_mapping:
+      ele: [6]
+      v2x: [0xb0, 0xc0, 0xd0]
+
+    # AHAB extra images
+    oei_ddr_load_address: 0x1ffc0000
+    oei_ddr_entry_point: 0x1ffc0001
+    oei_ddr_core_id: cortex-m33
+    oei_ddr_image_type: oei
+    oei_ddr_image_size_alignment: 0x400
+    oei_ddr_qb_data_mandatory: True
+    # oei_ddr_gap_after_image: 0x10000
+
+    system_manager_load_address: 0x1ffc0000
+    system_manager_entry_point: 0x1ffc0000
+    system_manager_core_id: cortex-m33
+    system_manager_image_size_alignment: 0x400
+
+    cortex_m7_app_load_address: 0x303c0000
+    cortex_m7_app_entry_point: 0
+    cortex_m7_app_core_id: cortex-m7-1
+    cortex_m7_app_meta_data_start_cpu_id: 1
+    cortex_m7_app_image_size_alignment: 0x400
+
+    cortex_m7_2_app_load_address: 0x302C0000
+    cortex_m7_2_app_entry_point: 0
+    cortex_m7_2_app_core_id: cortex-m7-2
+    cortex_m7_2_app_meta_data_start_cpu_id: 7
+    cortex_m7_2_app_image_size_alignment: 0x400
+
+    cortex_m33_2_app_load_address: 0x309c0000
+    cortex_m33_2_app_entry_point: 0x1ffc0000
+    cortex_m33_2_app_core_id: cortex-m33-2
+    cortex_m33_2_app_meta_data_start_cpu_id: 8
+    cortex_m33_2_app_image_size_alignment: 0x400
+
+    spl_load_address: 0x20480000
+    spl_core_id: cortex-a55
+    spl_meta_data_start_cpu_id: 2
+    spl_image_size_alignment: 0x400
+
+    atf_load_address: 0x8a200000
+    atf_core_id: cortex-a55
+    atf_meta_data_start_cpu_id: 2
+    atf_image_size_alignment: 0x400
+
+    uboot_load_address: 0x90200000
+    uboot_core_id: cortex-a55
+    uboot_meta_data_start_cpu_id: 2
+    uboot_image_size_alignment: 0x400
+
+    tee_load_address: 0x8c000000
+    tee_core_id: cortex-a55
+    tee_meta_data_start_cpu_id: 2
+    tee_image_size_alignment: 0x400
+
+    extra_images:
+      [
+        double_authentication,
+        oei_ddr,
+        system_manager,
+        cortex_m7_app,
+        cortex_m7_2_app,
+        cortex_m33_2_app,
+        spl,
+        atf,
+        uboot,
+        tee,
+      ]
+  # ======== EdgeLock Enclave section ========
+  ele: {}
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      serial_downloader:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          #not_used: 0xC00
+          primary_image_container_set: 0x1_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      sd:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      # flexspi_nand:
+      #   segments:
+      #     xmcd: 0x00
+      #     primary_image_container_set: 0x400
+      #     secondary_image_container_set_ahab: -1 # Just behind previous segment
+      recovery_spi:
+        note: Connected to LPSPI1/2for Low power boot and  LPSPI/3/4 for Single boot. SPI NOR recovery image
+        segments:
+          primary_image_container_set: 0x00
+          secondary_image_container_set: -1 # Just behind previous segment
+
+  # # ======== OTFAD section ========
+  # otfad:
+
+  #   # ======== Device Hardware Security Module (HSM) section ========
+  # devhsm: EdgeLock 2 Go
+
+  # ======== Misc signing section ========
+  signing:
+    pss_padding: true
+
+  # ======== Fastboot ========
+  fastboot:
+    address: 0x9280_0000
+    size: 0x2000_0000
+
+  # ======== nxpuuu ==========
+  nxpuuu: {}

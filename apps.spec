@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -61,7 +61,7 @@ for pkg in excluded_imports:
         datas.append((mod_path, os.path.basename(mod_path)))
 
 
-hidden_imports = {"pkg_resources"}
+hidden_imports = {"pkg_resources", "spsdk_pyocd", "spsdk_lauterbach", "pyocd.rtos.threadx"}
 
 
 # List of packages that should have there Distutils entrypoints included.
@@ -99,7 +99,7 @@ def create_runtime_hook_entry_points(
 
 
 entries = create_runtime_hook_entry_points(
-    ["pyocd.probe", "pyocd_pemicro", "pyocd", "pyocd_pemicro"],
+    [],
     template_path="tools/pyinstaller/pyinst_pkg_hook.j2",
 )
 # take from entry items the package name - line is in form "package:class"
@@ -137,6 +137,7 @@ except ImportError:
 # add libuuu libraries
 try:
     import libuuu
+
     uuudll = libuuu.LibUUU().DLL
     shared_binaries.append((uuudll, "libuuu/lib"))
 except OSError:
@@ -201,9 +202,10 @@ def executable(analysis: Analysis, name: str, version: str) -> EXE:
 
 
 # analysis
-a_bl = analyze(["spsdk/apps/blhost.py"])
-a_sdp = analyze(["spsdk/apps/sdphost.py"])
-a_ndm = analyze(["spsdk/apps/nxpdebugmbox.py"])
+a_blhost = analyze(["spsdk/apps/blhost.py"])
+a_sdphost = analyze(["spsdk/apps/sdphost.py"])
+a_sdpshost = analyze(["spsdk/apps/sdpshost.py"])
+a_nxpdebugmbox = analyze(["spsdk/apps/nxpdebugmbox.py"])
 a_pfr = analyze(["spsdk/apps/pfr.py"])
 a_nxpele = analyze(["spsdk/apps/nxpele.py"])
 a_nxpdevhsm = analyze(["spsdk/apps/nxpdevhsm.py"])
@@ -216,17 +218,19 @@ a_ifr = analyze(["spsdk/apps/ifr.py"])
 a_nxpcrypto = analyze(["spsdk/apps/nxpcrypto.py"])
 a_nxpmemcfg = analyze(["spsdk/apps/nxpmemcfg.py"])
 a_nxpwpc = analyze(["spsdk/apps/nxpwpc.py"])
-a_el2go = analyze(["spsdk/apps/el2go.py"])
+a_el2go_host = analyze(["spsdk/apps/el2go.py"])
 a_dk6prog = analyze(["spsdk/apps/dk6prog.py"])
 a_lpcprog = analyze(["spsdk/apps/lpcprog.py"])
 a_nxpdice = analyze(["spsdk/apps/nxpdice.py"])
 a_nxpfuses = analyze(["spsdk/apps/nxpfuses.py"])
+a_nxpuuu = analyze(["spsdk/apps/nxpuuu.py"])
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
 MERGE(
-    (a_bl, "blhost", "blhost"),
-    (a_sdp, "sdphost", "sdphost"),
-    (a_ndm, "nxpdebugmbox", "nxpdebugmbox"),
+    (a_blhost, "blhost", "blhost"),
+    (a_sdphost, "sdphost", "sdphost"),
+    (a_sdpshost, "sdpshost", "sdpshost"),
+    (a_nxpdebugmbox, "nxpdebugmbox", "nxpdebugmbox"),
     (a_pfr, "pfr", "pfr"),
     (a_nxpele, "nxpele", "nxpele"),
     (a_nxpdevhsm, "nxpdevhsm", "nxpdevhsm"),
@@ -239,70 +243,73 @@ MERGE(
     (a_nxpcrypto, "nxpcrypto", "nxpcrypto"),
     (a_nxpmemcfg, "nxpmemcfg", "nxpmemcfg"),
     (a_nxpwpc, "nxpwpc", "nxpwpc"),
-    (a_el2go, "el2go-host", "el2go-host"),
+    (a_el2go_host, "el2go-host", "el2go-host"),
     (a_dk6prog, "dk6prog", "dk6prog"),
     (a_lpcprog, "lpcprog", "lpcprog"),
-    (a_nxpdice, "lnxpdice", "lnxpdice"),
+    (a_nxpdice, "nxpdice", "nxpdice"),
     (a_nxpfuses, "nxpfuses", "nxpfuses"),
+    (a_nxpuuu, "nxpuuu", "nxpuuu"),
 )
 
 
+# fmt: off
 # executables
-exe_bl = executable(a_bl, "blhost", "tools/pyinstaller/blhost_version_info.txt")
-exe_sdp = executable(a_sdp, "sdphost", "tools/pyinstaller/sdphost_version_info.txt")
-exe_ndm = executable(a_ndm, "nxpdebugmbox", "tools/pyinstaller/nxpdebugmbox_version_info.txt")
+exe_blhost = executable(a_blhost, "blhost", "tools/pyinstaller/blhost_version_info.txt")
+exe_sdphost = executable(a_sdphost, "sdphost", "tools/pyinstaller/sdphost_version_info.txt")
+exe_sdpshost = executable(a_sdpshost, "sdpshost", "tools/pyinstaller/sdpshost_version_info.txt")
+exe_nxpdebugmbox = executable(a_nxpdebugmbox, "nxpdebugmbox", "tools/pyinstaller/nxpdebugmbox_version_info.txt")
 exe_pfr = executable(a_pfr, "pfr", "tools/pyinstaller/pfr_version_info.txt")
 exe_nxpele = executable(a_nxpele, "nxpele", "tools/pyinstaller/nxpele_version_info.txt")
 exe_nxpdevhsm = executable(a_nxpdevhsm, "nxpdevhsm", "tools/pyinstaller/nxpdevhsm_version_info.txt")
 exe_nxpimage = executable(a_nxpimage, "nxpimage", "tools/pyinstaller/nxpimage_version_info.txt")
-exe_shadowregs = executable(
-    a_shadowregs, "shadowregs", "tools/pyinstaller/shadowregs_version_info.txt"
-)
+exe_shadowregs = executable(a_shadowregs, "shadowregs", "tools/pyinstaller/shadowregs_version_info.txt")
 exe_tphost = executable(a_tphost, "tphost", "tools/pyinstaller/tphost_version_info.txt")
 exe_tpconfig = executable(a_tpconfig, "tpconfig", "tools/pyinstaller/tpconfig_version_info.txt")
-exe_nxpdevscan = executable(
-    a_nxpdevscan, "nxpdevscan", "tools/pyinstaller/nxpdevscan_version_info.txt"
-)
+exe_nxpdevscan = executable(a_nxpdevscan, "nxpdevscan", "tools/pyinstaller/nxpdevscan_version_info.txt")
 exe_ifr = executable(a_ifr, "ifr", "tools/pyinstaller/ifr_version_info.txt")
 exe_nxpcrypto = executable(a_nxpcrypto, "nxpcrypto", "tools/pyinstaller/nxpcrypto_version_info.txt")
 exe_nxpmemcfg = executable(a_nxpmemcfg, "nxpmemcfg", "tools/pyinstaller/nxpmemcfg_version_info.txt")
 exe_nxpwpc = executable(a_nxpwpc, "nxpwpc", "tools/pyinstaller/nxpwpc_version_info.txt")
-exe_el2go = executable(a_el2go, "el2go-host", "tools/pyinstaller/el2go_version_info.txt")
+exe_el2go_host = executable(a_el2go_host, "el2go-host", "tools/pyinstaller/el2go_version_info.txt")
 exe_dk6prog = executable(a_dk6prog, "dk6prog", "tools/pyinstaller/dk6prog_version_info.txt")
 exe_lpcprog = executable(a_lpcprog, "lpcprog", "tools/pyinstaller/lpcprog_version_info.txt")
 exe_nxpdice = executable(a_nxpdice, "nxpdice", "tools/pyinstaller/nxpdice_version_info.txt")
-exe_nxpfuses = executable(
-    a_nxpfuses, "nxpfuses", "tools/pyinstaller/nxpfuses_version_info.txt"
-)
-
+exe_nxpfuses = executable(a_nxpfuses, "nxpfuses", "tools/pyinstaller/nxpfuses_version_info.txt")
+exe_nxpuuu = executable(a_nxpuuu, "nxpuuu", "tools/pyinstaller/nxpuuu_version_info.txt")
+# fmt: on
 # collect all bundles together
 coll_apps = COLLECT(
-    exe_bl,
-    exe_sdp,
-    exe_ndm,
+    exe_blhost,
+    exe_sdphost,
+    exe_nxpdebugmbox,
     exe_pfr,
     exe_nxpele,
     exe_nxpdevhsm,
+    exe_nxpdice,
     exe_nxpimage,
+    exe_nxpuuu,
     exe_shadowregs,
     exe_tphost,
     exe_tpconfig,
     exe_nxpdevscan,
     exe_ifr,
     exe_nxpcrypto,
+    exe_nxpfuses,
     exe_nxpmemcfg,
     exe_nxpwpc,
-    exe_el2go,
+    exe_el2go_host,
     exe_dk6prog,
-    a_bl.binaries,
-    a_bl.zipfiles,
-    a_bl.datas,
-    a_sdp.binaries,
-    a_sdp.zipfiles,
-    a_sdp.datas,
-    a_ndm.binaries,
-    a_ndm.zipfiles,
-    a_ndm.datas,
+    exe_lpcprog,
+    exe_sdpshost,
+    a_blhost.binaries,
+    a_blhost.zipfiles,
+    a_blhost.datas,
+    a_sdphost.binaries,
+    a_sdphost.zipfiles,
+    a_sdphost.datas,
+    a_nxpdebugmbox.binaries,
+    a_nxpdebugmbox.zipfiles,
+    a_nxpdebugmbox.datas,
     a_pfr.binaries,
     a_pfr.zipfiles,
     a_pfr.datas,
@@ -339,18 +346,21 @@ coll_apps = COLLECT(
     a_nxpwpc.binaries,
     a_nxpwpc.zipfiles,
     a_nxpwpc.datas,
-    a_el2go.binaries,
-    a_el2go.zipfiles,
-    a_el2go.datas,
+    a_el2go_host.binaries,
+    a_el2go_host.zipfiles,
+    a_el2go_host.datas,
     a_dk6prog.binaries,
     a_dk6prog.zipfiles,
     a_dk6prog.datas,
     a_lpcprog.binaries,
     a_lpcprog.zipfiles,
     a_lpcprog.datas,
-    a_lpcprog.binaries,
-    a_lpcprog.zipfiles,
-    a_lpcprog.datas,
+    a_nxpfuses.datas,
+    a_nxpfuses.binaries,
+    a_nxpfuses.zipfiles,
+    a_nxpuuu.datas,
+    a_nxpuuu.binaries,
+    a_nxpuuu.zipfiles,
     strip=False,
     upx=True,
     upx_exclude=[],

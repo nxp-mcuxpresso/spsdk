@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of AHAB container Image Array Entry support."""
@@ -15,7 +15,7 @@ from typing_extensions import Self
 
 from spsdk.__version__ import version
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import Container, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
     BINARY_IMAGE_ALIGNMENTS,
@@ -1139,6 +1139,13 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
         ]
 
 
+class IaeUPower(ImageArrayEntryTemplates):
+    """Class to handle uPower for AHAB Image array entries."""
+
+    IMAGE_NAME: str = "uPower"
+    KEY: str = "upower"
+
+
 class IaeSPL(ImageArrayEntryTemplates):
     """Class to handle SPL for AHAB Image array entries."""
 
@@ -1191,11 +1198,46 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
             binary_image += lpddr_imem_qb
             binary_image += lpddr_dmem_qb
 
-        return [
+        ret = [
             cls._create_image_array_entry(
                 iae_cls=iae_cls, binary=binary_image, chip_config=chip_config, config=config
             )
         ]
+
+        if quick_boot:
+            db = get_db(chip_config.base.family, chip_config.base.revision)
+            qb_data_mandatory = db.get_bool(
+                DatabaseManager.AHAB, f"{cls.KEY}_qb_data_mandatory", False
+            )
+            qb_data = config.get("qb_data")
+            if qb_data_mandatory and qb_data is None:
+                raise SPSDKValueError("The 'qb_data' is mandatory in this configuration.")
+
+            if qb_data:
+                qb_data_binary = load_binary(qb_data, search_paths)
+
+                meta_data = iae_cls.create_meta()
+                image_type = chip_config.base.image_types["application"].from_attr("oei_ddr").tag
+
+                flags = iae_cls.create_flags(
+                    image_type=image_type, core_id=0, hash_type=AHABSignHashAlgorithmV1.SHA384
+                )
+                qb_iae = iae_cls(
+                    chip_config=chip_config,
+                    image=qb_data_binary,
+                    image_offset=0,
+                    load_address=0,
+                    entry_point=0,
+                    flags=flags,
+                    image_meta_data=meta_data,
+                    image_name=cls.IMAGE_NAME,
+                    gap_after_image=0,
+                    image_size_alignment=64 * 1024,
+                )
+                qb_iae.image_size = 0
+                ret.append(qb_iae)
+
+        return ret
 
 
 class IaeOEITCM(ImageArrayEntryTemplates):
@@ -1212,11 +1254,25 @@ class IaeSystemManager(ImageArrayEntryTemplates):
     KEY: str = "system_manager"
 
 
+class IaeCortexM33_2App(ImageArrayEntryTemplates):
+    """Class to handle Additional Cortex M33 core 2 application for AHAB Image array entries."""
+
+    IMAGE_NAME: str = "Additional Cortex M33 application running on core 2"
+    KEY: str = "cortex_m33_2_app"
+
+
 class IaeCortexM7App(ImageArrayEntryTemplates):
     """Class to handle Additional Cortex M7 application for AHAB Image array entries."""
 
     IMAGE_NAME: str = "Additional Cortex M7 application"
     KEY: str = "cortex_m7_app"
+
+
+class IaeCortexM7_2App(ImageArrayEntryTemplates):
+    """Class to handle Additional Cortex M7 core 2 application for AHAB Image array entries."""
+
+    IMAGE_NAME: str = "Additional Cortex M7 application running on core 2"
+    KEY: str = "cortex_m7_2_app"
 
 
 class IaeATF(ImageArrayEntryTemplates):

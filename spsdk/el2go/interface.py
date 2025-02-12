@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -73,6 +73,8 @@ class EL2GOInterfaceHandler:
         interface: Optional[str] = "mboot",
         fb_addr: Optional[int] = None,
         fb_size: Optional[int] = None,
+        usb_path: Optional[str] = None,
+        usb_serial: Optional[str] = None,
     ) -> "EL2GOInterfaceHandler":
         """Get EL2GO interface handler based on the config.
 
@@ -82,6 +84,8 @@ class EL2GOInterfaceHandler:
         :param interface: Interface, defaults to "mboot"
         :param fb_addr: Address of FB buffer for override, defaults to None
         :param fb_size: Size of FB buffer for override, defaults to None
+        :param usb_path: USB path, defaults to None
+        :param usb_serial: USB serial, defaults to None
         :raises SPSDKError: If family or port is not provided where required
         :return: Respective class
         """
@@ -187,7 +191,7 @@ class EL2GOInterfaceHandler:
         """Write memory."""
 
     @abstractmethod
-    def send_command(self, command: str) -> str:
+    def send_command(self, command: str, no_exit: bool = False) -> str:
         """Send command."""
 
     @abstractmethod
@@ -300,7 +304,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         with self.device as device:
             device.reset(reopen=False)
 
-    def send_command(self, command: str) -> str:
+    def send_command(self, command: str, no_exit: bool = False) -> str:
         """Send command."""
         logger.error(f"Send command {command} is not implemented for mboot")
         raise SPSDKError("Send command is not supported")
@@ -409,11 +413,11 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
             raise SPSDKError("Wrong instance of device, must be Uboot")
         self.device.write_memory(address, data)
 
-    def send_command(self, command: str) -> str:
+    def send_command(self, command: str, no_exit: bool = False) -> str:
         """Send command to the target."""
         if not isinstance(self.device, (UbootFastboot, UbootSerial)):
             raise SPSDKError("Wrong instance of device, must be Uboot")
-        self.device.write(command)
+        self.device.write(command, no_exit)
         return self.device.read_output()
 
     def run_provisioning(

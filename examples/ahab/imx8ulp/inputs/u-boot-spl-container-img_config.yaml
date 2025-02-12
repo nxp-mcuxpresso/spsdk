@@ -1,0 +1,79 @@
+# ========================  Advanced High-Assurance Boot Configuration template for mimx8ulp.  =========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimx8ulp, mimx9131, mimx9352, mimx9596, mimxrt1181, mimxrt1182, mimxrt1187, mimxrt1189>
+family: mimx8ulp
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, a2, latest>
+revision: latest
+# -----------------------------------------===== Target memory [Optional] =====-----------------------------------------
+# Description: Target memory for AHAB container
+# Possible options: <serial_downloader, standard, nand_2k, nand_4k>
+target_memory: serial_downloader
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output AHAB file name
+output: outputs/u-boot-spl-container.img
+# ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
+# Description: The order of containers in the list defines the order in AHAB.
+containers:
+  # ====================================================================================================================
+  #                                          == List of possible 2 options. ==
+  #                                        Options [binary_container, container]
+  # ====================================================================================================================
+
+  #  =========================== [Example of possible configuration: #0 , erase if not used] ============================
+  # -----------------------------------===== Binary AHAB container [Required] =====-----------------------------------
+  # Description: Binary Container format to add to AHAB image, Typically it could be used to add ELE Firmware.
+  - binary_container:
+      # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
+      # Description: The binary file that contains AHAB "my_binary_container.bin
+      path: inputs/mx8ulpa2-ahab-container.img
+
+    #  =========================== [Example of possible configuration: #1 , erase if not used] ============================
+    # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
+    # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
+    # container.
+  - container:
+      # --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
+      # Description: Defines which set is used to authenticate the container.
+      # Possible options: <none, oem, nxp>
+      srk_set: none
+
+      # ================================================================================================================
+      #                     == Configuration of AHAB Container images (array of multiple images) ==
+      # ================================================================================================================
+      # ---------------------------------------===== Image array [Required] =====---------------------------------------
+      # Description: Array of image entries.
+      images:
+        # ==============================================================================================================
+        #                                       == List of possible 5 options. ==
+        #           Options [uPower, SPL, Uboot ATF, Uboot, TEE Trusted Execution Environment, General Image Entry]
+        # ==============================================================================================================
+
+        #  ===================== [Example of possible configuration: #0 uPower, erase if not used] ======================
+        # uPower firmware
+        # Image array default settings. Can be overridden by definitions that are hidden in the template:
+        # load_address:                  0x0000000028300200
+        # image_type:                    executable
+        # core_id:                       cortex-a53
+        # hash_type:                     SHA384
+        # ---------------------------------------===== uPower [Required] =====----------------------------------------
+        # Description: uPower firmware
+        - upower: upower.bin
+
+        #  ======================= [Example of possible configuration: #1 SPL, erase if not used] =======================
+        # U-Boot SPL (Secondary program loader)
+        # Image array default settings. Can be overridden by definitions that are hidden in the template:
+        # load_address:                  0x0000000022020000
+        # image_type:                    executable
+        # core_id:                       cortex-a55
+        # meta_data_start_cpu_id:        2
+        # hash_type:                     SHA384
+        # -----------------------------------------===== SPL [Required] =====-----------------------------------------
+        # Description: SPL firmware
+        - spl: u-boot-spl.bin-imx8ulpevk-sd

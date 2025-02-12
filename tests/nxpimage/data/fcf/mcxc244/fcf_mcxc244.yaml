@@ -1,0 +1,35 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ======================================  Flash Configuration Field for mcxc244.  ======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mcxc041, mcxc141, mcxc142, mcxc143, mcxc144, mcxc242, mcxc243, mcxc244, mcxc443, mcxc444>
+family: mcxc244
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# --------------------------------------------===== mcxc244 [Required] =====--------------------------------------------
+fcf:
+  # -----------------------------------===== BACKDOOR_COMPARISON_KEY [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000000, Width: 64b; Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command
+  # and Unsecuring the Chip Using Backdoor Key Access.
+  BACKDOOR_COMPARISON_KEY: 0000000000000000
+  # --------------------------------------------===== FPROT [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Program flash protection bytes. Refer to the description of the Program
+  # Flash Protection Registers (FPROT0-3).
+  FPROT: '0x00000000'
+  # --------------------------------------------===== FSEC [Optional] =====---------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b; Flash security byte. Refer to the description of the Flash Security
+  # Register (FSEC).
+  FSEC: '0x00'
+  # --------------------------------------------===== FOPT [Optional] =====---------------------------------------------
+  # Description: Offset: 0x0000000D, Width: 8b; Flash nonvolatile option byte. Refer to the description of the Flash
+  # Option Register (FOPT).
+  FOPT: '0x00'

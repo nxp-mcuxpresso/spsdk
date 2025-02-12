@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # =======================  Configuration of EdgeLock 2GO Offline Provisioning flow for mcxn947  ========================
@@ -24,7 +24,7 @@ url: https://api.qa.sb.edgelock2go.com
 api_key: ~/.el2go/qa_token.txt
 # ----------------------------------------===== Device Group ID [Required] =====----------------------------------------
 # Description: Device Group ID in which the connected secure element needs to be assigned
-device_group_id: 633
+device_group_id: 648
 # -----------------------------------------===== Product 12NC [Required] =====------------------------------------------
 # Description: Product 12NC registered in EdgeLock 2GO
 nc12: 340000274521

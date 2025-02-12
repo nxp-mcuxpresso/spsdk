@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -62,6 +62,8 @@ def test_export_has_plugin():
         "nxpimage bootable-image fcb export",
         "nxpimage bootable-image xmcd export",
         "nxpimage iee export",
+        "nxpimage bca export",
+        "nxpimage fcf export",
         "nxpimage otfad export",
         "nxpimage tz export",
         "nxpcrypto rot export",

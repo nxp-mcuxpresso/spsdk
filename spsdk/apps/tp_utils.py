@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -349,8 +349,8 @@ def print_device_table(intfs: list[TpIntfDescription]) -> str:
     table.align = "l"
     table.header = True
     table.border = True
-    table.hrules = prettytable.HEADER
-    table.vrules = prettytable.NONE
+    table.hrules = prettytable.HRuleStyle.HEADER
+    table.vrules = prettytable.VRuleStyle.NONE
     for i, intf in enumerate(intfs):
         fields = [
             colorama.Fore.YELLOW + str(i),

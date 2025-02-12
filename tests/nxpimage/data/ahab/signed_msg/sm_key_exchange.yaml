@@ -1,10 +1,10 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ================================  Signed message Configuration template for rt118x.  =================================
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # ------------------------------------------===== MCU family [Required] =====-------------------------------------------
 # Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
@@ -16,10 +16,10 @@ family: rt118x
 revision: latest
 # ---------------------------------------===== Output file name [Required] =====----------------------------------------
 # Description: Output Signed Message file name
-output: signed_message.bin
+output: ahab/signed_msg/signed_msg_key_exchange.bin
 
 # ======================================================================================================================
-#                                            == Settings of Signed Message ==                                           
+#                                            == Settings of Signed Message ==
 # ======================================================================================================================
 # -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
 # Description: Defines which set is used to authenticate the signed message.
@@ -49,7 +49,7 @@ signing_key: ../../_data/keys/ecc256/srk1_ecc256.pem
 #signature_provider: type=file;file_path=my_prv_key.pem
 
 # ======================================================================================================================
-#                                    == Configuration of Signed Message SRK table ==                                    
+#                                    == Configuration of Signed Message SRK table ==
 # ======================================================================================================================
 # -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
 # Description: SRK (Super Root key) table definition.
@@ -72,7 +72,7 @@ srk_table:
 #iv_path: my_IV.txt
 
 # ======================================================================================================================
-#                                               == Settings of Message ==                                               
+#                                               == Settings of Message ==
 # ======================================================================================================================
 message:
   # -------------------------------------===== Certificate version [Optional] =====-------------------------------------

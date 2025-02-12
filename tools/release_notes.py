@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -90,13 +90,13 @@ class RecordsList(list[TicketRecord]):
     def save(self, file_path: str) -> None:
         """Store data for later custom re-use/inspection."""
         # to load data back, use object_hook=lambda x: TicketRecord(**x)
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump([x._asdict() for x in self], f, indent=2)
 
     @classmethod
     def load(cls, file_path: str) -> "RecordsList":
         """Load previously saved RecordList."""
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f, object_hook=lambda x: TicketRecord(**x))
         return cls(data)
 

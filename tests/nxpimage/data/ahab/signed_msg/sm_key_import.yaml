@@ -1,0 +1,134 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Signed Message converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: mimxrt1189  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'mimxrt1189']
+revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
+output: ahab/signed_msg/signed_msg_key_import.bin # [Required], Output file name; Output Signed Message file name
+# ----------------------------------------------------------------------------------------------------
+#                                   == Settings of Signed Message ==
+# ----------------------------------------------------------------------------------------------------
+srk_set: oem # [Required], Super Root Key (SRK) set; Defines which set is used to authenticate the signed message; Possible options:['none', 'oem', 'nxp']
+used_srk_id: 0 # [Required], Used SRK; Which key from SRK set is being used.
+srk_revoke_mask: 0 # [Required], SRK revoke mask; Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
+fuse_version: 0 # [Required], Fuse version; The value must be equal or greater than the version stored in fuses to allow loading this container.
+sw_version: 0 # [Required], Software version; Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
+signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem # [Required], Signed Message container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
+# ----------------------------------------------------------------------------------------------------
+#                           == Configuration of Signed Message SRK table ==
+# ----------------------------------------------------------------------------------------------------
+srk_table: # [Required], SRK Table; SRK (Super Root key) table definition.
+  srk_array:  # [Required], Super Root Key (SRK) table; Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms are: RSASSA-PSS or ECDSA. Supported hash algorithms: sha256, sha384, sha512. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096. Certificate may be of Certificate Authority.
+    - ../../_data/keys/ecc256/srk0_ecc256.pem
+    - ../../_data/keys/ecc256/srk1_ecc256.pem
+    - ../../_data/keys/ecc256/srk2_ecc256.pem
+    - ../../_data/keys/ecc256/srk3_ecc256.pem
+# ----------------------------------------------------------------------------------------------------
+#                                      == Settings of Message ==
+# ----------------------------------------------------------------------------------------------------
+message: # [Required]
+  cert_version: 0  # [Optional], Certificate version
+  cert_permission: 0 # [Optional], Certificate permission, to be used in future. The stated permission must allow the operation requested by the signed message.
+  issue_date: 2025-01 # [Optional], Issue date; Optional Issue date of message, if not defined the current date is used. The format must be following: 'YYYY-MM'
+  uuid: 5C3C74B6C0204467BC5AF5D28DC75628 # [Required], Device UUID; Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug authentication protocol could provide this value. Hex string format (hexadecimal string without '0x').
+  command: # [Required]
+    # ----------------------------------------===== Key import [Required] =====-----------------------------------------
+    # Description: This message is designed to import a symmetric key or a private key of an asymmetric key pair. The
+    # imported key must be encrypted (except specific cases like SKRH). The key used to decrypt the imported key must
+    # have the following attributes; -  DECRYPT usage; -  A wrapping key algorithm as permitted algorithm (detailed in
+    # next sections). User must import symmetric key or private key from an asymmetric keypair. For RSA asymmetric
+    # private keys, it must be the concatenation of private exponent followed by the modulus. To be valid, all key
+    # attributes of the imported key must be coherent. If attributes are invalid, an error is returned.
+    KEY_IMPORT_REQ:
+      # ----------------------------------===== Key ID [Conditionally required] =====-----------------------------------
+      # Description: Key store ID where to store the imported key. It must be the key store ID related to the key
+      # management handle set in the command API
+      key_id: 1
+      # ---------------------------===== Key import algorithm [Conditionally required] =====----------------------------
+      # Description:
+      #  KEY       VALUE
+      #  MD5       0x0200000
+      #  SHA1      0x02000005
+      #  SHA224    0x02000008
+      #  SHA256    0x02000009
+      #  SHA384    0x0200000A
+      #  SHA512    0x0200000B
+      #  defaults to SHA256
+      # Possible options: <MD5, SHA1, SHA224, SHA256, SHA384, SHA512>
+      key_import_algorithm: SHA256
+      # -----------------------------===== Derived key usage [Conditionally required] =====-----------------------------
+      # Description: Permission usage list. List of possible permissions:
+      #  Cache           0x00000004  Permission to cache the key in the ELE internal secure memory. This usage is set by
+      # default by ELE FW for all keys generated or imported.
+      #  Encrypt         0x00000100  Permission to encrypt a message with the key. It could be cipher encryption, AEAD
+      # encryption or asymmetric encryption operation.
+      #  Decrypt         0x00000200  Permission to decrypt a message with the key. It could be cipher decryption, AEAD
+      # decryption or asymmetric decryption operation.
+      #  Sign message    0x00000400  Permission to sign a message with the key. It could be a MAC generation or an
+      # asymmetric message signature operation.
+      #  Verify message  0x00000800  Permission to verify a message signature with the key. It could be a MAC
+      # verification or an asymmetric message signature verification operation.
+      #  Sign hash       0x00001000  Permission to sign a hashed message with the key with an asymmetric signature
+      # operation. Setting this permission automatically sets the Sign Message usage.
+      #  Verify hash     0x00002000  Permission to verify a hashed message signature with the key with an asymmetric
+      # signature verification operation.
+      #  Setting this permission automatically sets the Verify Message usage.
+      #  Derive          0x00004000  Permission to derive other keys from this key.
+      key_usage:
+        - Derive
+      # ------------------------------===== Import key type [Conditionally required] =====------------------------------
+      # Description:
+      #  Key type          Value   Key size in bits
+      #  AES               0x2400  128/192/256
+      #  HMAC              0x1100  224/256/384/512
+      #  DERIVE            0x1200  256/384
+      #  OEM_IMPORT_MK_SK  0x9200  128/192/256
+      # Possible options: <AES SHA256, HMAC, DERIVE, OEM_IMPORT_MK_SK>
+      key_type: AES SHA256
+      # ---------------------------===== Import key size bits [Conditionally required] =====----------------------------
+      # Description: Import key size bits
+      # Possible options: <128, 192, 224, 256, 384, 512>
+      key_size_bits: 256
+      # ---------------------------===== Imported key lifetime [Conditionally required] =====---------------------------
+      # Description:
+      #  ELE_KEY_IMPORT_VOLATILE           0xC0020000  Standard volatile key.
+      #  ELE_KEY_IMPORT_PERSISTENT         0xC0020001  Standard persistent key.
+      #  ELE_KEY_IMPORT_PERMANENT          0xC00200FF  Standard permanent key.
+      # Possible options: <ELE_KEY_IMPORT_VOLATILE, ELE_KEY_IMPORT_PERSISTENT, ELE_KEY_IMPORT_PERMANENT>
+      key_lifetime: ELE_KEY_IMPORT_PERSISTENT
+      # --------------------------===== Imported key lifecycle [Conditionally required] =====---------------------------
+      # Description:
+      #  CURRENT           0x00  Key is usable in current lifecycle.
+      #  OPEN              0x01  Key is usable in open lifecycle.
+      #  CLOSED            0x02  Key is usable in closed lifecycle.
+      #  CLOSED and LOCKED 0x04  Key is usable in closed and locked lifecycle.
+      # Possible options: <CURRENT, OPEN, CLOSED, LOCKED>
+      key_lifecycle: CURRENT
+      # --------------------------===== OEM_IMPORT_MK_SK key ID [Conditionally required] =====--------------------------
+      # Description: Key store ID where is stored the OEM_IMPORT_MK_SK key. It must be the key store ID related to the
+      # key management handle set in the command API
+      oem_mk_sk_key_id: 5
+      # ----------------------===== Imported key wrapping algorithm [Conditionally required] =====----------------------
+      # Description:
+      #  RFC3394 - RFC 3394 wrapping
+      #  AES_CBC - AES-CBC wrapping (padding: ISO7816-4 padding)
+      # Possible options: <RFC3394, AES_CBC>
+      key_wrapping_algorithm: RFC3394
+      # ------------------------------===== Wrapped key signing algorithm [Optional] =====------------------------------
+      # Description: Algorithm used to sign the blob itself. Field “Signature” of this blob. It must be: 0x01 (CMAC)
+      # Possible options: <CMAC>
+      signing_algorithm: CMAC
+      # ------------------------------===== Raw import key [Conditionally required] =====-------------------------------
+      # Description: Raw private key that will be wrapped and encrypted by OEM_IMPORT_MK_SK key that must be also
+      # provided. Instead of 'import_key' & 'oem_import_mk_sk_key' it could be used 'wrapped_key' & 'signature'.
+      import_key: ahab/signed_msg/aes_key.bin
+      # ---------------------------===== OEM_IMPORT_MK_SK Key [Conditionally required] =====----------------------------
+      # Description: OEM_IMPORT_MK_SK key used to wrap and encrypt the raw key. Instead of 'import_key' &
+      # 'oem_import_mk_sk_key' it could be used 'wrapped_key' & 'signature'.
+      oem_import_mk_sk_key: ahab/signed_msg/oem_import_mk_sk_key.bin
+      # -----------------------------------===== Super Root Key Hash [Optional] =====-----------------------------------
+      # Description: Optional Super root key hash is used if Salt flags that requires in Exchange keys algorithms.
+      # srkh: '0x00000000000000000000000000000000'

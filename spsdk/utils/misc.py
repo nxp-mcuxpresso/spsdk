@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -590,21 +590,6 @@ def reverse_bytes_in_longs(arr: bytes) -> bytes:
     return bytes(result)
 
 
-def reverse_bits_in_bytes(arr: bytes) -> bytes:
-    """The function reverse bits order in input bytes.
-
-    :param arr: Input array.
-    :return: New array with reversed bits in bytes.
-    :raises SPSDKError: Raises when invalid value is in input.
-    """
-    result = bytearray()
-
-    for x in arr:
-        result.append(int(f"{x:08b}"[::-1], 2))
-
-    return bytes(result)
-
-
 def change_endianness(bin_data: bytes) -> bytes:
     """Convert binary format used in files to binary used in register object.
 
@@ -831,6 +816,17 @@ def swap32(x: int) -> int:
     return unpack("<I", pack(">I", x))[0]
 
 
+def reverse_bits(x: int, bits_cnt: int = 32) -> int:
+    """Reverse bits in integer.
+
+    :param x: Integer to be bit reversed
+    :param bits_cnt: Count of bits to reverse
+    :return: Reversed value value
+    """
+    str_bits_format = "{:0{bits_cnt}b}".format(x, bits_cnt=bits_cnt)
+    return int(str_bits_format[::-1], 2)
+
+
 def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
     """Check if the number is in range.
 
@@ -988,7 +984,7 @@ def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
     value = os.path.expanduser(os.path.expandvars(value))
     try:
         file = find_file(file_path=value, search_paths=search_paths)
-        with open(file) as f:
+        with open(file, encoding="utf-8") as f:
             value = f.readline().strip()
     except SPSDKError:
         pass

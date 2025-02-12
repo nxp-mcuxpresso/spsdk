@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for key generation and saving keys to file."""
@@ -56,6 +56,7 @@ if IS_OSCCA_SUPPORTED:
 
 if IS_DILITHIUM_SUPPORTED:
     # pylint: disable=import-error
+    import spsdk_pqc.wrapper
     from spsdk_pqc import (
         DilithiumPrivateKey,
         DilithiumPublicKey,
@@ -64,6 +65,9 @@ if IS_DILITHIUM_SUPPORTED:
         PQCAlgorithm,
         PQCError,
     )
+
+    if hasattr(spsdk_pqc.wrapper, "DISABLE_DIL_MLDSA_PUBLIC_KEY_MISMATCH_WARNING"):
+        spsdk_pqc.wrapper.DISABLE_DIL_MLDSA_PUBLIC_KEY_MISMATCH_WARNING = True
 
 
 def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
@@ -1499,8 +1503,8 @@ if IS_OSCCA_SUPPORTED:
 
 else:
     # In case the OSCCA is not installed, do this to avoid import errors
-    PrivateKeySM2 = PrivateKey  # type: ignore
-    PublicKeySM2 = PublicKey  # type: ignore
+    PrivateKeySM2 = NonSupportingPrivateKey  # type: ignore
+    PublicKeySM2 = NonSupportingPublicKey  # type: ignore
 
 
 class ECDSASignature:

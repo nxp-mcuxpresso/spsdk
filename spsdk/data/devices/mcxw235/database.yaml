@@ -1,0 +1,37 @@
+# Copyright 2024-2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mcxw236
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: Wireless Connectivity
+  # Web page of MCU representative
+  web: https://www.nxp.com
+  memory_map:
+    # Memory map basic info
+    internal-flash_ns:
+      start_int: 0x0
+      size_int: 0xFE000
+      external: false
+    internal-flash_s:
+      start_int: 0x10000000
+      size_int: 0xFE000
+      external: false
+      mirror_of: internal-flash_ns
+    sram:
+      start_int: 0x20004000
+      size_int: 0x1C000
+      external: false
+    sramx:
+      start_int: 0x4000000
+      size_int: 0x4000
+      external: false
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0021

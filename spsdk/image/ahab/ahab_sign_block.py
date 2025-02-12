@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of AHAB container signature block support."""
@@ -15,7 +15,7 @@ from typing import Any, Optional, Union
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.exceptions import SPSDKError, SPSDKParsingError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKUnsupportedOperation
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_blob import AhabBlob
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
@@ -354,9 +354,12 @@ class SignatureBlock(HeaderContainer):
                     else:
                         public_key = self.srk_assets.get_source_keys()[self.chip_config.used_srk_id]
                 except SPSDKError as exc:
+                    error_type = VerifierResult.ERROR
+                    if type(exc) is SPSDKUnsupportedOperation:
+                        error_type = VerifierResult.WARNING
                     ver_sign.add_record(
                         "Signature",
-                        VerifierResult.ERROR,
+                        error_type,
                         (
                             "Cannot restore public key to verify signature."
                             f" The key is restoring from {'certificate' if used_image_key else 'SRK'}. "
@@ -1000,9 +1003,12 @@ class SignatureBlockV2(HeaderContainer):
                         )
 
                 except SPSDKError as exc:
+                    error_type = VerifierResult.ERROR
+                    if type(exc) is SPSDKUnsupportedOperation:
+                        error_type = VerifierResult.WARNING
                     ver_sign.add_record(
                         "Signature",
-                        VerifierResult.ERROR,
+                        error_type,
                         (
                             "Cannot restore public key to verify signature."
                             f" The key is restoring from {'certificate' if used_image_key else 'SRK'}. "

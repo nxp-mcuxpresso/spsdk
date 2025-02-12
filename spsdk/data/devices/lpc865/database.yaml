@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -28,6 +28,6 @@ info:
 features:
   lpcprog:
     part_ids:
-      "8651": LPC865M201JBD64d
+      "8651": LPC865M201JBD64
       "8652": LPC865M201JHI48
       "8654": LPC865M201JHI33

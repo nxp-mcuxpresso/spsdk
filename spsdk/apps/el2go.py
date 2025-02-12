@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,7 @@ import shlex
 import sys
 import time
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Optional
 
 import click
 
@@ -180,7 +180,7 @@ def run_provisioning_command(
 
 
 @main.command(name="get-secure-objects", no_args_is_help=True)
-@el2go_optional_fw_interface  # TODO: This might be optional
+@el2go_optional_fw_interface
 @spsdk_config_option()
 @click.option(
     "-e",
@@ -584,12 +584,40 @@ def _upload_data(
             click.echo("Resetting the device (Starting Provisioning FW)")
             interface.reset()
     elif client.use_oem_app:
-        click.echo(f"Writing Secure Objects to MMC/SD FAT: {hex(user_data_address)}")
+        click.echo(f"Writing Secure Objects to MMC/SD FAT: {client.fatwrite_filename}")
         interface.write_memory(address=user_data_address, data=secure_objects)
         output = interface.send_command(
-            f"fatwrite mmc 0:1 {user_data_address:x} secure_objects.bin {len(secure_objects):x}"
+            f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
+            + f" {user_data_address:x} {client.fatwrite_filename} {len(secure_objects):x}"
         )
         click.echo(f"Data written {output}")
+        if client.oem_provisioning_config_filename:
+            interface.write_memory(
+                address=user_data_address, data=client.oem_provisioning_config_bin
+            )
+            # Write also OEM APP config if provided
+            click.echo(
+                f"Writing OEM Provisioning Config to MMC/SD FAT: {client.oem_provisioning_config_filename}"
+            )
+
+            output = interface.send_command(
+                f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
+                + f" {user_data_address:x} {client.oem_provisioning_config_filename} "
+                + f"{len(client.oem_provisioning_config_bin):x}"
+            )
+
+        click.echo(f"Data written {output}")
+
+        if client.boot_linux:
+            click.echo("Booting Linux")
+
+            for command in client.linux_boot_sequence:
+                # in case of last command set no_exit to true
+                if command == client.linux_boot_sequence[-1]:
+                    output = interface.send_command(command, no_exit=True)
+                else:
+                    output = interface.send_command(command)
+                click.echo(f"  Command: {command} -> {output}")
 
     elif client.use_user_config:
         click.echo(f"Writing User config data to: {hex(fw_read_address)}")
@@ -646,33 +674,17 @@ def test_connection(config: str) -> None:
 
 
 @main.command(name="get-otp-binary", no_args_is_help=True)
-@spsdk_family_option(
-    families=EL2GOTPClient.get_supported_families(),
-    required=False,
-    help="Required only when using SEC Tool's JSON config file.",
-)
 @spsdk_config_option()
 @spsdk_output_option(force=True)
-def get_otp_binary_command(config: str, output: str, family: str) -> None:
+def get_otp_binary_command(config: str, output: str) -> None:
     """Generate EL2GO OTP Binary from data in configuration file."""
-    get_otp_binary(config=config, output=output, family=family)
+    get_otp_binary(config=config, output=output)
 
 
-def get_otp_binary(config: str, output: str, family: Optional[str] = None) -> None:
+def get_otp_binary(config: str, output: str) -> None:
     """Generate EL2GO OTP Binary from data in configuration file."""
-    config_data: Optional[Union[list, dict]] = None
-    try:
-        config_data = load_configuration(path=config)
-    except SPSDKError:
-        try:
-            with open(config, "r") as f:
-                config_data = json.load(f)
-        except json.JSONDecodeError:
-            pass
-    if not config_data:
-        raise SPSDKAppError("Invalid configuration file format")
-
-    data = get_el2go_otp_binary(config_data=config_data, family=family)
+    config_data = load_configuration(path=config)
+    data = get_el2go_otp_binary(config_data=config_data)
     write_file(data=data, path=output, mode="wb")
     click.echo(f"EL2GO OTP Binary stored into {output}")
 
@@ -875,9 +887,10 @@ def bulk_so_download(
     def _submit_new_jobs(jobs: list[list[str]]) -> None:
         with db:
             for group_uuids in jobs:
-                job_id = client.register_devices(group_uuids)
-                click.echo(f"Job ID: {job_id} for {len(group_uuids)} devices")
-                db.insert_job(job_id, len(group_uuids))
+                job_id, job_size = client.register_devices(group_uuids, remove_errors=True)
+                if job_id and job_size:
+                    click.echo(f"Job ID: {job_id} for {job_size} devices")
+                    db.insert_job(job_id, job_size)
 
     # wait for all jobs to finish
     def _wait_for_jobs() -> None:
@@ -956,7 +969,11 @@ def bulk_so_download(
         uuids = db.get_uuids(empty=True)
         if uuids:
             failure = True
-            click.echo(f"There are {len(uuids)} UUIDs without Secure Objects:")
+            click.echo(
+                f"There are {len(uuids)} UUIDs without Secure Objects. "
+                "Either because already successfully registered in another device group, or "
+                "the UUIDs were not found for given product, or UUIDs are invalid."
+            )
             for uuid in uuids:
                 click.echo(uuid)
 

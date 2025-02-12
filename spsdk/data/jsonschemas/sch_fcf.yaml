@@ -1,0 +1,14 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+fcf:
+  type: object
+  properties:
+    fcf:
+      type: object
+      title: Settings of FCF
+      description: FCF settings.
+      # properties will be added in runtime
+
+  required: [fcf]

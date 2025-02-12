@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -155,7 +155,7 @@ features:
   # ======== XMCD section ========
   xmcd:
     header:
-      reg_spec: ../../common/xmcd/header.json
+      reg_spec: ../../common/xmcd/flexspi_ram_header.json
     mem_types: {}
     fuses: {}
 
@@ -184,6 +184,7 @@ features:
     additional_template: []
     additional_template_text: ""
     supports_key_scrambling: False
+    reversed_scramble_key: False
 
   # ======== Secure binary v2.1 section ========
   sb21:
@@ -255,12 +256,12 @@ features:
         interfaces: [octal_spi, quad_spi, hyper_flash]
         instances: []
       xspi_nor:
-        reg_spec: ../../common/memcfg/opt_word_flexspi_nor.json
+        reg_spec: ../../common/memcfg/opt_word_xspi_nor.json
         region_number: 0x0b
         ow_counts_rule: OptionSize
         runtime_instance: True
         mem_type: nor
-        interfaces: [octal_spi, quad_spi, hyper_flash]
+        interfaces: [octal_spi, quad_spi]
         instances: []
       flexspi_nand:
         reg_spec: ../../common/memcfg/opt_word_flexspi_nand.json
@@ -417,3 +418,11 @@ features:
       spl:
         script: ../../common/uuu/spl_boot.lst
         arguments: [_flash.bin]
+
+  # ======== BCA section ========
+  bca:
+    reg_spec: bca.json
+
+  # ======== FCF section ========
+  fcf:
+    reg_spec: fcf.json

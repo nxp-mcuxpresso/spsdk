@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,7 +27,7 @@ from spsdk.utils.misc import (
     align_block,
     load_binary,
     load_hex_string,
-    reverse_bits_in_bytes,
+    reverse_bits,
     split_data,
     value_to_bytes,
     value_to_int,
@@ -354,8 +354,9 @@ class Otfad:
 
     OTFAD_DATA_UNIT = 0x400
 
-    def __init__(self) -> None:
+    def __init__(self, reversed_scramble_key: bool = False) -> None:
         """Constructor."""
+        self.reversed_scramble_key = reversed_scramble_key
         self._key_blobs: list[KeyBlob] = []
 
     def __getitem__(self, index: int) -> KeyBlob:
@@ -439,10 +440,14 @@ class Otfad:
                 raise SPSDKValueError("OTFAD Key scramble align has invalid length")
 
             logger.debug("The scrambling of keys is enabled.")
-            key_scramble_mask_inv = reverse_bits_in_bytes(
-                key_scramble_mask.to_bytes(4, byteorder=Endianness.BIG.value)
+
+            if self.reversed_scramble_key:
+                key_scramble_mask = reverse_bits(key_scramble_mask, 32)
+
+            key_scramble_mask_bytes = key_scramble_mask.to_bytes(
+                4, byteorder=Endianness.LITTLE.value
             )
-            logger.debug(f"The inverted scramble key is: {key_scramble_mask_inv.hex()}")
+            logger.debug(f"The inverted scramble key is: {key_scramble_mask_bytes.hex()}")
         result = bytes()
         scrambled = bytes()
         for i, key_blob in enumerate(self._key_blobs):
@@ -451,7 +456,7 @@ class Otfad:
                 scrambled = bytearray(kek)
                 long_ix = (key_scramble_align >> (i * 2)) & 0x03
                 for j in range(4):
-                    scrambled[(long_ix * 4) + j] ^= key_scramble_mask_inv[j]
+                    scrambled[(long_ix * 4) + j] ^= key_scramble_mask_bytes[j]
 
             logger.debug(
                 f"Used KEK for keyblob{i} encryption is: {scrambled.hex() if scramble_enabled else kek.hex()}"
@@ -518,6 +523,9 @@ class OtfadNxp(Otfad):
         self.byte_swap = self.db.get_bool(DatabaseManager.OTFAD, "byte_swap")
         self.key_blob_rec_size = self.db.get_int(DatabaseManager.OTFAD, "key_blob_rec_size")
         self.keyblob_byte_swap_cnt = self.db.get_int(DatabaseManager.OTFAD, "keyblob_byte_swap_cnt")
+        self.reversed_scramble_key = self.db.get_bool(
+            DatabaseManager.OTFAD, "reversed_scramble_key", False
+        )
         if self.keyblob_byte_swap_cnt not in [0, 2, 4, 8, 16]:
             raise SPSDKValueError(
                 f"Invalid value of keyblob_byte_swap_cnt: {self.keyblob_byte_swap_cnt}"

@@ -1,5 +1,5 @@
 {
-    "cpu": "MIMXRT595S",
+    "cpu": "MIMXRT533s",
     "shadow_reg_base_addr_int": "0x40130000",
     "groups": [
         {

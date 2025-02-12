@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Virtual Debug probes support used for product testing."""
@@ -365,3 +365,7 @@ class DebugProbeVirtual(DebugProbe):
     def debug_step(self) -> None:
         """Step the CPU execution."""
         pass
+
+    def read_dp_idr(self) -> int:
+        """Read Debug port identification register."""
+        return 0x12345678

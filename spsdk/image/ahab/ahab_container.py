@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of raw AHAB container support.
@@ -344,6 +344,9 @@ class AHABContainerBase(HeaderContainer):
         ret.add_child(self.verify_parsed_header())
         ret.add_child(self.verify_header())
         ret.add_record_bit_range("Flags", self.flags, 32)
+        ret.add_record_enum("Flags: SRK Set", self.flag_srk_set, FlagsSrkSet)
+        ret.add_record_range("Flags: SRK Selection", self.flag_used_srk_id, min_val=0, max_val=3)
+        ret.add_record_bit_range("Flags: SRK Revoke mask", self.flag_srk_revoke_keys, bit_range=4)
         ret.add_record_bit_range("SW version", self.flags, 16)
         ret.add_record_bit_range("Fuse version", self.flags, 8)
         ret.add_record_range("Signature Block offset", self._signature_block_offset, max_val=65535)
@@ -765,6 +768,12 @@ class AHABContainer(AHABContainerBase):
                                     "Decrypted data",
                                     VerifierResult.WARNING,
                                     "The NXP image can't be verified",
+                                )
+                            elif self.flag_srk_set not in FlagsSrkSet:
+                                ver_enc.add_record(
+                                    "Decrypted data",
+                                    VerifierResult.WARNING,
+                                    "The unknown SRK Set image without blob container is not possible to verify",
                                 )
                             else:
                                 ver_enc.add_record(

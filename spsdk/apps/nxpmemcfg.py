@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -148,9 +148,7 @@ def family_info(family: Optional[str], peripheral: Optional[str] = None) -> None
     type=str,
     help="Select supported memory chip interface. Use family-info command to get the known interfaces.",
 )
-@optgroup(
-    "General option words definition. It could be defined instead of known chip", cls=AllOptionGroup
-)
+@optgroup("General option words definition. It could be defined instead of known chip")
 @optgroup.option(
     "-w",
     "--option-word",

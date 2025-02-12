@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -382,6 +382,40 @@ def fb_buffer_size() -> Callable[[FC], FC]:
         type=INT(),
         required=False,
         help="Override default buffer size for fastboot",
+    )
+
+
+def usbpath_option() -> Callable[[FC], FC]:
+    """Click decorator handling USB path configuration.
+
+    Provides: `usbpath: str` a usb path.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-up",
+        "--usbpath",
+        type=str,
+        required=False,
+        metavar="USB_PATH",
+        help="Filter UUU devices by USB path",
+    )
+
+
+def usbserial_option() -> Callable[[FC], FC]:
+    """Click decorator handling USB serial configuration.
+
+    Provides: `usbserial: str` a usb serial.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-us",
+        "--usbserial",
+        type=str,
+        required=False,
+        metavar="SERIAL_NUMBER",
+        help="Filter UUU devices by USB serial number",
     )
 
 
@@ -781,6 +815,8 @@ def spsdk_el2go_interface(
     required: bool = True,
     fb_addr: bool = True,
     fb_size: bool = True,
+    usbpath: bool = True,
+    usbserial: bool = True,
 ) -> Callable:
     """Click decorator handling EL2Go interface.
 
@@ -808,6 +844,8 @@ def spsdk_el2go_interface(
             revision: Optional[str] = None,
             fb_addr: Optional[int] = None,
             fb_size: Optional[int] = None,
+            usbpath: Optional[str] = None,
+            usbserial: Optional[str] = None,
             **kwargs: Any,
         ) -> Any:
             # if --help is provided anywhere on command line, skip interface lookup
@@ -835,7 +873,7 @@ def spsdk_el2go_interface(
             try:
                 interface_params = load_interface_config(cli_params)
                 interface_handler = EL2GOInterfaceHandler.get_el2go_interface_handler(
-                    interface_params, family, revision, device, fb_addr, fb_size
+                    interface_params, family, revision, device, fb_addr, fb_size, usbpath, usbserial
                 )
                 kwargs["interface"] = interface_handler
             except SPSDKError:
@@ -855,6 +893,8 @@ def spsdk_el2go_interface(
             el2go_interface_option: (device, {}),
             fb_buffer_address: (fb_addr, {}),
             fb_buffer_size: (fb_size, {}),
+            usbpath_option: (usbpath, {}),
+            usbserial_option: (usbserial, {}),
         }
 
         wrapper = timeout_option(timeout, use_long_timeout_form)(wrapper)

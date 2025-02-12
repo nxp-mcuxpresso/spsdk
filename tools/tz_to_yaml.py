@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Tool for converting C-code TrustZone data into YAML config file."""
@@ -52,14 +52,14 @@ def parse_c(code: str) -> dict[str, str]:
 def main(c_file: str, output: str, debug: bool) -> None:
     """Extract TrustZone settings from the C code."""
     logging.basicConfig(level=logging.DEBUG if debug else logging.WARNING)
-    with open(c_file) as f:
+    with open(c_file, encoding="utf-8") as f:
         code = f.read()
 
     tz_data = parse_c(code=code)
 
     click.echo(f"Found {len(tz_data)} registers")
 
-    with open(output, "w") as f:
+    with open(output, "w", encoding="utf-8") as f:
         f.writelines(
             [
                 f"# Copyright {datetime.now().year} NXP\n",

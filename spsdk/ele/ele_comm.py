@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -395,7 +395,8 @@ class EleMessageHandlerUBoot(EleMessageHandler):
 
             # 1. Execute ELE message on target
             self.device.write(
-                f"ele_message {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}"
+                f"ele_message {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}",
+                no_exit=(msg.response_words_count == 0),
             )
 
             if msg.response_words_count == 0:

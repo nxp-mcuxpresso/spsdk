@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Prog CLI interface."""
@@ -69,8 +69,8 @@ def print_memory_table(memories: dict[int, DK6Memory]) -> str:
     table.align = "l"
     table.header = True
     table.border = True
-    table.hrules = prettytable.HEADER
-    table.vrules = prettytable.NONE
+    table.hrules = prettytable.HRuleStyle.HEADER
+    table.vrules = prettytable.VRuleStyle.NONE
     for memory_id, memory in memories.items():
         fields = [
             colorama.Fore.YELLOW + str(MemoryId.get_label(memory_id)),

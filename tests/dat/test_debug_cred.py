@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -322,7 +322,7 @@ def test_debugcredential_rot_meta_as_cert_not_matching(data_dir):
             dc.sign()
 
 
-@pytest.mark.parametrize("dc_file_name", ["rt1180_256.dc"])
+@pytest.mark.parametrize("dc_file_name", ["rt118x_ecc256.dc", "rt118x_rsa2048.dc"])
 def test_debugcredential_parse_export(data_dir, dc_file_name):
     """Verifies parse/export functions."""
     with use_working_directory(data_dir):

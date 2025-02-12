@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # =========================================  Certification Block V21 template  =========================================
@@ -23,7 +23,7 @@ iskCertificateConstraint: 0
 # iskCertData: user_cert_data.bin
 # -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
 # Description: Path to Main root Certification Private Key.
-signPrivateKey: ../../_data/keys/evk_keys/RoT_key0_secp384r1_kw45xx.pem
+signPrivateKey: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pem
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
 # signProvider: type=file;file_path=root_prv_key.pem
@@ -32,16 +32,16 @@ signPrivateKey: ../../_data/keys/evk_keys/RoT_key0_secp384r1_kw45xx.pem
 # ======================================================================================================================
 # -----------------------------===== Root Certificate File 0 [Conditionally required] =====-----------------------------
 # Description: Root certificate file index 0.
-rootCertificate0File: ../../_data/keys/evk_keys/RoT_key0_secp384r1_kw45xx.pub
+rootCertificate0File: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pub
 # ------------------------------------===== Root Certificate File 1 [Optional] =====------------------------------------
 # Description: Root certificate file index 1.
-rootCertificate1File: ../../_data/keys/evk_keys/RoT_key1_secp384r1_kw45xx.pub
+rootCertificate1File: ../../_data/keys/EVK_keys/RoT_key1_secp384r1_kw45xx.pub
 # ------------------------------------===== Root Certificate File 2 [Optional] =====------------------------------------
 # Description: Root certificate file index 2.
-rootCertificate2File: ../../_data/keys/evk_keys/RoT_key2_secp384r1_kw45xx.pub
+rootCertificate2File: ../../_data/keys/EVK_keys/RoT_key2_secp384r1_kw45xx.pub
 # ------------------------------------===== Root Certificate File 3 [Optional] =====------------------------------------
 # Description: Root certificate file index 3.
-rootCertificate3File: ../../_data/keys/evk_keys/RoT_key3_secp384r1_kw45xx.pub
+rootCertificate3File: ../../_data/keys/EVK_keys/RoT_key3_secp384r1_kw45xx.pub
 # -----------------------------===== Main Certificate Index [Conditionally required] =====------------------------------
 # Description: Index of certificate that is used as a main. If not defined, the certificate matching private key will be
 # selected.

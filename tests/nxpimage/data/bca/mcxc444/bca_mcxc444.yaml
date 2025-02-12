@@ -1,0 +1,77 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ====================================  Bootloader Configuration Area for mcxc444.  ====================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mcxc041, mcxc141, mcxc142, mcxc143, mcxc144, mcxc242, mcxc243, mcxc244, mcxc443, mcxc444>
+family: mcxc444
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# --------------------------------------------===== mcxc444 [Required] =====--------------------------------------------
+bca:
+  # ---------------------------------------------===== TAG [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Tag: Magic number to verify bootloader configuration is valid. Must be
+  # set to 'kcfg' (0x6766636B).
+  TAG: '0x6766636B'
+  # -------------------------------------===== ENABLED_PERIPHERALS [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000010, Width: 8b; Configuration bitfields of peripherals to enable. Bootloader will enable
+  # the peripheral if corresponding bit is set to 1.
+  ENABLED_PERIPHERALS:
+    # ------------------------------------------===== LPUART [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Enable LPUART peripheral
+    # - DISABLE, (0): Disable LPUART peripheral
+    # - ENABLE, (1): Enable LPUART peripheral
+    # Possible options: <DISABLE, ENABLE>
+    LPUART: DISABLE
+    # --------------------------------------------===== I2C [Optional] =====--------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Enable I2C peripheral
+    # - DISABLE, (0): Disable I2C peripheral
+    # - ENABLE, (1): Enable I2C peripheral
+    # Possible options: <DISABLE, ENABLE>
+    I2C: DISABLE
+    # --------------------------------------------===== SPI [Optional] =====--------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Enable SPI peripheral
+    # - DISABLE, (0): Disable SPI peripheral
+    # - ENABLE, (1): Enable SPI peripheral
+    # Possible options: <DISABLE, ENABLE>
+    SPI: DISABLE
+  # --------------------------------------===== I2C_SLAVE_ADDRESS [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000011, Width: 8b; I2C Slave Address
+  I2C_SLAVE_ADDRESS: '0xAA'
+  # --------------------------------===== PERIPHERAL_DETECTION_TIMEOUT [Optional] =====---------------------------------
+  # Description: Offset: 0x00000012, Width: 16b; Timeout in miliseconds for active peripheral detection. If 0xFFFF,
+  # defaults to 5 seconds.
+  PERIPHERAL_DETECTION_TIMEOUT: '0x5555'
+  # ---------------------------------------------===== USB [Optional] =====---------------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b; Configuration of USB Vendor ID and Product ID
+  USB:
+    # ------------------------------------------===== usbVid [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 16b, Sets the USB Vendor ID reported by the device during enumeration. If 0xFFFF,
+    # it defaults to 0x15A2.
+    usbVid: '0x0000'
+    # ------------------------------------------===== usbPid [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 16b, Sets the USB Product ID reported by the device during enumeration.
+    usbPid: '0x0000'
+  # -------------------------------------===== USB_STRINGS_POINTER [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000018, Width: 32b; usb strings pointer
+  USB_STRINGS_POINTER: '0x00000000'
+  # -----------------------------------------===== CLOCK_FLAGS [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000001C, Width: 8b; Clock flags
+  CLOCK_FLAGS:
+    # ----------------------------------------===== HIGH_SPEED [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 1b, Enable high speed mode (i.e., 48 MHz).
+    # - Enable, (0): Enable high speed mode
+    # - Disable, (1): Disable high speed mode
+    # Possible options: <Enable, Disable>
+    HighSpeed: DISABLE
+  # ----------------------------------------===== CLOCK_DIVIDER [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000001D, Width: 8b; clock divider
+  CLOCK_DIVIDER: '0x55'

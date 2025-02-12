@@ -1,0 +1,1416 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2025-02-07T09:06:58Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.20"
+  },
+  "name": "spsdk-2.6",
+  "dataLicense": "CC0-1.0",
+  "hasExtractedLicensingInfos": [
+    {
+      "licenseId": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "extractedText": "Expat License\n=============\n\nCopyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd\n                               and Clark Cooper\nCopyright (c) 2001, 2002, 2003, 2004, 2005, 2006 Expat maintainers.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in the\nSoftware without restriction, including without limitation the rights to use,\ncopy, modify, merge, publish, distribute, sublicense, and/or sell copies of the\nSoftware, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN\nAN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+      "name": "Expat License"
+    },
+    {
+      "licenseId": "LicenseRef-b8cfed1f-6eaa-4dde-9792-a4d02f24d917",
+      "extractedText": "Python 2.3.3 license\n====================\n\nThis is the official license for the Python 2.3.3 release:\n\n--------------------------------------------------------------------------------\n\n\nA. HISTORY OF THE SOFTWARE\n--------------------------\n\n--------------------------------------------------------------------------------\n\n\n\nPython was created in the early 1990s by Guido van Rossum at Stichting\nMathematisch Centrum (CWI, see http://www.cwi.nl) in the Netherlands as a\nsuccessor of a language called ABC.  Guido remains Python's principal author,\nalthough it includes many contributions from others.\n\nIn 1995, Guido continued his work on Python at the Corporation for National\nResearch Initiatives (CNRI, see http://www.cnri.reston.va.us) in Reston, Virginia\nwhere he released several versions of the software.\n\nIn May 2000, Guido and the Python core development team moved to BeOpen.com to\nform the BeOpen PythonLabs team.  In October of the same year, the PythonLabs\nteam moved to Digital Creations (now Zope Corporation, see http://www.zope.com). \nIn 2001, the Python Software Foundation (PSF, see http://www.python.org/psf/) was\nformed, a non-profit organization created specifically to own Python-related\nIntellectual Property.  Zope Corporation is a sponsoring member of the PSF.\n\nAll Python releases are Open Source (see http://www.opensource.org for the Open\nSource Definition).  Historically, most, but not all, Python releases have also\nbeen GPL-compatible; the table below summarizes the various releases.\n\n    Release        \n\nDerived     Year       \n\nOwner       GPL-                    \n\nfrom                                  compatible? (1)     0.9.0 thru\n\n1.2             \n\n1991-1995   CWI         yes     1.3 thru 1.5.2  1.2        \n\n1995-1999   CNRI        yes    \n\n1.6            \n\n1.5.2       2000       \n\nCNRI        no    \n\n2.0            \n\n1.6        \n\n2000        BeOpen.com  no     1.6.1          \n\n1.6        \n\n2001       \n\nCNRI        yes (2)    \n\n2.1            \n\n2.0+1.6.1   2001       \n\nPSF         no     2.0.1          \n\n2.0+1.6.1   2001       \n\nPSF         yes     2.1.1          \n\n2.1+2.0.1   2001       \n\nPSF         yes    \n\n2.2            \n\n2.1.1       2001       \n\nPSF         yes     2.1.2          \n\n2.1.1       2002       \n\nPSF         yes     2.1.3          \n\n2.1.2       2002       \n\nPSF         yes     2.2.1          \n\n2.2        \n\n2002       \n\nPSF         yes     2.2.2          \n\n2.2.1       2002       \n\nPSF         yes    \n\n2.3            \n\n2.2.2       2002-2003  \n\nPSF         yes     2.3.1          \n\n2.3         2002-2003  \n\nPSF         yes     2.3.2          \n\n2.3.1       2002-2003  \n\nPSF         yes     2.3.3          \n\n2.3.2       2002-2003  \n\nPSF         yes\n\nFootnotes:\n\n(1) GPL-compatible doesn't mean that we're distributing Python under     the\nGPL.  All Python licenses, unlike the GPL, let you distribute     a modified\nversion without making your changes open source.  The     GPL-compatible licenses\nmake it possible to combine Python with     other software that is released under\nthe GPL; the others don't.\n\n(2) According to Richard Stallman, 1.6.1 is not GPL-compatible,     because its\nlicense has a choice of law clause.  According to     CNRI, however, Stallman's\nlawyer has told CNRI's lawyer that 1.6.1     is \"not incompatible\" with the GPL.\n\nThanks to the many outside volunteers who have worked under Guido's direction to\nmake these releases possible.\n\n--------------------------------------------------------------------------------\n\n\nB. TERMS AND CONDITIONS FOR ACCESSING OR OTHERWISE USING PYTHON\n---------------------------------------------------------------\n\n--------------------------------------------------------------------------------\n\n\n\n--------------------------------------------------------------------------------\n\nPSF LICENSE AGREEMENT FOR PYTHON 2.3\n\n--------------------------------------------------------------------------------\n\n\n\n1. This LICENSE AGREEMENT is between the Python Software Foundation (\"PSF\"), and\nthe Individual or Organization (\"Licensee\") accessing and otherwise using Python\n2.3 software in source or binary form and its associated documentation.\n\n2. Subject to the terms and conditions of this License Agreement, PSF hereby\ngrants Licensee a nonexclusive, royalty-free, world-wide license to reproduce,\nanalyze, test, perform and/or display publicly, prepare derivative works,\ndistribute, and otherwise use Python 2.3 alone or in any derivative version,\nprovided, however, that PSF's License Agreement and PSF's notice of copyright,\ni.e., \"Copyright (c) 2001, 2002, 2003 Python Software Foundation; All Rights\nReserved\" are retained in Python 2.3 alone or in any derivative version prepared\nby Licensee.\n\n3. In the event Licensee prepares a derivative work that is based on or\nincorporates Python 2.3 or any part thereof, and wants to make the derivative\nwork available to others as provided herein, then Licensee hereby agrees to\ninclude in any such work a brief summary of the changes made to Python 2.3.\n\n4. PSF is making Python 2.3 available to Licensee on an \"AS IS\" basis.  PSF MAKES\nNO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED.  BY WAY OF EXAMPLE, BUT NOT\nLIMITATION, PSF MAKES NO AND DISCLAIMS ANY REPRESENTATION OR WARRANTY OF\nMERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON\n2.3 WILL NOT INFRINGE ANY THIRD PARTY RIGHTS.\n\n5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON 2.3 FOR ANY\nINCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS A RESULT OF MODIFYING,\nDISTRIBUTING, OR OTHERWISE USING PYTHON 2.3, OR ANY DERIVATIVE THEREOF, EVEN IF\nADVISED OF THE POSSIBILITY THEREOF.\n\n6. This License Agreement will automatically terminate upon a material breach of\nits terms and conditions.\n\n7. Nothing in this License Agreement shall be deemed to create any relationship\nof agency, partnership, or joint venture between PSF and Licensee.  This License\nAgreement does not grant permission to use PSF trademarks or trade name in a\ntrademark sense to endorse or promote products or services of Licensee, or any\nthird party.\n\n8. By copying, installing or otherwise using Python 2.3, Licensee agrees to be\nbound by the terms and conditions of this License Agreement.",
+      "name": "Python Software Foundation License 2.3"
+    },
+    {
+      "licenseId": "LicenseRef-c9bdcbe3-de95-46a0-9fd9-9be02f4ef8c4",
+      "extractedText": "This license may contain an exception relative to the applicability of certain\nprovisions of the license and this exception may alter your specific obligations\nwhen using it. The exact nature of the exception was not specified at the time of\ndiscovery. You are advised to examine the project's license directly in order to\ndetermine if it applies to your usage.\n\n\n\nApache License\nVersion 2.0, January 2004\n=========================\n\n\nhttp://www.apache.org/licenses/\n\nTERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n\n\"License\" shall mean the terms and conditions for use, reproduction, and\ndistribution as defined by Sections 1 through 9 of this document.\n\n\"Licensor\" shall mean the copyright owner or entity authorized by the copyright\nowner that is granting the License.\n\n\"Legal Entity\" shall mean the union of the acting entity and all other entities\nthat control, are controlled by, or are under common control with that entity.\nFor the purposes of this definition, \"control\" means (i) the power, direct or\nindirect, to cause the direction or management of such entity, whether by\ncontract or otherwise, or (ii) ownership of fifty percent (50%) or more of the\noutstanding shares, or (iii) beneficial ownership of such entity.\n\n\"You\" (or \"Your\") shall mean an individual or Legal Entity exercising permissions\ngranted by this License.\n\n\"Source\" form shall mean the preferred form for making modifications, including\nbut not limited to software source code, documentation source, and configuration\nfiles.\n\n\"Object\" form shall mean any form resulting from mechanical transformation or\ntranslation of a Source form, including but not limited to compiled object code,\ngenerated documentation, and conversions to other media types.\n\n\"Work\" shall mean the work of authorship, whether in Source or Object form, made\navailable under the License, as indicated by a copyright notice that is included\nin or attached to the work (an example is provided in the Appendix below).\n\n\"Derivative Works\" shall mean any work, whether in Source or Object form, that is\nbased on (or derived from) the Work and for which the editorial revisions,\nannotations, elaborations, or other modifications represent, as a whole, an\noriginal work of authorship. For the purposes of this License, Derivative Works\nshall not include works that remain separable from, or merely link (or bind by\nname) to the interfaces of, the Work and Derivative Works thereof.\n\n\"Contribution\" shall mean any work of authorship, including the original version\nof the Work and any modifications or additions to that Work or Derivative Works\nthereof, that is intentionally submitted to Licensor for inclusion in the Work by\nthe copyright owner or by an individual or Legal Entity authorized to submit on\nbehalf of the copyright owner. For the purposes of this definition, \"submitted\"\nmeans any form of electronic, verbal, or written communication sent to the\nLicensor or its representatives, including but not limited to communication on\nelectronic mailing lists, source code control systems, and issue tracking systems\nthat are managed by, or on behalf of, the Licensor for the purpose of discussing\nand improving the Work, but excluding communication that is conspicuously marked\nor otherwise designated in writing by the copyright owner as \"Not a\nContribution.\"\n\n\"Contributor\" shall mean Licensor and any individual or Legal Entity on behalf of\nwhom a Contribution has been received by Licensor and subsequently incorporated\nwithin the Work.\n\n2. Grant of Copyright License. Subject to the terms and conditions of this\nLicense, each Contributor hereby grants to You a perpetual, worldwide,\nnon-exclusive, no-charge, royalty-free, irrevocable copyright license to\nreproduce, prepare Derivative Works of, publicly display, publicly perform,\nsublicense, and distribute the Work and such Derivative Works in Source or Object\nform.\n\n3. Grant of Patent License. Subject to the terms and conditions of this License,\neach Contributor hereby grants to You a perpetual, worldwide, non-exclusive,\nno-charge, royalty-free, irrevocable (except as stated in this section) patent\nlicense to make, have made, use, offer to sell, sell, import, and otherwise\ntransfer the Work, where such license applies only to those patent claims\nlicensable by such Contributor that are necessarily infringed by their\nContribution(s) alone or by combination of their Contribution(s) with the Work to\nwhich such Contribution(s) was submitted. If You institute patent litigation\nagainst any entity (including a cross-claim or counterclaim in a lawsuit)\nalleging that the Work or a Contribution incorporated within the Work constitutes\ndirect or contributory patent infringement, then any patent licenses granted to\nYou under this License for that Work shall terminate as of the date such\nlitigation is filed.\n\n4. Redistribution. You may reproduce and distribute copies of the Work or\nDerivative Works thereof in any medium, with or without modifications, and in\nSource or Object form, provided that You meet the following conditions:\n\n  a. You must give any other recipients of the Work or Derivative Works a copy of\n    this License; and\n\n  b. You must cause any modified files to carry prominent notices stating that\n    You changed the files; and\n\n  c. You must retain, in the Source form of any Derivative Works that You\n    distribute, all copyright, patent, trademark, and attribution notices from\n    the Source form of the Work, excluding those notices that do not pertain to\n    any part of the Derivative Works; and\n\n  d. If the Work includes a \"NOTICE\" text file as part of its distribution, then\n    any Derivative Works that You distribute must include a readable copy of the\n    attribution notices contained within such NOTICE file, excluding those\n    notices that do not pertain to any part of the Derivative Works, in at least\n    one of the following places: within a NOTICE text file distributed as part of\n    the Derivative Works; within the Source form or documentation, if provided\n    along with the Derivative Works; or, within a display generated by the\n    Derivative Works, if and wherever such third-party notices normally appear.\n    The contents of the NOTICE file are for informational purposes only and do\n    not modify the License. You may add Your own attribution notices within\n    Derivative Works that You distribute, alongside or as an addendum to the\n    NOTICE text from the Work, provided that such additional attribution notices\n    cannot be construed as modifying the License.\n\nYou may add Your own copyright statement to Your modifications and may provide\nadditional or different license terms and conditions for use, reproduction, or\ndistribution of Your modifications, or for any such Derivative Works as a whole,\nprovided Your use, reproduction, and distribution of the Work otherwise complies\nwith the conditions stated in this License.\n\n5. Submission of Contributions. Unless You explicitly state otherwise, any\nContribution intentionally submitted for inclusion in the Work by You to the\nLicensor shall be under the terms and conditions of this License, without any\nadditional terms or conditions. Notwithstanding the above, nothing herein shall\nsupersede or modify the terms of any separate license agreement you may have\nexecuted with Licensor regarding such Contributions.\n\n6. Trademarks. This License does not grant permission to use the trade names,\ntrademarks, service marks, or product names of the Licensor, except as required\nfor reasonable and customary use in describing the origin of the Work and\nreproducing the content of the NOTICE file.\n\n7. Disclaimer of Warranty. Unless required by applicable law or agreed to in\nwriting, Licensor provides the Work (and each Contributor provides its\nContributions) on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,\neither express or implied, including, without limitation, any warranties or\nconditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\nPARTICULAR PURPOSE. You are solely responsible for determining the\nappropriateness of using or redistributing the Work and assume any risks\nassociated with Your exercise of permissions under this License.\n\n8. Limitation of Liability. In no event and under no legal theory, whether in\ntort (including negligence), contract, or otherwise, unless required by\napplicable law (such as deliberate and grossly negligent acts) or agreed to in\nwriting, shall any Contributor be liable to You for damages, including any\ndirect, indirect, special, incidental, or consequential damages of any character\narising as a result of this License or out of the use or inability to use the\nWork (including but not limited to damages for loss of goodwill, work stoppage,\ncomputer failure or malfunction, or any and all other commercial damages or\nlosses), even if such Contributor has been advised of the possibility of such\ndamages.\n\n9. Accepting Warranty or Additional Liability. While redistributing the Work or\nDerivative Works thereof, You may choose to offer, and charge a fee for,\nacceptance of support, warranty, indemnity, or other liability obligations and/or\nrights consistent with this License. However, in accepting such obligations, You\nmay act only on Your own behalf and on Your sole responsibility, not on behalf of\nany other Contributor, and only if You agree to indemnify, defend, and hold each\nContributor harmless for any liability incurred by, or claims asserted against,\nsuch Contributor by reason of your accepting any such warranty or additional\nliability.\n\nEND OF TERMS AND CONDITIONS\n\nAPPENDIX: How to apply the Apache License to your work\n\nTo apply the Apache License to your work, attach the following boilerplate\nnotice, with the fields enclosed by brackets \"[]\" replaced with your own\nidentifying information. (Don't include the brackets!) The text should be\nenclosed in the appropriate comment syntax for the file format. We also recommend\nthat a file or class name and description of purpose be included on the same\n\"printed page\" as the copyright notice for easier identification within\nthird-party archives.\n\n  Copyright [yyyy] [name of copyright owner] Licensed under the Apache License,\n  Version 2.0 (the \"License\"); you may not use this file except in compliance\n  with the License. You may obtain a copy of the License at\n  http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law\n  or agreed to in writing, software distributed under the License is\n  distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n  KIND, either express or implied. See the License for the specific language\n  governing permissions and limitations under the License.",
+      "name": "Apache License 2.0 with Exceptions"
+    },
+    {
+      "licenseId": "LicenseRef-d26bcb7d-5bc8-4f05-8942-a3a42728a2e4",
+      "extractedText": "Public domain code is not subject to any license.",
+      "name": "Public Domain"
+    }
+  ],
+  "documentNamespace": "https://nxp.com/spdx/e606519e-10e9-42d4-bb4e-16b341fd51ad",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "name": "spsdk",
+      "versionInfo": "2.6",
+      "licenseConcluded": "(BSD-3-Clause)",
+      "licenseDeclared": "(BSD-3-Clause)",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-aef65fb9-0439-4bb9-8764-67ed0f730e9a",
+      "name": "spsdk_plugins_pyocd",
+      "versionInfo": "0.3.1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/main/pyocd",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-f56a2871-89c1-4491-bec4-e5b928686f24",
+      "name": "spsdk_plugins_mcu_link",
+      "versionInfo": "0.6.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/main/mcu_link",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-611a1ba9-0b89-4fff-9d7d-d22450b4ed00",
+      "name": "argparse-addons",
+      "versionInfo": "0.12.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-f6c73d2f-e044-4aba-ae8d-814f9af59d19",
+      "name": "asn1crypto",
+      "versionInfo": "1.5.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-9830bcab-1160-4305-8e3e-8191a2052595",
+      "name": "bincopy",
+      "versionInfo": "20.0.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-db696374-5153-4b8a-a7d6-1945aaad0ff5",
+      "name": "capstone",
+      "versionInfo": "4.0.2",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-006d5840-ffb0-4ea6-b6b2-70c035ede714",
+      "name": "charset-normalizer",
+      "versionInfo": "3.4.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-1655902b-68da-427d-9929-69a877510187",
+      "name": "click-command-tree",
+      "versionInfo": "1.2.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-dc0cdb1b-80ba-4983-b842-d52f1baf96ce",
+      "name": "click-option-group",
+      "versionInfo": "0.5.6",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-90534279-6299-4665-ac9f-a4dfb68d0421",
+      "name": "Click - Python Command Line Utility",
+      "versionInfo": "8.1.8",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-0fdc6cf3-2414-459e-8582-fe721387df33",
+      "name": "cmsis-pack-manager",
+      "versionInfo": "0.5.3",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-bf874d5c-156c-4104-a801-bcd3e185ecf3",
+      "name": "colorama",
+      "versionInfo": "0.4.6",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-4a6da37f-cbcc-4190-add7-8ced93fd216f",
+      "name": "crcmod",
+      "versionInfo": "1.7",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-26e06375-e0a6-4078-86fa-967d6f4e4d04",
+      "name": "deepmerge",
+      "versionInfo": "2.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-a5188664-4d24-4156-9577-0ea16a499e5a",
+      "name": "google-poppins-fonts",
+      "versionInfo": "4.003",
+      "licenseConcluded": "OFL-1.1",
+      "licenseDeclared": "OFL-1.1",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-cb96019c-d494-4cb7-a169-081d19f1df59",
+      "name": "hexdump",
+      "versionInfo": "3.3",
+      "licenseConcluded": "LicenseRef-d26bcb7d-5bc8-4f05-8942-a3a42728a2e4",
+      "licenseDeclared": "LicenseRef-d26bcb7d-5bc8-4f05-8942-a3a42728a2e4",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-77b60f63-3d56-42fe-ac35-3b6263c186ad",
+      "name": "humanfriendly",
+      "versionInfo": "10.0",
+      "licenseConcluded": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "licenseDeclared": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-79015586-2579-4647-ab94-980a1d927738",
+      "name": "idna",
+      "versionInfo": "3.1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499",
+      "name": "importlib_metadata",
+      "versionInfo": "6.11.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-e56e21e3-d909-4041-a1eb-0d15f5ec369c",
+      "name": "importlib-resources",
+      "versionInfo": "6.5.2",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-00839c4a-a80a-4217-8b11-3c6852274eaf",
+      "name": "imx",
+      "versionInfo": "0.1.3",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-c6724ef0-9dfe-4e3a-bfed-53ad132385fc",
+      "name": "intelhex",
+      "versionInfo": "2.3.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-ccfb25d4-3eb0-4977-9d19-9528402e7304",
+      "name": "intervaltree",
+      "versionInfo": "3.1.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-ef61802b-e6b9-4265-917a-5bb79c9b58ee",
+      "name": "libusb-package",
+      "versionInfo": "1.0.26.2",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c",
+      "name": "libusbsio",
+      "versionInfo": "2.1.13",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-42d7d547-744e-40f8-b42f-e658dd7163d7",
+      "name": "libuuu",
+      "versionInfo": "1.5.182.post1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7882c4c4-5480-4af7-9e3e-ff89adaeb4dc",
+      "name": "mboot",
+      "versionInfo": "0.3.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-d4d5c566-03d7-4e83-b7fb-7fb2c30c7a93",
+      "name": "oscrypto",
+      "versionInfo": "1.3.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-4a0d01eb-7051-42a7-940b-bc91443dbd90",
+      "name": "Packaging",
+      "versionInfo": "24.2",
+      "licenseConcluded": "(BSD-2-Clause OR Apache-2.0)",
+      "licenseDeclared": "(BSD-2-Clause OR Apache-2.0)",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-dd1fd930-3252-4b45-aa23-455b003f39cf",
+      "name": "platformdirs",
+      "versionInfo": "4.3.6",
+      "licenseConcluded": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "licenseDeclared": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-53fbb59c-a334-490f-be1b-9174b3c86efa",
+      "name": "prettytable",
+      "versionInfo": "3.14.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-72447d58-63e8-4713-b269-2b1f2d9146d8",
+      "name": "psf-requests",
+      "versionInfo": "2.32.3",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-a3e34117-1143-446a-acaf-a40eff04ab63",
+      "name": "psutil",
+      "versionInfo": "6.1.1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-9aa5713b-ac49-48f5-8383-214c8a51998c",
+      "name": "py3-spsdk",
+      "versionInfo": "1.10.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: alpine",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:apk/alpine/py3-spsdk@1.10.0-r0?arch=noarch",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "d8e9ffd1-f86f-48eb-9bf5-4438f764235d",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-930f678a-1424-4eab-aa44-8621105006b3",
+      "name": "py3-spsdk",
+      "versionInfo": "2.1.1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-97f6b238-94f7-4900-a7f4-07f8cdfc091c",
+      "name": "py3-spsdk",
+      "versionInfo": "2.2.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: alpine",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "aece5e9d-32a3-4711-b973-904ba77379c0",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:apk/alpine/py3-spsdk@2.2.0-r0?arch=x86_64",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-acacdb7f-c5f7-4849-8524-9ab53fa32dbf",
+      "name": "pyasn1",
+      "versionInfo": "0.6.1",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-8ae83353-f214-4dd0-be66-a3f1bb6c4128",
+      "name": "pyca/cryptography",
+      "versionInfo": "44.0.0",
+      "licenseConcluded": "(BSD-3-Clause OR Apache-2.0)",
+      "licenseDeclared": "(BSD-3-Clause OR Apache-2.0)",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-ad836798-4673-40b3-adf0-3fb21195fec5",
+      "name": "pycparser",
+      "versionInfo": "2.22",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-f2117dcc-3c4c-4c6c-aa03-a3f1b2d0cc01",
+      "name": "pyelftools",
+      "versionInfo": "0.31",
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-89778444-c925-4bc7-9a5e-2ce9dceff0f6",
+      "name": "pylink-square",
+      "versionInfo": "1.4.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b0507f2a-280b-4907-8d10-67427ce07099",
+      "name": "pyOCD",
+      "versionInfo": "0.36.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-5a47bcd5-c187-4d06-9464-861d3471dbc2",
+      "name": "pypi/setuptools",
+      "versionInfo": "69.5.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-18f06123-7a02-4df4-b8ba-9e818cfa1b44",
+      "name": "pySerial",
+      "versionInfo": "3.5",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-1cf24ec9-7253-42dd-97af-0e7a8898d710",
+      "name": "python311-filelock",
+      "versionInfo": "3.16.1",
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-8874ed3d-dd27-4b37-b5cc-d3fc54523d5e",
+      "name": "python312-fastjsonschema",
+      "versionInfo": "2.21.1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-488eccff-bbf5-4cc6-b8c4-9c10e68bed71",
+      "name": "python3-appdirs",
+      "versionInfo": "1.4.4",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-20a3fccc-eb1a-4141-8de5-fe077b91ba31",
+      "name": "python3-lark",
+      "versionInfo": "1.2.2",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-6517136d-f8b4-455b-8800-ba47aa28b75f",
+      "name": "python3-natsort",
+      "versionInfo": "8.4.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-e66f13ec-91a2-4727-ab84-f9991bfa546c",
+      "name": "python-bitarray",
+      "versionInfo": "2.9.2",
+      "licenseConcluded": "PSF-2.0",
+      "licenseDeclared": "PSF-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-9fe187f8-aef1-4dd6-9e0c-a197f33f3347",
+      "name": "python-bitstring",
+      "versionInfo": "4.2.3",
+      "licenseConcluded": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "licenseDeclared": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-0f36ef4b-f674-491f-95fd-95358a7ca4c2",
+      "name": "python-certifi",
+      "versionInfo": "2025.1.31",
+      "licenseConcluded": "MPL-2.0",
+      "licenseDeclared": "MPL-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-ecd1236c-3327-411c-ab5a-ddb64f62c42d",
+      "name": "python cffi",
+      "versionInfo": "1.17.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-0cb5a54f-8170-4f23-807b-f91eafcb194e",
+      "name": "python-mboot",
+      "versionInfo": "0.3.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-17070f8f-549f-48e3-bdc0-6fd4341ec36f",
+      "name": "Python six",
+      "versionInfo": "1.17.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-58116fc8-25b8-4742-b45d-63ea23330f23",
+      "name": "Python Sorted Containers",
+      "versionInfo": "v2.4.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-a47332b4-62a4-4558-9844-acd11ef6736f",
+      "name": "python-typing-extensions",
+      "versionInfo": "4.12.2",
+      "licenseConcluded": "LicenseRef-b8cfed1f-6eaa-4dde-9792-a4d02f24d917",
+      "licenseDeclared": "LicenseRef-b8cfed1f-6eaa-4dde-9792-a4d02f24d917",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-eef73b15-373b-4642-ac42-c6fb42302914",
+      "name": "pyusb/pyusb",
+      "versionInfo": "v1.2.1",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-ecd1b6ea-5611-46d4-8343-bac68482420f",
+      "name": "PyYAML",
+      "versionInfo": "6.0.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-eb95ee63-7e36-4dad-9e37-a3114f9ab82e",
+      "name": "ruamel-yaml",
+      "versionInfo": "0.18.10",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b02e1e13-4a75-4d17-bc1b-81238b0edad2",
+      "name": "ruamel.yaml.clib",
+      "versionInfo": "0.2.12",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-da4f5af1-8424-46b6-9cd2-cc0b5a56ad04",
+      "name": "setuptools-scm",
+      "versionInfo": "8.1.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-42f96553-bd96-4720-b927-0855a9cf402c",
+      "name": "sly",
+      "versionInfo": "0.5",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-aaac2223-6af5-4473-bec3-f7379fe61f70",
+      "name": "spsdk",
+      "versionInfo": "1.5.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "https://pypi.org/project/spsdk/1.5.0",
+      "originator": "Organization: null",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "cbe77907-9eef-4bd6-986b-5379ffe56307",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/spsdk@1.5.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-2c6db3d0-b23a-47c3-992e-62536b8ada5d",
+      "name": "spsdk",
+      "versionInfo": "2.3.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "https://pypi.org/project/spsdk/2.3.0",
+      "originator": "Organization: null",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/spsdk@2.3.0",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "a72db346-fc53-4419-aa81-61a47178d025",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-44aea1dc-df82-4e7f-ab1a-8db0c57aa46f",
+      "name": "t61codec",
+      "versionInfo": "1.0.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b0d85fad-6d50-4494-97d2-16e6658bb68d",
+      "name": "tomli",
+      "versionInfo": "2.0.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-12a785a3-8e7b-4e59-aebb-e4e3d443000b",
+      "name": "trezor/cython-hidapi",
+      "versionInfo": "0.14.0.post2",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "(AGPL-3.0 AND GPL-3.0-or-later AND BSD-3-Clause)",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false,
+      "licenseComments": "Wrong definition in BD database. According https://github.com/trezor/cython-hidapi/blob/0.14.0.post2/LICENSE.txt, the appropriate license is \"GPL-2.0-or-later *OR* BSD-3-Clause *OR* even-more-permissive-sui-generis\". BSD-3-Clause chosen."
+    },
+    {
+      "SPDXID": "SPDXRef-package-39df0f99-f8e7-4145-b07a-85f303c5360d",
+      "name": "urllib3",
+      "versionInfo": "2.3.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-a38f0668-44bd-4a89-b4fa-9fbaab920bad",
+      "name": "wasmtime",
+      "versionInfo": "24.0.0",
+      "licenseConcluded": "LicenseRef-c9bdcbe3-de95-46a0-9fd9-9be02f4ef8c4",
+      "licenseDeclared": "LicenseRef-c9bdcbe3-de95-46a0-9fd9-9be02f4ef8c4",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-c63f4eb2-3e78-486a-8e96-58de2dea2d9f",
+      "name": "wcwidth",
+      "versionInfo": "0.2.13",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-70a75646-5890-4929-86d2-fd07b2e63365",
+      "name": "x690",
+      "versionInfo": "1.0.0.post1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-256b419b-5396-4850-8f94-efdf1cead3f8",
+      "name": "zipp",
+      "versionInfo": "3.21.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "NOASSERTION",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ccfb25d4-3eb0-4977-9d19-9528402e7304"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-90534279-6299-4665-ac9f-a4dfb68d0421"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ecd1236c-3327-411c-ab5a-ddb64f62c42d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-0f36ef4b-f674-491f-95fd-95358a7ca4c2"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-8ae83353-f214-4dd0-be66-a3f1bb6c4128"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ad836798-4673-40b3-adf0-3fb21195fec5"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-42f96553-bd96-4720-b927-0855a9cf402c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-acacdb7f-c5f7-4849-8524-9ab53fa32dbf"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-9fe187f8-aef1-4dd6-9e0c-a197f33f3347"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-256b419b-5396-4850-8f94-efdf1cead3f8"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-da4f5af1-8424-46b6-9cd2-cc0b5a56ad04"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-1655902b-68da-427d-9929-69a877510187"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-dc0cdb1b-80ba-4983-b842-d52f1baf96ce"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-c6724ef0-9dfe-4e3a-bfed-53ad132385fc"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-e56e21e3-d909-4041-a1eb-0d15f5ec369c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-00839c4a-a80a-4217-8b11-3c6852274eaf"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-aaac2223-6af5-4473-bec3-f7379fe61f70"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-006d5840-ffb0-4ea6-b6b2-70c035ede714"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-db696374-5153-4b8a-a7d6-1945aaad0ff5"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-e66f13ec-91a2-4727-ab84-f9991bfa546c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-6517136d-f8b4-455b-8800-ba47aa28b75f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ecd1b6ea-5611-46d4-8343-bac68482420f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-c63f4eb2-3e78-486a-8e96-58de2dea2d9f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-930f678a-1424-4eab-aa44-8621105006b3"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-9aa5713b-ac49-48f5-8383-214c8a51998c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-20a3fccc-eb1a-4141-8de5-fe077b91ba31"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-a38f0668-44bd-4a89-b4fa-9fbaab920bad"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-79015586-2579-4647-ab94-980a1d927738"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-9830bcab-1160-4305-8e3e-8191a2052595"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-97f6b238-94f7-4900-a7f4-07f8cdfc091c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-eb95ee63-7e36-4dad-9e37-a3114f9ab82e"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-70a75646-5890-4929-86d2-fd07b2e63365"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-b02e1e13-4a75-4d17-bc1b-81238b0edad2"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-77b60f63-3d56-42fe-ac35-3b6263c186ad"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-f6c73d2f-e044-4aba-ae8d-814f9af59d19"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-611a1ba9-0b89-4fff-9d7d-d22450b4ed00"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-cb96019c-d494-4cb7-a169-081d19f1df59"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-8874ed3d-dd27-4b37-b5cc-d3fc54523d5e"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-488eccff-bbf5-4cc6-b8c4-9c10e68bed71"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-39df0f99-f8e7-4145-b07a-85f303c5360d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-aef65fb9-0439-4bb9-8764-67ed0f730e9a"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-72447d58-63e8-4713-b269-2b1f2d9146d8"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-1cf24ec9-7253-42dd-97af-0e7a8898d710"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-a3e34117-1143-446a-acaf-a40eff04ab63"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7882c4c4-5480-4af7-9e3e-ff89adaeb4dc"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-12a785a3-8e7b-4e59-aebb-e4e3d443000b"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-53fbb59c-a334-490f-be1b-9174b3c86efa"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-18f06123-7a02-4df4-b8ba-9e818cfa1b44"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-b0d85fad-6d50-4494-97d2-16e6658bb68d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-eef73b15-373b-4642-ac42-c6fb42302914"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-f56a2871-89c1-4491-bec4-e5b928686f24"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-a5188664-4d24-4156-9577-0ea16a499e5a"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-26e06375-e0a6-4078-86fa-967d6f4e4d04"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-4a6da37f-cbcc-4190-add7-8ced93fd216f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-58116fc8-25b8-4742-b45d-63ea23330f23"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-a47332b4-62a4-4558-9844-acd11ef6736f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-5a47bcd5-c187-4d06-9464-861d3471dbc2"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-17070f8f-549f-48e3-bdc0-6fd4341ec36f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-2c6db3d0-b23a-47c3-992e-62536b8ada5d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-4a0d01eb-7051-42a7-940b-bc91443dbd90"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-b0507f2a-280b-4907-8d10-67427ce07099"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-0cb5a54f-8170-4f23-807b-f91eafcb194e"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-f2117dcc-3c4c-4c6c-aa03-a3f1b2d0cc01"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-89778444-c925-4bc7-9a5e-2ce9dceff0f6"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-d4d5c566-03d7-4e83-b7fb-7fb2c30c7a93"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-0fdc6cf3-2414-459e-8582-fe721387df33"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-bf874d5c-156c-4104-a801-bcd3e185ecf3"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-42d7d547-744e-40f8-b42f-e658dd7163d7"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-dd1fd930-3252-4b45-aa23-455b003f39cf"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ef61802b-e6b9-4265-917a-5bb79c9b58ee"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-e606519e-10e9-42d4-bb4e-16b341fd51ad",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-44aea1dc-df82-4e7f-ab1a-8db0c57aa46f"
+    }
+  ]
+}

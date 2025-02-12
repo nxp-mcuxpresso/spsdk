@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Common parts used by both Device and Target SW models."""
@@ -29,7 +29,7 @@ class ModelConfig(TpIntfDescription):
 
         :param config_file: Configuration file
         """
-        with open(config_file) as f:
+        with open(config_file, encoding="utf-8") as f:
             config_data: dict = yaml.safe_load(f)
         self.config_file: str = config_file
         self.config_data: dict = config_data
@@ -63,7 +63,7 @@ class ModelConfig(TpIntfDescription):
 
     def save(self) -> None:
         """Stores back the configuration data loaded from config file."""
-        with open(self.config_file, "w") as f:
+        with open(self.config_file, "w", encoding="utf-8") as f:
             self.config_data["data"] = self.data
             yaml.safe_dump(self.config_data, f, indent=2, sort_keys=True)
 
@@ -232,7 +232,7 @@ def get_models_configs(
     :param config_class: Class of derived configuration
     :return: List of descriptors
     """
-    with open(config_file) as f:
+    with open(config_file, encoding="utf-8") as f:
         config_data: list = yaml.safe_load(f)
     configs = []
     for device_config in config_data:

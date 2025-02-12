@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@
 import functools
 import logging
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Iterator, Optional, Type
 
 from typing_extensions import Self
 
@@ -271,6 +271,9 @@ class Fuses:
         # keep the context based on the latest operation: load_from_config/read_all etc.
         self.fuse_context: list[FuseRegister] = []
 
+    def __iter__(self) -> Iterator[FuseRegister]:
+        return iter(self.fuse_regs)
+
     @property
     def fuse_operator(self) -> FuseOperator:
         """Fuse operator property."""
@@ -327,7 +330,7 @@ class Fuses:
         """
         sch_family = cls.get_validation_schemas_family()
         check_config(config, sch_family)
-        fuses = cls(config["family"], config["revision"])
+        fuses = cls(config["family"], config.get("revision", "latest"))
         fuses.load_config(config)
         return fuses
 

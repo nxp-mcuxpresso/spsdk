@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,7 +8,7 @@ alias: mimxrt1024
 info:
   spsdk_predecessor_name: rt104x
   # Web page of MCU representative
-  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1040-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-600-mhz-and-extended-temperature-range:i.MX-RT1040
+  web: https://www.nxp.com/products/i.MX-RT1040
   memory_map:
     itcm:
       start_int: 0x0

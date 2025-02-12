@@ -1,0 +1,145 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ======  FCF configuration for mcxc444.
+# Created: 31/01/2025 09:48:06.
+# NXP SPSDK version: 2.6.0.dev51+g7cb8fb6a6  ======
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mcxc041, mcxc141, mcxc142, mcxc143, mcxc144, mcxc242, mcxc243, mcxc244, mcxc443, mcxc444>
+family: mcxc444
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# --------------------------------------------===== mcxc444 [Required] =====--------------------------------------------
+fcf:
+  # -----------------------------------===== BACKDOOR_COMPARISON_KEY [Optional] =====-----------------------------------
+  # Description: Offset: 0x00000000, Width: 64b; Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command
+  # and Unsecuring the Chip Using Backdoor Key Access.
+  BACKDOOR_COMPARISON_KEY: FFFFFFFFFFFFFFFF
+  # --------------------------------------------===== FPROT [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Program flash protection bytes. Refer to the description of the Program
+  # Flash Protection Registers (FPROT0-3).
+  FPROT:
+    # ------------------------------------------===== FPROT3 [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Program Flash Protection Registers (FPROT3)
+    FPROT3: '0xFF'
+    # ------------------------------------------===== FPROT2 [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b, Program Flash Protection Registers (FPROT2)
+    FPROT2: '0xFF'
+    # ------------------------------------------===== FPROT1 [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 8b, Program Flash Protection Registers (FPROT1)
+    FPROT1: '0xFF'
+    # ------------------------------------------===== FPROT0 [Optional] =====-------------------------------------------
+    # Description: Offset: 24b, Width: 8b, Program Flash Protection Registers (FPROT0)
+    FPROT0: '0xFF'
+  # --------------------------------------------===== FSEC [Optional] =====---------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b; Flash security byte. Refer to the description of the Flash Security
+  # Register (FSEC).
+  FSEC:
+    # --------------------------------------------===== SEC [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 2b, Flash Security.
+    # - SECURE_0, (0): MCU security status is secure.
+    # - SECURE, (1): MCU security status is secure.
+    # - UNSECURE, (2): MCU security status is unsecure. (The standard shipping condition of the flash memory module is
+    # unsecure.)
+    # - SECURE_3, (3): MCU security status is secure.
+    # Possible options: <SECURE_0, SECURE, UNSECURE, SECURE_3>
+    SEC: UNSECURE
+    # ------------------------------------------===== FSLACC [Optional] =====-------------------------------------------
+    # Description: Offset: 2b, Width: 2b, Factory Security Level Access Code.
+    # - GRANTED_0, (0): NXP factory access granted
+    # - DENIED_1, (1): NXP factory access denied
+    # - DENIED_2, (2): NXP factory access denied
+    # - GRANTED_3, (3): NXP factory access granted
+    # Possible options: <GRANTED_0, DENIED_1, DENIED_2, GRANTED_3>
+    FSLACC: GRANTED_3
+    # -------------------------------------------===== MEEN [Optional] =====--------------------------------------------
+    # Description: Offset: 4b, Width: 2b, Mass Erase Enable. Enables and disables mass erase capability of the flash
+    # memory module.
+    # - ENABLED_0, (0): Mass erase is enabled
+    # - ENABLED, (1): Mass erase is enabled
+    # - DISABLED, (2): Mass erase is disabled
+    # - ENABLED_3, (3): Mass erase is enabled
+    # Possible options: <ENABLED_0, ENABLED, DISABLED, ENABLED_3>
+    MEEN: ENABLED_3
+    # -------------------------------------------===== KEYEN [Optional] =====-------------------------------------------
+    # Description: Offset: 6b, Width: 2b, Backdoor Key Security Enable. Enables or disables backdoor key access to the
+    # flash memory module.
+    # - DISABLED_0, (0): Backdoor key access disabled
+    # - DISABLED, (1): Backdoor key access disabled (preferred KEYEN state to disable backdoor key access)
+    # - ENABLED, (2): Backdoor key access enabled
+    # - DISABLED_3, (3): Backdoor key access disabled
+    # Possible options: <DISABLED_0, DISABLED, ENABLED, DISABLED_3>
+    KEYEN: DISABLED_3
+  # --------------------------------------------===== FOPT [Optional] =====---------------------------------------------
+  # Description: Offset: 0x0000000D, Width: 8b; Flash nonvolatile option byte. Refer to the description of the Flash
+  # Option Register (FOPT).
+  FOPT:
+    # -----------------------------------------===== LPBOOT[0] [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 1b, Configure Core and system clock divider (OUTDIV1) value on exit from reset.
+    # Together with LPBOOT[1], controls the reset value of OUTDIV1 value in SIM_CLKDIV1 register, and the state of the
+    # RUNM register in SMC_PMCTRL.
+    # Larger divide value selections produce lower average power consumption during POR, VLLSx recoveries and reset
+    # sequencing and after reset exit. The recovery times are also extended if the FAST_INIT option is not selected.
+    # - DIV_BY_8_OR_2, (0): VLPR mode: Core and system clock divider (OUTDIV1) is 0x7 (divide by 8).
+    # RUN mode: Core and system clock divider (OUTDIV1) is 0x1 (divide by 2).
+    # - DIV_BY_4_OR_1, (1): VLPR mode: Core and system clock divider (OUTDIV1) is 0x3 (divide by 4).
+    # RUN mode: Core and system clock divider (OUTDIV1) is 0x0 (divide by 1).
+    # Possible options: <DIV_BY_8_OR_2, DIV_BY_4_OR_1>
+    LPBOOT[0]: DIV_BY_4_OR_1
+    # ----------------------------------------===== BOOTPIN_OPT [Optional] =====----------------------------------------
+    # Description: Offset: 1b, Width: 1b, External pin selects boot options.
+    # - FORCE_FROM_ROM, (0): Force Boot from ROM if BOOTCFG0 asserted, where BOOTCFG0 is the boot config function which
+    # is muxed with NMI pin. RESET pin must be enabled (FOPT[RESET_PIN_CFG] = 1) when this option is selected. NMI pin
+    # is sampled at the end of reset (when reset pin negates). If BOOTCFG0 pin is not asserted, Boot source configured
+    # by FOPT[7:6] (BOOTSRC_SEL) bits.
+    # - BOOTSRC_SEL, (1): Boot source configured by FOPT[7:6] (BOOTSRC_SEL) bits.
+    # Possible options: <FORCE_FROM_ROM, BOOTSRC_SEL>
+    BOOTPIN_OPT: BOOTSRC_SEL
+    # ------------------------------------------===== NMI_DIS [Optional] =====------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Enables/disables control for the NMI function.
+    # - DISABLE, (0): NMI interrupts are always blocked. The associated pin continues to default to NMI pin controls
+    # with internal pullup enabled. When NMI pin function is disabled, it cannot be used as a source for low-power mode
+    # wake-up.
+    # - ENABLE, (1): NMI_b pin/interrupts reset default to enabled.
+    # Possible options: <DISABLE, ENABLE>
+    NMI_DIS: ENABLE
+    # ---------------------------------------===== RESET_PIN_CFG [Optional] =====---------------------------------------
+    # Description: Offset: 3b, Width: 1b, Enables/disables control for the RESET pin.
+    # - DISABLE, (0): RESET pin is disabled following a POR and cannot be enabled as reset function.
+    # - ENABLE, (1): RESET_b pin is dedicated. The port is configured with pullup enabled, open drain, passive filter
+    # enabled.
+    # Possible options: <DISABLE, ENABLE>
+    RESET_PIN_CFG: ENABLE
+    # -----------------------------------------===== LPBOOT[1] [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 1b, Configure device for VLPR or RUN mode on exit from reset. Together with
+    # LPBOOT[0], controls the reset value of OUTDIV1 value in SIM_CLKDIV1 register, and the state of the RUNM register
+    # in SMC_PMCTRL.
+    # - VLPR_MODE, (0): Device is configured for VLPR mode on exit from reset.
+    # - RUN_MODE, (1): Device is configured for RUN mode on exit from reset.
+    # Possible options: <VLPR_MODE, RUN_MODE>
+    LPBOOT[1]: RUN_MODE
+    # -----------------------------------------===== FAST_INIT [Optional] =====-----------------------------------------
+    # Description: Offset: 5b, Width: 1b, Selects initialization speed on POR, VLLSx, and any system reset.
+    # - DISABLE, (0): Slower initialization: The flash initialization will be slower with the benefit of reduced average
+    # current during this time. The duration of the recovery will be controlled by the clock divider selection
+    # determined by the LPBOOT setting.
+    # - ENABLE, (1): Fast Initialization: The flash has faster recoveries at the expense of higher current during these
+    # times.
+    # Possible options: <DISABLE, ENABLE>
+    FAST_INIT: ENABLE
+    # ----------------------------------------===== BOOTSRC_SEL [Optional] =====----------------------------------------
+    # Description: Offset: 6b, Width: 2b, Boot Source Selection: these bits select the boot sources if boot pin option
+    # bit BOOTPIN_OPT = 1
+    # - FLASH, (0): Boot from Flash
+    # - Reserved, (1): Reeserved
+    # - ROM_2, (2): Boot from ROM
+    # - ROM, (3): Boot from ROM
+    # Possible options: <FLASH, Reserved, ROM_2, ROM>
+    BOOTSRC_SEL: FLASH

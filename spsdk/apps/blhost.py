@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -110,7 +110,7 @@ def batch(ctx: click.Context, command_file: str) -> None:
     \b
     COMMAND_FILE    - path to blhost command file
     """
-    with open(command_file) as f:
+    with open(command_file, encoding="utf-8") as f:
         for line in f.readlines():
             tokes = shlex.split(line, comments=True)
             if len(tokes) < 1:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Programmer for LPC8xx parts."""
@@ -10,7 +10,6 @@ import sys
 from typing import Optional
 
 import click
-from serial import Serial
 
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
@@ -33,6 +32,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.lpcprog.device import LPCDevice
 from spsdk.lpcprog.interface import LPCProgInterface
 from spsdk.lpcprog.protocol import LPCProgProtocol
+from spsdk.utils.interfaces.device.serial_device import SerialDevice
 from spsdk.utils.misc import load_binary
 
 
@@ -41,7 +41,7 @@ from spsdk.utils.misc import load_binary
 @spsdk_family_option(families=LPCProgProtocol.get_supported_families(), required=False)
 @spsdk_revision_option
 @click.option("-p", "--port", help="Port/device for serial communication")
-@timeout_option(timeout=5)
+@timeout_option(timeout=1000)
 @click.option(
     "-b",
     "--baudrate",
@@ -72,7 +72,7 @@ def main(
     if not port:
         raise SPSDKError("Port must be provided")
 
-    device = Serial(port=port, baudrate=int(baudrate), timeout=timeout)
+    device = SerialDevice(port, timeout, int(baudrate))
     interface = LPCProgInterface(device)
     lpc_device = None
     if family:
@@ -119,13 +119,18 @@ def erase_sector(ctx: click.Context, start: int, end: int) -> None:
     protocol.erase_sector(start, end)
 
 
-@click.argument("end", type=INT(), required=True)
-@click.argument("start", type=INT(), required=True)
+@click.argument("end", type=INT(), required=True, metavar="END_INDEX")
+@click.argument("start", type=INT(), required=True, metavar="START_INDEX")
 @main.command(no_args_is_help=True)
 @click.pass_context
 def erase_page(ctx: click.Context, start: int, end: int) -> None:
-    """Erase one or more page(s) of on-chip flash memory."""
+    """Erase one or more page(s) of on-chip flash memory.
+
+    Start and end are page indices.
+    """
     protocol: LPCProgProtocol = ctx.obj["protocol"]
+    protocol.unlock(print_status=False)
+    protocol.prepare_sectors_for_write(start // 16, end // 16 + 1, print_status=False)
     protocol.erase_page(start, end)
 
 
@@ -192,12 +197,13 @@ def write_ram(ctx: click.Context, address: int, binary: str) -> None:
 
 
 @click.option("-f", "--frequency", help="Crystal frequency", default="12000", type=INT())
+@click.option("-r", "--retries", help="Retries for synchronization", default="10", type=INT())
 @main.command()
 @click.pass_context
-def sync(ctx: click.Context, frequency: int) -> None:
+def sync(ctx: click.Context, frequency: int, retries: int) -> None:
     """Sync connection."""
     protocol: LPCProgProtocol = ctx.obj["protocol"]
-    protocol.sync_connection(frequency)
+    protocol.sync_connection(frequency, retries)
 
 
 @main.command()
@@ -206,6 +212,22 @@ def get_info(ctx: click.Context) -> None:
     """Get information about the chip."""
     protocol: LPCProgProtocol = ctx.obj["protocol"]
     click.echo(protocol.get_info())
+
+
+@click.argument("end", type=INT(), required=True, metavar="END_INDEX")
+@click.argument("start", type=INT(), required=True, metavar="START_INDEX")
+@main.command(no_args_is_help=True)
+@click.pass_context
+def prepare_sectors(ctx: click.Context, start: int, end: int) -> None:
+    """Prepare one or more sector(s) of on-chip flash memory.
+
+    Start and end are page indices.
+
+    This command must be executed before executing
+    "Copy RAM to flash" or "Erase Sector(s)", or “Erase Pages” command.
+    """
+    protocol: LPCProgProtocol = ctx.obj["protocol"]
+    protocol.prepare_sectors_for_write(start, end)
 
 
 @main.command(no_args_is_help=True)
@@ -218,20 +240,39 @@ def go(ctx: click.Context, address: int, thumb: bool) -> None:
     protocol.go(address, thumb)
 
 
-@click.option("-b", "--binary", help="Binary file to program", required=True)
-@click.option("-s", "--sector", default=0, help="Start sector")
+@click.option("-b", "--binary", help="Binary file to program", required=True, metavar="FILE")
+@click.option("-s", "--sector", type=INT(), default="0", help="Start sector, defaults to 0")
+@click.option("-p", "--page", type=INT(), help="Start page, choose sector or page")
+@click.option(
+    "--verify/--no-verify", is_flag=True, default=True, help="Do not verify after programming"
+)
+@click.option(
+    "--erase/--no-erase", is_flag=True, default=True, help="Do not erase before programming"
+)
 @main.command(no_args_is_help=True)
 @click.pass_context
 def program_flash(
     ctx: click.Context,
     binary: str,
-    sector: int,
+    sector: int = 0,
+    page: Optional[int] = None,
+    verify: bool = True,
+    erase: bool = True,
 ) -> None:
-    """This command is used for programming the flash memory."""
+    """This command is used for programming the flash memory.
+
+    Choose either sector or page.
+
+    Before programming, the flash sector is erased.
+    Data are aligned to page size and the copied to RAM before writing the sector.
+    After programming, verification of data is performed.
+    """
     protocol: LPCProgProtocol = ctx.obj["protocol"]
     bin_data = load_binary(binary)
     with progress_bar(label="Programming flash memory") as progress_callback:
-        protocol.program_flash(bin_data, sector, progress_callback)
+        protocol.program_flash(
+            bin_data, sector, page, progress_callback, erase=erase, verify=verify
+        )
 
 
 @click.argument("length", type=INT(), required=True)

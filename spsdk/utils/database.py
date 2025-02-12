@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to manage and interact with databases used in SPSDK.
@@ -408,13 +408,16 @@ class MemBlock:
         "sdram",
         "sram",
         "sramx",
+        "sram-l",
+        "sram-u",
         "ocram",
         "ocram-ecc",
         "usb-ram",
         "flash-logical-window",
         "flexspi",
+        "xspi",
         "internal-flash",
-        "ifr0-bank",
+        "ifr-bank",
     ]
     CORES = ["a55", "cm7", "cm4", "cm33", "cm0", "cm0p"]
     SECURITY = ["s", "ns"]
@@ -498,7 +501,7 @@ class MemBlock:
                 raise SPSDKError(f"Invalid security flag in memory block name: {raw_security}")
         else:
             raise SPSDKError(f"Database memory block parse name failed on: {name}")
-        regex = re.compile(r"(?P<value>[a-zA-Z]+)(?P<instance>\d+)?")
+        regex = re.compile(r"(?P<value>[a-zA-Z\-]+)(?P<instance>\d+)?")
         res = regex.match(raw_name)
         if res is None:
             raise SPSDKError(f"Database memory block parse name failed on: {name}")
@@ -1606,6 +1609,8 @@ class FeaturesEnum(SpsdkEnum):
     DICE = (30, "dice", "Device Identifier Composition Engine")
     FASTBOOT = (31, "fastboot", "Fastboot protocol")
     NXPUUU = (32, "nxpuuu", "NXP UUU")
+    BCA = (33, "bca", "Bootloader Configuration Area")
+    FCF = (34, "fcf", "Flash Configuration Field")
 
 
 class DatabaseManager:
@@ -1693,7 +1698,7 @@ class DatabaseManager:
                     logger.debug(f"Loaded database from cache: {db_cache_file_name}")
                     return loaded_db
                 # if the hash is not same clear cache and make a new one
-                logger.error(
+                logger.warning(
                     f"Existing cached quick DB ({db_cache_file_name}) has invalid hash. It will be erased."
                 )
             except (
@@ -1832,6 +1837,8 @@ class DatabaseManager:
     DICE = FeaturesEnum.DICE.label
     FASTBOOT = FeaturesEnum.FASTBOOT.label
     NXPUUU = FeaturesEnum.NXPUUU.label
+    BCA = FeaturesEnum.BCA.label
+    FCF = FeaturesEnum.FCF.label
 
 
 def get_db(

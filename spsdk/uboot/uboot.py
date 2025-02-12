@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of U-Boot communication interfaces."""
@@ -179,10 +179,11 @@ class UbootSerial:
         output = self._device.read_until(expected=self.PROMPT).decode(self.ENCODING)
         return output
 
-    def write(self, data: str) -> None:
+    def write(self, data: str, no_exit: bool = False) -> None:
         """Write ASCII decoded data to CLI. Append LINE FEED if not present.
 
         :param data: ASCII decoded data
+        :param no_exit: Do not expect exit code
         """
         logger.debug(f"Uboot WRITE -> {data}")
         if self.LINE_FEED not in data:
@@ -238,6 +239,8 @@ class UbootFastboot:
         serial_port: Optional[str] = None,
         timeout: int = 5000,
         crc: bool = True,
+        usb_path_filter: Optional[str] = None,
+        usb_serial_no_filter: Optional[str] = None,
     ):
         """Uboot fastboot interface.
 
@@ -246,6 +249,8 @@ class UbootFastboot:
         :param buffer_size: Size of buffer
         :param timeout: Timeout, defaults to 5000
         :param crc: Calculate CRC for frame, defaults to True
+        :param usb_path_filter: USB path filter
+        :param usb_serial_no_filter: USB serial number filter
         """
         self.timeout = timeout
         self.buffer_address = buffer_address
@@ -253,7 +258,12 @@ class UbootFastboot:
         self.serial_port = serial_port
         self.is_opened = False
         self.crc = crc
-        self.uuu = SPSDKUUU(wait_timeout=timeout // 1000)
+        self.uuu = SPSDKUUU(
+            wait_timeout=timeout // 1000,
+            wait_next_timeout=timeout // 1000,
+            usb_path_filter=usb_path_filter,
+            usb_serial_no_filter=usb_serial_no_filter,
+        )
 
     def open(self) -> None:
         """Open interface."""
@@ -294,12 +304,15 @@ class UbootFastboot:
         serial.close()
         logger.info("Successfully opened fastboot in uboot serial")
 
-    def write(self, command: str) -> bool:
+    def write(self, command: str, no_exit: bool = False) -> bool:
         """Write uboot command.
 
         :param command: string command
+        :param no_exit: Do not expect exit code (run ACMD).
         :return: Return code from the libuuu
         """
+        if no_exit:
+            return self.uuu.run_uboot_acmd(command)
         return self.uuu.run_uboot(command)
 
     def read_output(self) -> str:

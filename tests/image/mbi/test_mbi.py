@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -719,6 +719,20 @@ def test_invalid_image_base_address(data_dir):
         mbi.load_from_config(
             load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
         )
+
+
+@pytest.mark.parametrize(
+    "family,mbi_image",
+    [
+        ("mimxrt595s", "evkmimxrt595_hello_world_xip_crc_no_tz_mbi.bin"),
+    ],
+)
+def test_parse_image_with_additional_padding(data_dir, family: str, mbi_image: str):
+    with open(os.path.join(data_dir, mbi_image), "rb") as f:
+        org_data = f.read()
+    extra_padding = bytes(64)
+    mbi = MasterBootImage.parse(family=family, data=org_data + extra_padding)
+    assert isinstance(mbi, MasterBootImage)
 
 
 def test_get_mbi_classes():

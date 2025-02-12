@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -39,6 +39,7 @@ from tests.cli_runner import CliRunner
         ("mimxrt1166", "flexspi_ram", "simplified", 0),
         ("mimxrt1166", "flexspi_ram", "simplified", 1),
         ("mimxrt1166", "flexspi_ram", "full", None),
+        ("mimxrt798s", "xspi_ram", "simplified", None),
     ],
 )
 def test_nxpimage_xmcd_export(
@@ -73,6 +74,7 @@ def test_nxpimage_xmcd_export(
         ("mimxrt1166", "flexspi_ram", "simplified", 0),
         ("mimxrt1166", "flexspi_ram", "simplified", 1),
         ("mimxrt1166", "flexspi_ram", "full", None),
+        ("mimxrt798s", "xspi_ram", "simplified", None),
     ],
 )
 def test_nxpimage_xmcd_parse_cli(
@@ -103,7 +105,7 @@ def test_nxpimage_xmcd_parse_cli(
 
 @pytest.mark.parametrize(
     "family",
-    ["mimxrt1176", "mimxrt1166", "mimxrt1189"],
+    ["mimxrt1176", "mimxrt1166", "mimxrt1189", "mimxrt798s"],
 )
 def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, family):
     templates_folder = os.path.join(data_dir, "xmcd", family, "templates")
@@ -166,9 +168,10 @@ def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
 
 def test_nxpimage_supported_mem_types():
     mem_types = XMCD.get_supported_memory_types()
-    assert len(mem_types) == 2
+    assert len(mem_types) == 3
     mem_types[0] == MemoryType.FLEXSPI_RAM
     mem_types[0] == MemoryType.SEMC_SDRAM
+    mem_types[0] == MemoryType.XSPI_RAM
 
 
 def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir):

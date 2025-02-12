@@ -1,0 +1,34 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =======================  Bootable Image Configuration template for mimx9596 / serial_downloader.  ========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+family: mimx9596
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, latest>
+revision: a1
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+memory_type: serial_downloader
+# ======================================================================================================================
+#                                      == Primary executable Segment definition ==
+# ======================================================================================================================
+# ------------------------------------===== Primary AHAB container [Optional] =====-------------------------------------
+# Description: This is primary AHAB image that is validated by ROM and usually contains DDR initialization and SPL code.
+# AHAB container image path. It could be used as pre-prepared binary form of AHAB and also YAML configuration file for
+# AHAB. In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+primary_image_container_set: ../outputs/primary_signed_ahab.bin
+# ======================================================================================================================
+#                                     == Secondary executable Segment definition ==
+# ======================================================================================================================
+# -----------------------------------===== Secondary AHAB container [Optional] =====------------------------------------
+# Description: This is secondary AHAB image that is validated by SPL from primary image. AHAB container image path. It
+# could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB. In case that YAML
+# configuration file is used, the Bootable image tool build the AHAB itself.
+secondary_image_container_set: ../outputs/secondary_signed_ahab.bin

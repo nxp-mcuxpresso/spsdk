@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,7 +22,9 @@ from spsdk.crypto.signature_provider import SignatureProvider, get_signature_pro
 from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt
 from spsdk.crypto.utils import get_hash_type_from_signature_size
-from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKParsingError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKParsingError, SPSDKTypeError
+from spsdk.image.bca.bca import BCA
+from spsdk.image.fcf.fcf import FCF
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi_classes import (
     MasterBootImageManifest,
@@ -345,7 +347,7 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
 
         :param data: Final Image in bytes.
         """
-        self.load_address = self.ivt_table.get_load_address(data)
+        self.load_address = self.ivt_table.get_load_address_from_data(data)
 
 
 class Mbi_MixinLoadAddressOptional(Mbi_MixinLoadAddress):
@@ -648,7 +650,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
             data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
             Endianness.LITTLE.value,
         )
-        if total_len < len(data):
+        if total_len > len(data):
             raise SPSDKParsingError("Insufficient length of input raw data!")
 
     @classmethod
@@ -685,7 +687,15 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :return: Certificate block offset
         """
         cls.check_total_length(data)
+        return cls.get_cert_block_offset_from_data(data)
 
+    @classmethod
+    def get_cert_block_offset_from_data(cls, data: bytes) -> int:
+        """Get the certificate block offset from raw data.
+
+        :param data: Raw MBI image data.
+        :return: Certificate block offset
+        """
         return int.from_bytes(
             data[cls.IVT_CRC_CERTIFICATE_OFFSET : cls.IVT_CRC_CERTIFICATE_OFFSET + 4],
             Endianness.LITTLE.value,
@@ -702,6 +712,15 @@ class Mbi_MixinIvt(Mbi_Mixin):
         """
         cls.check_total_length(data)
 
+        return cls.get_load_address_from_data(data)
+
+    @classmethod
+    def get_load_address_from_data(cls, data: bytes) -> int:
+        """Get the load address from raw data.
+
+        :param data: Raw MBI image data.
+        :return: Load address
+        """
         return int.from_bytes(
             data[cls.IVT_LOAD_ADDR_OFFSET : cls.IVT_LOAD_ADDR_OFFSET + 4],
             Endianness.LITTLE.value,
@@ -723,7 +742,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data.
         :return: TrustZone type.
         """
-        flags = cls.get_flags(data)
+        flags = cls.get_flags_from_data(data)
         return (flags >> cls.IVT_IMAGE_FLAGS_TZ_TYPE_SHIFT) & cls.IVT_IMAGE_FLAGS_TZ_TYPE_MASK
 
     @classmethod
@@ -733,7 +752,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data.
         :return: Firmware version.
         """
-        flags = cls.get_flags(data)
+        flags = cls.get_flags_from_data(data)
         if flags & cls._BOOT_IMAGE_VERSION_FLAG == 0:
             return 0
 
@@ -746,7 +765,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data.
         :return: Image sub type.
         """
-        flags = cls.get_flags(data)
+        flags = cls.get_flags_from_data(data)
 
         return (flags >> cls.IVT_IMAGE_FLAGS_SUB_TYPE_SHIFT) & cls.IVT_IMAGE_FLAGS_SUB_TYPE_MASK
 
@@ -757,7 +776,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data.
         :return: HW key enabled or not.
         """
-        flags = cls.get_flags(data)
+        flags = cls.get_flags_from_data(data)
 
         return bool(flags & cls._HW_USER_KEY_EN_FLAG)
 
@@ -768,7 +787,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data.
         :return: KeyStore is included or not.
         """
-        flags = cls.get_flags(data)
+        flags = cls.get_flags_from_data(data)
 
         return bool(flags & cls._KEY_STORE_FLAG)
 
@@ -779,7 +798,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data.
         :return: Multiple Application table is included or not.
         """
-        flags = cls.get_flags(data)
+        flags = cls.get_flags_from_data(data)
 
         return bool(flags & cls._RELOC_TABLE_FLAG)
 
@@ -816,7 +835,7 @@ class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
             data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
             Endianness.LITTLE.value,
         )
-        if total_len != 0 and total_len < len(data):
+        if total_len != 0 and total_len > len(data):
             raise SPSDKParsingError("Insufficient length of input raw data!")
 
 
@@ -852,7 +871,7 @@ class Mbi_MixinBcaTable(Mbi_Mixin):
     IMG_SIGNED_HEADER_END = IMG_FCF_OFFSET
 
 
-class Mbi_MixinBca(Mbi_Mixin):
+class Mbi_MixinBcaObsolete(Mbi_Mixin):
     """Master Boot Image Boot Configuration Area."""
 
     VALIDATION_SCHEMAS: list[str] = ["firmware_version_vx"]
@@ -926,7 +945,7 @@ class Mbi_MixinBca(Mbi_Mixin):
         )[0]
 
 
-class Mbi_MixinFcf(Mbi_Mixin):
+class Mbi_MixinFcfObsolete(Mbi_Mixin):
     """Master Boot Image Flash Configuration Field for DSC."""
 
     class DSASSLifeCycle(SpsdkEnum):
@@ -953,7 +972,7 @@ class Mbi_MixinFcf(Mbi_Mixin):
 
         :param config: Dictionary with configuration fields.
         """
-        self.lifecycle = Mbi_MixinFcf.DSASSLifeCycle.from_label(
+        self.lifecycle = Mbi_MixinFcfObsolete.DSASSLifeCycle.from_label(
             config.get("lifeCycle", "NOT_SET")
         ).tag
 
@@ -963,7 +982,7 @@ class Mbi_MixinFcf(Mbi_Mixin):
         :param output_folder: Output folder to store files.
         """
         config: dict[str, Any] = {}
-        config["lifeCycle"] = Mbi_MixinFcf.DSASSLifeCycle.from_tag(self.lifecycle).label
+        config["lifeCycle"] = Mbi_MixinFcfObsolete.DSASSLifeCycle.from_tag(self.lifecycle).label
         return config
 
     def update_fcf(
@@ -978,16 +997,14 @@ class Mbi_MixinFcf(Mbi_Mixin):
         data = bytearray(app_data)
         # Lifecycle
         if self.lifecycle != 0xFF:
-            msg = (
-                f"Setting lifecycle to {Mbi_MixinFcf.DSASSLifeCycle.from_tag(self.lifecycle).label}"
-            )
+            msg = f"Setting lifecycle to {Mbi_MixinFcfObsolete.DSASSLifeCycle.from_tag(self.lifecycle).label}"
             logger.info(msg)
             data[self.IMG_FCF_LIFECYCLE_OFFSET : self.IMG_FCF_LIFECYCLE_OFFSET + 1] = (
                 value_to_bytes(self.lifecycle, byte_cnt=1)
             )
         else:
             try:
-                current_lifecycle = Mbi_MixinFcf.DSASSLifeCycle.from_tag(
+                current_lifecycle = Mbi_MixinFcfObsolete.DSASSLifeCycle.from_tag(
                     value_to_int(
                         data[self.IMG_FCF_LIFECYCLE_OFFSET : self.IMG_FCF_LIFECYCLE_OFFSET + 1]
                     )
@@ -1458,6 +1475,155 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
         self.signature_provider = None
 
 
+class Mbi_MixinBca(Mbi_Mixin):
+    """Master Boot Image BCA class."""
+
+    VALIDATION_SCHEMAS: list[str] = ["bca"]
+    NEEDED_MEMBERS: dict[str, Any] = {"bca": None}
+
+    BCA_OFFSET = 0x3C0
+
+    family: str
+    revision: str
+    app: bytes
+    bca: Optional[BCA]
+    search_paths: Optional[list[str]]
+    total_len: Any
+
+    def mix_len(self) -> int:
+        """Get length of BCA.
+
+        :return: Length of BCA.
+        """
+        return self.bca.SIZE if self.bca else 0
+
+    def mix_load_from_config(self, config: dict[str, Any]) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        bca_cfg = config.get("bca")
+        if bca_cfg:
+            if isinstance(bca_cfg, str):
+                try:
+                    bca_cfg = load_configuration(bca_cfg, search_paths=self.search_paths)
+                except (SPSDKError, SPSDKTypeError):
+                    self.bca = BCA.parse(
+                        load_binary(bca_cfg, self.search_paths),
+                        family=self.family,
+                        revision=self.revision,
+                    )
+                    return
+            self.bca = BCA.load_from_config(bca_cfg, self.search_paths)
+        else:
+            Mbi_MixinBca.mix_parse(self, self.app)
+
+    def mix_get_config(self, output_folder: str) -> dict[str, Any]:
+        """Get the configuration of the mixin.
+
+        :param output_folder: Output folder to store files.
+        """
+        config = {}
+        if self.bca:
+            bca_cfg = self.bca.create_config()
+            filename = "bca.yaml"
+            write_file(bca_cfg, os.path.join(output_folder, filename))
+            config["bca"] = filename
+        return config
+
+    def mix_validate(self) -> None:
+        """Validate the setting of image.
+
+        :raises SPSDKError: Configuration of BCA is invalid.
+        """
+        if self.bca and not isinstance(self.bca, BCA):
+            raise SPSDKError("Validation failed: BCA is invalid format")
+
+    def mix_parse(self, data: bytes) -> None:
+        """Parse the binary to individual fields.
+
+        :param data: Final Image in bytes.
+        """
+        try:
+            self.bca = BCA.parse(
+                data[self.BCA_OFFSET :], family=self.family, revision=self.revision
+            )
+        except SPSDKError:
+            self.bca = None
+
+
+class Mbi_MixinFcf(Mbi_Mixin):
+    """Master Boot Image FCF class."""
+
+    VALIDATION_SCHEMAS: list[str] = ["fcf"]
+    NEEDED_MEMBERS: dict[str, Any] = {"fcf": None}
+
+    FCF_OFFSET = 0x400
+
+    family: str
+    revision: str
+    app: bytes
+    fcf: Optional[FCF]
+    search_paths: Optional[list[str]]
+    total_len: Any
+
+    def mix_len(self) -> int:
+        """Get length of FCF.
+
+        :return: Length of FCF.
+        """
+        return self.fcf.SIZE if self.fcf else 0
+
+    def mix_load_from_config(self, config: dict[str, Any]) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        fcf_cfg = config.get("fcf")
+        if fcf_cfg:
+            if isinstance(fcf_cfg, str):
+                try:
+                    fcf_cfg = load_configuration(fcf_cfg, search_paths=self.search_paths)
+                except (SPSDKError, SPSDKTypeError):
+                    self.fcf = FCF.parse(
+                        load_binary(fcf_cfg, self.search_paths),
+                        family=self.family,
+                        revision=self.revision,
+                    )
+                    return
+            self.fcf = FCF.load_from_config(fcf_cfg)
+        else:
+            Mbi_MixinFcf.mix_parse(self, self.app)
+
+    def mix_get_config(self, output_folder: str) -> dict[str, Any]:
+        """Get the configuration of the mixin.
+
+        :param output_folder: Output folder to store files.
+        """
+        assert self.fcf
+        fcf_cfg = self.fcf.create_config()
+        filename = "fcf.yaml"
+        write_file(fcf_cfg, os.path.join(output_folder, filename))
+        config = {}
+        config["fcf"] = filename
+        return config
+
+    def mix_validate(self) -> None:
+        """Validate the setting of image.
+
+        :raises SPSDKError: Configuration of FCF is invalid.
+        """
+        if not self.fcf or not isinstance(self.fcf, FCF):
+            raise SPSDKError("Validation failed: FCF is missing")
+
+    def mix_parse(self, data: bytes) -> None:
+        """Parse the binary to individual fields.
+
+        :param data: Final Image in bytes.
+        """
+        self.fcf = FCF.parse(data[self.FCF_OFFSET :], family=self.family, revision=self.revision)
+
+
 class Mbi_MixinHwKey(Mbi_Mixin):
     """Master Boot Image HW key user modes enable class."""
 
@@ -1832,45 +1998,82 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
     """Export Mixin to handle simple application data."""
 
     app: Optional[bytes]
-    total_len: Any
-    update_ivt: Callable[[bytes, int, int], bytes]
-
-    def collect_data(self) -> BinaryImage:
-        """Collect application data including update IVT.
-
-        :return: Image with updated IVT.
-        """
-        if not self.app:
-            raise SPSDKError("Application data is missing")
-        return BinaryImage(name="Application", binary=self.update_ivt(self.app, self.total_len, 0))
-
-
-class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data and TrustZone."""
-
-    app: Optional[bytes]
-    trust_zone: TrustZone
-    total_len: Any
-    update_ivt: Callable[[bytes, int, int], bytes]
     clean_ivt: Callable[[bytes], bytes]
     app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
+    bca: Optional[BCA]
+    fcf: Optional[FCF]
+    BCA_OFFSET: int
+    FCF_OFFSET: int
+    total_len: Any
+    ivt_table: Mbi_MixinIvt
+
+    def collect_data(self) -> BinaryImage:
+        """Collect application data including update of bca and fcf.
+
+        :return: Image with updated bca and fcf.
+        """
+        if not self.app:
+            raise SPSDKError("Application data  is missing")
+
+        ret = BinaryImage(name="Application Block")
+
+        binary = (
+            self.ivt_table.update_ivt(self.app, self.total_len, 0)
+            if hasattr(self, "ivt_table")
+            else self.app
+        )
+        bca_present = hasattr(self, "bca") and self.bca is not None
+        fcf_present = hasattr(self, "fcf") and self.fcf is not None
+
+        if bca_present or fcf_present:
+            offset = self.BCA_OFFSET if bca_present else self.FCF_OFFSET
+            ret.append_image(BinaryImage(name="Application IVT", binary=binary[:offset]))
+
+            if bca_present:
+                assert self.bca
+                ret.append_image(BinaryImage(name="BCA Settings", binary=self.bca.export()))
+                offset += self.bca.SIZE
+            if fcf_present:
+                assert self.fcf
+                ret.append_image(BinaryImage(name="FCF Settings", binary=self.fcf.export()))
+                offset += self.fcf.SIZE
+
+            ret.append_image(BinaryImage(name="Application", binary=binary[offset:]))
+        else:
+            ret.append_image(BinaryImage(name="Application", binary=binary))
+
+        if hasattr(self, "app_table") and self.app_table:
+            ret.append_image(
+                BinaryImage(name="Relocation Table", binary=self.app_table.export(ret.size))
+            )
+
+        return ret
+
+    def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
+        """Disassemble image to individual parts from image.
+
+        :param image: Image.
+        """
+        if hasattr(self, "disassembly_app_data"):
+            image = self.disassembly_app_data(image)
+
+        self.app = self.clean_ivt(image) if hasattr(self, "clean_ivt") else image
+
+
+class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
+    """Export Mixin to handle simple application data and TrustZone."""
+
+    trust_zone: TrustZone
 
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
         :return: Image with updated IVT and added TrustZone.
         """
-        if not (self.app and self.trust_zone):
-            raise SPSDKError("Application data or TrustZone is missing")
-        ret = BinaryImage(name="Application Block")
-        app = self.update_ivt(self.app, self.total_len, 0)
-        ret.append_image(BinaryImage(name="Application", binary=app))
-
-        if hasattr(self, "app_table") and self.app_table:
-            ret.append_image(
-                BinaryImage(name="Relocation Table", binary=self.app_table.export(len(app)))
-            )
+        if not self.trust_zone:
+            raise SPSDKError("TrustZone is missing")
+        ret = super().collect_data()
         tz = self.trust_zone.export()
         if len(tz):
             ret.append_image(BinaryImage(name="TrustZone Settings", binary=tz))
@@ -1885,9 +2088,7 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixin):
         tz_len = len(self.trust_zone.export())
         if tz_len:
             image = image[:-tz_len]
-        if hasattr(self, "disassembly_app_data"):
-            image = self.disassembly_app_data(image)
-        self.app = self.clean_ivt(image)
+        super().disassemble_image(image)
 
 
 class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
@@ -1937,7 +2138,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
 
         :param image: Image.
         """
-        image = image[: -self.ivt_table.get_cert_block_offset(image)]
+        image = image[: -self.ivt_table.get_cert_block_offset_from_data(image)]
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
         self.app = self.ivt_table.clean_ivt(image)
@@ -1999,7 +2200,7 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
         :param image: Image.
         """
         if self.cert_block:
-            image = image[: self.ivt_table.get_cert_block_offset(image)]
+            image = image[: self.ivt_table.get_cert_block_offset_from_data(image)]
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
         self.app = self.ivt_table.clean_ivt(image)
@@ -2579,7 +2780,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
             raise SPSDKError("Only CertBlockV1 is supported")
         image_bytes = image.export()
         if revert:
-            cert_blk_offset = self.ivt_table.get_cert_block_offset(image_bytes)
+            cert_blk_offset = self.ivt_table.get_cert_block_offset_from_data(image_bytes)
             cert_blk_size = self.cert_block.expected_size
             # Restore original part of encrypted IVT
             org_image = image_bytes[

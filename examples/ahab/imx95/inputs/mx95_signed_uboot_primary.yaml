@@ -1,0 +1,192 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================  Advanced High-Assurance Boot Configuration template for mimx9596.  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
+# default.
+# Possible options: <mimx8mn, mimx8mp, mimx8ulp, mimx9131, mimx9352, mimx9596, mimxrt1189>
+family: mimx9596
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon
+revision: a1
+# ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
+# Description: Target memory for AHAB container
+# Possible options: <serial_downloader, standard, nand_2k, nand_4k>
+target_memory: standard
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output AHAB file name
+output: ../outputs/primary_signed_ahab.bin
+# ---------------------------------------===== Container version [Optional] =====---------------------------------------
+# Description: Force container version, if not specified the default version is used. This configuration option is valid
+# only for chips that supports both AHAB container versions. Possible options <2, 1>
+container_version: 1
+# ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
+# Description: The order of containers in the list defines the order in AHAB.
+containers:
+  -
+    # -----------------------------------===== Binary AHAB container [Required] =====-----------------------------------
+    # Description: Binary Container format to add to AHAB image, Typically it could be used to add ELE Firmware.
+    binary_container:
+      # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
+      # Description: The binary file that contains AHAB "my_binary_container.bin
+      path: ./mx95a0-ahab-container.img
+
+  - # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
+    # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
+    # container.
+    container:
+      # --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
+      # Description: Defines which set is used to authenticate the container.
+      # Possible options: <none, oem, nxp>
+      srk_set: oem
+      # ---------------------------------===== Used SRK [Conditionally required] =====----------------------------------
+      # Description: Which key from SRK set is being used.
+      used_srk_id: 0
+      # -------------------------------------===== SRK revoke mask [Optional] =====-------------------------------------
+      # Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit
+      # 1 = revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
+      srk_revoke_mask: '0x00'
+      # ----------------------------------===== GDET runtime behavior [Optional] =====----------------------------------
+      # Description: This option defines runtime behavior of Glitch detector. Not supported by all devices and their ELE
+      # firmware.
+      #  - disabled:       GDET is disabled after the first OEM container has been authenticated (default behavior)
+      #  - enabled_eleapi: Automatically enable GDET during all ELE API calls
+      #  - enabled:        Leave GDET enabled
+      # Possible options: <disabled, enabled_eleapi, enabled>
+      gdet_runtime_behavior: disabled
+      # ----------------------------------===== Check all signatures [Optional] =====-----------------------------------
+      # Description: This option overrides a fuse to select verification mode.
+      #  - default: Apply default fuse policy.
+      #  - check_all_signatures: Force verification of all present signatures.
+      # Possible options: <default, check_all_signatures>
+      check_all_signatures: default
+      # ----------------------------------------===== Fast boot [Optional] =====----------------------------------------
+      # Description: This option enables fast boot mode.
+      #  - enabled: Fast boot enabled.
+      #  - slice_hash: Slice and hash mode.
+      #  - on_fly: On the fly hash.
+      # Possible options: <enabled, slice_hash, on_fly>
+      fast_boot: enabled
+      # --------------------------------------===== Fuse version [Optional] =====---------------------------------------
+      # Description: The value must be equal or greater than the version stored in fuses to allow loading this
+      # container.
+      fuse_version: 0
+      # ------------------------------------===== Software version [Optional] =====-------------------------------------
+      # Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same
+      # Fuse version field.
+      sw_version: 0
+      # -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
+      # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
+      # must not have been revoked.
+      signing_key: ../../../_data/keys/ecc384/srk0_ecc384.pem
+
+      # ================================================================================================================
+      #                     == Configuration of AHAB Container images (array of multiple images) ==
+      # ================================================================================================================
+      # ---------------------------------------===== Image array [Required] =====---------------------------------------
+      # Description: Array of image entries.
+      images:
+        -
+          # OEI with DDR PHY tunning images
+          # Image array default settings. Can be override by defines that are hidden in template:
+          # image_offset:                  0x00010400
+          # load_address:                  0x000000001FFC0000
+          # entry_point:                   0x000000001FFC0001
+          # image_type:                    executable
+          # core_id:                       cortex-m33
+          # hash_type:                     SHA384
+          # -----------------------------===== LPDDR memory FW in 1D mode [Required] =====------------------------------
+          # Description: Firmware for LPDDR4/5 memory in 1D mode.
+          lpddr_imem: ./lpddr5_imem_v202311.bin
+          # -----------------------------===== LPDDR memory FW in 2D mode [Required] =====------------------------------
+          # Description: Firmware for LPDDR4/5 memory in 2D mode.
+          lpddr_imem_qb: ./lpddr5_imem_qb_v202311.bin
+          # ----------------------------===== LPDDR memory data in 1D mode [Required] =====-----------------------------
+          # Description: Data for LPDDR4/5 memory in 1D mode.
+          lpddr_dmem: ./lpddr5_dmem_v202311.bin
+          # ----------------------------===== LPDDR memory data in 2D mode [Required] =====-----------------------------
+          # Description: Data for LPDDR4/5 memory in 2D mode.
+          lpddr_dmem_qb: ./lpddr5_dmem_qb_v202311.bin
+          # -----------------------------------------===== OEI [Required] =====-----------------------------------------
+          # Description: OEI - Optional Executable Image firmware
+          oei_ddr: ./oei-m33-ddr.bin
+
+          # OEI TCM settings (ECC etc.)
+          # Image array default settings. Can be override by defines that are hidden in template:
+          # image_offset:                  0x00010400
+          # load_address:                  0x000000001FFC0000
+          # entry_point:                   0x000000001FFC0001
+          # image_type:                    executable
+          # core_id:                       cortex-m33
+          # hash_type:                     SHA384
+          # -------------------------------------===== OEI TCM FW [Required] =====--------------------------------------
+          # Description: OEI(Optional Executable Image) TCM settings binary file.
+        - oei_tcm: ./oei-m33-tcm.bin
+
+          # System booting image
+          # Image array default settings. Can be override by defines that are hidden in template:
+          # image_offset:                  0x00080400
+          # load_address:                  0x000000001FFC0000
+          # image_type:                    executable
+          # core_id:                       cortex-m33
+          # hash_type:                     SHA384
+          # ---------------------------------===== Boot system manager [Required] =====---------------------------------
+          # Description: System manager booting image
+        - system_manager: ./m33_image-mx95evk.bin
+
+          # Cortex M7 additional application
+          # Image array default settings. Can be override by defines that are hidden in template:
+          # load_address:                  0x00000000303C0000
+          # image_type:                    executable
+          # core_id:                       cortex-m7-1
+          # hash_type:                     SHA384
+          # --------------------------===== Cortex M7 additional application [Required] =====---------------------------
+          # Description: Cortex M7 additional application
+        - cortex_m7_app: ./hello_world_sm_cm7.bin
+
+          # U-Boot SPL (Secondary program loader)
+          # Image array default settings. Can be override by defines that are hidden in template:
+          # image_offset:                  0x00010400
+          # load_address:                  0x0000000020480000
+          # image_type:                    executable
+          # core_id:                       cortex-a55
+          # hash_type:                     SHA384
+          # -----------------------------------------===== SPL [Required] =====-----------------------------------------
+          # Description: SPL firmware
+        - spl: ./u-boot-spl_mx95_19x19.bin
+
+          # V2X dummy image container definition
+          # Image array default settings. Can be override by defines that are hidden in template:
+          # load_address:                  0x000000008B000000
+          # image_type:                    v2x_dummy
+          # core_id:                       cortex-m33
+          # hash_type:                     SHA384
+          # --------------------------------------===== V2X Dummy [Required] =====--------------------------------------
+          # Description: If Present, V2X dummy image will be added to Image Array Entry (no data record)
+        - v2x_dummy: true
+
+      # ================================================================================================================
+      #                                      == Configuration of AHAB SRK table ==                                      
+      # ================================================================================================================
+      # ---------------------------------===== SRK Table [Conditionally required] =====---------------------------------
+      # Description: SRK (Super Root key) table definition.
+      srk_table:
+        # ----------------------------------------===== CA Flag [Optional] =====----------------------------------------
+        # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+        flag_ca: true
+        # ------------------------------===== Super Root Key (SRK) table [Required] =====-------------------------------
+        # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing
+        # algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
+        # sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096,
+        # dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new
+        # type of AHAB container
+        srk_array:
+          - ../../../_data/keys/ecc384/srk0_ecc384.pub
+          - ../../../_data/keys/ecc384/srk1_ecc384.pub
+          - ../../../_data/keys/ecc384/srk2_ecc384.pub
+          - ../../../_data/keys/ecc384/srk3_ecc384.pub

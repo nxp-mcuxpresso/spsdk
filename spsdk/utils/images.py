@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to keep additional utilities for binary images."""
@@ -259,7 +259,7 @@ class BinaryImage:
             # Check if it fits inside the parent image
             if end >= len(self):
                 raise SPSDKOverlapError(
-                    f"The image {image.name} doesn't fit into {self.name} parent image."
+                    f"The image '{image.name}' doesn't fit into '{self.name}' parent image."
                 )
             # Check if it doesn't overlap any other sibling image
             for sibling in self.sub_images:

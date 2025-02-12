@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/bootimg_mimx8ulp_serial_downloader.yaml
+user_cfg: inputs/u-boot-bootable.yaml
+custom_command: "%! nxpimage bootable-image get-templates -f mimx8ulp -o workspace --force"
+
+comments:
+  primary_image_container_set: path to our SPL U-Boot image configuration
+  secondary_image_container_set: path to our U-Boot ATF image configuration

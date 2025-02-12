@@ -24,7 +24,7 @@ pipeline {
             steps {
                 withVenv(
         			'uv pip install tox-uv',
-        			'tox -e py39 -- --info-check gitcov'
+        			'tox --recreate -e py39 -- --info-check gitcov'
     			)
             }
         }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of AHAB container SRK (Super Root Keys) support."""
@@ -27,7 +27,12 @@ from spsdk.crypto.keys import (
     PublicKeySM2,
 )
 from spsdk.crypto.utils import extract_public_key
-from spsdk.exceptions import SPSDKError, SPSDKLengthError, SPSDKValueError
+from spsdk.exceptions import (
+    SPSDKError,
+    SPSDKLengthError,
+    SPSDKUnsupportedOperation,
+    SPSDKValueError,
+)
 from spsdk.image.ahab.ahab_abstract_interfaces import (
     HeaderContainer,
     HeaderContainerData,
@@ -116,7 +121,7 @@ class SRKRecordBase(HeaderContainerInverted):
         0x7: (512, 4),  # RSA4096
         0x8: (32, 32),  # SM2
         0x9: (1952, 0),  # Dilithium 3 / ML-DSA-65
-        0xA: (2596, 0),  # Dilithium 5 / ML-DSA-87
+        0xA: (2592, 0),  # Dilithium 5 / ML-DSA-87
     }
 
     FLAGS_CA_MASK = 0x80
@@ -322,6 +327,7 @@ class SRKRecordBase(HeaderContainerInverted):
         :param public_key: Loaded public key.
         :param srk_flags: SRK flags for key.
         :raises SPSDKValueError: Unsupported keys size is detected.
+        :raises SPSDKUnsupportedOperation: Unsupported public key
         """
         if hasattr(public_key, "ca"):
             srk_flags |= cls.FLAGS_CA_MASK
@@ -383,7 +389,7 @@ class SRKRecordBase(HeaderContainerInverted):
                 crypto_params=param1 + param2,
             )
 
-        raise SPSDKValueError(f"Unsupported public key type: {type(public_key)}")
+        raise SPSDKUnsupportedOperation(f"Unsupported public key type: {type(public_key)}")
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -536,11 +542,11 @@ class SRKRecord(SRKRecordBase):
             if self.crypto_param2 is None:
                 ret.add_record("Crypto parameter 2", VerifierResult.ERROR, "Not exists")
 
-            elif len(self.crypto_param2) != self.KEY_SIZES[self.key_size][0]:
+            elif len(self.crypto_param2) != self.KEY_SIZES[self.key_size][1]:
                 ret.add_record(
                     "Crypto parameter 2",
                     VerifierResult.ERROR,
-                    f"Invalid length: {len(self.crypto_param2)} != {self.KEY_SIZES[self.key_size][0]}",
+                    f"Invalid length: {len(self.crypto_param2)} != {self.KEY_SIZES[self.key_size][1]}",
                 )
             else:
                 ret.add_record(
@@ -554,7 +560,7 @@ class SRKRecord(SRKRecordBase):
             public_key = self.get_public_key()
             ret.add_record("Restore public key", VerifierResult.SUCCEEDED, str(public_key))
         except SPSDKError as exc:
-            ret.add_record("Restore public key", VerifierResult.ERROR, str(exc.description))
+            ret.add_record("Restore public key", VerifierResult.WARNING, str(exc.description))
 
         return ret
 
@@ -581,7 +587,7 @@ class SRKRecord(SRKRecordBase):
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.SM2 and IS_OSCCA_SUPPORTED:
             return PublicKeySM2.recreate(self.crypto_param1 + self.crypto_param2)
 
-        raise SPSDKError(f"Unsupported public key type:{self.signing_algorithm.label}")
+        raise SPSDKUnsupportedOperation("Unsupported public key type")
 
 
 class SRKRecordV2(SRKRecordBase):
@@ -741,6 +747,8 @@ class SRKRecordV2(SRKRecordBase):
             try:
                 public_key = self.get_public_key()
                 ret.add_record("Restore public key", VerifierResult.SUCCEEDED, str(public_key))
+            except SPSDKUnsupportedOperation as exc:
+                ret.add_record("Restore public key", VerifierResult.WARNING, str(exc.description))
             except SPSDKError as exc:
                 ret.add_record("Restore public key", VerifierResult.ERROR, str(exc.description))
 
@@ -847,7 +855,7 @@ class SRKRecordV2(SRKRecordBase):
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.DILITHIUM and IS_DILITHIUM_SUPPORTED:
             return PublicKeyDilithium.parse(self.srk_data.data)
 
-        raise SPSDKError(f"Unsupported public key type:{self.signing_algorithm.label}")
+        raise SPSDKUnsupportedOperation("Unsupported public key type")
 
 
 class SRKData(HeaderContainer):

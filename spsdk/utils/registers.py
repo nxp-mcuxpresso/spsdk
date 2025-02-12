@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers descriptions."""
@@ -273,6 +273,7 @@ class RegsBitField:
         access: Access = Access.RW,
         hidden: bool = False,
         config_processor: Optional[ConfigProcessor] = None,
+        no_yaml_comments: bool = False,
     ) -> None:
         """Constructor of RegsBitField class. Used to store bitfield information.
 
@@ -285,6 +286,7 @@ class RegsBitField:
         :param reset_val: Reset value of bitfield if available.
         :param access: Access type of bitfield.
         :param hidden: The bitfield will be hidden from standard searches.
+        :param no_yaml_comments: Disable yaml comments for this register.
         """
         self.parent = parent
         self.name = name or "N/A"
@@ -298,6 +300,7 @@ class RegsBitField:
         self.config_processor = config_processor or ConfigProcessor()
         self.config_width = self.config_processor.width_update(width)
         self.reset_value = value_to_int(reset_val) if reset_val else self.get_value()
+        self.no_yaml_comments = no_yaml_comments
         if reset_val:
             self.set_value(self.reset_value, raw=True)
 
@@ -321,7 +324,7 @@ class RegsBitField:
         access = Access.from_label(spec.get("access", "RW"))
         reset_value = value_to_int(spec.get("reset_value_int", 0))
         config_processor = ConfigProcessor.from_spec(spec.get("config_preprocess"))
-
+        no_yaml_comments = value_to_bool(spec.get("no_yaml_comments", False))
         bitfield = cls(
             parent,
             name,
@@ -333,6 +336,7 @@ class RegsBitField:
             access,
             hidden,
             config_processor,
+            no_yaml_comments,
         )
 
         for enum_spec in spec.get("values", []):
@@ -540,6 +544,7 @@ class Register:
         base_endianness: Endianness = Endianness.BIG,
         alt_widths: Optional[list[int]] = None,
         hidden: bool = False,
+        no_yaml_comments: bool = False,
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
 
@@ -555,9 +560,10 @@ class Register:
         :param base_endianness: Base endianness for bytes import/export of value.
         :param alt_widths: List of alternative widths.
         :param hidden: The register will be hidden from standard searches.
+        :param no_yaml_comments: Disable yaml comments for this register.
         """
         if width % 8 != 0:
-            raise SPSDKValueError("SPSDK Register supports only widths in multiply 8 bits.")
+            raise SPSDKValueError("Register supports only widths in multiply 8 bits.")
         self.name = name
         self.offset = offset
         self.width = width
@@ -574,6 +580,7 @@ class Register:
         self.alt_widths = alt_widths
         self._alias_names: list[str] = []
         self.hidden = hidden
+        self.no_yaml_comments = no_yaml_comments
 
         # Grouped register members
         self.sub_regs: list[Self] = []
@@ -613,6 +620,7 @@ class Register:
         description = spec.get("description", "N/A")
         access = Access.from_label(spec.get("access", "RW"))
         reserved = value_to_bool(spec.get("is_reserved", False))
+        no_yaml_comments = value_to_bool(spec.get("no_yaml_comments", False))
         reg = cls(
             name=name,
             offset=offset,
@@ -622,6 +630,7 @@ class Register:
             reverse=False,
             access=access,
             hidden=reserved,
+            no_yaml_comments=no_yaml_comments,
         )
         reg._reset_value = value_to_int(spec.get("reset_value_int", 0))
         if reg._reset_value:
@@ -1295,6 +1304,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                     "skip_in_template": len(bitfields) > 0,
                     # "format": "number", # TODO add option to hexstring
                     "template_value": f"{reg.get_hex_value()}",
+                    "no_yaml_comments": reg.no_yaml_comments,
                 },
                 {  # Obsolete type
                     "type": "object",
@@ -1321,6 +1331,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                             "description": self._get_bitfield_yaml_description(bitfield),
                             "template_value": bitfield.get_value(),
                             "skip_in_template": bitfield.hidden,
+                            "no_yaml_comments": bitfield.no_yaml_comments,
                         }
                     else:
                         bitfields_schema[bitfield.name] = {
@@ -1332,6 +1343,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                             "maximum": (1 << bitfield.width) - 1,
                             "template_value": bitfield.get_enum_value(),
                             "skip_in_template": bitfield.hidden,
+                            "no_yaml_comments": bitfield.no_yaml_comments,
                         }
                 # Extend register schema by obsolete style
                 reg_schema.append(
@@ -1340,6 +1352,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                         "required": ["bitfields"],
                         "skip_in_template": True,
                         "additionalProperties": False,
+                        "no_yaml_comments": reg.no_yaml_comments,
                         "properties": {
                             "bitfields": {"type": "object", "properties": bitfields_schema}
                         },
@@ -1352,6 +1365,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                         "skip_in_template": False,
                         "required": [],
                         "additionalProperties": False,
+                        "no_yaml_comments": reg.no_yaml_comments,
                         "properties": bitfields_schema,
                     },
                 )
@@ -1359,6 +1373,7 @@ class _RegistersBase(Generic[RegisterClassT]):
             properties[reg.name] = {
                 "title": f"{reg.name}",
                 "description": f"Offset: 0x{reg.offset:08X}, Width: {reg.width}b; {reg.description}",
+                "no_yaml_comments": reg.no_yaml_comments,
                 "oneOf": reg_schema,
             }
 
@@ -1413,7 +1428,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         :raises SPSDKError: JSON parse problem occurs.
         """
         try:
-            with open(spec_file, "r") as f:
+            with open(spec_file, "r", encoding="utf-8") as f:
                 spec = json.load(f)
         except json.JSONDecodeError as exc:
             raise SPSDKError(

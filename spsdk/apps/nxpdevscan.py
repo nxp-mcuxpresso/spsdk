@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -41,6 +41,13 @@ from spsdk.utils.devicedescription import (
 )
 @click.option("--nxp", is_flag=True, default=True, help="Scan only NXP UART devices.")
 @click.option("--uboot", is_flag=True, default=False, help="Scan for U-Boot console.")
+@click.option(
+    "-r",
+    "--real-devices",
+    is_flag=True,
+    default=False,
+    help="Check if the serial device is a real device using ioctl TIOCGSERIAL.",
+)
 @timeout_option(timeout=50)
 @optgroup.group("Narrow down the scope of scanning", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option(
@@ -95,6 +102,7 @@ def main(
     nxp: bool,
     uboot: bool,
     timeout: int = 50,
+    real_devices: bool = False,
 ) -> None:
     """Utility listing all connected NXP USB and UART devices.
 
@@ -141,7 +149,9 @@ def main(
         print_devices(output, "Connected NXP USB Devices", nxp_usb_devices)
 
     if scope in ["all", "port"]:
-        nxp_uart_devices = nxpdevscan.search_nxp_uart_devices(no_scan, nxp, uboot, timeout)
+        nxp_uart_devices = nxpdevscan.search_nxp_uart_devices(
+            no_scan, nxp, uboot, timeout, real_devices
+        )
         print_devices(output, "Connected NXP UART Devices", nxp_uart_devices)
 
     if scope in ["all", "lpcusbsio"]:

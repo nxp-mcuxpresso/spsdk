@@ -10,4 +10,6 @@ AHAB
     imx93/imx93_signed_ahab_uboot
     imx95/imx95_ahab_uboot
     imx95/imx95_ahab_load_tcm
+    imx95/imx95_signed_ahab_uboot
     srk_table/srk_table
+    imx8ulp/imx8ulp_ahab_uboot

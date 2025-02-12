@@ -1,0 +1,14 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+bca:
+  type: object
+  properties:
+    bca:
+      type: object
+      title: Settings of BCA
+      description: BCA settings.
+      # properties will be added in runtime
+
+  required: [bca]

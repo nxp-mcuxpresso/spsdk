@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -637,6 +637,7 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         if db.get_bool(DatabaseManager.DAT, "dat_is_using_sha256_always", False):
             return 32
         assert isinstance(self.rot_pub, PublicKeyEcc)
+
         return self.rot_pub.key_size // 8
 
     def __str__(self) -> str:
@@ -671,7 +672,6 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
 
         :return: binary representing the DCK key
         """
-        assert isinstance(self.dck_pub, PublicKeyEcc)
         return self.dck_pub.export()
 
     def get_data_format(self, include_signature: bool = True) -> str:
@@ -809,7 +809,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
 
     def get_data_format(self, include_signature: bool = True) -> str:
         """Get the format of exported binary data."""
-        assert isinstance(self.rot_pub, PublicKeyEcc)
+        assert isinstance(self.rot_pub, (PublicKeyEcc, PublicKeyRsa))
         data_format = (
             "<"
             + "2H"  # Version
@@ -819,7 +819,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
             + "L"  # CC VU
             + "L"  # CC BEACON
             + f"{len(self.rot_meta)}s"  # RoT meta
-            + f"{self.rot_pub.coordinate_size * 2}s"  # RoT public key
+            + f"{len(self.export_dck_pub())}s"  # DCK public key
         )
         if include_signature:
             if not self.signature:
@@ -900,11 +900,9 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         ) = unpack_from(format_head, data)
         version = ProtocolVersion.from_version(version_major, version_minor)
         rot_meta = RotMetaEdgeLockEnclave.parse(data[calcsize(format_head) :])
-
-        coord_size = cls.COORDINATE_SIZE[version.minor]
-        format_tail = f"<{coord_size * 2}s{coord_size * 2}s"
-        dck_pub, signature = unpack_from(format_tail, data, calcsize(format_head) + len(rot_meta))
         rot_pub = rot_meta.srk_table.get_source_keys()[rot_meta.flags.used_root_cert]
+        format_tail = f"<{len(rot_pub.export())}s{rot_pub.signature_size}s"
+        dck_pub, signature = unpack_from(format_tail, data, calcsize(format_head) + len(rot_meta))
 
         return cls(
             version=version,

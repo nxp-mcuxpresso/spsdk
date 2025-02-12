@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The test file for PFR API."""
@@ -16,6 +16,7 @@ from spsdk.crypto.keys import PrivateKeyRsa
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea, SPSDKPfrRotkhIsNotPresent
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import load_configuration, load_file
 
 
@@ -49,26 +50,16 @@ def test_generate_cfpa(data_dir):
 def test_supported_devices():
     """Test PFR tool - Getting supported devices."""
     cfpa_devices = CFPA.get_supported_families()
+    assert isinstance(cfpa_devices, list)
+    assert cfpa_devices == DatabaseManager().quick_info.devices.get_devices_with_feature(
+        "pfr", "cfpa"
+    )
+
     cmpa_devices = CMPA.get_supported_families()
-    cmpa_devices.remove("mcxa156")
-    cmpa_devices.remove("mcxa155")
-    cmpa_devices.remove("mcxa154")
-    cmpa_devices.remove("mcxa144")
-    cmpa_devices.remove("mcxa145")
-    cmpa_devices.remove("mcxa146")
-    cmpa_devices.remove("mcxa142")
-    cmpa_devices.remove("mcxa143")
-    cmpa_devices.remove("mcxa152")
-    cmpa_devices.remove("mcxa153")
-    cmpa_devices.remove("mcxa276")
-    cmpa_devices.remove("mcxa275")
-    cmpa_devices.remove("mcxa176")
-    cmpa_devices.remove("mcxa175")
-    cmpa_devices.remove("mcxa166")
-    cmpa_devices.remove("mcxa165")
-    cmpa_devices.remove("mcxa132")
-    cmpa_devices.remove("mcxa133")
-    assert sorted(cmpa_devices) == sorted(cfpa_devices)
+    assert isinstance(cmpa_devices, list)
+    assert cmpa_devices == DatabaseManager().quick_info.devices.get_devices_with_feature(
+        "pfr", "cmpa"
+    )
 
 
 def test_seal_cfpa():

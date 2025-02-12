@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -373,12 +373,14 @@ def test_nxpimage_ahab_parse_sm2(data_dir, binary, family, target_memory):
 @pytest.mark.parametrize(
     "config_file",
     [
-        ("return_lc.yaml"),
+        ("sm_return_lc.yaml"),
+        ("sm_key_import.yaml"),
+        ("sm_key_exchange.yaml"),
     ],
 )
 def test_nxpimage_signed_message_export(cli_runner: CliRunner, tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
-        config_file = f"{data_dir}/ahab/{config_file}"
+        config_file = f"{data_dir}/ahab/signed_msg/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
         cmd = f"signed-msg export -c {new_config}"
         cli_runner.invoke(nxpimage.main, cmd.split())
@@ -393,7 +395,7 @@ def test_nxpimage_signed_message_export(cli_runner: CliRunner, tmpdir, data_dir,
 
 def test_nxpimage_signed_message_parse_cli(cli_runner: CliRunner, tmpdir, data_dir):
     with use_working_directory(data_dir):
-        cmd = f"signed-msg parse -f mimxrt1189 -b ahab/signed_msg_oem_field_return.bin -o {tmpdir}"
+        cmd = f"signed-msg parse -f mimxrt1189 -b ahab/signed_msg/signed_msg_oem_field_return.bin -o {tmpdir}"
         cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))
 
@@ -414,7 +416,7 @@ def test_nxpimage_signed_msg_template_cli(cli_runner: CliRunner, tmpdir, family,
 
 def test_nxpimage_signed_message_parse(data_dir):
     with use_working_directory(data_dir):
-        original_file = load_binary(f"{data_dir}/ahab/signed_msg_oem_field_return.bin")
+        original_file = load_binary(f"{data_dir}/ahab/signed_msg/signed_msg_oem_field_return.bin")
         signed_msg = SignedMessage(family="mimxrt1189")
         signed_msg.parse(original_file)
         signed_msg.verify().validate()
@@ -422,9 +424,11 @@ def test_nxpimage_signed_message_parse(data_dir):
         assert original_file == exported_signed_msg
 
 
-def test_nxpimage_signed_message_load(data_dir):
+def test_nxpimage_signed_message_key_exchange(data_dir):
     with use_working_directory(data_dir):
-        config = load_configuration(os.path.join(data_dir, "ahab", "signed_msg_config.yaml"))
+        config = load_configuration(
+            os.path.join(data_dir, "ahab", "signed_msg", "sm_key_exchange.yaml")
+        )
         signed_msg = SignedMessage.load_from_config(config)
         signed_msg.update_fields()
         signed_msg.verify().validate()

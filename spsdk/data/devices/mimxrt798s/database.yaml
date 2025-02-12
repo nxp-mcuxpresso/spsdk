@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -229,18 +229,12 @@ features:
 
   # ======== XMCD section ========
   xmcd:
+    header:
+      reg_spec: ../../common/xmcd/xspi_ram_header.json
     mem_types:
-      flexspi_ram:
+      xspi_ram:
         simplified:
-          reg_spec: ../../common/xmcd/flexspi_ram_simplified.json
-        full:
-          reg_spec: ../../common/xmcd/flexspi_ram_full.json
-      semc_sdram:
-        simplified:
-          reg_spec: ../../common/xmcd/semc_sdram_simplified.json
-        full:
-          reg_spec: ../../common/xmcd/semc_sdram_full.json
-
+          reg_spec: ../../common/xmcd/xspi_ram_simplified.json
   # ======== Bootable image section ========
   bootable_image:
     mem_types:

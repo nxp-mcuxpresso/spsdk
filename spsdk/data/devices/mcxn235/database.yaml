@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,11 +29,11 @@ info:
       size_int: "0x8000"
       external: false
       __comment: Does not work as target `onchip RAM` memory
-    ifr0-bank1_ns:
+    ifr-bank1_ns:
       start_int: "0x1008000"
       size_int: "0x8000"
       external: false
-    ifr0-bank1_s:
+    ifr-bank1_s:
       start_int: "0x11008000"
       size_int: "0x8000"
       external: false

@@ -143,6 +143,8 @@ excluded_files = [
     ".pre-commit-config.yaml",
     ".readthedocs.yml",
     "spsdk/__version__.py",
+	".github/workflows/python-ci.yml",
+	".github/workflows/deploy.yml"
 ]
 
 
@@ -192,7 +194,7 @@ root_package = "spsdk"
 "LGPL-2.0" = ["GPL-2.0-or-later"]
 "LGPL-2.1" = ["LGPL-2.1-or-later"]
 "ISC" = ["ISC license"]
-"Unlincense" = ["The Unlicense", "The Unlicense (Unlicense)"]
+"Unlicense" = ["The Unlicense", "The Unlicense (Unlicense)"]
 
 [tool.nxp_codecheck]
 # Reports output directory
@@ -207,7 +209,7 @@ checkers = [
     {"pylint" = { timeout = 300 } },
     { "mypy" = { timeout = 300 } },
     "dependencies",
-    "pydocstyle",
+    { "pydocstyle" = { timeout = 200 } },
     "ruff",
     { "radon_c" = { info_only = true, timeout = 60 } },
     { "radon_d" = { timeout = 60 } },
@@ -220,7 +222,7 @@ checkers = [
     ] } },
     { "cspell" = { info_only = true } },
     { "bandit" = { info_only = true } },
-    "black_nb",
+    { "black_nb" = { timeout = 120 } },
     "isort_nb",
     "jupyter",
 ]
@@ -254,6 +256,9 @@ spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
 [tool.release-tools.blackduck.env]
 PROTEX_PROJECT_ID = "c_spsdk_automation_19733"
 PROTEX_TEMPLATE = "t_reportwithobligations_7215"
+
+[tool.release-tools.blackduck_sca]
+project_name = "spsdk"
 
 [tool.check-wheel-contents]
 ignore = "W002" # Wheel contains duplicate files

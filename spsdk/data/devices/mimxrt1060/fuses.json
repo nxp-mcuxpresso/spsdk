@@ -1,5 +1,5 @@
 {
-    "cpu": "MIMXRT1064",
+    "cpu": "MIMXRT1060",
     "groups": [
         {
             "group": {

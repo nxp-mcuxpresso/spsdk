@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """NXP USB Device Scanner API."""
 
-
+import array
 import logging
 import platform
 import struct
@@ -16,8 +16,14 @@ from typing import Any, Optional
 from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial import SerialException
 from serial.tools.list_ports import comports
+from serial.tools.list_ports_common import ListPortInfo
 
-from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKPermissionError
+from spsdk.exceptions import (
+    SPSDKConnectionError,
+    SPSDKError,
+    SPSDKPermissionError,
+    SPSDKUnsupportedOperation,
+)
 from spsdk.mboot.interfaces.sdio import MbootSdioInterface
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
@@ -154,8 +160,64 @@ def search_uuu_usb_devices() -> list[UUUDeviceDescription]:
     return devices
 
 
+def is_real_tty_device(device: str) -> bool:
+    """Check if a /dev/ttyS* device is a real serial device using ioctl.
+
+    Check only for Linux.
+    Check is based on ioctl TIOCGSERIAL. If the device is not a real serial device,
+    the ioctl will return PORT_UNKNOWN (0).
+
+    :param device: The device path.
+    :return: True if the device is a real serial device, False otherwise.
+    """
+    if platform.system() != "Linux":
+        raise SPSDKUnsupportedOperation("This function is only supported on Linux.")
+    import fcntl  # pylint: disable=import-error
+
+    if not device.startswith("/dev/ttyS"):
+        # We are interested only in /dev/ttyS* devices, not /dev/ttyUSB* or /dev/ttyACM*
+        return True
+
+    # Define the TIOCGSERIAL ioctl command
+    TIOCGSERIAL = 0x541E
+    try:
+        with open(device, "rb") as fd:
+            serial_info = array.array("i", [0] * 32)
+            fcntl.ioctl(fd, TIOCGSERIAL, serial_info, True)  # type: ignore[attr-defined]
+            if serial_info[0] != 0:  # PORT_UNKNOWN is 0
+                return True
+            return False
+    except Exception:
+        return False
+
+
+def filter_uart_devices(ports: list[ListPortInfo], real_devices: bool) -> list[ListPortInfo]:
+    """Filter UART devices.
+
+    :ports: ListPortInfo from pyserial
+    :real_devices: Scan for real devices using ioctl TIOCGSERIAL.
+    """
+    # on macOS, we need to filter out ports that are not serial ports
+    if platform.system() == "Darwin":
+        ports = [
+            port
+            for port in ports
+            if port.device.startswith("/dev/cu.usb") or port.device.startswith("/dev/tty.usb")
+        ]
+
+    if platform.system() == "Linux" and real_devices:
+        # filter out non-serial devices
+        ports = [port for port in ports if is_real_tty_device(port.device)]
+
+    return ports
+
+
 def search_nxp_uart_devices(
-    scan: bool = True, all_devices: bool = True, scan_uboot: bool = True, timeout: int = 50
+    scan: bool = True,
+    all_devices: bool = True,
+    scan_uboot: bool = True,
+    timeout: int = 50,
+    real_devices: bool = False,
 ) -> list[UartDeviceDescription]:
     """Returns a list of all NXP devices connected via UART.
 
@@ -163,6 +225,7 @@ def search_nxp_uart_devices(
     :all_devices: whether to return all devices or only NXP devices
     :scan_uboot: whether to scan for U-Boot console devices
     :timeout: timeout for UART scan in ms
+    :real_devices: Check if the device is real using ioctl TIOCGSERIAL.
     :retval: list of UartDeviceDescription devices from devicedescription module
     """
     retval = []
@@ -174,13 +237,7 @@ def search_nxp_uart_devices(
         # Get only NXP devices
         ports = [port for port in comports() if port.vid in NXP_USB_DEVICE_VIDS]
 
-    # on macOS, we need to filter out ports that are not serial ports
-    if platform.system() == "Darwin":
-        ports = [
-            port
-            for port in ports
-            if port.device.startswith("/dev/cu.usb") or port.device.startswith("/dev/tty.usb")
-        ]
+    ports = filter_uart_devices(ports, real_devices)
 
     if not scan:
         return [

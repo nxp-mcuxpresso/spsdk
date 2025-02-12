@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """NXPDICE application is designed to cover DICE-related operations."""
@@ -400,7 +400,7 @@ def create_models(models_dir: str, number: int, prefix: str) -> None:
     rtf = secrets.token_hex(32)
     # default (after-reset) HAD value
     had = "0ff0035500000022ffffffff000000000000dc000000018f000000000000000000000000000000000000000000000000"
-    with open(os.path.join(models_dir, "config.yaml"), "w") as f:
+    with open(os.path.join(models_dir, "config.yaml"), "w", encoding="utf-8") as f:
         f.writelines(
             [
                 "dice_ca_prk: dice_ca_prk.pem\n",
@@ -429,7 +429,7 @@ def add_device(models_dir: str, name: str) -> None:
     die_puk.save(file_path=os.path.join(models_dir, name, "die_puk.pem"))
 
     uuid = secrets.token_hex(16)
-    with open(os.path.join(models_dir, name, "config.yaml"), "w") as f:
+    with open(os.path.join(models_dir, name, "config.yaml"), "w", encoding="utf-8") as f:
         f.writelines(
             [
                 f"uuid: {uuid}\n",

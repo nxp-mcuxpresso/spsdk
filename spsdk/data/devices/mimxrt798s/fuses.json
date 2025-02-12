@@ -1,5 +1,5 @@
 {
-    "cpu": "General",
+    "cpu": "MIMXRT798s",
     "shadow_reg_base_addr_int": "0x40018000",
     "groups": [
         {

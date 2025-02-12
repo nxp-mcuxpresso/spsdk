@@ -1,0 +1,41 @@
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
+# default.
+# Possible options: <mimx8ulp, mimx9352, mimx9596, mimxrt1189>
+family: mimx8ulp
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon
+revision: latest
+# ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
+# Description: Target memory for AHAB container
+# Possible options: <nor, serial_downloader, nand_2k, nand_4k>
+target_memory: serial_downloader
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output AHAB file name
+output: outputs/u-boot-atf-container.img
+# ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
+# Description: The order of containers in the list defines the order in AHAB.
+containers:
+  - container:
+      # --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
+      # Description: Defines which set is used to authenticate the container.
+      # Possible options: <none, oem, nxp>
+      srk_set: none
+      # ================================================================================================================
+      #                     == Configuration of AHAB Container images (array of multiple images) ==
+      # ================================================================================================================
+      # ---------------------------------------===== Image array [Required] =====---------------------------------------
+      # Description: Array of image entries.
+      images:
+        - # ---------------------------------------===== ATF binary [Required] =====----------------------------------------
+          # Description: ATF binary file.
+          atf: bl31-imx8ulp.bin-optee
+
+        - # --------------------------------------===== U-Boot binary [Required] =====--------------------------------------
+          # Description: U-Boot binary file.
+          uboot: u-boot-imx8ulpevk.bin-sd
+        - # --------------------------------------===== TEE binary [Required] =====--------------------------------------
+          tee: tee.bin

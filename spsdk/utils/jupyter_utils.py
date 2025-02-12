@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Module to keep additional utilities for jupyter notebooks."""
 
 import base64
@@ -243,7 +244,7 @@ try:
 
         def get_config_download_button_html(self) -> str:
             """Generate the HTML for the config download button."""
-            with open(self.user_cfg_path, "r") as file:
+            with open(self.user_cfg_path, "r", encoding="utf-8") as file:
                 user_cfg_content = file.read()
             user_cfg_base64 = base64.b64encode(user_cfg_content.encode()).decode()
             download_button_html = f"""

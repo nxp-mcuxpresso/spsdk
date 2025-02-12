@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +19,7 @@ latest: b0
 
 # General MCU information
 info:
-  use_in_doc: False # Include this MCU in generated documentation
+  use_in_doc: True # Include this MCU in generated documentation
   purpose: i.MX 9 Applications Processors
   spsdk_predecessor_name: mx95
   # Web page of MCU representative
@@ -210,9 +210,11 @@ features:
         EXECUTABLE_FAST_BOOT_IMAGE:
           [0x0A, executable_fast_boot_image, Executable fast boot Image]
         V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
+
       ele:
         ELE_AS_IMAGE: [0x05, ele_as_image, EdgeLock Enclave Image in OEM Image]
         ELE: [0x06, ele, EdgeLock Enclave Image]
+
       v2x:
         V2X_AS_IMAGE: [0x0A, v2x_as_image, V2X image as OEM Image]
         V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -42,8 +42,7 @@ def srk_record():
         hash_type=EnumHashAlgorithm.SHA256,
         key_size=0x05,
         srk_flags=0,
-        crypto_param1=bytes.fromhex(5 * "5511"),
-        crypto_param2=bytes.fromhex(10 * "aabb"),
+        crypto_params=bytes.fromhex(5 * "5511") + bytes.fromhex(10 * "aabb"),
     )
 
 
@@ -72,7 +71,7 @@ def blob():
     return AhabBlob(
         flags=0x80,
         size=0x20,
-        wrapped_key=bytes.fromhex(80 * "23"),
+        dek_keyblob=bytes.fromhex(80 * "23"),
     )
 
 
@@ -129,7 +128,9 @@ def ahab_container(request):
 
 @pytest.fixture(scope="function")
 def ahab_image(request):
-    return AHABImage(family="mimxrt1189", ahab_containers=[request.getfixturevalue("ahab_container")])
+    return AHABImage(
+        family="mimxrt1189", ahab_containers=[request.getfixturevalue("ahab_container")]
+    )
 
 
 def test_container_head_compare(container_head):

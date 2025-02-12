@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for the automated generation of schemas documentation for nxpimage
@@ -143,7 +143,7 @@ def append_schema(
 
     html_file = title.replace(" ", "_") + ".html"
 
-    with open(file, "a+") as f:
+    with open(file, "a+", encoding="utf-8") as f:
         f.write(f"## {title}\n")
         if note:
             f.write("\n")
@@ -179,7 +179,7 @@ def append_schema(
 """
         )
 
-    with open(os.path.join(HTML_SCHEMAS_PATH, html_file), "w") as f:
+    with open(os.path.join(HTML_SCHEMAS_PATH, html_file), "w", encoding="utf-8") as f:
         f.write(parsed)
 
 
@@ -407,9 +407,9 @@ def get_fcb_doc() -> None:
         for mem in memories:
             validation_schemas = FCB.get_validation_schemas(fam, mem)
             schema = get_schema(validation_schemas)
-            schema["title"] = f"FCB for {fam} and {mem}"
+            schema["title"] = f"FCB for {fam} and {mem.label}"
             parsed_schema = parse_schema(schema)
-            template = get_template([schema], f"FCB for {fam} and {mem}")
+            template = get_template([schema], f"FCB for {fam} and {mem.label}")
             append_schema(parsed_schema, template, FCB_SCHEMAS_FILE, title=schema["title"])
 
 
@@ -422,14 +422,18 @@ def get_xmcd_doc() -> None:
     for fam in families:
         memories = XMCD.get_supported_memory_types(fam)
         for mem in memories:
-            validation_schemas = XMCD.get_validation_schemas(
-                fam, MemoryType.from_label(mem.name), ConfigurationBlockType.FULL
-            )
-            schema = get_schema(validation_schemas)
-            schema["title"] = f"XMCD for {fam} and {mem}"
-            parsed_schema = parse_schema(schema)
-            template = get_template([schema], f"XMCD for {fam} and {mem}")
-            append_schema(parsed_schema, template, XMCD_SCHEMAS_FILE, title=schema["title"])
+            config_types = XMCD.get_supported_configuration_types(fam, mem)
+            for cfg_type in config_types:
+                validation_schemas = XMCD.get_validation_schemas(
+                    fam, MemoryType.from_label(mem.name), cfg_type
+                )
+                schema = get_schema(validation_schemas)
+                schema["title"] = f"XMCD for {fam} and {mem.label}_{cfg_type.label}"
+                parsed_schema = parse_schema(schema)
+                template = get_template(
+                    [schema], f"XMCD for {fam} and {mem.label}_{cfg_type.label}"
+                )
+                append_schema(parsed_schema, template, XMCD_SCHEMAS_FILE, title=schema["title"])
 
 
 def write_table(header: List[str], values: List[List[str]], table_name: str, table_file_path: str):

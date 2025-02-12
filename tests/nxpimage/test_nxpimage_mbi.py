@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -68,6 +68,8 @@ mbi_basic_tests = [
     ("mb_xip_plain.yaml", "mcxn9xx"),
     ("mb_xip_plain.yaml", "rt7xx"),
     ("mb_xip_crc.yaml", "rt7xx"),
+    ("mb_xip_plain.yaml", "mcxc444"),
+    ("mb_xip_plain_bca.yaml", "mcxc444"),
 ]
 
 mbi_signed_tests = [

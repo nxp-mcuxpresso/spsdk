@@ -1,0 +1,53 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===================  Master Boot Image (plain) recreated configuration from :31/01/2025 09:48:06.  ===================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <k32w148, kw45b41z5, kw45b41z8, kw47b42z83, kw47b42z96, kw47b42z97, kw47b42zb2, kw47b42zb3,
+# kw47b42zb6, kw47b42zb7, kw47z42082, kw47z42092, kw47z420b2, kw47z420b3, lpc5502, lpc5504, lpc5506, lpc5512, lpc5514,
+# lpc5516, lpc5526, lpc5528, lpc5534, lpc5536, lpc55s04, lpc55s06, lpc55s14, lpc55s16, lpc55s26, lpc55s28, lpc55s36,
+# lpc55s66, lpc55s69, mc56f81646, mc56f81648, mc56f81666, mc56f81668, mc56f81746, mc56f81748, mc56f81766, mc56f81768,
+# mc56f81866, mc56f81868, mcxa132, mcxa133, mcxa142, mcxa143, mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154,
+# mcxa155, mcxa156, mcxa165, mcxa166, mcxa175, mcxa176, mcxa275, mcxa276, mcxc041, mcxc141, mcxc142, mcxc143, mcxc144,
+# mcxc242, mcxc243, mcxc244, mcxc443, mcxc444, mcxn235, mcxn236, mcxn546, mcxn547, mcxn946, mcxn947, mcxw235, mcxw236,
+# mcxw716a, mcxw716c, mcxw727a, mcxw727c, mcxw727d, mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s, mimxrt735s,
+# mimxrt758s, mimxrt798s, mwct2012, mwct2012a, mwct20d2, mwct20d2a, nhs52s04, rw610, rw612>
+family: mcxc444
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram, Internal flash (XIP), External flash (XIP), Internal Flash (XIP), External Flash
+# (XIP), RAM, ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp, nxp_signed, Plain, CRC, Signed, Encrypted +
+# Signed, NXP Signed, NXP signed, encrypted>
+outputImageAuthenticationType: plain
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: .\workspace\output_images\mcxc444\mb_xip_plain_bca.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: .\workspace\input_images\mcxc444_hello_world_bca.bin
+# ======================================================================================================================
+#                                            == Flash Configuration Fields ==
+# ======================================================================================================================
+# ------------------------------------===== FCF binary/config file [Required] =====-------------------------------------
+# Description: Path to FCF binary or config file.
+fcf: ./workspace/cfgs/mcxc444/fcf.yaml
+
+# ------------------------------------===== BCA binary/config file [Required] =====-------------------------------------
+# Description: Path to BCA binary or config file.
+bca: ./workspace/cfgs/mcxc444/bca.yaml
