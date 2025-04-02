@@ -34,7 +34,13 @@ from spsdk.el2go.bulk import ServiceDB
 from spsdk.el2go.database import SecureObjectsDB
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.el2go.secure_objects import SecureObjects
-from spsdk.utils.misc import load_binary, load_configuration, load_text, write_file
+from spsdk.utils.misc import (
+    get_printable_path,
+    load_binary,
+    load_configuration,
+    load_text,
+    write_file,
+)
 
 # use the same set of interfaces for all commands
 el2go_fw_interface = spsdk_el2go_interface(sdio=False, can=False, plugin=False)
@@ -495,6 +501,7 @@ def provision_device(
         os.makedirs(workspace, exist_ok=True)
 
     client = _create_client(config)
+    interface.prepare(client.loader)
     uuid = interface.get_uuid()
     if workspace:
         write_file(uuid, os.path.join(workspace, "uuid.txt"), mode="w")
@@ -653,7 +660,9 @@ def get_template(family: str, output: str) -> None:
     """Get template for the configuration file used in other command."""
     yaml_data = EL2GOTPClient.generate_config_template(family=family)
     write_file(data=yaml_data, path=output)
-    click.echo(f"The EL2GO template for {family} has been saved into {output} YAML file")
+    click.echo(
+        f"The EL2GO template for {family} has been saved into {get_printable_path(output)} YAML file"
+    )
 
 
 @main.command(name="test-connection", no_args_is_help=True)

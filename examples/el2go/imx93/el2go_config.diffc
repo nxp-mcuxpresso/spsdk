@@ -1,0 +1,18 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: config_template.yaml
+user_cfg: config_example.yaml
+custom_command: "%! el2go-host get-template -f mimx9352 -o config_template.yaml --force"
+
+comments:
+  url: "URL to EdgeLock 2GO backend API, typically https://api.edgelock2go.com"
+  api_key: "It's strongly recommended not to put your API key directly into config file"
+  device_group_id: "You'll get an Device Group ID in EL2GO Server Web Interface"
+  nc12: "Product's 12NC number from EL2GO Server Web Interface"
+  secure_objects_address: "This is an address in RAM where the secure objects will be stored before writing to FAT"
+  fatwrite_filename: "This is the filename where secure objects will be written in FAT filesystem"
+  oem_provisioning_config_filename: "This is the optional OEM provisioning configuration filename, that will be written together with assets. he OEM Provisioning Application needs a configuration file for the provisioning process. The user has the possibility to load this configuration file on the filesystem if not already provided. We recommend to use the Yocto Layer provided by the application to load the configuration file (for more details see https://github.com/nxp-imx/oem-prov-app documentation)."
+  linux_boot_sequence: "Configuration for Linux boot sequence that will be executed"
+  boot_linux: "Set to true to boot Linux boot after provisioning"
+  uboot_path: "Path to U-Boot bootloader binary used for writing assets to EMMC/SD"
+  fatwrite_device_partition: "Device and partition for writing secure objects (e.g., '0:1')"

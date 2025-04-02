@@ -70,7 +70,7 @@ def family_info(family: Optional[str], peripheral: Optional[str] = None) -> None
     table_p_header = ["#", "Family"]
     table_p_header.extend(peripherals)
     table_p = prettytable.PrettyTable(table_p_header)
-    table_p.set_style(prettytable.DOUBLE_BORDER)
+    table_p.set_style(prettytable.TableStyle.DOUBLE_BORDER)
     for i, f in enumerate(families):
         row = [
             colorama.Fore.YELLOW + str(i) + colorama.Style.RESET_ALL,
@@ -89,7 +89,7 @@ def family_info(family: Optional[str], peripheral: Optional[str] = None) -> None
         table_ow = prettytable.PrettyTable(
             ["#", "Type", "Name", "Manufacturer", "Interface", "Option words", "Tested"]
         )
-        table_ow.set_style(prettytable.DOUBLE_BORDER)
+        table_ow.set_style(prettytable.TableStyle.DOUBLE_BORDER)
         table_ow.align["Option words"] = "l"
         i = 0
 

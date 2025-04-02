@@ -83,7 +83,7 @@ uboot_path:
   properties:
     uboot_path:
       type: string
-      format: file
+      format: optional_file
       title: Path to U-Boot binary
       description: Path to U-Boot binary that will be used for writing assets to EMMC/SD
       template_value: u-boot.bin
@@ -139,9 +139,9 @@ fatwrite:
     fatwrite_device_partition:
       type: string
       title: Device and partition for writing the secure objects.
-      description: Device and partition for writing the secure objects, separated by colon. Passed to U-Boot fatwrite command.
-      template_value: 0:1
-      default: 0:1
+      description: Device and partition for writing the secure objects, separated by colon. Passed to U-Boot fatwrite command. Enclose in quotes.
+      template_value: "0:1"
+      default: "0:1"
     oem_provisioning_config_filename:
       type: string
       title: Filename of the configuration file for OEM Provisioning App

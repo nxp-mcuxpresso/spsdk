@@ -247,18 +247,24 @@ scr_file = "SW_Content_Register_SPSDK.txt"
 [tool.release-tools.testpypi]
 test_cmd = "spsdk --version"
 
+[tool.release-tools.test_artifacts_collector]
+install_hook = [
+    'uv pip install ".[all]"', 
+    'uv pip install -r requirements-develop.txt'
+]
+
 [tool.release-tools.test_artifacts_collector.jenkins_jobs]
 spsdk_full_test_scope_macos = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_ubuntu = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_win10 = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
-
 [tool.release-tools.blackduck.env]
 PROTEX_PROJECT_ID = "c_spsdk_automation_19733"
 PROTEX_TEMPLATE = "t_reportwithobligations_7215"
 
 [tool.release-tools.blackduck_sca]
 project_name = "spsdk"
+include_detector_types = ["pip"]
 
 [tool.check-wheel-contents]
 ignore = "W002" # Wheel contains duplicate files

@@ -25,3 +25,4 @@ To run the Jupyter Notebooks please make sure you have:
 
     mcxn947/mcxn947_single_shot
     mcxn947/mcxn947_split_command
+    imx93/imx93_el2go_provisioning

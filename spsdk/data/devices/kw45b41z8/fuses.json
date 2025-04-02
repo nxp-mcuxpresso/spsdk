@@ -12,6 +12,7 @@
                     "name": "LIFECYCLE",
                     "description": "Lifecycle state.",
                     "index_int": "0x000A",
+                    "reset_value_int": "0x0007",
                     "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
@@ -34,7 +35,7 @@
                                 {
                                     "name": "OEM_SEC_CLOSED",
                                     "value": 15,
-                                    "description": "OEM Secure World Closed"
+                                    "description": "OEM Secure World Closed."
                                 },
                                 {
                                     "name": "OEM_CLOSED",
@@ -77,12 +78,12 @@
                                 {
                                     "name": "Open",
                                     "value": 0,
-                                    "description": "The debug access control registers remain open when jumping to customer code"
+                                    "description": "The debug access control registers remain open when jumping to customer code."
                                 },
                                 {
                                     "name": "Locked",
                                     "value": 1,
-                                    "description": "The debug access control registers are write-locked before jumping to customer code"
+                                    "description": "The debug access control registers are write-locked before jumping to customer code."
                                 }
                             ]
                         }
@@ -133,7 +134,7 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "TZ-M is disabled by default"
+                                    "description": "TZ-M is disabled by default."
                                 },
                                 {
                                     "name": "Enabled",
@@ -161,12 +162,12 @@
                                 {
                                     "name": "Enabled",
                                     "value": 0,
-                                    "description": "ISP path is enabled"
+                                    "description": "ISP path is enabled."
                                 },
                                 {
                                     "name": "Disabled",
                                     "value": 1,
-                                    "description": "ISP path is disabled"
+                                    "description": "ISP path is disabled."
                                 }
                             ]
                         }
@@ -189,12 +190,12 @@
                                 {
                                     "name": "Enabled",
                                     "value": 0,
-                                    "description": "Boot-ROM LP wakeup is enabled"
+                                    "description": "Boot-ROM LP wakeup is enabled."
                                 },
                                 {
                                     "name": "Disabled",
                                     "value": 1,
-                                    "description": "Boot-ROM LP wakeup is disabled"
+                                    "description": "Boot-ROM LP wakeup is disabled."
                                 }
                             ]
                         }
@@ -448,12 +449,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -466,12 +467,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -484,12 +485,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -502,12 +503,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -520,12 +521,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -538,12 +539,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -556,12 +557,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -574,12 +575,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -592,12 +593,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -610,12 +611,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -628,12 +629,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -646,12 +647,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -664,12 +665,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -682,12 +683,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -700,12 +701,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -718,12 +719,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -736,7 +737,7 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "UUID matching not required"
+                                    "description": "UUID matching not required."
                                 },
                                 {
                                     "name": "Enabled",
@@ -766,12 +767,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -784,12 +785,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -802,12 +803,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -820,12 +821,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -838,12 +839,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -856,12 +857,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -874,12 +875,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -892,12 +893,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -910,12 +911,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -928,12 +929,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -946,12 +947,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -964,12 +965,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -982,12 +983,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1000,12 +1001,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1018,12 +1019,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1036,12 +1037,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1054,7 +1055,7 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "UUID matching not required"
+                                    "description": "UUID matching not required."
                                 },
                                 {
                                     "name": "Enabled",

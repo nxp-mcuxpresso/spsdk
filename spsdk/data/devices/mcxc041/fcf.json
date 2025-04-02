@@ -209,11 +209,11 @@
                     "name": "FOPT",
                     "description": "Flash nonvolatile option byte. Refer to the description of the Flash Option Register (FOPT).",
                     "offset_int": "0x00D",
+                    "reset_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x01",
                             "id": "field00D-bit0",
                             "name": "LPBOOT[0]",
                             "description": "Configure Core and system clock divider (OUTDIV1) value on exit from reset. Together with LPBOOT[1], controls the reset value of OUTDIV1 value in SIM_CLKDIV1 register, and the state of the RUNM register in SMC_PMCTRL. \nLarger divide value selections produce lower average power consumption during POR, VLLSx recoveries and reset sequencing and after reset exit. The recovery times are also extended if the FAST_INIT option is not selected.",
@@ -232,7 +232,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x01",
                             "id": "field00D-bit1",
                             "name": "BOOTPIN_OPT",
                             "description": "External pin selects boot options.",
@@ -251,7 +250,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x01",
                             "id": "field00D-bit2",
                             "name": "NMI_DIS",
                             "description": "Enables/disables control for the NMI function.",
@@ -270,7 +268,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x01",
                             "id": "field00D-bit3",
                             "name": "RESET_PIN_CFG",
                             "description": "Enables/disables control for the RESET pin.",
@@ -289,7 +286,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x01",
                             "id": "field00D-bit4",
                             "name": "LPBOOT[1]",
                             "description": "Configure device for VLPR or RUN mode on exit from reset. Together with LPBOOT[0], controls the reset value of OUTDIV1 value in SIM_CLKDIV1 register, and the state of the RUNM register in SMC_PMCTRL.",
@@ -308,7 +304,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x01",
                             "id": "field00D-bit5",
                             "name": "FAST_INIT",
                             "description": "Selects initialization speed on POR, VLLSx, and any system reset.",
@@ -327,7 +322,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0x00",
                             "id": "field00D-bits6-7",
                             "name": "BOOTSRC_SEL",
                             "description": "Boot Source Selection: these bits select the boot sources if boot pin option bit BOOTPIN_OPT = 1",

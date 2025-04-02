@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -116,7 +116,7 @@ class UsbDevice(DeviceBase):
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
         if not data:
-            logger.error(f"Cannot read from HID device, error={result}")
+            logger.debug(f"Cannot read from HID device, error={result}")
             raise SPSDKTimeoutError()
         return data
 

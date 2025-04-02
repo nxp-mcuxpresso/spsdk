@@ -352,6 +352,7 @@ features:
     # format: "method1=value1[,value2];method2=value3;..." or "none" (default)
     # methods are in secure_object.py:ValidationMethod
     validation_method: "none"
+    uuid_fuse_index: "6 0 4"
 
   # ======== LPCPROG section ========
   lpcprog:

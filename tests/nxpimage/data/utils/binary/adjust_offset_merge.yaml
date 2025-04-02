@@ -1,0 +1,26 @@
+# Copyright 2023,2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========  Binary Image merge converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+name: Test of signed merge  # [Optional], Image name; The optional image name used just during prints to console during merging.
+size: 0 # [Optional], Overall size of image; The overall size of merged image.
+pattern: 165 # [Required], Pattern defined as number or special values; The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
+# ----------------------------------------------------------------------------------------------------
+#                                     == Binary images to merge ==
+# ----------------------------------------------------------------------------------------------------
+regions: # [Optional], Array of defined binary regions; The array of individual regions to merge into final image.
+  - binary_block:  # [Required], Binary block
+      name: First block  # [Optional], Image name; The optional image name used just during prints to console during merging.
+      size: 32 # [Required], Binary block size; The size of binary block
+      offset: 48 # [Required], Offset of binary block; The offset of binary block to be merge on.
+      pattern: 204 # [Required], Pattern defined as number or special values; The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
+
+  - binary_block:  # [Required], Binary block
+      name: Second block  # [Optional], Image name; The optional image name used just during prints to console during merging.
+      size: 32 # [Required], Binary block size; The size of binary block
+      offset: 100 # [Required], Offset of binary block; The offset of binary block to be merge on.
+      pattern: 238 # [Required], Pattern defined as number or special values; The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc

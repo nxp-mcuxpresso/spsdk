@@ -1616,7 +1616,7 @@
                     "name": "OTFAD1_KEY3[31:0]",
                     "description": "OTFAD1 key 3",
                     "index_int": "0x00B8",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -1624,7 +1624,7 @@
                     "name": "OTFAD1_KEY2[31:0]",
                     "description": "OTFAD1 key 2",
                     "index_int": "0x00B9",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -1632,7 +1632,7 @@
                     "name": "OTFAD1_KEY1[31:0]",
                     "description": "OTFAD1 key 1",
                     "index_int": "0x00BA",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -1640,7 +1640,7 @@
                     "name": "OTFAD1_KEY0[31:0]",
                     "description": "OTFAD1 key 0",
                     "index_int": "0x00BB",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -1777,7 +1777,7 @@
                     "name": "OTFAD1_KEY_SCRAMBLE[31:0]",
                     "description": "OTFAD1 key scramble",
                     "index_int": "0x00BD",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 }
             ]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -45,20 +45,23 @@ def test_nxpimage_binary_merge_with_random(cli_runner: CliRunner, tmpdir, data_d
 
 
 @pytest.mark.parametrize(
-    "config,output,result_code",
+    "config,output,result_code,adjust_offsets",
     [
-        ("signed_merge.yaml", "signed_merge.bin", 0),
-        ("invalid_size_merge.yaml", "", 1),
-        ("invalid_offset_merge.yaml", "", 1),
+        ("signed_merge.yaml", "signed_merge.bin", 0, False),
+        ("adjust_offset_merge.yaml", "adjust_offset_merge.bin", 0, True),
+        ("invalid_size_merge.yaml", "", 1, False),
+        ("invalid_offset_merge.yaml", "", 1, False),
     ],
 )
 def test_nxpimage_binary_merge(
-    cli_runner: CliRunner, tmpdir, data_dir, config, output, result_code
+    cli_runner: CliRunner, tmpdir, data_dir, config, output, result_code, adjust_offsets
 ):
     with use_working_directory(data_dir):
         merge_cfg = os.path.join("utils", "binary", config)
         merged_file = os.path.join(tmpdir, "merged.bin")
         cmd = f"utils binary-image merge -c {merge_cfg} -o {merged_file}"
+        if adjust_offsets:
+            cmd += " --adjust-offsets"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=result_code)
         if result_code == 0:
             assert os.path.isfile(merged_file)

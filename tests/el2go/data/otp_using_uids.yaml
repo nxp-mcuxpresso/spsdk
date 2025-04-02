@@ -6,7 +6,6 @@ registers:
   "fuse15":
     "fuse15-bits-0-3": "0b0001"
     "fuse15-bits-4-6": "0b001"
-    "fuse15-bit-7": "0b1"
     "fuse15-bit-10": "0b1"
     "fuse15-bits-12-13": "0b01"
     "fuse15-bits-16-18": "0b001"

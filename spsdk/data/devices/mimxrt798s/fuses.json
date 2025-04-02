@@ -1,11 +1,11 @@
 {
-    "cpu": "MIMXRT798s",
+    "cpu": "MIMXRT798S",
     "shadow_reg_base_addr_int": "0x40018000",
     "groups": [
         {
             "group": {
                 "name": "Locks",
-                "description": "Locks"
+                "description": "Lock bits allowing to lock access to specified fuses"
             },
             "registers": [
                 {
@@ -21,6 +21,7 @@
                         "read_lock_int": "0x4000",
                         "operation_lock_int": "0x2000"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 3,
@@ -129,9 +130,6 @@
                         },
                         {
                             "width": 1
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 },
@@ -148,6 +146,7 @@
                         "read_lock_int": "0x4000",
                         "operation_lock_int": "0x2000"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 3
@@ -256,9 +255,6 @@
                         },
                         {
                             "width": 1
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 },
@@ -275,6 +271,7 @@
                         "read_lock_int": "0x4000",
                         "operation_lock_int": "0x2000"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 3
@@ -428,9 +425,6 @@
                         },
                         {
                             "width": 1
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 },
@@ -447,6 +441,7 @@
                         "read_lock_int": "0x4000",
                         "operation_lock_int": "0x2000"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 3,
@@ -600,9 +595,6 @@
                         },
                         {
                             "width": 1
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 },
@@ -619,6 +611,7 @@
                         "read_lock_int": "0x4000",
                         "operation_lock_int": "0x2000"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 3
@@ -727,9 +720,6 @@
                         },
                         {
                             "width": 1
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 }
@@ -737,8 +727,1089 @@
         },
         {
             "group": {
-                "name": "Configuration",
-                "description": "Configuration"
+                "name": "OEM configuration",
+                "description": "OEM device and Debug Credential (DC) constraints"
+            },
+            "registers": [
+                {
+                    "id": "fuse37",
+                    "name": "LIFECYCLE",
+                    "description": "Device lifecycle and CC_SOCU debug access restrictions per debug domain.",
+                    "index_int": "0x0025",
+                    "shadow_reg_offset_int": "0x0094",
+                    "reset_value_int": "0x00030003",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse37-bits-0-7",
+                            "name": "LC_STATE_RED",
+                            "description": "Redundant Life Cycle state",
+                            "values": [
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Initial customer development state after leaving NXP manufacturing."
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Optional customer development state. Used for development of NS world code."
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field application state for end-customer use."
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is the same as the In-field state."
+                                },
+                                {
+                                    "name": "FIELD_RETURN_OEM",
+                                    "value": 31,
+                                    "description": "Field return state."
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "NXP field return state (CQC = Customer Quality Complaint)."
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked state to prevent device use."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-8",
+                            "name": "CPU0_NIDEN_DIS",
+                            "description": "CPU0 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-9",
+                            "name": "CPU0_DBGEN_DIS",
+                            "description": "CPU0 Invasive Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-10",
+                            "name": "CPU0_SPNIDEN_DIS",
+                            "description": "CPU0 Secure non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-11",
+                            "name": "CPU0_SPIDEN_DIS",
+                            "description": "CPU0 Secure invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-12",
+                            "name": "CPU1_NIDEN_DIS",
+                            "description": "CPU0 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-13",
+                            "name": "CPU1_DBGEN_DIS",
+                            "description": "CPU0 Invasive Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-14",
+                            "name": "CPU1_SPNIDEN_DIS",
+                            "description": "CPU0 Secure non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-15",
+                            "name": "CPU1_SPIDEN_DIS",
+                            "description": "CPU0 Secure invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse37-bits-16-23",
+                            "name": "BP_LC_STATE_RED",
+                            "description": "Bit-protection: Redundant Life Cycle state",
+                            "values": [
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Initial customer development state after leaving NXP manufacturing."
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Optional customer development state. Used for development of NS world code."
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field application state for end-customer use."
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is the same as the In-field state."
+                                },
+                                {
+                                    "name": "FIELD_RETURN_OEM",
+                                    "value": 31,
+                                    "description": "Field return state."
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "NXP field return state (CQC = Customer Quality Complaint)."
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked state to prevent device use."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-24",
+                            "name": "BP_CPU0_NIDEN_DIS",
+                            "description": "Bit-protection: CPU1 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-25",
+                            "name": "BP_CPU0_DBGEN_DIS",
+                            "description": "Bit-protection: CPU1 Invasive Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-26",
+                            "name": "BP_CPU0_SPNIDEN_DIS",
+                            "description": "Bit-protection: CPU1 Secure non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-27",
+                            "name": "BP_CPU0_SPIDEN_DIS",
+                            "description": "Bit-protection: CPU1 Secure invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-28",
+                            "name": "BP_CPU1_NIDEN_DIS",
+                            "description": "Bit-protection: CPU1 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-29",
+                            "name": "BP_CPU1_DBGEN_DIS",
+                            "description": "Bit-protection: CPU1 Invasive Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-30",
+                            "name": "BP_CPU1_SPNIDEN_DIS",
+                            "description": "Bit-protection: CPU1 Secure non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-31",
+                            "name": "BP_CPU1_SPIDEN_DIS",
+                            "description": "Bit-protection: CPU1 Secure invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse132",
+                    "name": "IMAGE_KEY_REVOKE[15:0]",
+                    "description": "Image Key Revoke",
+                    "index_int": "0x0084",
+                    "shadow_reg_offset_int": "0x0210",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    },
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse132-bits-0-15",
+                            "name": "IMAGE_KEY_REVOKE[15:0]",
+                            "description": "IMAGE_KEY_REVOKE[15:0] field"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse133",
+                    "name": "DCFG_CC_VU[15:0]",
+                    "description": "Device Configuration for Credential Constraints Vendor-Usage",
+                    "index_int": "0x0085",
+                    "shadow_reg_offset_int": "0x0214",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    },
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse133-bits-0-15",
+                            "name": "DCFG_CC_VU[15:0]",
+                            "description": "DCFG_CC_VU[15:0] field"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse134",
+                    "name": "ROTK_REVOKE",
+                    "description": "ROTK_USAGE",
+                    "index_int": "0x0086",
+                    "shadow_reg_offset_int": "0x0218",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    },
+                    "reg_width": 16,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-0",
+                            "name": "ROTK0_EX_IMG_AUTH",
+                            "description": "When set exclude RoTK0 from being used as root of trust key for boot image authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK0 from being used as root of trust key for boot image authentication"
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK0 from being used as root of trust key for boot image authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-1",
+                            "name": "ROTK0_EX_SB3_AUTH",
+                            "description": "When set exclude RoTK0 from being used as root of trust key for FW update image (SB3) authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK0 from being used as root of trust key for FW update image (SB3) authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK0 from being used as root of trust key for FW update image (SB3) authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-2",
+                            "name": "ROTK0_EX_DBG_AUTH",
+                            "description": "When set exclude RoTK0 from being used as root of trust key for debug authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK0 from being used as root of trust key for debug authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK0 from being used as root of trust key for debug authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-4",
+                            "name": "ROTK1_EX_IMG_AUTH",
+                            "description": "When set exclude RoTK1 from being used as root of trust key for boot image authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK1 from being used as root of trust key for boot image authentication"
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK1 from being used as root of trust key for boot image authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-5",
+                            "name": "ROTK1_EX_SB3_AUTH",
+                            "description": "When set exclude RoTK1 from being used as root of trust key for FW update image (SB3) authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK1 from being used as root of trust key for FW update image (SB3) authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK1 from being used as root of trust key for FW update image (SB3) authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-6",
+                            "name": "ROTK1_EX_DBG_AUTH",
+                            "description": "When set exclude RoTK1 from being used as root of trust key for debug authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK1 from being used as root of trust key for debug authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK1 from being used as root of trust key for debug authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-8",
+                            "name": "ROTK2_EX_IMG_AUTH",
+                            "description": "When set exclude RoTK2 from being used as root of trust key for boot image authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK2 from being used as root of trust key for boot image authentication"
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK2 from being used as root of trust key for boot image authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-9",
+                            "name": "ROTK2_EX_SB3_AUTH",
+                            "description": "When set exclude RoTK2 from being used as root of trust key for FW update image (SB3) authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK2 from being used as root of trust key for FW update image (SB3) authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK2 from being used as root of trust key for FW update image (SB3) authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-10",
+                            "name": "ROTK2_EX_DBG_AUTH",
+                            "description": "When set exclude RoTK2 from being used as root of trust key for debug authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK2 from being used as root of trust key for debug authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK2 from being used as root of trust key for debug authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-12",
+                            "name": "ROTK3_EX_IMG_AUTH",
+                            "description": "When set exclude RoTK3 from being used as root of trust key for boot image authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK3 from being used as root of trust key for boot image authentication"
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK3 from being used as root of trust key for boot image authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-13",
+                            "name": "ROTK3_EX_SB3_AUTH",
+                            "description": "When set exclude RoTK3 from being used as root of trust key for FW update image (SB3) authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK3 from being used as root of trust key for FW update image (SB3) authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK3 from being used as root of trust key for FW update image (SB3) authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse134-bit-14",
+                            "name": "ROTK3_EX_DBG_AUTH",
+                            "description": "When set exclude RoTK3 from being used as root of trust key for debug authentication.",
+                            "values": [
+                                {
+                                    "name": "Include",
+                                    "value": 0,
+                                    "description": "Include RoTK3 from being used as root of trust key for debug authentication."
+                                },
+                                {
+                                    "name": "Exclude",
+                                    "value": 1,
+                                    "description": "Exclude RoTK3 from being used as root of trust key for debug authentication."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse143",
+                    "name": "LIFECYCLE_DP",
+                    "description": "Device lifecycle and CC_SOCU debug access restrictions per debug domain.",
+                    "index_int": "0x008F",
+                    "shadow_reg_offset_int": "0x023C",
+                    "reset_value_int": "0x00030003",
+                    "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse143-bits-0-7",
+                            "name": "LC_STATE",
+                            "description": "Life Cycle state",
+                            "values": [
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Initial customer development state after leaving NXP manufacturing."
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Optional customer development state. Used for development of NS world code."
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field application state for end-customer use."
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is the same as the In-field state."
+                                },
+                                {
+                                    "name": "FIELD_RETURN_OEM",
+                                    "value": 31,
+                                    "description": "Field return state."
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "NXP field return state (CQC = Customer Quality Complaint)."
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked state to prevent device use."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-8",
+                            "name": "HIFI4_NIDEN_DIS",
+                            "description": "HiFi4 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-9",
+                            "name": "HIFI4_DBGEN_DIS",
+                            "description": "HiFi4 Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-10",
+                            "name": "HIFI1_NIDEN_DIS",
+                            "description": "HiFi1 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-11",
+                            "name": "HIFI1_DBGEN_DIS",
+                            "description": "HiFi1 Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-12",
+                            "name": "AHBAP_DBGEN_DIS",
+                            "description": "AHBAP Debug  Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-13",
+                            "name": "AHBAP_SPIDEN_DIS",
+                            "description": "AHBAP Secure non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-14",
+                            "name": "EZHV_DBGEN_DIS",
+                            "description": "EZHV Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-15",
+                            "name": "SOC_CORESIGHT_DIS",
+                            "description": "CoreSight Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse143-bits-16-23",
+                            "name": "BP_LC_STATE",
+                            "description": "Bit-protection: Life Cycle state",
+                            "values": [
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 3,
+                                    "description": "Initial customer development state after leaving NXP manufacturing."
+                                },
+                                {
+                                    "name": "DEVELOP2",
+                                    "value": 7,
+                                    "description": "Optional customer development state. Used for development of NS world code."
+                                },
+                                {
+                                    "name": "IN_FIELD",
+                                    "value": 15,
+                                    "description": "In-field application state for end-customer use."
+                                },
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 207,
+                                    "description": "Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is the same as the In-field state."
+                                },
+                                {
+                                    "name": "FIELD_RETURN_OEM",
+                                    "value": 31,
+                                    "description": "Field return state."
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "NXP field return state (CQC = Customer Quality Complaint)."
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 255,
+                                    "description": "Bricked state to prevent device use."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-24",
+                            "name": "BP_HIFI4_NIDEN_DIS",
+                            "description": "Bit-protection: HiFi4 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-25",
+                            "name": "BP_HIFI4_DBGEN_DIS",
+                            "description": "Bit-protection: HiFi4 Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-26",
+                            "name": "BP_HIFI1_NIDEN_DIS",
+                            "description": "Bit-protection: HiFi1 Non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-27",
+                            "name": "BP_HIFI1_DBGEN_DIS",
+                            "description": "Bit-protection: HiFi1 Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-28",
+                            "name": "BP_AHBAP_DBGEN_DIS",
+                            "description": "Bit-protection: AHBAP Debug  Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-29",
+                            "name": "BP_AHBAP_SPIDEN_DIS",
+                            "description": "Bit-protection: AHBAP Secure non-invasive debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-30",
+                            "name": "BP_EZHV_DBGEN_DIS",
+                            "description": "Bit-protection: EZHV Debug Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse143-bit-31",
+                            "name": "BP_SOC_CORESIGHT_DIS",
+                            "description": "Bit-protection: CoreSight Disable",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Disabled"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "RKTH",
+                "description": "OEM Root Key Table Hash"
             },
             "registers": [
                 {
@@ -747,7 +1818,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x0058",
                     "shadow_reg_offset_int": "0x0160",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -769,7 +1840,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x0059",
                     "shadow_reg_offset_int": "0x0164",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -791,7 +1862,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x005A",
                     "shadow_reg_offset_int": "0x0168",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -813,7 +1884,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x005B",
                     "shadow_reg_offset_int": "0x016C",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -835,7 +1906,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x005C",
                     "shadow_reg_offset_int": "0x0170",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -857,7 +1928,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x005D",
                     "shadow_reg_offset_int": "0x0174",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -879,7 +1950,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x005E",
                     "shadow_reg_offset_int": "0x0178",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -901,7 +1972,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x005F",
                     "shadow_reg_offset_int": "0x017C",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -923,7 +1994,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x0060",
                     "shadow_reg_offset_int": "0x0180",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -945,7 +2016,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x0061",
                     "shadow_reg_offset_int": "0x0184",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -967,7 +2038,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x0062",
                     "shadow_reg_offset_int": "0x0188",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -989,7 +2060,7 @@
                     "description": "Root of Trust Keys Table hash",
                     "index_int": "0x0063",
                     "shadow_reg_offset_int": "0x018C",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -1004,7 +2075,15 @@
                             "description": "ROTKH[383:352] field"
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CUST_MK_SK",
+                "description": "Customer Master Key Symmetric Key"
+            },
+            "registers": [
                 {
                     "id": "fuse100",
                     "name": "CUST_MK_SK0",
@@ -1012,7 +2091,7 @@
                     "index_int": "0x0064",
                     "shadow_reg_offset_int": "0x0190",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1035,7 +2114,7 @@
                     "index_int": "0x0065",
                     "shadow_reg_offset_int": "0x0194",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1058,7 +2137,7 @@
                     "index_int": "0x0066",
                     "shadow_reg_offset_int": "0x0198",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1081,7 +2160,7 @@
                     "index_int": "0x0067",
                     "shadow_reg_offset_int": "0x019C",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1104,7 +2183,7 @@
                     "index_int": "0x0068",
                     "shadow_reg_offset_int": "0x01A0",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1127,7 +2206,7 @@
                     "index_int": "0x0069",
                     "shadow_reg_offset_int": "0x01A4",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1150,7 +2229,7 @@
                     "index_int": "0x006A",
                     "shadow_reg_offset_int": "0x01A8",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1173,7 +2252,7 @@
                     "index_int": "0x006B",
                     "shadow_reg_offset_int": "0x01AC",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1196,7 +2275,7 @@
                     "index_int": "0x006C",
                     "shadow_reg_offset_int": "0x01B0",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1219,7 +2298,7 @@
                     "index_int": "0x006D",
                     "shadow_reg_offset_int": "0x01B4",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1242,7 +2321,7 @@
                     "index_int": "0x006E",
                     "shadow_reg_offset_int": "0x01B8",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1265,7 +2344,7 @@
                     "index_int": "0x006F",
                     "shadow_reg_offset_int": "0x01BC",
                     "access": "RO",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x1000",
@@ -1280,7 +2359,15 @@
                             "description": "CUST_MK_SK_BLOB[383:352] field"
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "NS_FW_VER",
+                "description": "Non-Secure Firmware Version"
+            },
+            "registers": [
                 {
                     "id": "fuse112",
                     "name": "NS_FW_VER[15:0]",
@@ -1648,7 +2735,15 @@
                             "description": "NS_FW_VER[255:240] field"
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SEC_FW_VER",
+                "description": "Secure Firmware Version"
+            },
+            "registers": [
                 {
                     "id": "fuse128",
                     "name": "SEC_FW_VER[15:0]",
@@ -1740,601 +2835,15 @@
                             "description": "SEC_FW_VER[63:48] field"
                         }
                     ]
-                },
-                {
-                    "id": "fuse132",
-                    "name": "IMAGE_KEY_REVOKE[15:0]",
-                    "description": "Image Key Revoke",
-                    "index_int": "0x0084",
-                    "shadow_reg_offset_int": "0x0210",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800",
-                        "operation_lock_int": "0x0400"
-                    },
-                    "reg_width": 16,
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse132-bits-0-15",
-                            "name": "IMAGE_KEY_REVOKE[15:0]",
-                            "description": "IMAGE_KEY_REVOKE[15:0] field"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse133",
-                    "name": "DCFG_CC_VU[15:0]",
-                    "description": "DCFG_CC_VU[15:0]",
-                    "index_int": "0x0085",
-                    "shadow_reg_offset_int": "0x0214",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800",
-                        "operation_lock_int": "0x0400"
-                    },
-                    "reg_width": 16,
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse133-bits-0-15",
-                            "name": "DCFG_CC_VU[15:0]",
-                            "description": "DCFG_CC_VU[15:0] field"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse144",
-                    "name": "XSPI0_IPED_CTX0",
-                    "description": "XSPI0_IPED_CTX0 register",
-                    "index_int": "0x0090",
-                    "shadow_reg_offset_int": "0x0240",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse144-bits-0-15",
-                            "name": "XSPI0_START_OFFSET_0",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse144-bits-16-31",
-                            "name": "XSPI0_LENGTH_0",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse145",
-                    "name": "XSPI0_IPED_CTX1",
-                    "description": "XSPI0_IPED_CTX1 register",
-                    "index_int": "0x0091",
-                    "shadow_reg_offset_int": "0x0244",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse145-bits-0-15",
-                            "name": "XSPI0_START_OFFSET_1",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse145-bits-16-31",
-                            "name": "XSPI0_LENGTH_1",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse146",
-                    "name": "XSPI0_IPED_CTX2",
-                    "description": "XSPI0_IPED_CTX2 register",
-                    "index_int": "0x0092",
-                    "shadow_reg_offset_int": "0x0248",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse146-bits-0-15",
-                            "name": "XSPI0_START_OFFSET_2",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse146-bits-16-31",
-                            "name": "XSPI0_LENGTH_2",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse147",
-                    "name": "XSPI0_IPED_CTX3",
-                    "description": "XSPI0_IPED_CTX3 register",
-                    "index_int": "0x0093",
-                    "shadow_reg_offset_int": "0x024C",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse147-bits-0-15",
-                            "name": "XSPI0_START_OFFSET_3",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse147-bits-16-31",
-                            "name": "XSPI0_LENGTH_3",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse148",
-                    "name": "XSPI1_IPED_CTX0",
-                    "description": "XSPI1_IPED_CTX0 register",
-                    "index_int": "0x0094",
-                    "shadow_reg_offset_int": "0x0250",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse148-bits-0-15",
-                            "name": "XSPI1_START_OFFSET_0",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse148-bits-16-31",
-                            "name": "XSPI1_LENGTH_0",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse149",
-                    "name": "XSPI1_IPED_CTX1",
-                    "description": "XSPI1_IPED_CTX1 register",
-                    "index_int": "0x0095",
-                    "shadow_reg_offset_int": "0x0254",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse149-bits-0-15",
-                            "name": "XSPI1_START_OFFSET_1",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse149-bits-16-31",
-                            "name": "XSPI1_LENGTH_1",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse150",
-                    "name": "XSPI1_IPED_CTX2",
-                    "description": "XSPI1_IPED_CTX2 register",
-                    "index_int": "0x0096",
-                    "shadow_reg_offset_int": "0x0258",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse150-bits-0-15",
-                            "name": "XSPI1_START_OFFSET_2",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse150-bits-16-31",
-                            "name": "XSPI1_LENGTH_2",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse151",
-                    "name": "XSPI1_IPED_CTX3",
-                    "description": "XSPI1_IPED_CTX3 register",
-                    "index_int": "0x0097",
-                    "shadow_reg_offset_int": "0x025C",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "fuse151-bits-0-15",
-                            "name": "XSPI1_START_OFFSET_3",
-                            "description": "START_OFFSET (4KB aligned)"
-                        },
-                        {
-                            "width": 16,
-                            "id": "fuse151-bits-16-31",
-                            "name": "XSPI1_LENGTH_3",
-                            "description": "LENGTH (4KB block counts)"
-                        }
-                    ]
                 }
             ]
         },
         {
             "group": {
-                "name": "BOOT_CFG",
+                "name": "Boot configuration",
                 "description": "Boot configuration"
             },
             "registers": [
-                {
-                    "id": "fuse37",
-                    "name": "LIFECYCLE",
-                    "description": "Device lifecycle.",
-                    "index_int": "0x0025",
-                    "shadow_reg_offset_int": "0x0094",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse3",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 8,
-                            "id": "fuse37-bits-0-7",
-                            "name": "LIFE_CYCLE_RED",
-                            "description": "Redundant Life Cycle"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-8",
-                            "name": "CPU0_NIDEN_DIS",
-                            "description": "CPU0 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-9",
-                            "name": "CPU0_DBGEN_DIS",
-                            "description": "CPU0 Invasive Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-10",
-                            "name": "CPU0_SPNIDEN_DIS",
-                            "description": "CPU0 Secure non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-11",
-                            "name": "CPU0_SPIDEN_DIS",
-                            "description": "CPU0 Secure invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-12",
-                            "name": "CPU1_NIDEN_DIS",
-                            "description": "CPU0 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-13",
-                            "name": "CPU1_DBGEN_DIS",
-                            "description": "CPU0 Invasive Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-14",
-                            "name": "CPU1_SPNIDEN_DIS",
-                            "description": "CPU0 Secure non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-15",
-                            "name": "CPU1_SPIDEN_DIS",
-                            "description": "CPU0 Secure invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 8,
-                            "id": "fuse37-bits-16-23",
-                            "name": "BP_LIFE_CYCLE_RED",
-                            "description": "BP Redundant Life Cycle"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-24",
-                            "name": "BP_CPU0_NIDEN_DIS",
-                            "description": "CPU1 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-25",
-                            "name": "BP_CPU0_DBGEN_DIS",
-                            "description": "CPU1 Invasive Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-26",
-                            "name": "BP_CPU0_SPNIDEN_DIS",
-                            "description": "CPU1 Secure non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-27",
-                            "name": "BP_CPU0_SPIDEN_DIS",
-                            "description": "CPU1 Secure invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-28",
-                            "name": "BP_CPU1_NIDEN_DIS",
-                            "description": "CPU1 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-29",
-                            "name": "BP_CPU1_DBGEN_DIS",
-                            "description": "CPU1 Invasive Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-30",
-                            "name": "BP_CPU1_SPNIDEN_DIS",
-                            "description": "CPU1 Secure non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse37-bit-31",
-                            "name": "BP_CPU1_SPIDEN_DIS",
-                            "description": "CPU1 Secure invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        }
-                    ]
-                },
                 {
                     "id": "fuse136",
                     "name": "BOOT_CFG0",
@@ -2348,12 +2857,13 @@
                         "read_lock_int": "0x0004",
                         "operation_lock_int": "0x0002"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 2,
                             "id": "fuse136-bits-0-1",
                             "name": "BOOT_SRC[1:0]",
-                            "description": "Boot source selection.",
+                            "description": "Specify the boot source selection.",
                             "values": [
                                 {
                                     "name": "00",
@@ -2363,7 +2873,7 @@
                                 {
                                     "name": "01",
                                     "value": 1,
-                                    "description": "XSPI flash"
+                                    "description": "XSPI NOR flash"
                                 },
                                 {
                                     "name": "10",
@@ -2381,7 +2891,7 @@
                             "width": 1,
                             "id": "fuse136-bit-2",
                             "name": "BOOT_IF_INST",
-                            "description": "Specified boot interface instance when XSPI or uSDHC boot modes are selected.",
+                            "description": "Specify boot interface instance when XSPI or uSDHC boot modes are selected.",
                             "values": [
                                 {
                                     "name": "0",
@@ -2564,24 +3074,24 @@
                             "description": "System clock speed during boot.",
                             "values": [
                                 {
-                                    "name": "00",
+                                    "name": "Normal",
                                     "value": 0,
-                                    "description": "Normal boot (192 MHz) - 0v9"
+                                    "description": "Normal boot (192 MHz) - VDD1 = 1.0 V"
                                 },
                                 {
-                                    "name": "01",
+                                    "name": "Reserved",
                                     "value": 1,
-                                    "description": "High speed boot (300 MHz) - 1v1"
+                                    "description": "Reserved"
                                 },
                                 {
-                                    "name": "10",
+                                    "name": "Low",
                                     "value": 2,
-                                    "description": "Low speed boot (32 MHz) - 0v9"
+                                    "description": "Low speed boot (32 MHz) -VDD1 = 1.0 V"
                                 },
                                 {
-                                    "name": "11",
+                                    "name": "Middle",
                                     "value": 3,
-                                    "description": "Middle speed boot (192 MHz) - 0v9"
+                                    "description": "Middle speed boot (192 MHz) - VDD1 = 1.0 V"
                                 }
                             ]
                         },
@@ -2620,9 +3130,6 @@
                                     "description": "Disabled"
                                 }
                             ]
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 },
@@ -2634,11 +3141,12 @@
                     "shadow_reg_offset_int": "0x0224",
                     "individual_write_lock": "none",
                     "lock": {
-                        "register_id": "fuse5",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 1,
@@ -2902,266 +3410,16 @@
                             "description": "Enable FIPS self-test of SHA2 algorithm before usage during boot.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
-                        },
-                        {
-                            "width": 16
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse134",
-                    "name": "ROTK_REVOKE",
-                    "description": "ROTK_USAGE",
-                    "index_int": "0x0086",
-                    "shadow_reg_offset_int": "0x0218",
-                    "individual_write_lock": "none",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800",
-                        "operation_lock_int": "0x0400"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-0",
-                            "name": "ROTK0_EX_IMG_AUTH",
-                            "description": "When set exclude RoTK0 from being used as root of trust key for boot image authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK0 from being used as root of trust key for boot image authentication"
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK0 from being used as root of trust key for boot image authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-1",
-                            "name": "ROTK0_EX_SB3_AUTH",
-                            "description": "When set exclude RoTK0 from being used as root of trust key for FW update image (SB3) authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK0 from being used as root of trust key for FW update image (SB3) authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK0 from being used as root of trust key for FW update image (SB3) authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-2",
-                            "name": "ROTK0_EX_DBG_AUTH",
-                            "description": "When set exclude RoTK0 from being used as root of trust key for debug authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK0 from being used as root of trust key for debug authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK0 from being used as root of trust key for debug authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-4",
-                            "name": "ROTK1_EX_IMG_AUTH",
-                            "description": "When set exclude RoTK1 from being used as root of trust key for boot image authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK1 from being used as root of trust key for boot image authentication"
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK1 from being used as root of trust key for boot image authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-5",
-                            "name": "ROTK1_EX_SB3_AUTH",
-                            "description": "When set exclude RoTK1 from being used as root of trust key for FW update image (SB3) authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK1 from being used as root of trust key for FW update image (SB3) authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK1 from being used as root of trust key for FW update image (SB3) authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-6",
-                            "name": "ROTK1_EX_DBG_AUTH",
-                            "description": "When set exclude RoTK1 from being used as root of trust key for debug authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK1 from being used as root of trust key for debug authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK1 from being used as root of trust key for debug authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-8",
-                            "name": "ROTK2_EX_IMG_AUTH",
-                            "description": "When set exclude RoTK2 from being used as root of trust key for boot image authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK2 from being used as root of trust key for boot image authentication"
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK2 from being used as root of trust key for boot image authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-9",
-                            "name": "ROTK2_EX_SB3_AUTH",
-                            "description": "When set exclude RoTK2 from being used as root of trust key for FW update image (SB3) authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK2 from being used as root of trust key for FW update image (SB3) authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK2 from being used as root of trust key for FW update image (SB3) authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-10",
-                            "name": "ROTK2_EX_DBG_AUTH",
-                            "description": "When set exclude RoTK2 from being used as root of trust key for debug authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK2 from being used as root of trust key for debug authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK2 from being used as root of trust key for debug authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-12",
-                            "name": "ROTK3_EX_IMG_AUTH",
-                            "description": "When set exclude RoTK3 from being used as root of trust key for boot image authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK3 from being used as root of trust key for boot image authentication"
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK3 from being used as root of trust key for boot image authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-13",
-                            "name": "ROTK3_EX_SB3_AUTH",
-                            "description": "When set exclude RoTK3 from being used as root of trust key for FW update image (SB3) authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK3 from being used as root of trust key for FW update image (SB3) authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK3 from being used as root of trust key for FW update image (SB3) authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse134-bit-14",
-                            "name": "ROTK3_EX_DBG_AUTH",
-                            "description": "When set exclude RoTK3 from being used as root of trust key for debug authentication.",
-                            "values": [
-                                {
-                                    "name": "Include",
-                                    "value": 0,
-                                    "description": "Include RoTK3 from being used as root of trust key for debug authentication."
-                                },
-                                {
-                                    "name": "Exclude",
-                                    "value": 1,
-                                    "description": "Exclude RoTK3 from being used as root of trust key for debug authentication."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 16
                         }
                     ]
                 },
@@ -3178,6 +3436,7 @@
                         "read_lock_int": "0x0004",
                         "operation_lock_int": "0x0002"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 4
@@ -3192,14 +3451,14 @@
                             "description": "Enable UUID matching check during Debug Credential (DC) validation.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -3213,14 +3472,14 @@
                             "description": "Enforce XEX mode for all IPED1 regions.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -3228,16 +3487,13 @@
                             "width": 4,
                             "id": "fuse138-bits-8-11",
                             "name": "IPED0_LOCK_CTX[3:0]",
-                            "description": "Lock the corresponding IPED context."
+                            "description": "Lock the corresponding IPED context.\n0b - Disable\n1b - Enable"
                         },
                         {
                             "width": 4,
                             "id": "fuse138-bits-12-15",
                             "name": "IPED1_LOCK_CTX[3:0]",
-                            "description": "Lock the corresponding IPED context."
-                        },
-                        {
-                            "width": 16
+                            "description": "Lock the corresponding IPED context.\n0b - Disable\n1b - Enable"
                         }
                     ]
                 },
@@ -3254,33 +3510,31 @@
                         "read_lock_int": "0x0004",
                         "operation_lock_int": "0x0002"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 4,
                             "id": "fuse139-bits-0-3",
                             "name": "IPED0_GCM_CTX[3:0]",
-                            "description": "Enable GCM mode for corresponding IPED context."
+                            "description": "Enable GCM mode for corresponding IPED context.\n0b - Disable\n1b - Enable"
                         },
                         {
                             "width": 4,
                             "id": "fuse139-bits-4-7",
                             "name": "IPED0_GCM_AHBERR_CTX[3:0]",
-                            "description": "Enable AHB error on GCM tag failure for corresponding IPED context."
+                            "description": "Enable AHB error on GCM tag failure for corresponding IPED context.\n0b - Disable\n1b - Enable"
                         },
                         {
                             "width": 4,
                             "id": "fuse139-bits-8-11",
                             "name": "IPED1_GCM_CTX[3:0]",
-                            "description": "Enable GCM mode for corresponding IPED context."
+                            "description": "Enable GCM mode for corresponding IPED context.\n0b - Disable\n1b - Enable"
                         },
                         {
                             "width": 4,
                             "id": "fuse139-bits-12-15",
                             "name": "IPED1_GCM_AHBERR_CTX[3:0]",
-                            "description": "Enable AHB error on GCM tag failure for corresponding IPED context."
-                        },
-                        {
-                            "width": 16
+                            "description": "Enable AHB error on GCM tag failure for corresponding IPED context.\n0b - Disable\n1b - Enable"
                         }
                     ]
                 },
@@ -3290,7 +3544,7 @@
                     "description": "BOOT_STATUS_LEDS",
                     "index_int": "0x008C",
                     "shadow_reg_offset_int": "0x0230",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -3305,14 +3559,14 @@
                             "description": "Boot Retry fail LED enable bit. ROM sets this GPIO after exhausting boot retry count.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -3323,14 +3577,14 @@
                             "description": "Output polarity. This field is valid only if BOOT_RETRY_FAIL_LED_PIN_EN is set.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "High",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Output high"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Low",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Output low"
                                 }
                             ]
                         },
@@ -3338,13 +3592,13 @@
                             "width": 3,
                             "id": "fuse140-bits-2-4",
                             "name": "BOOT_RETRY_FAIL_LED_PIN_PORT",
-                            "description": "GPIO port. This field is valid only if BOOT_RETRY_FAIL_LED_PIN_EN is set."
+                            "description": "GPIO port. This field is valid only if BOOT_RETRY_FAIL_LED_PIN_EN is set.\nxd - GPIO port x"
                         },
                         {
                             "width": 5,
                             "id": "fuse140-bits-5-9",
                             "name": "BOOT_RETRY_FAIL_LED_PIN_GPIO",
-                            "description": "GPIO pin number. This field is valid only if BOOT_RETRY_FAIL_LED_PIN_EN is set."
+                            "description": "GPIO pin number. This field is valid only if BOOT_RETRY_FAIL_LED_PIN_EN is set.\nxd - GPIO port x"
                         },
                         {
                             "width": 1,
@@ -3353,14 +3607,14 @@
                             "description": "Sensor Reset LED enable bit. ROM sets this GPIO when last warm reset cause is detected as ITRC reset.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -3371,14 +3625,14 @@
                             "description": "Output polarity. This field is valid only if SENSOR_RESET_LED_PIN_EN is set.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "High",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Output high"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Low",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Output low"
                                 }
                             ]
                         },
@@ -3386,29 +3640,29 @@
                             "width": 3,
                             "id": "fuse140-bits-12-14",
                             "name": "SENSOR_RESET_LED_PIN_PORT",
-                            "description": "GPIO port. Output polarity. This field is valid only if SENSOR_RESET_LED_PIN_EN is set."
+                            "description": "GPIO port. Output polarity. This field is valid only if SENSOR_RESET_LED_PIN_EN is set.\nxd - GPIO port x"
                         },
                         {
                             "width": 5,
                             "id": "fuse140-bits-15-19",
                             "name": "SENSOR_RESET_LED_PIN_GPIO",
-                            "description": "GPIO pin number. Output polarity. This field is valid only if SENSOR_RESET_LED_PIN_EN is set."
+                            "description": "GPIO pin number. Output polarity. This field is valid only if SENSOR_RESET_LED_PIN_EN is set.\nxd - GPIO port x"
                         },
                         {
                             "width": 1,
                             "id": "fuse140-bit-20",
                             "name": "ISP_REC_LED_PIN_EN",
-                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or recovery boot mode. Output polarity.",
+                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or receovery boot mode. Output polarity.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -3419,14 +3673,14 @@
                             "description": "Output polarity. Output polarity. This field is valid only if ISP_REC_LED_PIN_EN is set.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "High",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Output high"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Low",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Output low"
                                 }
                             ]
                         },
@@ -3434,13 +3688,13 @@
                             "width": 3,
                             "id": "fuse140-bits-22-24",
                             "name": "ISP_REC_LED_PIN_PORT",
-                            "description": "GPIO port. This field is valid only if ISP_REC_LED_PIN_EN is set."
+                            "description": "GPIO port. This field is valid only if ISP_REC_LED_PIN_EN is set.\nxd - GPIO port x"
                         },
                         {
                             "width": 5,
                             "id": "fuse140-bits-25-29",
                             "name": "ISP_REC_LED_PIN_GPIO",
-                            "description": "GPIO pin number. This field is valid only if ISP_REC_LED_PIN_EN is set."
+                            "description": "GPIO pin number. This field is valid only if ISP_REC_LED_PIN_EN is set.\nxd - GPIO port x"
                         },
                         {
                             "width": 2
@@ -3453,7 +3707,7 @@
                     "description": "BOOT_TIMERS",
                     "index_int": "0x008D",
                     "shadow_reg_offset_int": "0x0234",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -3465,49 +3719,71 @@
                             "width": 8,
                             "id": "fuse141-bits-0-7",
                             "name": "WDOG_TIMEOUT_10MS",
-                            "description": "A 10-millisecond timer started before jumping to user application."
+                            "description": "A 10 ms timer started before jumping to user application.\nnd - n x 10 ms"
                         },
                         {
                             "width": 8,
                             "id": "fuse141-bits-8-15",
                             "name": "POWERDOWN_TIMEOUT_SECS",
-                            "description": "Device enters deep-power down state if it idles beyond this  time during ISP command handling loop."
+                            "description": "Device enters deep-power down state if it idles beyond this  time during ISP command handling loop.\nnd - n x 1s"
                         },
                         {
                             "width": 4,
                             "id": "fuse141-bits-16-19",
                             "name": "REC_BOOT_FC",
-                            "description": "Specifies the FlexCom connected to 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set."
+                            "description": "Specifies the LP_FLEXCOMM connected to 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set.\nxd - LP_FLEXCOMMx is selected, x = 0-13"
                         },
                         {
                             "width": 2,
                             "id": "fuse141-bits-20-21",
                             "name": "REC_BOOT_FC_PCS",
-                            "description": "Specifies SPI PCS connected to 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set."
+                            "description": "Specifies LP_FLEXCOMM PCS connected to 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set.",
+                            "values": [
+                                {
+                                    "name": "PCS0",
+                                    "value": 0,
+                                    "description": "PCS0"
+                                },
+                                {
+                                    "name": "PCS1",
+                                    "value": 1,
+                                    "description": "PCS1"
+                                },
+                                {
+                                    "name": "PCS2",
+                                    "value": 2,
+                                    "description": "PCS2"
+                                },
+                                {
+                                    "name": "PCS3",
+                                    "value": 3,
+                                    "description": "PCS3"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
                             "id": "fuse141-bits-22-23",
                             "name": "REC_BOOT_FC_BAUDRATE",
-                            "description": "Specifies SPI baudrate with 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set.",
+                            "description": "Specifies LP_FLEXCOMM baudrate with 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set.",
                             "values": [
                                 {
-                                    "name": "00",
+                                    "name": "20MHz",
                                     "value": 0,
                                     "description": "20MHz"
                                 },
                                 {
-                                    "name": "01",
+                                    "name": "10MHz",
                                     "value": 1,
                                     "description": "10MHz"
                                 },
                                 {
-                                    "name": "10",
+                                    "name": "5MHz",
                                     "value": 2,
                                     "description": "5MHz"
                                 },
                                 {
-                                    "name": "11",
+                                    "name": "2MHz",
                                     "value": 3,
                                     "description": "2MHz"
                                 }
@@ -3524,7 +3800,7 @@
                     "description": "BOOT_CFG6 register",
                     "index_int": "0x008E",
                     "shadow_reg_offset_int": "0x0238",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -3545,330 +3821,254 @@
                             "description": "USB1 Product ID"
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PRINCE",
+                "description": "PRINCE IPED configuration"
+            },
+            "registers": [
                 {
-                    "id": "fuse143",
-                    "name": "LIFECYCLE_DP",
-                    "description": "Device lifecycle.",
-                    "index_int": "0x008F",
-                    "shadow_reg_offset_int": "0x023C",
-                    "individual_write_lock": "none",
+                    "id": "fuse144",
+                    "name": "XSPI0_IPED_CTX0",
+                    "description": "XSPI0_IPED_CTX0 register",
+                    "index_int": "0x0090",
+                    "shadow_reg_offset_int": "0x0240",
+                    "individual_write_lock": "implicit",
                     "lock": {
-                        "register_id": "fuse3",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
                     },
                     "bitfields": [
                         {
-                            "width": 8,
-                            "id": "fuse143-bits-0-7",
-                            "name": "LIFE_CYCLE",
-                            "description": "Life Cycle"
+                            "width": 16,
+                            "id": "fuse144-bits-0-15",
+                            "name": "XSPI0_START_OFFSET_0",
+                            "description": "START_OFFSET (4KB aligned)"
                         },
                         {
-                            "width": 1,
-                            "id": "fuse143-bit-8",
-                            "name": "HIFI4_NIDEN_DIS",
-                            "description": "HiFi4 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-9",
-                            "name": "HIFI4_DBGEN_DIS",
-                            "description": "HiFi4 Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-10",
-                            "name": "HIFI1_NIDEN_DIS",
-                            "description": "HiFi1 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-11",
-                            "name": "HIFI1_DBGEN_DIS",
-                            "description": "HiFi1 Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-12",
-                            "name": "AHBAP_DBGEN_DIS",
-                            "description": "AHBAP Debug  Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-13",
-                            "name": "AHBAP_SPIDEN_DIS",
-                            "description": "AHBAP Secure non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-14",
-                            "name": "EZHV_DBGEN_DIS",
-                            "description": "EZHV Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-15",
-                            "name": "SOC_CORESIGHT_DIS",
-                            "description": "CoreSight Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 8,
-                            "id": "fuse143-bits-16-23",
-                            "name": "BP_LIFE_CYCLE",
-                            "description": "Life Cycle"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-24",
-                            "name": "BP_HIFI4_NIDEN_DIS",
-                            "description": "BP HiFi4 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-25",
-                            "name": "BP_HIFI4_DBGEN_DIS",
-                            "description": "BP HiFi4 Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-26",
-                            "name": "BP_HIFI1_NIDEN_DIS",
-                            "description": "BP HiFi1 Non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-27",
-                            "name": "BP_HIFI1_DBGEN_DIS",
-                            "description": "BP HiFi1 Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-28",
-                            "name": "BP_AHBAP_DBGEN_DIS",
-                            "description": "BP AHBAP Debug  Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-29",
-                            "name": "BP_AHBAP_SPIDEN_DIS",
-                            "description": "BP AHBAP Secure non-invasive debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-30",
-                            "name": "BP_EZHV_DBGEN_DIS",
-                            "description": "BP EZHV Debug Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse143-bit-31",
-                            "name": "BP_SOC_CORESIGHT_DIS",
-                            "description": "BP CoreSight Disable",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Value 0."
-                                },
-                                {
-                                    "name": "1",
-                                    "value": 1,
-                                    "description": "Value 1."
-                                }
-                            ]
+                            "width": 16,
+                            "id": "fuse144-bits-16-31",
+                            "name": "XSPI0_LENGTH_0",
+                            "description": "LENGTH (4KB block counts)"
                         }
                     ]
                 },
+                {
+                    "id": "fuse145",
+                    "name": "XSPI0_IPED_CTX1",
+                    "description": "XSPI0_IPED_CTX1 register",
+                    "index_int": "0x0091",
+                    "shadow_reg_offset_int": "0x0244",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse145-bits-0-15",
+                            "name": "XSPI0_START_OFFSET_1",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse145-bits-16-31",
+                            "name": "XSPI0_LENGTH_1",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse146",
+                    "name": "XSPI0_IPED_CTX2",
+                    "description": "XSPI0_IPED_CTX2 register",
+                    "index_int": "0x0092",
+                    "shadow_reg_offset_int": "0x0248",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse146-bits-0-15",
+                            "name": "XSPI0_START_OFFSET_2",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse146-bits-16-31",
+                            "name": "XSPI0_LENGTH_2",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse147",
+                    "name": "XSPI0_IPED_CTX3",
+                    "description": "XSPI0_IPED_CTX3 register",
+                    "index_int": "0x0093",
+                    "shadow_reg_offset_int": "0x024C",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse147-bits-0-15",
+                            "name": "XSPI0_START_OFFSET_3",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse147-bits-16-31",
+                            "name": "XSPI0_LENGTH_3",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse148",
+                    "name": "XSPI1_IPED_CTX0",
+                    "description": "XSPI1_IPED_CTX0 register",
+                    "index_int": "0x0094",
+                    "shadow_reg_offset_int": "0x0250",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0100",
+                        "operation_lock_int": "0x0080"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse148-bits-0-15",
+                            "name": "XSPI1_START_OFFSET_0",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse148-bits-16-31",
+                            "name": "XSPI1_LENGTH_0",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse149",
+                    "name": "XSPI1_IPED_CTX1",
+                    "description": "XSPI1_IPED_CTX1 register",
+                    "index_int": "0x0095",
+                    "shadow_reg_offset_int": "0x0254",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0100",
+                        "operation_lock_int": "0x0080"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse149-bits-0-15",
+                            "name": "XSPI1_START_OFFSET_1",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse149-bits-16-31",
+                            "name": "XSPI1_LENGTH_1",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse150",
+                    "name": "XSPI1_IPED_CTX2",
+                    "description": "XSPI1_IPED_CTX2 register",
+                    "index_int": "0x0096",
+                    "shadow_reg_offset_int": "0x0258",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0100",
+                        "operation_lock_int": "0x0080"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse150-bits-0-15",
+                            "name": "XSPI1_START_OFFSET_2",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse150-bits-16-31",
+                            "name": "XSPI1_LENGTH_2",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse151",
+                    "name": "XSPI1_IPED_CTX3",
+                    "description": "XSPI1_IPED_CTX3 register",
+                    "index_int": "0x0097",
+                    "shadow_reg_offset_int": "0x025C",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse1",
+                        "write_lock_int": "0x0040",
+                        "read_lock_int": "0x0100",
+                        "operation_lock_int": "0x0080"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse151-bits-0-15",
+                            "name": "XSPI1_START_OFFSET_3",
+                            "description": "START_OFFSET (4KB aligned)"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse151-bits-16-31",
+                            "name": "XSPI1_LENGTH_3",
+                            "description": "LENGTH (4KB block counts)"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "XSPI",
+                "description": "XSPI configuration"
+            },
+            "registers": [
                 {
                     "id": "fuse152",
                     "name": "XSPI_CFG0",
                     "description": "XSPI_CFG0 register",
                     "index_int": "0x0098",
                     "shadow_reg_offset_int": "0x0260",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -3883,14 +4083,14 @@
                             "description": "Quad SPI or Octal SPI flash memory auto-probe feature enable",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -3931,12 +4131,12 @@
                                     "description": "Octal DDR"
                                 },
                                 {
-                                    "name": "110",
+                                    "name": "Reserved",
                                     "value": 6,
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "111",
+                                    "name": "Reserved",
                                     "value": 7,
                                     "description": "Reserved"
                                 }
@@ -3954,19 +4154,19 @@
                                     "description": "Quad SPI flash memory address (by default, the chip supports 3B read)"
                                 },
                                 {
-                                    "name": "001",
+                                    "name": "Reserved",
                                     "value": 1,
                                     "description": "Reserved"
                                 },
                                 {
                                     "name": "010",
                                     "value": 2,
-                                    "description": "HyperFlash 1V8"
+                                    "description": "HyperFlash 1.8 V"
                                 },
                                 {
                                     "name": "011",
                                     "value": 3,
-                                    "description": "HyperFlash 3V3"
+                                    "description": "HyperFlash 3.3 V"
                                 },
                                 {
                                     "name": "100",
@@ -3979,12 +4179,12 @@
                                     "description": "Micron Octal DDR"
                                 },
                                 {
-                                    "name": "110",
+                                    "name": "Reserved",
                                     "value": 6,
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "111",
+                                    "name": "Reserved",
                                     "value": 7,
                                     "description": "Reserved"
                                 }
@@ -3994,14 +4194,7 @@
                             "width": 4,
                             "id": "fuse152-bits-7-10",
                             "name": "XSPI_FLASH_DUMMY_CYCLES",
-                            "description": "Quad SPI or Octal SPI dummy cycles for read command",
-                            "values": [
-                                {
-                                    "name": "0000",
-                                    "value": 0,
-                                    "description": "Dummy cycles probed automatically"
-                                }
-                            ]
+                            "description": "Quad SPI or Octal SPI dummy cycles for read command\n0000b - Dummy cycles probed automatically\nOther value - Number of dummy cycles"
                         },
                         {
                             "width": 3,
@@ -4055,17 +4248,17 @@
                             "width": 1,
                             "id": "fuse152-bit-14",
                             "name": "XSPI_RESET_PIN_EN",
-                            "description": "XSPI_RESET_PIN to use to reset the flash memory device",
+                            "description": "Enable to reset flash memory by reset pin or JEDEC",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -4076,14 +4269,14 @@
                             "description": "HW reset or JEDEC reset. This field is valid only if XSPI_RESET_PIN_EN is set.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Pin reset",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Pin reset"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "JEDEC reset",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "JEDEC reset"
                                 }
                             ]
                         },
@@ -4229,7 +4422,7 @@
                     "description": "XSPI_CFG1 register",
                     "index_int": "0x0099",
                     "shadow_reg_offset_int": "0x0264",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -4241,25 +4434,67 @@
                             "width": 7,
                             "id": "fuse153-bits-0-6",
                             "name": "XSPI_DELAY_CELL_NUM",
-                            "description": "Delay cell numbers for Flash read sampling via external DQS"
+                            "description": "Delay cell numbers for Flash read sampling via external DQS\n0b - Use the delay cell value calculated by ROM\nOthers - Use the delay cell value in terms of 100 ps"
                         },
                         {
                             "width": 10,
                             "id": "fuse153-bits-7-16",
                             "name": "XSPI_FLASH_SEC_IMAGE_OFFSET",
-                            "description": "XSPI_FLASH_SEC_IMAGE_OFFSET field"
+                            "description": "Offset of the second image\nxd - x multiplied by 128 KB"
                         },
                         {
                             "width": 7,
                             "id": "fuse153-bits-17-23",
                             "name": "XSPI_FLASH_IMAGE_SIZE",
-                            "description": "XSPI_FLASH_IMAGE_SIZE field"
+                            "description": "Size of the second image\n0d - Same size as the image offset (XSPI_IMAGE_OFFSET)\n1d - 128 KB\n2d - 256 KB\nmd - m x 128 KB (m = 3-7)\n8d - 1 MB\nnd - (n-7) \u00d7 1 MB (n = 8-71)"
                         },
                         {
                             "width": 3,
                             "id": "fuse153-bits-24-26",
                             "name": "XSPI_FLASH_ENHANCE_MODE",
-                            "description": "XSPI_FLASH_ENHANCE_MODE field"
+                            "description": "XSPI enhance mode",
+                            "values": [
+                                {
+                                    "name": "000",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 1,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 2,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 3,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 4,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "101",
+                                    "value": 5,
+                                    "description": "Force using internal loopback DQS"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 6,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 7,
+                                    "description": "Reserved"
+                                }
+                            ]
                         },
                         {
                             "width": 5
@@ -4272,7 +4507,7 @@
                     "description": "XSPI_CFG2 register",
                     "index_int": "0x009A",
                     "shadow_reg_offset_int": "0x0268",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -4284,7 +4519,7 @@
                             "width": 32,
                             "id": "fuse154-bits-0-31",
                             "name": "XSPI_FLASH_SDR_DLLCRA",
-                            "description": "XSPI_FLASH_SDR_DLLCRA field"
+                            "description": "Configure DLL and the subordinate delay chain for flash memory with SDR interface, see XSPI_DLLCRA register for more details."
                         }
                     ]
                 },
@@ -4294,7 +4529,7 @@
                     "description": "XSPI_CFG3 register",
                     "index_int": "0x009B",
                     "shadow_reg_offset_int": "0x026C",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -4306,7 +4541,7 @@
                             "width": 32,
                             "id": "fuse155-bits-0-31",
                             "name": "XSPI_FLASH_SDR_SMPR",
-                            "description": "XSPI_FLASH_SDR_SMPR field"
+                            "description": "Configure how XSPI samples the incoming data from external serial flash memory with SDR interface. See XSPI_SMPR register for more details."
                         }
                     ]
                 },
@@ -4316,7 +4551,7 @@
                     "description": "XSPI_CFG4 register",
                     "index_int": "0x009C",
                     "shadow_reg_offset_int": "0x0270",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -4328,7 +4563,7 @@
                             "width": 32,
                             "id": "fuse156-bits-0-31",
                             "name": "XSPI_FLASH_DDR_DLLCRA",
-                            "description": "XSPI_FLASH_DDR_DLLCRA field"
+                            "description": "Configure DLL and the subordinate delay chain for flash memory with DDR interface, see XSPI_DLLCRA register for more details."
                         }
                     ]
                 },
@@ -4338,7 +4573,7 @@
                     "description": "XSPI_CFG5 register",
                     "index_int": "0x009D",
                     "shadow_reg_offset_int": "0x0274",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0040",
@@ -4350,17 +4585,25 @@
                             "width": 32,
                             "id": "fuse157-bits-0-31",
                             "name": "XSPI_FLASH_DDR_SMPR",
-                            "description": "XSPI_FLASH_DDR_SMPR field"
+                            "description": "Configure how XSPI samples the incoming data from external serial flash memory with DDR interface. See XSPI_SMPR register for more details."
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SDHC",
+                "description": "SDHC configuration"
+            },
+            "registers": [
                 {
                     "id": "fuse158",
                     "name": "SDHC_CFGF0",
-                    "description": "SDHC_CFGF0 register",
+                    "description": "SDHC_CFGF0 register (for uSDHC0)",
                     "index_int": "0x009E",
                     "shadow_reg_offset_int": "0x0278",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -4372,23 +4615,45 @@
                             "width": 2,
                             "id": "fuse158-bits-0-1",
                             "name": "SDHC_BUS_WIDTH",
-                            "description": "SDHC_BUS_WIDTH field"
+                            "description": "eMMC bus width selection",
+                            "values": [
+                                {
+                                    "name": "4 bits",
+                                    "value": 0,
+                                    "description": "4 bits"
+                                },
+                                {
+                                    "name": "8 bits",
+                                    "value": 1,
+                                    "description": "8 bits"
+                                },
+                                {
+                                    "name": "4 bits DDR",
+                                    "value": 2,
+                                    "description": "4 bits DDR"
+                                },
+                                {
+                                    "name": "8 bits DDR",
+                                    "value": 3,
+                                    "description": "8 bits DDR"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse158-bit-2",
                             "name": "SDHC_PWR_CYCLE_EN",
-                            "description": "SDHC_PWR_CYCLE_EN field",
+                            "description": "Power cycle enable",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "No",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "No power cycle"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Yes",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Power cycle enabled via RST pad"
                                 }
                             ]
                         },
@@ -4396,29 +4661,73 @@
                             "width": 2,
                             "id": "fuse158-bits-3-4",
                             "name": "SDHC_PWR_CYCLE_WAIT",
-                            "description": "SDHC_PWR_CYCLE_WAIT field"
+                            "description": "Power down wait selection",
+                            "values": [
+                                {
+                                    "name": "20 ms",
+                                    "value": 0,
+                                    "description": "20 ms"
+                                },
+                                {
+                                    "name": "10 ms",
+                                    "value": 1,
+                                    "description": "10 ms"
+                                },
+                                {
+                                    "name": "5 ms",
+                                    "value": 2,
+                                    "description": "5 ms"
+                                },
+                                {
+                                    "name": "2.5 ms",
+                                    "value": 3,
+                                    "description": "2.5 ms"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
                             "id": "fuse158-bits-5-6",
                             "name": "SDHC_PWR_STABLE_WAIT",
-                            "description": "SDHC_PWR_STABLE_WAIT field"
+                            "description": "Power up wait selection",
+                            "values": [
+                                {
+                                    "name": "5 ms",
+                                    "value": 0,
+                                    "description": "5 ms"
+                                },
+                                {
+                                    "name": "2.5 ms",
+                                    "value": 1,
+                                    "description": "2.5 ms"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 2,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 3,
+                                    "description": "Reserved"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse158-bit-7",
                             "name": "SDHC_PWR_POL",
-                            "description": "SDHC_PWR_POL field",
+                            "description": "uSDHC reset polarity selection",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Low",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Reset active low"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "High",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Reset active high"
                                 }
                             ]
                         },
@@ -4429,17 +4738,17 @@
                             "width": 1,
                             "id": "fuse158-bit-9",
                             "name": "SDHC_RESET_PRE_IDLE",
-                            "description": "SDHC_RESET_PRE_IDLE field",
+                            "description": "eMMC disable pre-idle selection",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Enabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Enabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Disabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Disabled"
                                 }
                             ]
                         },
@@ -4447,17 +4756,17 @@
                             "width": 1,
                             "id": "fuse158-bit-10",
                             "name": "SDHC_MMC_SPEED",
-                            "description": "SDHC_MMC_SPEED field",
+                            "description": "eMMC speed selection",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Normal",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Normal speed"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "High",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "High speed"
                                 }
                             ]
                         },
@@ -4469,10 +4778,10 @@
                 {
                     "id": "fuse159",
                     "name": "SDHC_CFGF1",
-                    "description": "SDHC_CFGF1 register",
+                    "description": "SDHC_CFGF1 register (for uSDHC1)",
                     "index_int": "0x009F",
                     "shadow_reg_offset_int": "0x027C",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -4484,23 +4793,45 @@
                             "width": 2,
                             "id": "fuse159-bits-0-1",
                             "name": "SDHC_CFGF1_SDHC_BUS_WIDTH0",
-                            "description": "SDHC_BUS_WIDTH field"
+                            "description": "eMMC bus width selection",
+                            "values": [
+                                {
+                                    "name": "4 bits",
+                                    "value": 0,
+                                    "description": "4 bits"
+                                },
+                                {
+                                    "name": "8 bits",
+                                    "value": 1,
+                                    "description": "8 bits"
+                                },
+                                {
+                                    "name": "4 bits DDR",
+                                    "value": 2,
+                                    "description": "4 bits DDR"
+                                },
+                                {
+                                    "name": "8 bits DDR",
+                                    "value": 3,
+                                    "description": "8 bits DDR"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse159-bit-2",
                             "name": "SDHC_CFGF1_SDHC_PWR_CYCLE_EN1",
-                            "description": "SDHC_PWR_CYCLE_EN field",
+                            "description": "Power cycle enable",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "No",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "No power cycle"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Yes",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Power cycle enabled via RST pad"
                                 }
                             ]
                         },
@@ -4508,29 +4839,73 @@
                             "width": 2,
                             "id": "fuse159-bits-3-4",
                             "name": "SDHC_CFGF1_SDHC_PWR_CYCLE_WAIT2",
-                            "description": "SDHC_PWR_CYCLE_WAIT field"
+                            "description": "Power down wait selection",
+                            "values": [
+                                {
+                                    "name": "20 ms",
+                                    "value": 0,
+                                    "description": "20 ms"
+                                },
+                                {
+                                    "name": "10 ms",
+                                    "value": 1,
+                                    "description": "10 ms"
+                                },
+                                {
+                                    "name": "5 ms",
+                                    "value": 2,
+                                    "description": "5 ms"
+                                },
+                                {
+                                    "name": "2.5 ms",
+                                    "value": 3,
+                                    "description": "2.5 ms"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
                             "id": "fuse159-bits-5-6",
                             "name": "SDHC_CFGF1_SDHC_PWR_STABLE_WAIT3",
-                            "description": "SDHC_PWR_STABLE_WAIT field"
+                            "description": "Power up wait selection",
+                            "values": [
+                                {
+                                    "name": "5 ms",
+                                    "value": 0,
+                                    "description": "5 ms"
+                                },
+                                {
+                                    "name": "2.5 ms",
+                                    "value": 1,
+                                    "description": "2.5 ms"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 2,
+                                    "description": "Reserved"
+                                },
+                                {
+                                    "name": "Reserved",
+                                    "value": 3,
+                                    "description": "Reserved"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "fuse159-bit-7",
                             "name": "SDHC_CFGF1_SDHC_PWR_POL4",
-                            "description": "SDHC_PWR_POL field",
+                            "description": "uSDHC reset polarity selection",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Low",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Reset active low"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "High",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Reset active high"
                                 }
                             ]
                         },
@@ -4541,17 +4916,17 @@
                             "width": 1,
                             "id": "fuse159-bit-9",
                             "name": "SDHC_CFGF1_SDHC_RESET_PRE_IDLE6",
-                            "description": "SDHC_RESET_PRE_IDLE field",
+                            "description": "eMMC disable pre-idle selection",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Enabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Enabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Disabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Disabled"
                                 }
                             ]
                         },
@@ -4559,17 +4934,17 @@
                             "width": 1,
                             "id": "fuse159-bit-10",
                             "name": "SDHC_CFGF1_SDHC_MMC_SPEED7",
-                            "description": "SDHC_MMC_SPEED field",
+                            "description": "eMMC speed selection",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Normal",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Normal speed"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "High",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "High speed"
                                 }
                             ]
                         },
@@ -4577,14 +4952,22 @@
                             "width": 21
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Miscellaneous",
+                "description": "Miscellaneous configuration"
+            },
+            "registers": [
                 {
                     "id": "fuse160",
                     "name": "BOOT_CFG8",
                     "description": "BOOT_CFG8 register",
                     "index_int": "0x00A0",
                     "shadow_reg_offset_int": "0x0280",
-                    "individual_write_lock": "none",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0200",
@@ -4605,17 +4988,17 @@
                             "width": 1,
                             "id": "fuse160-bit-9",
                             "name": "DBG_OVER_USB_LOCK",
-                            "description": "DBG_OVER_USB_LOCK field",
+                            "description": "Enable debug over USB register write lock. ",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "Value 0."
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "Value 1."
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -4623,13 +5006,13 @@
                             "width": 3,
                             "id": "fuse160-bits-10-12",
                             "name": "DBG_OVER_USB_SEL_PORT",
-                            "description": "GPIO port"
+                            "description": "Defines which GPIO port is selected to enable debug over USB0 pins feature.\nxd - GPIO port x"
                         },
                         {
                             "width": 5,
                             "id": "fuse160-bits-13-17",
                             "name": "DBG_OVER_USB_SEL_GPIO",
-                            "description": "Defines which GPIO is DBG_VER_USB_SEL.\nGPIO pin number"
+                            "description": "Defines which GPIO pin is selected to enable debug over USB0 pins feature.\nxd - GPIO pin x"
                         },
                         {
                             "width": 7,

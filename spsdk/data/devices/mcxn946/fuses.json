@@ -49,7 +49,7 @@
                             "width": 3,
                             "id": "fuse0-bits-12-14",
                             "name": "PRINCE_CFG_LOCK[2:0]",
-                            "description": "Prince Config Lock\nConfigures the locking EFUSE bits for fuses #23 - #31. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "description": "Prince Config Lock\nConfigures the locking EFUSE bits for fuses #23 - #38. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
                             "values": [
                                 {
                                     "name": "Unlocked",
@@ -213,6 +213,7 @@
                             "id": "fuse1-bits-0-7",
                             "name": "LIFECYCLE[7:0]",
                             "description": "Life cycle state.\nThis field can be used to advance life cycle state. Below are the allowed values for this field. Use of other values may lead to bricked state.",
+                            "advanced": true,
                             "values": [
                                 {
                                     "name": "BLANK",
@@ -534,6 +535,7 @@
                             "id": "fuse1-bits-24-31",
                             "name": "LIFECYCLE_DP[7:0]",
                             "description": "Duplicate of the LIFECYCLE fuse value.",
+                            "advanced": true,
                             "values": [
                                 {
                                     "name": "BLANK",
@@ -585,7 +587,6 @@
                     "description": "Image key revoke and PRINCE, PUF, and NXP provisioning firmware setting",
                     "index_int": "0x0002",
                     "individual_write_lock": "none",
-                    "reg_width": 24,
                     "bitfields": [
                         {
                             "width": 8,
@@ -640,6 +641,9 @@
                                     "description": "Disable NXP signed SB3 FW"
                                 }
                             ]
+                        },
+                        {
+                            "width": 8
                         }
                     ]
                 },
@@ -1352,7 +1356,6 @@
                         "write_lock_int": "0x0200",
                         "read_lock_int": "0x0800"
                     },
-                    "reg_width": 24,
                     "bitfields": [
                         {
                             "width": 7,
@@ -1373,7 +1376,7 @@
                             "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped\nNOTE: FlexSPI remap size cannot exceed the start address of boot image 1.  \nb'0000   Remap size = FLEXSPI_IMAGE_OFFSET * 256KByte\n\"   SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field. \nb'0001   SIZE_1MB Size of remapped area is 1MByte.                            \nb'0010   SIZE_2MB Size of remapped area is 2MByte.                            \nb'0011   SIZE_3MB Size of remapped area is 3MByte.                           \nb'0100   SIZE_4MB Size of remapped area is 4MByte.\nb'0101   SIZE_5MB Size of remapped area is 5MByte.                            \nb'0110   SIZE_6MB Size of remapped area is 6MByte.                            \nb'0111   SIZE_7MB Size of remapped area is 7MByte.                            \nb'1000   SIZE_8MB Size of remapped area is 8MByte.                            \nb'1001   SIZE_9MB Size of remapped area is 9MByte.                            \nb'1010   SIZE_10MB Size of remapped area is 10MByte.                         \nb'1011   SIZE_11MB Size of remapped area is 11MByte.                         \nb'1100   SIZE_12MB Size of remapped area is 12MByte.                         \nb'1101   SIZE_256KB Size of remapped area is 256KByte.                       \nb'1110   SIZE_512KB Size of remapped area is 512KByte.                      \nb'1111  SIZE_768KB Size of remapped area is 768KByte."
                         },
                         {
-                            "width": 3
+                            "width": 11
                         }
                     ]
                 },
@@ -1775,7 +1778,6 @@
                         "write_lock_int": "0x0200",
                         "read_lock_int": "0x0800"
                     },
-                    "reg_width": 24,
                     "bitfields": [
                         {
                             "width": 3,
@@ -2024,7 +2026,7 @@
                             ]
                         },
                         {
-                            "width": 1
+                            "width": 9
                         },
                         {
                             "width": 2,
@@ -2559,7 +2561,7 @@
                 {
                     "id": "fuse31",
                     "name": "IPED_CTX_CRC32",
-                    "description": "CRC value of the IPED regions start and end address setting",
+                    "description": "CRC-32/MPEG-2 value of the IPED regions start and end address setting",
                     "index_int": "0x001F",
                     "individual_write_lock": "implicit",
                     "lock": {
@@ -2572,7 +2574,147 @@
                             "width": 32,
                             "id": "fuse31-bits-0-31",
                             "name": "IPED_CTX_CRC32",
-                            "description": "CRC value of the IPED regions start and end address setting\nUser has to program CRC32 of IPED context configuration data present in CMPA (0x0100_40B0 - 0x0100_40EF) to have ROM do integrity check of IPED configuration data before using. This check is done only when this field is non-zero.IPED_CTX_CRC32[31:0]"
+                            "description": "CRC-32/MPEG-2 value of the IPED regions start and end address setting\nUser has to program CRC32 of IPED context configuration data present in CMPA (0x0100_40B0 - 0x0100_40EF) to have ROM do integrity check of IPED configuration data before using. This check is done only when this field is non-zero.IPED_CTX_CRC32[31:0]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse32",
+                    "name": "IPED_GP1",
+                    "description": "General Purpose Fuse 1 (IPED_GP1[31:0])",
+                    "index_int": "0x0020",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse32-bits-0-31",
+                            "name": "IPED_GP1[31:0]",
+                            "description": "General Purpose Fuse 1 (IPED_GP1[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse33",
+                    "name": "IPED_GP2",
+                    "description": "General Purpose Fuse 2 (IPED_GP2[31:0])",
+                    "index_int": "0x0021",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse33-bits-0-31",
+                            "name": "IPED_GP2[31:0]",
+                            "description": "General Purpose Fuse 2 (IPED_GP2[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse34",
+                    "name": "IPED_GP3",
+                    "description": "General Purpose Fuse 3 (IPED_GP3[31:0])",
+                    "index_int": "0x0022",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse34-bits-0-31",
+                            "name": "IPED_GP3[31:0]",
+                            "description": "General Purpose Fuse 3 (IPED_GP3[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse35",
+                    "name": "IPED_GP4",
+                    "description": "General Purpose Fuse 4 (IPED_GP4[31:0])",
+                    "index_int": "0x0023",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse35-bits-0-31",
+                            "name": "IPED_GP4[31:0]",
+                            "description": "General Purpose Fuse 4 (IPED_GP4[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse36",
+                    "name": "IPED_GP5",
+                    "description": "General Purpose Fuse 5 (IPED_GP5[31:0])",
+                    "index_int": "0x0024",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse36-bits-0-31",
+                            "name": "IPED_GP5[31:0]",
+                            "description": "General Purpose Fuse 5 (IPED_GP5[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse37",
+                    "name": "IPED_GP6",
+                    "description": "General Purpose Fuse 6 (IPED_GP6[31:0])",
+                    "index_int": "0x0025",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse37-bits-0-31",
+                            "name": "IPED_GP6[31:0]",
+                            "description": "General Purpose Fuse 6 (IPED_GP6[31:0])\nGeneral purpose fuse words available for customer use."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse38",
+                    "name": "IPED_GP7",
+                    "description": "General Purpose Fuse 7 (IPED_GP7[31:0])",
+                    "index_int": "0x0026",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse38-bits-0-31",
+                            "name": "IPED_GP7[31:0]",
+                            "description": "General Purpose Fuse 7 (IPED_GP7[31:0])\nGeneral purpose fuse words available for customer use."
                         }
                     ]
                 }

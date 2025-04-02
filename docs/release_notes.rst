@@ -27,6 +27,31 @@ Release Notes
 * The configuration option on CLI will be extended by new -oc/--override-config to override any configuration in CLI
 * SmartCard Trust Provisioning has been discontinued. Associated aplications (tphost, tpconfig) will be removed.
 
+-----------------------
+2.6.1 (31-March-2025)
+-----------------------
+
+**New features**
+
+* :ref:`nxpimage`:
+    - add possibility to adjust offset for image merge, allowing images to be loaded on specific addresses
+
+**Bugfixes**
+
+* :ref:`blhost`:
+    - suppress exceptions when abort frames are missing
+* :ref:`el2go-host`:
+    - check UUID fuse index of 8ULP
+* :ref:`lpcprog`:
+    - fix CRP value endianness
+* :ref:`nxpdebugmbox`:
+    - fix filtering of debug probes by its serial number into discovery method for MCU-Link
+* :ref:`nxpuuu`:
+    - fix write emmc_all wic.zst file
+    - fix false positive status reporting in write operations 
+* fix lock fuse on RT1176
+* fix incorrect default value of FOPT in FCF
+
 ------------------------
 2.6.0 (7-February-2025)
 ------------------------

@@ -532,7 +532,7 @@
                     "description": "Boot configuration fuse word 0.",
                     "index_int": "0x000F",
                     "shadow_reg_offset_int": "0x003C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -642,10 +642,7 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "id": "fuse15-bit-7",
-                            "name": "BOOT_CLK_SPEED",
-                            "description": "Defines clock speeds during boot."
+                            "width": 1
                         },
                         {
                             "width": 2
@@ -825,7 +822,7 @@
                     "description": "Boot configuration word specifying FlexSPI flash devices settings.",
                     "index_int": "0x0010",
                     "shadow_reg_offset_int": "0x0040",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1374,7 +1371,7 @@
                     "description": "Boot configuration word specifying settings for FlexSPI image.",
                     "index_int": "0x0011",
                     "shadow_reg_offset_int": "0x0044",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1493,7 +1490,7 @@
                     "description": "Boot configuration fuse word 3.",
                     "index_int": "0x0012",
                     "shadow_reg_offset_int": "0x0048",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1951,7 +1948,7 @@
                     "description": "Boot configuration word specifying settings for recovery image.",
                     "index_int": "0x0013",
                     "shadow_reg_offset_int": "0x004C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2082,7 +2079,7 @@
                     "description": "The USB VID and PID can be customized by writing the new values to the USB_VID and USB_PID fields in this fuse word field.",
                     "index_int": "0x0014",
                     "shadow_reg_offset_int": "0x0050",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2110,7 +2107,7 @@
                     "description": "The SDIO VID and PID can be customized by writing the new values to the SDIO_VID and SDIO_PID fields in this fuse word field.",
                     "index_int": "0x0015",
                     "shadow_reg_offset_int": "0x0054",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2343,7 +2340,7 @@
                     "description": "User defined",
                     "index_int": "0x001B",
                     "shadow_reg_offset_int": "0x006C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0008",
@@ -2365,7 +2362,7 @@
                     "description": "SDIO Block size settings fuse word.",
                     "index_int": "0x001C",
                     "shadow_reg_offset_int": "0x0070",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0008",
@@ -2393,7 +2390,7 @@
                     "description": "SDIO configuration settings fuse word.",
                     "index_int": "0x001D",
                     "shadow_reg_offset_int": "0x0074",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0008",
@@ -2427,7 +2424,7 @@
                     "description": "User defined",
                     "index_int": "0x001E",
                     "shadow_reg_offset_int": "0x0078",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0008",
@@ -2449,7 +2446,7 @@
                     "description": "The DCFG_CC_SOCU_NS configuration fields can be used to increase the restriction level specified in DCFG_CC_SOCU. With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only.\n    - In this scenario, or easy of development, Level-I customer releases the part to always allow non-secure debug.\n    - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used.\n    - ROM will use this word to further restrict the debug access.\n    - Layout of this word is same as DCFG_CC_SOCU.\n    - Combinations of PINNED_xxxEN and DFLT_xxxEN bits and resulting access restriction levels are:\n    \n1. PINNED_xxxEN=1,DFLT_xxxEN=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n2. PINNED_xxxEN=0,DFLT_xxxEN=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate.\n3. PINNED_xxxEN=0,DFLT_xxxEN=1: Illegal setting. Part will lock-up if this setting is selected.\n4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x001F",
                     "shadow_reg_offset_int": "0x007C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0200",
@@ -2890,7 +2887,7 @@
                     "description": "The DCFG_CC_SOCU configuration field specifies the debug access restrictions per debug domain. The DCFG_CC_SOCU_NS fields can be used to increase the restriction level specified in DCFG_CC_SOCU but cannot be used to reduce the restriction level.\n    - Combinations of PINNED_xxxEN and DFLT_xxxEN bits and resulting access restriction levels are:\n\n 1. PINNED_xxxEN=1,DFLT_xxxEN=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n 2. PINNED_xxxEN=0,DFLT_xxxEN=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. \n 3. PINNED_xxxEN=0,DFLT_xxxEN=1: Illegal setting. Part will lock-up if this setting is selected. \n 4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0021",
                     "shadow_reg_offset_int": "0x0084",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",
@@ -3331,7 +3328,7 @@
                     "description": "Anti-pole (inverse) value of Debug Configuration word (DCFG_CC_SOCU).  DCFG_CC_SOCU_AP should be programmed with the exact anti-pole (inverse value) value of DCFG_CC_SOCU. \nAny mismatch between DCFG_CC_SOCU and DCFG_CC_SOCU_AP is deemed as an attack and device is locked permanently.",
                     "index_int": "0x0022",
                     "shadow_reg_offset_int": "0x0088",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "calculated": {
                         "method": "inverse",
                         "src_register_id": "fuse33"
@@ -3341,156 +3338,7 @@
                         "write_lock_int": "0x0040",
                         "read_lock_int": "0x0100",
                         "operation_lock_int": "0x0080"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 8,
-                            "id": "fuse34-bits-0-7",
-                            "name": "CRC8_AP",
-                            "description": "CRC-8/ITU of upper 3 bytes (bits 8 to 31). Since these fields are security critical, they are constructed with built-in integrity protection to protect from side channel glitch attacks.\nThe lower byte (0 to 7 bits) of these OTP words should be written with CRC-8/ITU of upper 3 bytes (bits 8 to 31). \nThis construction makes the probability of a successful glitch attack to flip the exact control bits extremely difficult.\n The CRC8 calculation should be based on x8 + x2 + x + 1 polynomial. Polynomial=0x07, initial value= 0x00, XorOut=0x55"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-8",
-                            "name": "DFLT_NIDEN_AP",
-                            "description": "Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-9",
-                            "name": "DFLT_DBGEN_AP",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-10",
-                            "name": "DFLT_SPNIDEN_AP",
-                            "description": "Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-11",
-                            "name": "DFLT_SPIDEN_AP",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-12",
-                            "name": "DFLT_TAPEN_AP",
-                            "description": "Controls TAP (Test Access Point) controller used for structural integrity testing of silicon by NXP as part of Return Material Analysis (RMA)"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-13",
-                            "name": "DFLT_CPU1NIDEN_AP",
-                            "description": "Controls non-Invasive debugging of CPU1."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-14",
-                            "name": "DFLT_CPU1DBGEN_AP",
-                            "description": "Controls invasive debugging of CPU1."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-15",
-                            "name": "DFLT_CPU2NIDEN_AP",
-                            "description": "Controls non-Invasive debugging of CPU2."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-16",
-                            "name": "DFLT_CPU2DBGEN_AP",
-                            "description": "Controls invasive debugging of CPU2."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-17",
-                            "name": "DFLT_ISPCMDEN_AP",
-                            "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-18",
-                            "name": "DFLT_FACMDEN_AP",
-                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-19",
-                            "name": "PINNED_NIDEN_AP",
-                            "description": "Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-20",
-                            "name": "PINNED_DBGEN_AP",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-21",
-                            "name": "PINNED_SPNIDEN_AP",
-                            "description": "Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-22",
-                            "name": "PINNED_SPIDEN_AP",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-23",
-                            "name": "PINNED_TAPEN_AP",
-                            "description": "Controls TAP (Test Access Point) controller used for structural integrity testing of silicon by NXP as part of Return Material Analysis (RMA)"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-24",
-                            "name": "PINNED_CPU1NIDEN_AP",
-                            "description": "Controls non-Invasive debugging of CPU1"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-25",
-                            "name": "PINNED_CPU1DBGEN_AP",
-                            "description": "Controls invasive debugging of CPU1."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-26",
-                            "name": "PINNED_CPU2NIDEN_AP",
-                            "description": "Controls non-Invasive debugging of CPU2."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-27",
-                            "name": "PINNED_CPU2DBGEN_AP",
-                            "description": "Controls invasive debugging of CPU2."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-28",
-                            "name": "PINNED_ISPCMDEN_AP",
-                            "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication."
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-29",
-                            "name": "PINNED_FACMDEN_AP",
-                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication"
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-30",
-                            "name": "FORCE_UUID_MATCH_AP",
-                            "description": "When set, debug authentication protocol only accepts Debug Credential certificates (DC) with matching UUID."
-                        },
-                        {
-                            "width": 1
-                        }
-                    ]
+                    }
                 }
             ]
         },
@@ -3637,7 +3485,7 @@
                     "name": "UUID[31:0]",
                     "description": "Universally Unique Identifier 0",
                     "index_int": "0x002E",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -3652,7 +3500,7 @@
                     "name": "UUID[63:32]",
                     "description": "Universally Unique Identifier 1",
                     "index_int": "0x002F",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -3667,7 +3515,7 @@
                     "name": "UUID[95:64]",
                     "description": "Universally Unique Identifier 2",
                     "index_int": "0x0030",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -3682,7 +3530,7 @@
                     "name": "UUID[127:96]",
                     "description": "Universally Unique Identifier 3",
                     "index_int": "0x0031",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -3707,7 +3555,7 @@
                     "index_int": "0x005C",
                     "shadow_reg_offset_int": "0x0170",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3730,7 +3578,7 @@
                     "index_int": "0x005D",
                     "shadow_reg_offset_int": "0x0174",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3753,7 +3601,7 @@
                     "index_int": "0x005E",
                     "shadow_reg_offset_int": "0x0178",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3776,7 +3624,7 @@
                     "index_int": "0x005F",
                     "shadow_reg_offset_int": "0x017C",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3799,7 +3647,7 @@
                     "index_int": "0x0060",
                     "shadow_reg_offset_int": "0x0180",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3822,7 +3670,7 @@
                     "index_int": "0x0061",
                     "shadow_reg_offset_int": "0x0184",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3845,7 +3693,7 @@
                     "index_int": "0x0062",
                     "shadow_reg_offset_int": "0x0188",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3868,7 +3716,7 @@
                     "index_int": "0x0063",
                     "shadow_reg_offset_int": "0x018C",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3891,7 +3739,7 @@
                     "index_int": "0x0064",
                     "shadow_reg_offset_int": "0x0190",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3914,7 +3762,7 @@
                     "index_int": "0x0065",
                     "shadow_reg_offset_int": "0x0194",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3937,7 +3785,7 @@
                     "index_int": "0x0066",
                     "shadow_reg_offset_int": "0x0198",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3960,7 +3808,7 @@
                     "index_int": "0x0067",
                     "shadow_reg_offset_int": "0x019C",
                     "access": "RO",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -3990,7 +3838,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x0068",
                     "shadow_reg_offset_int": "0x01A0",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4012,7 +3860,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x0069",
                     "shadow_reg_offset_int": "0x01A4",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4034,7 +3882,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x006A",
                     "shadow_reg_offset_int": "0x01A8",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4056,7 +3904,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x006B",
                     "shadow_reg_offset_int": "0x01AC",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4078,7 +3926,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x006C",
                     "shadow_reg_offset_int": "0x01B0",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4100,7 +3948,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x006D",
                     "shadow_reg_offset_int": "0x01B4",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4122,7 +3970,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x006E",
                     "shadow_reg_offset_int": "0x01B8",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4144,7 +3992,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x006F",
                     "shadow_reg_offset_int": "0x01BC",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4166,7 +4014,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x0070",
                     "shadow_reg_offset_int": "0x01C0",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4188,7 +4036,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x0071",
                     "shadow_reg_offset_int": "0x01C4",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4210,7 +4058,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x0072",
                     "shadow_reg_offset_int": "0x01C8",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4232,7 +4080,7 @@
                     "description": "SHA256 hash digest of hash of four Root Of Trust Keys",
                     "index_int": "0x0073",
                     "shadow_reg_offset_int": "0x01CC",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0001",
@@ -4261,7 +4109,7 @@
                     "name": "USER_ECC_0",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x009C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4276,7 +4124,7 @@
                     "name": "USER_ECC_1",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x009D",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4291,7 +4139,7 @@
                     "name": "USER_ECC_2",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x009E",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4306,7 +4154,7 @@
                     "name": "USER_ECC_3",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x009F",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4321,7 +4169,7 @@
                     "name": "USER_ECC_4",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x00A0",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4336,7 +4184,7 @@
                     "name": "USER_ECC_5",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x00A1",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4351,7 +4199,7 @@
                     "name": "USER_ECC_6",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x00A2",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4366,7 +4214,7 @@
                     "name": "USER_ECC_7",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x00A3",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4381,7 +4229,7 @@
                     "name": "USER_ECC_8",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x013B",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4396,7 +4244,7 @@
                     "name": "USER_ECC_9",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x013C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4411,7 +4259,7 @@
                     "name": "USER_ECC_10",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x013D",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4426,7 +4274,7 @@
                     "name": "USER_ECC_11",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x013E",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4441,7 +4289,7 @@
                     "name": "USER_ECC_12",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x013F",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4456,7 +4304,7 @@
                     "name": "USER_ECC_13",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0140",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4471,7 +4319,7 @@
                     "name": "USER_ECC_14",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0141",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4486,7 +4334,7 @@
                     "name": "USER_ECC_15",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0142",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4501,7 +4349,7 @@
                     "name": "USER_ECC_16",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0143",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4516,7 +4364,7 @@
                     "name": "USER_ECC_17",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0144",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4531,7 +4379,7 @@
                     "name": "USER_ECC_18",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0145",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4546,7 +4394,7 @@
                     "name": "USER_ECC_19",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0146",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4561,7 +4409,7 @@
                     "name": "USER_ECC_20",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0147",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4576,7 +4424,7 @@
                     "name": "USER_ECC_21",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0148",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4591,7 +4439,7 @@
                     "name": "USER_ECC_22",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0149",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4606,7 +4454,7 @@
                     "name": "USER_ECC_23",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x014A",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4621,7 +4469,7 @@
                     "name": "USER_ECC_24",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x014B",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4636,7 +4484,7 @@
                     "name": "USER_ECC_25",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x014C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4651,7 +4499,7 @@
                     "name": "USER_ECC_26",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x014D",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4666,7 +4514,7 @@
                     "name": "USER_ECC_27",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x014E",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4681,7 +4529,7 @@
                     "name": "USER_ECC_28",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x014F",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4696,7 +4544,7 @@
                     "name": "USER_ECC_29",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0150",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4711,7 +4559,7 @@
                     "name": "USER_ECC_30",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0151",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4726,7 +4574,7 @@
                     "name": "USER_ECC_31",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0152",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4741,7 +4589,7 @@
                     "name": "USER_ECC_32",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0153",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4756,7 +4604,7 @@
                     "name": "USER_ECC_33",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0154",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4771,7 +4619,7 @@
                     "name": "USER_ECC_34",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0155",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4786,7 +4634,7 @@
                     "name": "USER_ECC_35",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0156",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4801,7 +4649,7 @@
                     "name": "USER_ECC_36",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0157",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4816,7 +4664,7 @@
                     "name": "USER_ECC_37",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0158",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4831,7 +4679,7 @@
                     "name": "USER_ECC_38",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0159",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4846,7 +4694,7 @@
                     "name": "USER_ECC_39",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x015A",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4861,7 +4709,7 @@
                     "name": "USER_ECC_40",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x015B",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4876,7 +4724,7 @@
                     "name": "USER_ECC_41",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x015C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4891,7 +4739,7 @@
                     "name": "USER_ECC_42",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x015D",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4906,7 +4754,7 @@
                     "name": "USER_ECC_43",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x015E",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4921,7 +4769,7 @@
                     "name": "USER_ECC_44",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x015F",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4936,7 +4784,7 @@
                     "name": "USER_ECC_45",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0160",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4951,7 +4799,7 @@
                     "name": "USER_ECC_46",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0161",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4966,7 +4814,7 @@
                     "name": "USER_ECC_47",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0162",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4981,7 +4829,7 @@
                     "name": "USER_ECC_48",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0163",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -4996,7 +4844,7 @@
                     "name": "USER_ECC_49",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0164",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -5011,7 +4859,7 @@
                     "name": "USER_ECC_50",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0165",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -5026,7 +4874,7 @@
                     "name": "USER_ECC_51",
                     "description": "Customer programmable ECC fuse word",
                     "index_int": "0x0166",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "bitfields": [
                         {
                             "width": 32,
@@ -5049,7 +4897,7 @@
                     "name": "CRC0",
                     "description": "Reserved",
                     "index_int": "0x0168",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0200",
@@ -5070,7 +4918,7 @@
                     "name": "CRC1",
                     "description": "CRC32 of BOOT_CFG0-6 configuration data, fuse words 15 to 21.",
                     "index_int": "0x0169",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0200",
@@ -5091,7 +4939,7 @@
                     "name": "CRC2",
                     "description": "CRC32 of LOCK configuration data, fuse words 0 to 2.",
                     "index_int": "0x016A",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0200",
@@ -5112,7 +4960,7 @@
                     "name": "CRC3",
                     "description": "Reserved",
                     "index_int": "0x016B",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0200",
@@ -5133,7 +4981,7 @@
                     "name": "CRC4",
                     "description": "Reserved",
                     "index_int": "0x016C",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x1000",
@@ -5154,7 +5002,7 @@
                     "name": "CRC5",
                     "description": "Reserved",
                     "index_int": "0x016D",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x1000",
@@ -5175,7 +5023,7 @@
                     "name": "CRC6",
                     "description": "CRC32 of  OEM programmed keys, fuse words 92 to 115.",
                     "index_int": "0x016E",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x1000",
@@ -5196,7 +5044,7 @@
                     "name": "CRC7",
                     "description": "Reserved",
                     "index_int": "0x016F",
-                    "individual_write_lock": "always_lock",
+                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x1000",

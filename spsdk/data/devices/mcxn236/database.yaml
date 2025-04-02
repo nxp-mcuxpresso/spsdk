@@ -53,6 +53,9 @@ info:
         pid: 0x0158
 
 features:
+  # ======== Fuses description section ========
+  fuses: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_7000

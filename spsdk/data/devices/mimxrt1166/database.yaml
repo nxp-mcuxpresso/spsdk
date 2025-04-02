@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -192,7 +192,6 @@ features:
       _name: Configuration of fuses for OTFAD1
       _no_verify: True
       fuse71: # OTFAD CFG Fuse
-        fuse71-bit-1: 1 # OTFAD Enable
         fuse71-bit-0: __scramble_enabled # OTFAD enable scrambling
       fuse133: __key_scramble_align # OTFAD scramble align
       fuse132: __key_scramble_mask # OTFAD Scramble Key
@@ -202,7 +201,6 @@ features:
       _name: Configuration of fuses for OTFAD2
       _no_verify: True
       fuse71: # OTFAD CFG Fuse
-        fuse71-bit-5: 1 # OTFAD Enable
         fuse71-bit-4: __scramble_enabled # OTFAD enable scrambling
       fuse135: __key_scramble_align # OTFAD scramble align
       fuse134: __key_scramble_mask # OTFAD Scramble Key

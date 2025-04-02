@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -53,10 +53,13 @@ class MbootBulkProtocol(MbootProtocolBase):
         :param data: Data to be sent
         """
         frame = self._create_frame(data, ReportId.DATA_OUT)
+        abort_data = None
         if self.allow_abort:
             try:
                 abort_data = self.device.read(1024, timeout=10)
                 logger.debug(f"Read {len(abort_data)} bytes of abort data")
+            except TimeoutError:
+                logger.debug("Timeout while reading abort data, no data received")
             except Exception as e:
                 raise McuBootConnectionError(str(e)) from e
             if abort_data:

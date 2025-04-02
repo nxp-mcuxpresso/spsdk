@@ -418,14 +418,18 @@ class BinaryImage:
 
     def update_offsets(self) -> None:
         """Update offsets from the sub images into main offset value begin offsets."""
-        offsets = []
-        for image in self.sub_images:
-            offsets.append(image.offset)
-
-        min_offset = min(offsets)
+        min_offset = self.min_offset
         for image in self.sub_images:
             image.offset -= min_offset
         self.offset += min_offset
+
+    @property
+    def min_offset(self) -> int:
+        """Offset of first subimage."""
+        offsets = []
+        for image in self.sub_images:
+            offsets.append(image.offset)
+        return min(offsets)
 
     def __len__(self) -> int:
         """Get length of image.
@@ -612,6 +616,7 @@ class BinaryImage:
 
         # import bincopy only if needed to save startup time
         import bincopy  # pylint: disable=import-outside-toplevel
+        from bincopy import _Segment
 
         bin_file = bincopy.BinFile()
         try:
@@ -644,6 +649,7 @@ class BinaryImage:
             raise SPSDKError(f"Load of {path} failed, can't be decoded.")
 
         for i, segment in enumerate(bin_file.segments):
+            assert isinstance(segment, _Segment)
             bin_image.add_image(
                 BinaryImage(
                     name=f"Segment {i}",

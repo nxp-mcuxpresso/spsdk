@@ -2725,7 +2725,7 @@
                     "description": "Master Key used to derive different usage keys (HMAC_KEY, ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). \n\n- ENC_BOOT_HMAC_KEY[127:0] = AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000000);\n- ENC_BOOT_AES_KEY[255:0] = AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000002);\n- SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000003) ||  AES_ENCRYPT (OTP_MASTER_KEY, 0x00000000000000000000000000000004); \n- OTFAD_KEK[127:0] = AES_ENCRYPT (OTP_MASTER_KEY, OTFAD_KEK_SEED[127:0]);",
                     "index_int": "0x0070",
                     "shadow_reg_offset_int": "0x01C0",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2738,7 +2738,7 @@
                     "description": "OTP_MASTER_KEY[63:32] register",
                     "index_int": "0x0071",
                     "shadow_reg_offset_int": "0x01C4",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2751,7 +2751,7 @@
                     "description": "OTP_MASTER_KEY[95:64] register",
                     "index_int": "0x0072",
                     "shadow_reg_offset_int": "0x01C8",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2764,7 +2764,7 @@
                     "description": "OTP_MASTER_KEY[127:96] register",
                     "index_int": "0x0073",
                     "shadow_reg_offset_int": "0x01CC",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2777,7 +2777,7 @@
                     "description": "OTP_MASTER_KEY[159:128] register",
                     "index_int": "0x0074",
                     "shadow_reg_offset_int": "0x01D0",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2790,7 +2790,7 @@
                     "description": "OTP_MASTER_KEY[191:160] register",
                     "index_int": "0x0075",
                     "shadow_reg_offset_int": "0x01D4",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2803,7 +2803,7 @@
                     "description": "OTP_MASTER_KEY[223:192] register",
                     "index_int": "0x0076",
                     "shadow_reg_offset_int": "0x01D8",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -2816,7 +2816,7 @@
                     "description": "OTP_MASTER_KEY[255:224] register",
                     "index_int": "0x0077",
                     "shadow_reg_offset_int": "0x01DC",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",

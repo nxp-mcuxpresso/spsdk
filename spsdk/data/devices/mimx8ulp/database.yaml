@@ -257,3 +257,4 @@ features:
     el2go_name: IMX8
     prov_method: oem_app
     validation_method: max_count=16;max_total_size=16384
+    uuid_fuse_index: "7 0 4"

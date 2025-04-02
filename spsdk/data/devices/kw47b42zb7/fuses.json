@@ -12,6 +12,7 @@
                     "name": "LIFECYCLE",
                     "description": "Lifecycle state.",
                     "index_int": "0x000A",
+                    "reset_value_int": "0x0007",
                     "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
@@ -34,7 +35,7 @@
                                 {
                                     "name": "OEM_SEC_CLOSED",
                                     "value": 15,
-                                    "description": "OEM Secure World Closed"
+                                    "description": "OEM Secure World Closed."
                                 },
                                 {
                                     "name": "OEM_CLOSED",
@@ -77,12 +78,12 @@
                                 {
                                     "name": "Open",
                                     "value": 0,
-                                    "description": "The debug access control registers remain open when jumping to customer code"
+                                    "description": "The debug access control registers remain open when jumping to customer code."
                                 },
                                 {
                                     "name": "Locked",
                                     "value": 1,
-                                    "description": "The debug access control registers are write-locked before jumping to customer code"
+                                    "description": "The debug access control registers are write-locked before jumping to customer code."
                                 }
                             ]
                         }
@@ -133,7 +134,7 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "TZ-M is disabled by default"
+                                    "description": "TZ-M is disabled by default."
                                 },
                                 {
                                     "name": "Enabled",
@@ -161,12 +162,12 @@
                                 {
                                     "name": "Enabled",
                                     "value": 0,
-                                    "description": "ISP path is enabled"
+                                    "description": "ISP path is enabled."
                                 },
                                 {
                                     "name": "Disabled",
                                     "value": 1,
-                                    "description": "ISP path is disabled"
+                                    "description": "ISP path is disabled."
                                 }
                             ]
                         }
@@ -189,12 +190,12 @@
                                 {
                                     "name": "Enabled",
                                     "value": 0,
-                                    "description": "Boot-ROM LP wakeup is enabled"
+                                    "description": "Boot-ROM LP wakeup is enabled."
                                 },
                                 {
                                     "name": "Disabled",
                                     "value": 1,
-                                    "description": "Boot-ROM LP wakeup is disabled"
+                                    "description": "Boot-ROM LP wakeup is disabled."
                                 }
                             ]
                         }
@@ -364,70 +365,6 @@
         },
         {
             "group": {
-                "name": "OEM_Enablement_Token",
-                "description": "RoTKTH (root key hash) typically used for radio firmware authentication"
-            },
-            "registers": [
-                {
-                    "id": "fuse33_0",
-                    "name": "OEM_Enablement_Token[255:224]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_1",
-                    "name": "OEM_Enablement_Token[223:192]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_2",
-                    "name": "OEM_Enablement_Token[191:160]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_3",
-                    "name": "OEM_Enablement_Token[159:128]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_4",
-                    "name": "OEM_Enablement_Token[127:96]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_5",
-                    "name": "OEM_Enablement_Token[95:64]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_6",
-                    "name": "OEM_Enablement_Token[63:32]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_7",
-                    "name": "OEM_Enablement_Token[31:0]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                }
-            ]
-        },
-        {
-            "group": {
                 "name": "DCFG_CC_SOCU",
                 "description": "Debug authentication configuration"
             },
@@ -448,12 +385,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -466,12 +403,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -484,12 +421,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -502,12 +439,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -520,12 +457,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -538,12 +475,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -556,12 +493,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -574,12 +511,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -592,12 +529,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -610,12 +547,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -628,12 +565,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -646,12 +583,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -664,12 +601,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -682,12 +619,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -700,12 +637,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -718,12 +655,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -736,7 +673,7 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "UUID matching not required"
+                                    "description": "UUID matching not required."
                                 },
                                 {
                                     "name": "Enabled",
@@ -766,12 +703,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -784,12 +721,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -802,12 +739,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -820,12 +757,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -838,12 +775,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -856,12 +793,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -874,12 +811,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -892,12 +829,12 @@
                                 {
                                     "name": "DAP",
                                     "value": 0,
-                                    "description": "Use debug authentication; DFLT bit must be zero"
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
                                     "name": "DFLT",
                                     "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit"
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
@@ -910,12 +847,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -928,12 +865,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -946,12 +883,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -964,12 +901,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -982,12 +919,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1000,12 +937,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1018,12 +955,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1036,12 +973,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3; access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1; access to the sub-domain is disabled at start up"
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0; access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal"
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
                                 }
                             ]
                         },
@@ -1054,7 +991,7 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "UUID matching not required"
+                                    "description": "UUID matching not required."
                                 },
                                 {
                                     "name": "Enabled",
@@ -1279,34 +1216,34 @@
         {
             "group": {
                 "name": "RADIO_VER_CNT",
-                "description": "128-bit radio firmware version counter (number of set fuse bits)"
+                "description": "128-bit radio firmware version counter"
             },
             "registers": [
                 {
                     "id": "fuse39_0",
                     "name": "RADIO_VER_CNT[127:96]",
-                    "description": "Radio firmware version counter.",
+                    "description": "Radio firmware version counter (number of set fuse bits).",
                     "index_int": "0x0027",
                     "individual_write_lock": "none"
                 },
                 {
                     "id": "fuse39_1",
                     "name": "RADIO_VER_CNT[95:64]",
-                    "description": "Radio firmware version counter.",
+                    "description": "Radio firmware version counter (number of set fuse bits).",
                     "index_int": "0x0027",
                     "individual_write_lock": "none"
                 },
                 {
                     "id": "fuse39_2",
                     "name": "RADIO_VER_CNT[63:32]",
-                    "description": "Radio firmware version counter.",
+                    "description": "Radio firmware version counter (number of set fuse bits).",
                     "index_int": "0x0027",
                     "individual_write_lock": "none"
                 },
                 {
                     "id": "fuse39_3",
                     "name": "RADIO_VER_CNT[31:0]",
-                    "description": "Radio firmware version counter.",
+                    "description": "Radio firmware version counter (number of set fuse bits).",
                     "index_int": "0x0027",
                     "individual_write_lock": "none"
                 }
@@ -1315,13 +1252,13 @@
         {
             "group": {
                 "name": "SNT_VER_CNT",
-                "description": "32-bit s200 loadable firmware version counter"
+                "description": "32-bit ELE loadable firmware version counter"
             },
             "registers": [
                 {
-                    "id": "fuse40_0",
-                    "name": "SNT_VER_CNT[31:0]",
-                    "description": "loadable firmware version counter.",
+                    "id": "fuse40",
+                    "name": "SNT_VER_CNT",
+                    "description": "ELE loadable firmware version counter (number of set fuse bits).",
                     "index_int": "0x0028",
                     "individual_write_lock": "none"
                 }
@@ -1334,17 +1271,17 @@
             },
             "registers": [
                 {
-                    "id": "fuse41_0",
+                    "id": "fuse42_0",
                     "name": "CM33_S_VER_CNT_VIRTUAL[63:32]",
-                    "description": "64-bit secure OEM CM33 firmware version counter.",
-                    "index_int": "0x002a",
+                    "description": "Secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002A",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse41_1",
+                    "id": "fuse42_1",
                     "name": "CM33_S_VER_CNT_VIRTUAL[31:0]",
-                    "description": "64-bit secure OEM CM33 firmware version counter.",
-                    "index_int": "0x002a",
+                    "description": "Secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002A",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1352,63 +1289,63 @@
         {
             "group": {
                 "name": "CM33_NS_VER_CNT_VIRTUAL",
-                "description": "256-bit non-secure OEM CM33 firmware version counter"
+                "description": "265-bit non-secure OEM CM33 firmware version counter"
             },
             "registers": [
                 {
-                    "id": "fuse42_8",
+                    "id": "fuse43_0",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[255:224]",
-                    "description": "non-secure OEM CM33 firmware version counter.",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_9",
+                    "id": "fuse43_1",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[223:192]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_10",
+                    "id": "fuse43_2",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[191:160]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_11",
+                    "id": "fuse43_3",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[159:128]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_12",
+                    "id": "fuse43_4",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[127:96]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_13",
+                    "id": "fuse43_5",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[95:64]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_14",
+                    "id": "fuse43_6",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[63:32]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse42_15",
+                    "id": "fuse43_7",
                     "name": "CM33_NS_VER_CNT_VIRTUAL[31:0]",
-                    "description": "non-secure OEM CM33 firmware version counter",
-                    "index_int": "0x002b",
+                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002B",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1416,35 +1353,35 @@
         {
             "group": {
                 "name": "RADIO_VER_CNT_VIRTUAL",
-                "description": "128-bit radio firmware version counter (Integer value equivalent to number of set fuse bits)"
+                "description": "128-bit radio firmware version counter"
             },
             "registers": [
                 {
-                    "id": "fuse43_0",
+                    "id": "fuse44_0",
                     "name": "RADIO_VER_CNT_VIRTUAL[127:96]",
-                    "description": "Radio firmware version counter.",
-                    "index_int": "0x002c",
+                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002C",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse43_1",
+                    "id": "fuse44_1",
                     "name": "RADIO_VER_CNT_VIRTUAL[95:64]",
-                    "description": "Radio firmware version counter.",
-                    "index_int": "0x002c",
+                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002C",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse43_2",
+                    "id": "fuse44_2",
                     "name": "RADIO_VER_CNT_VIRTUAL[63:32]",
-                    "description": "Radio firmware version counter.",
-                    "index_int": "0x002c",
+                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002C",
                     "individual_write_lock": "none"
                 },
                 {
-                    "id": "fuse43_3",
+                    "id": "fuse44_3",
                     "name": "RADIO_VER_CNT_VIRTUAL[31:0]",
-                    "description": "Radio firmware version counter.",
-                    "index_int": "0x002c",
+                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002C",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1452,14 +1389,14 @@
         {
             "group": {
                 "name": "SNT_VER_CNT_VIRTUAL",
-                "description": "32-bit s200 loadable firmware version counter (Integer value equivalent to number of set fuse bits)."
+                "description": "32-bit ELE loadable firmware version counter"
             },
             "registers": [
                 {
-                    "id": "fuse44_0",
-                    "name": "SNT_VER_CNT[31:0]",
-                    "description": "s200 loadable firmware version counter",
-                    "index_int": "0x002d",
+                    "id": "fuse45",
+                    "name": "SNT_VER_CNT_VIRTUAL",
+                    "description": "ELE loadable firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "index_int": "0x002D",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1467,11 +1404,11 @@
         {
             "group": {
                 "name": "NBU_SEC_BOOT_EN",
-                "description": "NBU Secure Boot Enable"
+                "description": "NBU secure boot enable"
             },
             "registers": [
                 {
-                    "id": "fuse45",
+                    "id": "fuse51",
                     "name": "NBU_SEC_BOOT_EN",
                     "description": "NBU Secure Boot Enable",
                     "index_int": "0x0033",
@@ -1480,14 +1417,14 @@
                     "bitfields": [
                         {
                             "width": 1,
-                            "id": "fuse45-bit-0",
+                            "id": "fuse51-bit-0",
                             "name": "NBU_SEC_BOOT_EN",
                             "description": "Serial Download Disabled.",
                             "values": [
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "NBU secure boot is disabled"
+                                    "description": "NBU secure boot is disabled."
                                 },
                                 {
                                     "name": "Enabled",
@@ -1503,11 +1440,11 @@
         {
             "group": {
                 "name": "OEM_SEC_BOOT_EN",
-                "description": "OEM Secure Boot Enable"
+                "description": "OEM secure boot enable"
             },
             "registers": [
                 {
-                    "id": "fuse46",
+                    "id": "fuse53",
                     "name": "OEM_SEC_BOOT_EN",
                     "description": "OEM Secure Boot Enable",
                     "index_int": "0x0035",
@@ -1516,7 +1453,7 @@
                     "bitfields": [
                         {
                             "width": 1,
-                            "id": "fuse46-bit-0",
+                            "id": "fuse53-bit-0",
                             "name": "OEM_SEC_BOOT_EN",
                             "description": "OEM Secure Boot Enable.",
                             "values": [

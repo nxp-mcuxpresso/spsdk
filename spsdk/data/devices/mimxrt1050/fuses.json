@@ -9,8 +9,8 @@
             "registers": [
                 {
                     "id": "fuse0",
-                    "name": "0x400",
-                    "description": "Fuse 0x400",
+                    "name": "LOCKS",
+                    "description": "Fuse LOCKS",
                     "offset_int": "0x0400",
                     "index_int": "0",
                     "individual_write_lock": "none",
@@ -259,7 +259,7 @@
                             "width": 1,
                             "id": "fuse0-bit-22",
                             "name": "MISC_CONF_LOCK",
-                            "description": "No additional info",
+                            "description": "RP Lock for MISC_CONF0, MISC_CONF1 fuses.",
                             "values": [
                                 {
                                     "name": "Unlock",
@@ -277,7 +277,7 @@
                             "width": 1,
                             "id": "fuse0-bit-23",
                             "name": "SW_GP2_RLOCK",
-                            "description": "Read Protect Lock for SW_GP2 and SW_GP1 fuse.",
+                            "description": "RP Lock for SW_GP2 fuse.",
                             "values": [
                                 {
                                     "name": "Unlock",
@@ -370,12 +370,20 @@
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
                         "operation_lock_int": "0x0002"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse1-bits-0-31",
+                            "name": "LOT_NO_ENC[42:11]",
+                            "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse2",
-                    "name": "0x420",
-                    "description": "Fuse 0x420",
+                    "name": "LOT_NO_ENC[10:0]",
+                    "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID",
                     "offset_int": "0x0420",
                     "index_int": "0x0002",
                     "individual_write_lock": "none",
@@ -413,8 +421,8 @@
                 },
                 {
                     "id": "fuse3",
-                    "name": "0x430",
-                    "description": "Fuse 0x430",
+                    "name": "SI_REV[3:0]",
+                    "description": "Fuse SI_REV[3:0]",
                     "offset_int": "0x0430",
                     "index_int": "0x0003",
                     "individual_write_lock": "none",
@@ -476,8 +484,8 @@
                 },
                 {
                     "id": "fuse4",
-                    "name": "0x440",
-                    "description": "Fuse 0x440",
+                    "name": "TESTER_CFG",
+                    "description": "Fuse TESTER_CFG",
                     "offset_int": "0x0440",
                     "index_int": "0x0004",
                     "individual_write_lock": "none",
@@ -592,8 +600,8 @@
             "registers": [
                 {
                     "id": "fuse5",
-                    "name": "0x450",
-                    "description": "Fuse 0x450",
+                    "name": "BOOT_CFG0",
+                    "description": "Fuse BOOT_CFG0",
                     "offset_int": "0x0450",
                     "index_int": "0x0005",
                     "individual_write_lock": "none",
@@ -762,8 +770,8 @@
                 },
                 {
                     "id": "fuse6",
-                    "name": "0x460",
-                    "description": "Fuse 0x460",
+                    "name": "BOOT_CFG1",
+                    "description": "Fuse BOOT_CFG1",
                     "offset_int": "0x0460",
                     "index_int": "0x0006",
                     "individual_write_lock": "none",
@@ -780,7 +788,19 @@
                             "width": 1,
                             "id": "fuse6-bit-1",
                             "name": "SEC_CONFIG[1]",
-                            "description": "Security Configuration (with SEC_CONFIG[0])"
+                            "description": "Security Configuration (with SEC_CONFIG[0])",
+                            "values": [
+                                {
+                                    "name": "Open",
+                                    "value": 0,
+                                    "description": "Open (allows any program image, even if the authentication fails)"
+                                },
+                                {
+                                    "name": "Closed",
+                                    "value": 1,
+                                    "description": "Closed (The program image executes only if authenticated)"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
@@ -873,7 +893,7 @@
                             "description": "AES key selection for BEE_KEY0",
                             "values": [
                                 {
-                                    "name": "00",
+                                    "name": "From register",
                                     "value": 0,
                                     "description": "From register"
                                 },
@@ -883,12 +903,12 @@
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "10",
+                                    "name": "From OTPMK",
                                     "value": 2,
                                     "description": "From OTPMK"
                                 },
                                 {
-                                    "name": "11",
+                                    "name": "From SW-GP2",
                                     "value": 3,
                                     "description": "From SW-GP2"
                                 }
@@ -901,7 +921,7 @@
                             "description": "AES key selection for BEE_KEY1",
                             "values": [
                                 {
-                                    "name": "00",
+                                    "name": "From register",
                                     "value": 0,
                                     "description": "From register"
                                 },
@@ -911,12 +931,12 @@
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "10",
+                                    "name": "From OTPMK",
                                     "value": 2,
                                     "description": "From OTPMK"
                                 },
                                 {
-                                    "name": "11",
+                                    "name": "From SW-GP2",
                                     "value": 3,
                                     "description": "From SW-GP2"
                                 }
@@ -1178,8 +1198,8 @@
                 },
                 {
                     "id": "fuse7",
-                    "name": "0x470",
-                    "description": "Fuse 0x470",
+                    "name": "BOOT_CFG2",
+                    "description": "Fuse BOOT_CFG2",
                     "offset_int": "0x0470",
                     "index_int": "0x0007",
                     "individual_write_lock": "none",
@@ -1400,12 +1420,12 @@
                             "description": "The fuse bit is used for ROM to enable pull down bit for SD pads. ",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "no action",
                                     "value": 0,
                                     "description": "no action"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "pull down",
                                     "value": 1,
                                     "description": "pull down"
                                 }
@@ -1490,12 +1510,12 @@
                             "description": "Define GPIO3 polarity, for determining LPB boot mode.",
                             "values": [
                                 {
-                                    "name": "0",
+                                    "name": "Active High",
                                     "value": 0,
                                     "description": "Active High"
                                 },
                                 {
-                                    "name": "1",
+                                    "name": "Active Low",
                                     "value": 1,
                                     "description": "Active Low"
                                 }
@@ -1505,27 +1525,27 @@
                             "width": 2,
                             "id": "fuse7-bits-21-22",
                             "name": "LPB_BOOT",
-                            "description": "Defined the LowPower Boot options (tbd)",
+                            "description": "Divide (Core / Bus) based on Boot Frequencies",
                             "values": [
                                 {
-                                    "name": "00",
+                                    "name": "Div by 1",
                                     "value": 0,
-                                    "description": "LPB Disable"
+                                    "description": "Div by 1"
                                 },
                                 {
-                                    "name": "01",
+                                    "name": "Div by 2",
                                     "value": 1,
-                                    "description": "1 GPIO (def freq)"
+                                    "description": "Div by 2"
                                 },
                                 {
-                                    "name": "10",
+                                    "name": "Div by 4",
                                     "value": 2,
-                                    "description": "Div by2"
+                                    "description": "Div by 4"
                                 },
                                 {
-                                    "name": "11",
+                                    "name": "Div by 8",
                                     "value": 3,
-                                    "description": "Div by 4"
+                                    "description": "Div by 8"
                                 }
                             ]
                         },
@@ -1569,7 +1589,7 @@
                 {
                     "id": "fuse8",
                     "name": "Reserved 0x480",
-                    "description": "Fuse 0x480",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x0480",
                     "index_int": "0x0008",
                     "is_reserved": true,
@@ -1607,7 +1627,7 @@
                 {
                     "id": "fuse9",
                     "name": "Reserved 0x490",
-                    "description": "Fuse 0x490",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x0490",
                     "index_int": "0x0009",
                     "is_reserved": true,
@@ -1636,7 +1656,7 @@
                 {
                     "id": "fuse10",
                     "name": "Reserved 0x4A0",
-                    "description": "Fuse 0x4A0",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x04A0",
                     "index_int": "0x000A",
                     "is_reserved": true,
@@ -1657,12 +1677,17 @@
                     "offset_int": "0x04B0",
                     "index_int": "0x000B",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse12",
                     "name": "Reserved 0x4C0",
-                    "description": "Fuse 0x4C0",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x04C0",
                     "index_int": "0x000C",
                     "is_reserved": true,
@@ -1679,7 +1704,7 @@
                 {
                     "id": "fuse13",
                     "name": "Reserved 0x4D0",
-                    "description": "Fuse 0x4D0",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x04D0",
                     "index_int": "0x000D",
                     "is_reserved": true,
@@ -1693,7 +1718,7 @@
                 {
                     "id": "fuse14",
                     "name": "Reserved 0x4E0",
-                    "description": "Fuse 0x4E0",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x04E0",
                     "index_int": "0x000E",
                     "is_reserved": true,
@@ -1714,8 +1739,8 @@
             "registers": [
                 {
                     "id": "fuse15",
-                    "name": "0x4F0",
-                    "description": "Fuse 0x4F0",
+                    "name": "USB_ID",
+                    "description": "Fuse USB_ID",
                     "offset_int": "0x04F0",
                     "index_int": "0x000F",
                     "individual_write_lock": "none",
@@ -1754,7 +1779,12 @@
                     "offset_int": "0x0500",
                     "index_int": "0x0010",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse17",
@@ -1763,7 +1793,12 @@
                     "offset_int": "0x0510",
                     "index_int": "0x0011",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse18",
@@ -1772,7 +1807,12 @@
                     "offset_int": "0x0520",
                     "index_int": "0x0012",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse19",
@@ -1781,7 +1821,12 @@
                     "offset_int": "0x0530",
                     "index_int": "0x0013",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse20",
@@ -1790,7 +1835,12 @@
                     "offset_int": "0x0540",
                     "index_int": "0x0014",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse21",
@@ -1799,7 +1849,12 @@
                     "offset_int": "0x0550",
                     "index_int": "0x0015",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse22",
@@ -1808,7 +1863,12 @@
                     "offset_int": "0x0560",
                     "index_int": "0x0016",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 },
                 {
                     "id": "fuse23",
@@ -1817,7 +1877,12 @@
                     "offset_int": "0x0570",
                     "index_int": "0x0017",
                     "is_reserved": true,
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32
+                        }
+                    ]
                 }
             ]
         },
@@ -1833,7 +1898,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0580",
                     "index_int": "0x0018",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse24-bits-0-31",
+                            "name": "SRK_HASH[255:224]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse25",
@@ -1841,7 +1914,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0590",
                     "index_int": "0x0019",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse25-bits-0-31",
+                            "name": "SRK_HASH[223:192]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse26",
@@ -1849,7 +1930,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05A0",
                     "index_int": "0x001A",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse26-bits-0-31",
+                            "name": "SRK_HASH[191:160]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse27",
@@ -1857,7 +1946,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05B0",
                     "index_int": "0x001B",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse27-bits-0-31",
+                            "name": "SRK_HASH[159:128]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse28",
@@ -1865,7 +1962,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05C0",
                     "index_int": "0x001C",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse28-bits-0-31",
+                            "name": "SRK_HASH[127:96]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse29",
@@ -1873,7 +1978,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05D0",
                     "index_int": "0x001D",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse29-bits-0-31",
+                            "name": "SRK_HASH[95:64]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse30",
@@ -1881,7 +1994,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05E0",
                     "index_int": "0x001E",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse30-bits-0-31",
+                            "name": "SRK_HASH[63:32]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse31",
@@ -1889,7 +2010,15 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05F0",
                     "index_int": "0x001F",
-                    "individual_write_lock": "none"
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse31-bits-0-31",
+                            "name": "SRK_HASH[31:0]",
+                            "description": "SRK key, no HW visible lines. NO HW Visible signals available"
+                        }
+                    ]
                 }
             ]
         },
@@ -1911,12 +2040,20 @@
                         "write_lock_int": "0x0040",
                         "read_lock_int": "0x0040",
                         "operation_lock_int": "0x0040"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse32-bits-0-31",
+                            "name": "SJC_RESP[31:0]",
+                            "description": "Response reference value for the secure JTAG controller"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse33",
                     "name": "SJC_RESP[55:32]",
-                    "description": "Fuse SJC_RESP[55:32]",
+                    "description": "Response reference value for the secure JTAG controller",
                     "offset_int": "0x0610",
                     "index_int": "0x0021",
                     "individual_write_lock": "none",
@@ -1957,12 +2094,20 @@
                         "register_id": "fuse0",
                         "write_lock_int": "0x0100",
                         "operation_lock_int": "0x0200"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse34-bits-0-31",
+                            "name": "MAC1_ADDR[47:16]",
+                            "description": "Ethernet MAC Address"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse35",
                     "name": "MAC1_ADDR[15:0]",
-                    "description": "Fuse MAC1_ADDR[15:0]",
+                    "description": "Ethernet MAC Address",
                     "offset_int": "0x0630",
                     "index_int": "0x0023",
                     "individual_write_lock": "none",
@@ -2002,12 +2147,20 @@
                         "register_id": "fuse0",
                         "write_lock_int": "0x04000000",
                         "operation_lock_int": "0x08000000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse36-bits-0-31",
+                            "name": "GP3[31:0]",
+                            "description": "General Purpose fuse register #3"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse37",
                     "name": "Reserved 0x650",
-                    "description": "Fuse 0x650",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "offset_int": "0x0650",
                     "index_int": "0x0025",
                     "is_reserved": true,
@@ -2029,7 +2182,15 @@
                         "register_id": "fuse0",
                         "write_lock_int": "0x0400",
                         "operation_lock_int": "0x0800"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse38-bits-0-31",
+                            "name": "GP1[31:0]",
+                            "description": "General Purpose fuse register #1"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse39",
@@ -2042,7 +2203,15 @@
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
                         "operation_lock_int": "0x2000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse39-bits-0-31",
+                            "name": "GP2[31:0]",
+                            "description": "General Purpose fuse register #2"
+                        }
+                    ]
                 }
             ]
         },
@@ -2064,7 +2233,15 @@
                         "write_lock_int": "0x00010000",
                         "read_lock_int": "0x00800000",
                         "operation_lock_int": "0x00010000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse40-bits-0-31",
+                            "name": "SW_GP1[31:0]",
+                            "description": "SW general purpose key"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse41",
@@ -2078,7 +2255,15 @@
                         "write_lock_int": "0x00200000",
                         "read_lock_int": "0x00800000",
                         "operation_lock_int": "0x00200000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse41-bits-0-31",
+                            "name": "SW_GP2[127:96]",
+                            "description": "SW general purpose key"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse42",
@@ -2092,7 +2277,15 @@
                         "write_lock_int": "0x00200000",
                         "read_lock_int": "0x00800000",
                         "operation_lock_int": "0x00200000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse42-bits-0-31",
+                            "name": "SW_GP2[95:64]",
+                            "description": "SW general purpose key"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse43",
@@ -2106,7 +2299,15 @@
                         "write_lock_int": "0x00200000",
                         "read_lock_int": "0x00800000",
                         "operation_lock_int": "0x00200000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse43-bits-0-31",
+                            "name": "SW_GP2[63:32]",
+                            "description": "SW general purpose key"
+                        }
+                    ]
                 },
                 {
                     "id": "fuse44",
@@ -2120,7 +2321,15 @@
                         "write_lock_int": "0x00200000",
                         "read_lock_int": "0x00800000",
                         "operation_lock_int": "0x00200000"
-                    }
+                    },
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse44-bits-0-31",
+                            "name": "SW_GP2[31:0]",
+                            "description": "SW general purpose key"
+                        }
+                    ]
                 }
             ]
         },
@@ -2132,8 +2341,8 @@
             "registers": [
                 {
                     "id": "fuse45",
-                    "name": "0x6D0",
-                    "description": "Fuse 0x6D0",
+                    "name": "MISC_CONF0",
+                    "description": "Fuse MISC_CONF0",
                     "offset_int": "0x06D0",
                     "index_int": "0x002D",
                     "individual_write_lock": "none",
@@ -2173,14 +2382,14 @@
                             "description": "Enable Boot Failure Indicator Pin",
                             "values": [
                                 {
-                                    "name": "disabled",
+                                    "name": "Disabled",
                                     "value": 0,
-                                    "description": "disabled"
+                                    "description": "Disabled"
                                 },
                                 {
-                                    "name": "enabled",
+                                    "name": "Enabled",
                                     "value": 1,
-                                    "description": "enabled"
+                                    "description": "Enabled"
                                 }
                             ]
                         },
@@ -2382,8 +2591,8 @@
                 },
                 {
                     "id": "fuse46",
-                    "name": "0x6E0",
-                    "description": "Fuse 0x6E0",
+                    "name": "MISC_CONF1",
+                    "description": "Fuse MISC_CONF1",
                     "offset_int": "0x06E0",
                     "index_int": "0x002E",
                     "individual_write_lock": "none",
@@ -2420,21 +2629,86 @@
                 },
                 {
                     "id": "fuse47",
-                    "name": "Reserved 0x6F0",
-                    "description": "Fuse 0x6F0",
+                    "name": "SRK_REVOKE",
+                    "description": "Fuse SRK_REVOKE",
                     "offset_int": "0x06F0",
                     "index_int": "0x002F",
-                    "is_reserved": true,
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
+                            "width": 1,
+                            "id": "fuse47-bit-0",
+                            "name": "SRK_REVOKE1",
+                            "description": "SRK key 1 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse47-bit-1",
+                            "name": "SRK_REVOKE2",
+                            "description": "SRK key 2 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse47-bit-2",
+                            "name": "SRK_REVOKE3",
+                            "description": "SRK key 3 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse47-bit-3",
+                            "name": "SRK_REVOKE4",
+                            "description": "SRK key 4 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
                             "width": 4
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
                         },
                         {
                             "width": 8

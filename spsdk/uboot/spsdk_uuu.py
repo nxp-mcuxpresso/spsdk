@@ -8,13 +8,14 @@
 import logging
 import re
 from ctypes import CFUNCTYPE, POINTER, c_char_p, c_int, c_uint16, c_void_p
-from typing import Any, Callable, Optional
+from functools import wraps
+from typing import Any, Callable, Optional, no_type_check
 
 import click
 from libuuu import LibUUU, UUUNotifyCallback, UUUState
 from libuuu.libuuu import UUUNotifyStruct, UUUNotifyType, _default_notify_callback
 
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import load_text
 
@@ -58,6 +59,7 @@ class SPSDKUUUState(UUUState):
         :param progress_bar: show progress bar, defaults to True
         """
         self.progress_bar = progress_bar
+        self.status = 0
         super().__init__()
 
     def update_progress_bar(self, task_name: str, total_steps: int, step: int) -> None:
@@ -87,6 +89,7 @@ class SPSDKUUUState(UUUState):
         """Update the state with a notification from uuu.
 
         :param struct: A UUUNotifyStruct object
+        :raises SPSDKError: If the command fails
         """
         self.waiting = struct.type == UUUNotifyType.NOTIFY_WAIT_FOR
         self.done = struct.type == UUUNotifyType.NOTIFY_DONE
@@ -98,12 +101,10 @@ class SPSDKUUUState(UUUState):
             self.cmd_pos = 0
             self.cmd_start = struct.timestamp
         elif struct.type == UUUNotifyType.NOTIFY_CMD_END:
-            status = struct.response.status
+            self.status = struct.response.status
             self.done = True
-            self.error = status != 0
+            self.error = self.status != 0
             self.cmd_end = struct.timestamp
-            if status != 0:
-                self.logger.error(f"Command {self.cmd} failed with error code {status}")
         elif struct.type == UUUNotifyType.NOTIFY_DEV_ATTACH:
             self.dev = struct.response.str
             self.done = False
@@ -116,7 +117,28 @@ class SPSDKUUUState(UUUState):
                 self.update_progress_bar(self.cmd, self.trans_size, self.trans_pos)
             self.logger.debug(f"Transfer {self.trans_pos}/{self.trans_size}")
 
-        self.logger.debug(f"{self.cmd=},{self.dev=},{self.waiting=}")
+        self.logger.debug(f"{self.cmd=},{self.dev=},{self.waiting=},{self.error=}")
+
+
+@no_type_check
+# pylint: disable=no-self-argument,missing-type-doc
+def check_uuu_error_state_after_command(f: Any):
+    """Decorator to wrap around functions which call libuuu."""
+
+    @wraps(f)
+    def inner(self: "SPSDKUUU", *args: Any, **kwargs: Any) -> int:
+        ret = f(self, *args, **kwargs)
+        if ret != 0 or self._state.error:
+            message = (
+                f"{f.__name__}: "
+                + ("Failed UUU command " + self._state.cmd if self._state.cmd else "")
+                + f" returned with exit code {ret}"
+                + f" and status {self._state.status}."
+            )
+            raise SPSDKError(message)
+        return ret
+
+    return inner
 
 
 class SPSDKUUU:
@@ -150,9 +172,11 @@ class SPSDKUUU:
         self.uuu.unregister_notify_callback(_default_notify_callback)
         self.uuu.register_notify_callback(_spsdk_notify_callback, POINTER(c_void_p)())
         rc = 0
+        logger.debug(f"Adding USB path filter: {usb_path_filter}")
         rc = self.add_usbpath_filter(usb_path_filter) if usb_path_filter else 0
         if rc != 0:
             raise SPSDKValueError(f"Error adding USB path filter: {rc}")
+        logger.debug(f"Adding USB serial number filter: {usb_serial_no_filter}")
         rc = self.add_usbserial_no_filter(usb_serial_no_filter) if usb_serial_no_filter else 0
         if rc != 0:
             raise SPSDKValueError(f"Error adding USB serial number filter: {rc}")
@@ -217,7 +241,14 @@ class SPSDKUUU:
         for key, val in arguments_dict.items():
             if key in input_string:
                 if key in argument_mapping:
-                    replacements.append((key, argument_mapping[key]))
+                    replacement = argument_mapping[key]
+                    # Check for .ZST or .BZ2 extension and modify the replacement string
+                    if replacement.upper().endswith(".ZST") or replacement.upper().endswith(".BZ2"):
+                        if replacement.endswith('"'):
+                            replacement = replacement[:-1] + '/*"'
+                        else:
+                            replacement += "/*"
+                    replacements.append((key, replacement))
                 elif val["optional_key"] and val["optional_key"] in argument_mapping:
                     replacements.append((key, argument_mapping[val["optional_key"]]))
                 else:
@@ -289,6 +320,7 @@ class SPSDKUUU:
         """Enable fastboot output for stdout and stderr of uboot commands."""
         return self.run_uboot("setenv stdout serial,fastboot")
 
+    @check_uuu_error_state_after_command
     def run_cmd(self, cmd: str, dry: bool = False) -> int:
         """Run a uuu command.
 
@@ -298,6 +330,7 @@ class SPSDKUUU:
         """
         return self.uuu.run_cmd(cmd, dry)
 
+    @check_uuu_error_state_after_command
     def run_script(self, script_path: str, dry: bool = False) -> int:
         """Run a uuu script.
 
@@ -317,6 +350,7 @@ class SPSDKUUU:
         self.uuu._response.value = b""
         return self.uuu.lib.uuu_auto_detect_file(c_char_p(str.encode(filename)))
 
+    @check_uuu_error_state_after_command
     def wait_uuu_finish(
         self,
         daemon: bool = False,

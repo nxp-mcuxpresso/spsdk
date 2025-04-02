@@ -120,6 +120,8 @@ class EL2GOInterfaceHandler:
                 buffer_address=fb_buff_addr,
                 buffer_size=fb_buff_size,
                 serial_port=port,
+                usb_path_filter=usb_path,
+                usb_serial_no_filter=usb_serial,
             )
             return El2GoInterfaceHandlerUboot(
                 device=uboot_device,
@@ -351,7 +353,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
 class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
     """El2Go Handler over UBoot."""
 
-    UUID_FUSE_READ_COMMAND = "fuse read 6 0 4"
+    UUID_FUSE_READ_COMMAND = "fuse read"
     UUID_FUSE_READ_RESPONSE_START = "Word 0x00000000: "
 
     def __init__(
@@ -396,7 +398,11 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         """Get UUID."""
         if not isinstance(self.device, (UbootFastboot, UbootSerial)):
             raise SPSDKError("Wrong instance of device, must be Uboot")
-        self.device.write(self.UUID_FUSE_READ_COMMAND)
+        if not self.family:
+            raise SPSDKError("Family must be specified to get UUID")
+        db = get_db(self.family, self.revision)
+        fuse_index = db.get_str(DatabaseManager.EL2GO_TP, "uuid_fuse_index", default="6 0 4")
+        self.device.write(f"{self.UUID_FUSE_READ_COMMAND} {fuse_index}")
         uuid_raw_output = self.device.read_output()
         for line in uuid_raw_output.splitlines():
             if line.startswith(self.UUID_FUSE_READ_RESPONSE_START):

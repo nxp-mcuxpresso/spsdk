@@ -1,0 +1,80 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =======================  Configuration of EdgeLock 2GO Offline Provisioning flow for mimx9352  =======================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
+# default.
+family: mimx9352
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon
+revision: latest
+# -------------------------------------===== EdgeLock 2GO API URL [Optional] =====--------------------------------------
+# Description: Base URL of the EdgeLock 2GO backend API without an / at the end
+url: https://api.edgelock2go.com
+# -------------------------------------===== EdgeLock 2GO API Key [Required] =====--------------------------------------
+# Description: REST API key used for user authentication in EdgeLock 2GO. You may use: 1) path to a file with the key on
+# the first line: ~/.el2go/wpc_token.txt (~ is interpreted as your HOME) 2) environment variable with the key:
+# $MY_EL2GO_KEY 3) environment variable containing a path to the key file: $MY_KEY_FILE 4) directly your API key in
+# plain text (not recommended)
+api_key: ~/el2go/el2go_token.txt
+# ----------------------------------------===== Device Group ID [Required] =====----------------------------------------
+# Description: Device Group ID in which the connected secure element needs to be assigned
+device_group_id: 466
+# -----------------------------------------===== Product 12NC [Required] =====------------------------------------------
+# Description: Product 12NC registered in EdgeLock 2GO
+nc12: 935454724557
+# ------------------------------------===== Secure Objects Domains [Optional] =====-------------------------------------
+# Description: List of the EdgeLock 2GO Secure Objects Domains to download.
+# Possible options: <RTP, MATTER>
+domains:
+  - RTP
+  - MATTER
+# ----------------------------===== Delay between EdgeLock 2GO's API calls [Optional] =====-----------------------------
+# Description: Delay in seconds between EdgeLock 2GO API requests regarding Secure Objects generation status. Default
+# value is 5 seconds
+delay: 5
+# ---------------------------------===== Timeout for EdgeLock 2GO API [Optional] =====----------------------------------
+# Description: Timeout in seconds of downloading Secure Objects through EdgeLock 2GO API operation. Default is 60
+# seconds
+timeout: 60
+# ---------------------------------------===== Download Timeout [Optional] =====----------------------------------------
+# Description: Timeout for overall download process including waiting for Secure Objects creation
+download_timeout: 300
+# ------------------------------------===== Secure Objects address [Required] =====-------------------------------------
+# Description: Address where to store Secure Objects obtained from EL2GO. Please note, that if you're using external
+# memory, you have to configure the memory first.
+secure_objects_address: 0xE0000000
+# -------------------------------------===== Path to U-Boot binary [Optional] =====-------------------------------------
+# Description: Path to U-Boot binary that will be used for writing assets to EMMC/SD
+uboot_path: imx-boot-imx93-9x9-lpddr4-qsb-sd.bin-flash_singleboot
+# ----------------------===== Filename of the secure objects stored in partition [Optional] =====-----------------------
+# Description: Filename of the secure objects stored in partition. Passed to U-Boot fatwrite command.
+fatwrite_filename: assets.bin
+# ---------------------------===== Interface for storing the secure objects [Optional] =====----------------------------
+# Description: Interface for storing the secure objects, passed to U-Boot fatwrite command.
+fatwrite_interface: mmc
+# ---------------------===== Device and partition for writing the secure objects. [Optional] =====----------------------
+# Description: Device and partition for writing the secure objects, separated by colon. Passed to U-Boot fatwrite
+# command.
+fatwrite_device_partition: "0:1"
+# ------------------===== Filename of the configuration file for OEM Provisioning App [Optional] =====------------------
+# Description: Filename of the configuration file for OEM Provisioning App that will be stored in partition together
+# with the secure objects.
+oem_provisioning_config_filename: config.yaml
+# ------------------------------------------===== Boot Linux [Optional] =====-------------------------------------------
+# Description: Boot Linux after provisioning
+boot_linux: true
+# --------------------------------------===== Linux boot sequence [Optional] =====--------------------------------------
+# Description: List of UUU commands to execute to boot Linux
+linux_boot_sequence:
+  - setenv mmcdev 0
+  - setenv mmcpart 1
+  - setenv mmcroot /dev/mmcblk0p2 rootwait rw
+  - run loadimage
+  - run loadfdt
+  - run bsp_bootcmd

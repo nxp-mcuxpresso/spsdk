@@ -2741,56 +2741,32 @@
                     "name": "OTFAD2_KEY3",
                     "description": "OTFAD2 key 3",
                     "index_int": "0x00B2",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse6",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse179",
                     "name": "OTFAD2_KEY2",
                     "description": "OTFAD2 key 2",
                     "index_int": "0x00B3",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse6",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse180",
                     "name": "OTFAD2_KEY1",
                     "description": "OTFAD2 key 1",
                     "index_int": "0x00B4",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse6",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse181",
                     "name": "OTFAD2_KEY0",
                     "description": "OTFAD2 key 0",
                     "index_int": "0x00B5",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse6",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse182",
@@ -2938,70 +2914,40 @@
                     "name": "OTFAD2_KEY_SCRAMBLE",
                     "description": "OTFAD2 key scramble",
                     "index_int": "0x00B7",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse6",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse184",
                     "name": "OTFAD1_KEY3",
                     "description": "OTFAD1 key 3",
                     "index_int": "0x00B8",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse185",
                     "name": "OTFAD1_KEY2",
                     "description": "OTFAD1 key 2",
                     "index_int": "0x00B9",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse186",
                     "name": "OTFAD1_KEY1",
                     "description": "OTFAD1 key 1",
                     "index_int": "0x00BA",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse187",
                     "name": "OTFAD1_KEY0",
                     "description": "OTFAD1 key 0",
                     "index_int": "0x00BB",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse188",
@@ -3149,14 +3095,8 @@
                     "name": "OTFAD1_KEY_SCRAMBLE",
                     "description": "OTFAD1 key scramble",
                     "index_int": "0x00BD",
-                    "is_readable": false,
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse2",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "access": "WO",
+                    "individual_write_lock": "implicit"
                 }
             ]
         },

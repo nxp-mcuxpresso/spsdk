@@ -45,12 +45,12 @@ def test_nxpfuses_fuses_script(tmpdir: str, cli_runner: CliRunner, data_dir: str
 def test_nxpfuses_fuses_write_single(cli_runner: CliRunner):
     # This may eventually cause some conflicts when multiple tests run concurrently
     TestBlhostFuseOperator.ACTIONS = []
-    cmd = f"write-single -f mimxrt798s -n XSPI0_IPED_CTX0 -v 0x5 --yes"
+    cmd = f"write-single -f mimxrt798s -n BOOT_CFG0 -v 0x5 --yes"
     cli_runner.invoke(nxpfuses.main, cmd.split())
     assert TestBlhostFuseOperator.ACTIONS
     write_action = TestBlhostFuseOperator.ACTIONS[-1]
     assert write_action.action_type == "write"
-    assert write_action.fuse_index == 0x90
+    assert write_action.fuse_index == 0x88
     assert write_action.value == 0x5
 
 
@@ -95,10 +95,10 @@ def test_nxpfuses_fuses_get_config(cli_runner: CliRunner, data_dir, caplog, tmpd
     assert "The fuses configuration has been saved" in result.output
     assert os.path.isfile(out)
     assert load_configuration(out)["family"] == "mimxrt798s"
-    cmd = f"write-single -f mimxrt798s -n XSPI0_IPED_CTX0 -v 0x5 --yes"
+    cmd = f"write-single -f mimxrt798s -n BOOT_CFG0 -v 0x5 --yes"
     cli_runner.invoke(nxpfuses.main, cmd.split())
     cmd = f"get-config -f mimxrt798s -o {out} --diff-only"
     result = cli_runner.invoke(nxpfuses.main, cmd.split())
     cfg = load_configuration(out)
-    assert len(cfg["registers"]) == 1
-    assert "XSPI0_IPED_CTX0" in cfg["registers"].keys()
+    assert len(cfg["registers"]) == 3
+    assert "BOOT_CFG0" in cfg["registers"].keys()

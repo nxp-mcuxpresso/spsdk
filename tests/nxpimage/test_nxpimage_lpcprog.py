@@ -28,7 +28,7 @@ def test_lpcprog_update_crp_value(cli_runner: CliRunner, tmpdir):
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.exists("output.bin")
         updated_bin_data = load_binary("output.bin")
-        expected_crp_bytes = crp_value.to_bytes(CRP_LENGTH, byteorder="little")
+        expected_crp_bytes = crp_value.to_bytes(CRP_LENGTH, byteorder="big")
         assert updated_bin_data[CRP_OFFSET : CRP_OFFSET + CRP_LENGTH] == expected_crp_bytes
 
 

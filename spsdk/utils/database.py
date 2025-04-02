@@ -588,7 +588,7 @@ class MemMap:
     def get_table(self) -> str:
         """Get string table with memory map description."""
         table_p = prettytable.PrettyTable(["#", "Block", "Base", "Size", "External"])
-        table_p.set_style(prettytable.DOUBLE_BORDER)
+        table_p.set_style(prettytable.TableStyle.DOUBLE_BORDER)
         for i, block in enumerate(self._mem_map.values()):
             table_p.add_row(
                 [

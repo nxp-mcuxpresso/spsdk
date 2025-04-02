@@ -894,7 +894,7 @@
                     "name": "184",
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x00B8",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -902,7 +902,7 @@
                     "name": "185",
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x00B9",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -910,7 +910,7 @@
                     "name": "186",
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x00BA",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -918,7 +918,7 @@
                     "name": "187",
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x00BB",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -983,7 +983,7 @@
                     "name": "189",
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x00BD",
-                    "is_readable": false,
+                    "access": "WO",
                     "individual_write_lock": "implicit"
                 }
             ]

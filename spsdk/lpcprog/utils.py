@@ -25,7 +25,7 @@ def lpcprog_update_crp_value(bin_data: bytes, crp: int) -> bytes:
         raise ValueError("Binary data is too short to contain a CRP value at the specified offset.")
 
     # Convert the CRP value to bytes
-    crp_bytes = crp.to_bytes(CRP_LENGTH, byteorder="little")
+    crp_bytes = crp.to_bytes(CRP_LENGTH, byteorder="big")
 
     # Update the CRP value in the binary data
     updated_bin_data = bin_data[:CRP_OFFSET] + crp_bytes + bin_data[CRP_OFFSET + CRP_LENGTH :]

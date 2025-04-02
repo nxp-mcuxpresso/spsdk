@@ -1,5 +1,5 @@
 {
-    "cpu": "MCXN546",
+    "cpu": "MCXN236",
     "groups": [
         {
             "group": {
@@ -49,7 +49,7 @@
                             "width": 3,
                             "id": "fuse0-bits-12-14",
                             "name": "PRINCE_CFG_LOCK[2:0]",
-                            "description": "Prince Config Lock\nConfigures the locking EFUSE bits for fuses #23 - #31. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
+                            "description": "Prince Config Lock\nConfigures the locking EFUSE bits for fuses #23 - #30. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.",
                             "values": [
                                 {
                                     "name": "Unlocked",
@@ -74,7 +74,17 @@
                             ]
                         },
                         {
-                            "width": 3
+                            "width": 3,
+                            "id": "fuse0-bits-15-17",
+                            "name": "OSCAA_KEY_LOCK[2:0]",
+                            "description": "OSCAA Key Lock\nConfigures the locking EFUSE bits for fuses #39 - #42. - bit 0: When set, blocks programming. - bit 1: Reserved. - bit 2: When set, blocks reading.\n000 - Unlocked001 - Locked for programming [WP]\n100-Locked for reading [RP]",
+                            "values": [
+                                {
+                                    "name": "Unlocked001",
+                                    "value": 0,
+                                    "description": "Unlocked001 - Locked for programming [WP]"
+                                }
+                            ]
                         },
                         {
                             "width": 3,
@@ -213,6 +223,7 @@
                             "id": "fuse1-bits-0-7",
                             "name": "LIFECYCLE[7:0]",
                             "description": "Life cycle state.\nThis field can be used to advance life cycle state. Below are the allowed values for this field. Use of other values may lead to bricked state.",
+                            "advanced": true,
                             "values": [
                                 {
                                     "name": "BLANK",
@@ -329,58 +340,7 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "id": "fuse1-bit-12",
-                            "name": "CPU1_NIDEN_dis",
-                            "description": "Disable CPU1 non-invasive debug.",
-                            "values": [
-                                {
-                                    "name": "Check CMPA",
-                                    "value": 0,
-                                    "description": "Check CMPA.CC_SOCU_xxx fields."
-                                },
-                                {
-                                    "name": "Disable",
-                                    "value": 1,
-                                    "description": "Disabled permanently"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse1-bit-13",
-                            "name": "CPU1_DBG_dis",
-                            "description": "Disable CPU1 invasive debug.",
-                            "values": [
-                                {
-                                    "name": "Check CMPA",
-                                    "value": 0,
-                                    "description": "Check CMPA.CC_SOCU_xxx fields."
-                                },
-                                {
-                                    "name": "Disable",
-                                    "value": 1,
-                                    "description": "Disabled permanently"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse1-bit-14",
-                            "name": "DSP_DBGEN_dis",
-                            "description": "Disable DSP debug.",
-                            "values": [
-                                {
-                                    "name": "Check CMPA",
-                                    "value": 0,
-                                    "description": "Check CMPA.CC_SOCU_xxx fields."
-                                },
-                                {
-                                    "name": "Disable",
-                                    "value": 1,
-                                    "description": "Disabled permanently"
-                                }
-                            ]
+                            "width": 3
                         },
                         {
                             "width": 1,
@@ -534,6 +494,7 @@
                             "id": "fuse1-bits-24-31",
                             "name": "LIFECYCLE_DP[7:0]",
                             "description": "Duplicate of the LIFECYCLE fuse value.",
+                            "advanced": true,
                             "values": [
                                 {
                                     "name": "BLANK",
@@ -585,7 +546,6 @@
                     "description": "Image key revoke and PRINCE, PUF, and NXP provisioning firmware setting",
                     "index_int": "0x0002",
                     "individual_write_lock": "none",
-                    "reg_width": 24,
                     "bitfields": [
                         {
                             "width": 8,
@@ -640,6 +600,9 @@
                                     "description": "Disable NXP signed SB3 FW"
                                 }
                             ]
+                        },
+                        {
+                            "width": 8
                         }
                     ]
                 },
@@ -656,22 +619,7 @@
                     },
                     "bitfields": [
                         {
-                            "width": 1,
-                            "id": "fuse3-bit-0",
-                            "name": "Boot_FlexSPI_Dis",
-                            "description": "FlexSPI boot disable.",
-                            "values": [
-                                {
-                                    "name": "Enable",
-                                    "value": 0,
-                                    "description": "FlexSPI boot is enabled."
-                                },
-                                {
-                                    "name": "Disable",
-                                    "value": 1,
-                                    "description": "FlexSPI boot is disabled."
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 1,
@@ -715,7 +663,7 @@
                         {
                             "width": 1,
                             "id": "fuse3-bit-5",
-                            "name": "Rec_Boot_SPI_Dis",
+                            "name": "RBoot_SPI_Dis",
                             "description": "Disable recovery boot from external 1-bit SPI flash connected to FlexComm ports.",
                             "values": [
                                 {
@@ -733,7 +681,7 @@
                         {
                             "width": 1,
                             "id": "fuse3-bit-6",
-                            "name": "Rec_Boot_IFR0_Dis",
+                            "name": "RBoot_IFR0_Dis",
                             "description": "Disable recovery boot from IFR0 area( 0x0100_8000 to 0x0100_FFFF). ",
                             "values": [
                                 {
@@ -751,7 +699,7 @@
                         {
                             "width": 1,
                             "id": "fuse3-bit-7",
-                            "name": "PinSel_SPI_Rec_Boot_Dis",
+                            "name": "PinSel_SPI_RBoot_Dis",
                             "description": "Disable logic related to forcing  recovery boot based on ISP pin state.",
                             "values": [
                                 {
@@ -821,22 +769,7 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "id": "fuse3-bit-11",
-                            "name": "ISP_USB0_Dis",
-                            "description": "Disable USB0 interface in ISP mode.",
-                            "values": [
-                                {
-                                    "name": "Enable",
-                                    "value": 0,
-                                    "description": "USB0 ISP is enabled."
-                                },
-                                {
-                                    "name": "Disable",
-                                    "value": 1,
-                                    "description": "USB0 ISP is disabled."
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 1,
@@ -989,391 +922,6 @@
                                     "description": "Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 0001 on ROM exiting to user image."
                                 }
                             ]
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse4",
-                    "name": "FLEXSPI_BOOT_CFG0",
-                    "description": "FlexSPI Boot Configuration 0",
-                    "index_int": "0x0004",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse4-bit-0",
-                            "name": "FLEXSPI_AUTO_PROBE_EN",
-                            "description": "Quad/Octal-SPI flash auto probe feature enable",
-                            "values": [
-                                {
-                                    "name": "Disable",
-                                    "value": 0,
-                                    "description": "Disable"
-                                },
-                                {
-                                    "name": "Enable",
-                                    "value": 1,
-                                    "description": "Enable"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 3,
-                            "id": "fuse4-bits-1-3",
-                            "name": "FLEXSPI_PROBE_TYPE[2:0]",
-                            "description": "Quad/Octal-SPI flash probe type.\nNote, this field is used when FLEXSPI_AUTO_PROBE_EN is set.",
-                            "values": [
-                                {
-                                    "name": "QuadSPI NOR",
-                                    "value": 0,
-                                    "description": "QuadSpi NOR"
-                                },
-                                {
-                                    "name": "Macronix Octal",
-                                    "value": 1,
-                                    "description": "Macronix Octal FLASH"
-                                },
-                                {
-                                    "name": "Micron Octal",
-                                    "value": 2,
-                                    "description": "Micron Octal FLASH"
-                                },
-                                {
-                                    "name": "Adesto Octal",
-                                    "value": 3,
-                                    "description": "Adesto Octal FLASH"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 4,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 5,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 3,
-                            "id": "fuse4-bits-4-6",
-                            "name": "FLEXSPI_FLASH_TYPE[2:0]",
-                            "description": "Define typical Serial NOR Flash types\nThis field is always used irrespective of FLEXSPI_AUTO_PROBE_EN value.",
-                            "values": [
-                                {
-                                    "name": "QSPI_ADDR_3B",
-                                    "value": 0,
-                                    "description": "QSPI_ADDR_3B"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 1,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "HYPER_1V8",
-                                    "value": 2,
-                                    "description": "HYPER_1V8"
-                                },
-                                {
-                                    "name": "HYPER_3V3",
-                                    "value": 3,
-                                    "description": "HYPER_3V3"
-                                },
-                                {
-                                    "name": "FlexSPI_DDR_MXIC",
-                                    "value": 4,
-                                    "description": "FlexSPI_DDR_MXIC"
-                                },
-                                {
-                                    "name": "FlexSPI_DDR_MICRON",
-                                    "value": 5,
-                                    "description": "FlexSPI_DDR_MICRON"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 4,
-                            "id": "fuse4-bits-7-10",
-                            "name": "FLEXSPI_DUMMY_CYCLES[3:0]",
-                            "description": "Quad/Octal-SPI dummy cycles for read command.\nIf a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash's SFDP information.\nNote: this field is only used if FLEXSPI_AUTO_PROBE_EN is set."
-                        },
-                        {
-                            "width": 3,
-                            "id": "fuse4-bits-11-13",
-                            "name": "FLEXSPI_FREQUENCY[2:0]",
-                            "description": "Q/O-SPI flash interface frequency.\nNote, this field is used when FLEXSPI_AUTO_PROBE_EN is set.",
-                            "values": [
-                                {
-                                    "name": "75Mhz",
-                                    "value": 0,
-                                    "description": "75Mhz"
-                                },
-                                {
-                                    "name": "60Mhz",
-                                    "value": 1,
-                                    "description": "60Mhz"
-                                },
-                                {
-                                    "name": "50Mhz",
-                                    "value": 2,
-                                    "description": "50Mhz"
-                                },
-                                {
-                                    "name": "100Mhz",
-                                    "value": 3,
-                                    "description": "100Mhz"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 4,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 5,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse4-bit-14",
-                            "name": "FLEXSPI_RESET_ENABLE",
-                            "description": "Use O/QSPI_RESET_PIN to reset the flash device.",
-                            "values": [
-                                {
-                                    "name": "NO_RESET",
-                                    "value": 0,
-                                    "description": "NO_RESET(O/QSPI device reset pin is not connected or available.)"
-                                },
-                                {
-                                    "name": "EN_RESET",
-                                    "value": 1,
-                                    "description": "EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 3,
-                            "id": "fuse4-bits-15-17",
-                            "name": "FLEXSPI_RESET_GPIO_PORT[2:0]",
-                            "description": "When FLEXSPI_RESET_ENABLE = 1, this field determines the GPIO  port number to use for O/QSPI reset function."
-                        },
-                        {
-                            "width": 5,
-                            "id": "fuse4-bits-18-22",
-                            "name": "FLEXSPI_RESET_GPIO_PIN[4:0]",
-                            "description": "GPIO  pin number to use for O/QSPI reset function."
-                        },
-                        {
-                            "width": 2,
-                            "id": "fuse4-bits-23-24",
-                            "name": "FLEXSPI_HOLD_TIME[1:0]",
-                            "description": "Delay after reset before accessing Quad/Octal-SPI flash devices.\nNote, for POR in addition to this wait time FLEXSPI_PWR_HOLD_TIME is added.",
-                            "values": [
-                                {
-                                    "name": "500us",
-                                    "value": 0,
-                                    "description": "Wait for 500 microseconds."
-                                },
-                                {
-                                    "name": "1ms",
-                                    "value": 1,
-                                    "description": "Wait for 1 millisecond."
-                                },
-                                {
-                                    "name": "3ms",
-                                    "value": 2,
-                                    "description": "Wait for 3 milliseconds."
-                                },
-                                {
-                                    "name": "10ms",
-                                    "value": 3,
-                                    "description": "Wait for 10 milliseconds."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 4,
-                            "id": "fuse4-bits-25-28",
-                            "name": "FLEXSPI_PWR_HOLD_TIME[3:0]",
-                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field.",
-                            "values": [
-                                {
-                                    "name": "No delay",
-                                    "value": 0,
-                                    "description": "No delay"
-                                },
-                                {
-                                    "name": "100us",
-                                    "value": 1,
-                                    "description": "Waits additional 100 microseconds."
-                                },
-                                {
-                                    "name": "500us",
-                                    "value": 2,
-                                    "description": "Waits additional 500 microseconds."
-                                },
-                                {
-                                    "name": "1ms",
-                                    "value": 3,
-                                    "description": "Waits additional 1 millisecond."
-                                },
-                                {
-                                    "name": "10ms",
-                                    "value": 4,
-                                    "description": "Waits additional 10 milliseconds."
-                                },
-                                {
-                                    "name": "20ms",
-                                    "value": 5,
-                                    "description": "Waits additional 20 milliseconds."
-                                },
-                                {
-                                    "name": "40ms",
-                                    "value": 6,
-                                    "description": "Waits additional 40 milliseconds."
-                                },
-                                {
-                                    "name": "60ms",
-                                    "value": 7,
-                                    "description": "Waits additional 60 milliseconds."
-                                },
-                                {
-                                    "name": "80ms",
-                                    "value": 8,
-                                    "description": "Waits additional 80 milliseconds."
-                                },
-                                {
-                                    "name": "100ms",
-                                    "value": 9,
-                                    "description": "Waits additional 100 milliseconds."
-                                },
-                                {
-                                    "name": "120ms",
-                                    "value": 10,
-                                    "description": "Waits additional 120 milliseconds."
-                                },
-                                {
-                                    "name": "140ms",
-                                    "value": 11,
-                                    "description": "Waits additional 140 milliseconds."
-                                },
-                                {
-                                    "name": "160ms",
-                                    "value": 12,
-                                    "description": "Waits additional 160 milliseconds."
-                                },
-                                {
-                                    "name": "180ms",
-                                    "value": 13,
-                                    "description": "Waits additional 180 milliseconds."
-                                },
-                                {
-                                    "name": "200ms",
-                                    "value": 14,
-                                    "description": "Waits additional 200 milliseconds."
-                                },
-                                {
-                                    "name": "220ms",
-                                    "value": 15,
-                                    "description": "Waits additional 220 milliseconds."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 2
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse4-bit-31",
-                            "name": "PORT_SEL",
-                            "description": "Defines which FlexSPI portA/B is used for boot.",
-                            "values": [
-                                {
-                                    "name": "Port A",
-                                    "value": 0,
-                                    "description": "Port A"
-                                },
-                                {
-                                    "name": "Port B",
-                                    "value": 1,
-                                    "description": "Port B"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse5",
-                    "name": "FLEXSPI_BOOT_CFG1",
-                    "description": "FlexSPI Boot Configuration 1",
-                    "index_int": "0x0005",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800"
-                    },
-                    "reg_width": 24,
-                    "bitfields": [
-                        {
-                            "width": 7,
-                            "id": "fuse5-bits-0-6",
-                            "name": "FLEXSPI_DELAY_CELL_NUM[6:0]",
-                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS). \nThe value provided here is loaded into the FLEXSPIn_DLLnCR."
-                        },
-                        {
-                            "width": 10,
-                            "id": "fuse5-bits-7-16",
-                            "name": "FLEXSPI_IMAGE_OFFSET[9:0]",
-                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset. \nThis allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. \nFlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. \nIf this field is left blank boot ROM will not enable FlexSPI remap feature. \nThe physical flash offset is computed as below:\nphysical offset = FLEXSPI_IMAGE_OFFSET * 256KByte"
-                        },
-                        {
-                            "width": 4,
-                            "id": "fuse5-bits-17-20",
-                            "name": "FLEXSPI_REMAP_IMAGE_SIZE[3:0]",
-                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped\nNOTE: FlexSPI remap size cannot exceed the start address of boot image 1.  \nb'0000   Remap size = FLEXSPI_IMAGE_OFFSET * 256KByte\n\"   SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field. \nb'0001   SIZE_1MB Size of remapped area is 1MByte.                            \nb'0010   SIZE_2MB Size of remapped area is 2MByte.                            \nb'0011   SIZE_3MB Size of remapped area is 3MByte.                           \nb'0100   SIZE_4MB Size of remapped area is 4MByte.\nb'0101   SIZE_5MB Size of remapped area is 5MByte.                            \nb'0110   SIZE_6MB Size of remapped area is 6MByte.                            \nb'0111   SIZE_7MB Size of remapped area is 7MByte.                            \nb'1000   SIZE_8MB Size of remapped area is 8MByte.                            \nb'1001   SIZE_9MB Size of remapped area is 9MByte.                            \nb'1010   SIZE_10MB Size of remapped area is 10MByte.                         \nb'1011   SIZE_11MB Size of remapped area is 11MByte.                         \nb'1100   SIZE_12MB Size of remapped area is 12MByte.                         \nb'1101   SIZE_256KB Size of remapped area is 256KByte.                       \nb'1110   SIZE_512KB Size of remapped area is 512KByte.                      \nb'1111  SIZE_768KB Size of remapped area is 768KByte."
-                        },
-                        {
-                            "width": 3
                         }
                     ]
                 },
@@ -1775,7 +1323,6 @@
                         "write_lock_int": "0x0200",
                         "read_lock_int": "0x0800"
                     },
-                    "reg_width": 24,
                     "bitfields": [
                         {
                             "width": 3,
@@ -2024,7 +1571,7 @@
                             ]
                         },
                         {
-                            "width": 1
+                            "width": 9
                         },
                         {
                             "width": 2,
@@ -2417,26 +1964,6 @@
                     ]
                 },
                 {
-                    "id": "fuse24",
-                    "name": "NPX_CTX0_WD1",
-                    "description": "Bitmap mask for NPX Prince context 0 (sectors 32 - 63)",
-                    "index_int": "0x0018",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse24-bits-0-31",
-                            "name": "NPX_CTX0_WD1",
-                            "description": "Bitmap mask for NPX Prince context 0 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX0_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV. NPX_CTX0_WD1[31:0]"
-                        }
-                    ]
-                },
-                {
                     "id": "fuse25",
                     "name": "NPX_CTX1_WD0",
                     "description": "Bitmap mask for NPX Prince context 1 (sectors 0 - 31)",
@@ -2453,26 +1980,6 @@
                             "id": "fuse25-bits-0-31",
                             "name": "NPX_CTX1_WD0",
                             "description": "Bitmap mask for NPX Prince context 1 (sectors 0 - 31)\nROM copies this value to NPX->VMAPCTX1_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV. NPX_CTX1_WD0[31:0]"
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse26",
-                    "name": "NPX_CTX1_WD1",
-                    "description": "Bitmap mask for NPX Prince context 1 (sectors 32 - 63)",
-                    "index_int": "0x001A",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse26-bits-0-31",
-                            "name": "NPX_CTX1_WD1",
-                            "description": "Bitmap mask for NPX Prince context 1 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX1_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV. NPX_CTX1_WD1[31:0]"
                         }
                     ]
                 },
@@ -2497,26 +2004,6 @@
                     ]
                 },
                 {
-                    "id": "fuse28",
-                    "name": "NPX_CTX2_WD1",
-                    "description": "Bitmap mask for NPX Prince context 2 (sectors 32 - 63)",
-                    "index_int": "0x001C",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse28-bits-0-31",
-                            "name": "NPX_CTX2_WD1",
-                            "description": "Bitmap mask for NPX Prince context 2 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX2_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV. NPX_CTX2_WD1[31:0]"
-                        }
-                    ]
-                },
-                {
                     "id": "fuse29",
                     "name": "NPX_CTX3_WD0",
                     "description": "Bitmap mask for NPX Prince context 3 (sectors 0 - 31)",
@@ -2535,44 +2022,72 @@
                             "description": "Bitmap mask for NPX Prince context 3 (sectors 0 - 31)\nROM copies this value to NPX->VMAPCTX3_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV. NPX_CTX3_WD0[31:0]"
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "OSCAA",
+                "description": "OSCAA key configuration"
+            },
+            "registers": [
                 {
-                    "id": "fuse30",
-                    "name": "NPX_CTX3_WD1",
-                    "description": "Bitmap mask for NPX Prince context 3 (sectors 32 - 63)",
-                    "index_int": "0x001E",
+                    "id": "fuse39",
+                    "name": "OSCAA_KEY0",
+                    "description": "OSCAA_KEY[31:0]",
+                    "index_int": "0x0027",
                     "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000"
-                    },
                     "bitfields": [
                         {
                             "width": 32,
-                            "id": "fuse30-bits-0-31",
-                            "name": "NPX_CTX3_WD1",
-                            "description": "Bitmap mask for NPX Prince context 3 (sectors 32 - 63)\nROM copies this value to NPX->VMAPCTX3_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV. NPX_CTX3_WD1[31:0]"
+                            "id": "fuse39-bits-0-31",
+                            "name": "OSCAA_KEY0",
+                            "description": "OSCAA_KEY[31:0]"
                         }
                     ]
                 },
                 {
-                    "id": "fuse31",
-                    "name": "IPED_CTX_CRC32",
-                    "description": "CRC value of the IPED regions start and end address setting",
-                    "index_int": "0x001F",
+                    "id": "fuse40",
+                    "name": "OSCAA_KEY1",
+                    "description": "OSCAA_KEY[63:32]",
+                    "index_int": "0x0028",
                     "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000"
-                    },
                     "bitfields": [
                         {
                             "width": 32,
-                            "id": "fuse31-bits-0-31",
-                            "name": "IPED_CTX_CRC32",
-                            "description": "CRC value of the IPED regions start and end address setting\nUser has to program CRC32 of IPED context configuration data present in CMPA (0x0100_40B0 - 0x0100_40EF) to have ROM do integrity check of IPED configuration data before using. This check is done only when this field is non-zero.IPED_CTX_CRC32[31:0]"
+                            "id": "fuse40-bits-0-31",
+                            "name": "OSCAA_KEY1",
+                            "description": "OSCAA_KEY[63:32]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse41",
+                    "name": "OSCAA_KEY2",
+                    "description": "OSCAA_KEY[95:64]",
+                    "index_int": "0x0029",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse41-bits-0-31",
+                            "name": "OSCAA_KEY2",
+                            "description": "OSCAA_KEY[95:64]"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse42",
+                    "name": "OSCAA_KEY3",
+                    "description": "OSCAA_KEY[127:96]",
+                    "index_int": "0x002A",
+                    "individual_write_lock": "implicit",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse42-bits-0-31",
+                            "name": "OSCAA_KEY3",
+                            "description": "OSCAA_KEY[127:96]"
                         }
                     ]
                 }
