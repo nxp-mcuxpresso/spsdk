@@ -1,0 +1,94 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+key_info:
+  type: object
+  title: SHE Configuration for using SCEc
+  properties:
+    key:
+      type: string
+      title: Key for SCEc operation
+      description: Cryptographic key used in SHE (Secure Hardware Extension) SCEc operation
+      template_value: ~/keys/new_key.txt
+    key_id:
+      type: [number, string]
+      title: Key Identifier
+      description: Unique identifier for the SCEc key slot
+      enum: [
+          "MASTER_ECU_KEY",
+          "BOOT_MAC_KEY",
+          "BOOT_MAC",
+          "RAM_KEY",
+          "USER_KEY_1",
+          "USER_KEY_2",
+          "USER_KEY_3",
+          "USER_KEY_4",
+          "USER_KEY_5",
+          "USER_KEY_6",
+          "USER_KEY_7",
+          "USER_KEY_8",
+          "USER_KEY_9",
+          "USER_KEY_10",
+          # "USER_KEY_11",
+          # "USER_KEY_12",
+          # "USER_KEY_13",
+          # "USER_KEY_14",
+          # "USER_KEY_15",
+          # "USER_KEY_16",
+          # "USER_KEY_17",
+        ]
+      template_value: USER_KEY_1
+    uid:
+      type: [number, string]
+      title: SHE Unique Identifier
+      description: Unique identifier for the SHE device
+      template_value: 0x12345678
+    auth_key:
+      type: string
+      title: Authentication Key
+      description: Authentication key for SHE (Secure Hardware Extension) SCEc operation
+      template_value: ~/keys/auth_key.txt
+    auth_key_id:
+      type: [number, string]
+      title: Authentication Key Identifier
+      description: Unique identifier for the authentication key in SHE SCEc operation
+      enum: ["MASTER_ECU_KEY", "BOOT_MAC_KEY"]
+      template_value: MASTER_ECU_KEY
+
+    counter:
+      type: [number, string]
+      title: Counter Value
+      description: Counter used in SHE (Secure Hardware Extension) SCEc operation
+      template_value: 1
+  required: [key, key_id]
+
+flags:
+  type: object
+  title: SHE-SCEc key flags
+  properties:
+    write_protection:
+      type: boolean
+      title: Write Protection Flag
+      description: Enable or disable write protection for the SHE-SCEc key
+      template_value: false
+    boot_protection:
+      type: boolean
+      title: Boot Protection Flag
+      description: Enable or disable boot protection for the SHE-SCEc key
+      template_value: false
+    debugger_protection:
+      type: boolean
+      title: Debugger Protection Flag
+      description: Enable or disable debugger protection for the SHE-SCEc key
+      template_value: false
+    key_usage:
+      type: boolean
+      title: Key Usage Flag
+      description: Enable or disable key usage permissions for the SHE-SCEc key
+      template_value: false
+    wildcard:
+      type: boolean
+      title: Wildcard Key Flag
+      description: Enable or disable wildcard key usage for the SHE-SCEc key
+      template_value: false

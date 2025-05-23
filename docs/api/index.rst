@@ -19,6 +19,5 @@ API Development Guide
     sdp
     shadowregs
     spsdk
-    tp
     wpc
     utils

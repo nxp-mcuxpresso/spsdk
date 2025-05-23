@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Module for certificate management (generating certificate, validating certificate, chains)."""
 
 from datetime import datetime, timedelta, timezone
@@ -301,7 +302,7 @@ class Certificate(BaseClass):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :returns: Recreated certificate

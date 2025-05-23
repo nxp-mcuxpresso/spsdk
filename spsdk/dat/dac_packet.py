@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,9 +10,12 @@
 import logging
 from struct import calcsize, pack, unpack_from
 
+from typing_extensions import Self
+
 from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
-from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -70,48 +73,91 @@ class DebugAuthenticationChallenge:
         msg += f"Challenge              : {self.challenge.hex()}\n"
         return msg
 
-    def validate_against_dc(self, family: str, dc: DebugCredentialCertificate) -> None:
+    def validate_against_dc(
+        self, family: FamilyRevision, dc: DebugCredentialCertificate
+    ) -> Verifier:
         """Validate against Debug Credential file.
 
         :param family: Chip family name
         :param dc: Debug Credential class to be validated by DAC
-        :raises SPSDKValueError: In case of invalid configuration detected.
+        :return: The final Verifier object
         """
-        if self.version != dc.version and not DebugCredentialCertificate.dat_based_on_ele(family):
-            raise SPSDKValueError(
-                f"DAC Verification failed: Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.version}"
+        db = get_db(family)
+        ret = Verifier(
+            name="DAC versus DC",
+            description="This is verifier of Debug Authentication Challenge against Debug Credential",
+        )
+        if DebugCredentialCertificate.dat_based_on_ele(family):
+            ret.add_record(
+                "Protocol version",
+                result=VerifierResult.WARNING,
+                value=f"Not supported on {family.name}",
             )
+        elif self.version != dc.version:
+            ret.add_record(
+                "Protocol version",
+                result=VerifierResult.ERROR,
+                value=f"Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.version}",
+            )
+        else:
+            ret.add_record(
+                "Protocol version", result=VerifierResult.SUCCEEDED, value=str(dc.version)
+            )
+
+        family_socc = db.get_int(DatabaseManager.DAT, "socc")
         if self.socc != dc.socc:
-            raise SPSDKValueError(
-                f"DAC Verification failed: Invalid SOCC.\nDAC: {self.socc}\nDC:  {dc.socc}"
+            ret.add_record(
+                "SOCC",
+                result=VerifierResult.ERROR,
+                value=f"Different DAC and DC SOCC.\nDAC: {self.socc:08X}\nDC:  {dc.socc:08X}",
             )
-        if self.uuid != dc.uuid and dc.uuid != bytes(len(dc.uuid)):
-            raise SPSDKValueError(
-                f"DAC Verification failed: Invalid UUID.\nDAC: {self.uuid.hex()}\nDC:  {dc.uuid.hex()}"
+        elif self.socc != family_socc:
+            ret.add_record(
+                "SOCC",
+                result=VerifierResult.ERROR,
+                value=(
+                    f"Invalid Family SOCC.\n Used: {self.socc:08X}\n"
+                    f" Family valid SOCC: {family_socc:08X}"
+                ),
             )
-        dc_rotkh = dc.calculate_hash()
-        if dc_rotkh and not all(
-            self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
-        ):
-            db = get_db(family)
-            rot_not_part_of_dac = db.get_bool(DatabaseManager.DAT, "rot_not_part_of_dac", False)
-            rot_could_be_invalid = db.get_bool(DatabaseManager.DAT, "rot_could_be_invalid", False)
+        else:
+            ret.add_record("SOCC", result=VerifierResult.SUCCEEDED, value=f"{dc.socc:08X}")
 
-            if rot_not_part_of_dac:
-                # For some devices this is expected because RKTH is not part of the challenge
-                return
+        if dc.uuid == bytes(len(dc.uuid)):
+            ret.add_record(
+                "UUID",
+                result=VerifierResult.WARNING,
+                value=f"The general UUID has been used. Fits for all {family.name} chips.",
+            )
+        elif self.uuid != dc.uuid:
+            ret.add_record(
+                "UUID",
+                result=VerifierResult.ERROR,
+                value=f"Different DAC and DC UUID.\nDAC: {self.uuid.hex()}\nDC:  {dc.uuid.hex()}",
+            )
+        else:
+            ret.add_record("UUID", result=VerifierResult.SUCCEEDED, value=self.uuid.hex())
 
-            if rot_could_be_invalid:
-                logger.warning(
-                    "The DAC(Debug Authentication Challenge) RKTH doesn't match with DC(Debug Credential)."
-                    "Example: For RW61x devices, this is correct behavior, for LPC55S3x it indicates incorrect DC file,"
-                    "and needs to be fixed."
+        rot_not_part_of_dac = db.get_bool(DatabaseManager.DAT, "rot_not_part_of_dac", False)
+        if rot_not_part_of_dac:
+            ret.add_record("RoT Hash", VerifierResult.SUCCEEDED, value="Not used")
+        else:
+            dc_rotkh = dc.calculate_hash()
+            if dc_rotkh and not all(
+                self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
+            ):
+                ret.add_record(
+                    "RoT Hash",
+                    VerifierResult.ERROR,
+                    value=(
+                        "Invalid RKTH.\n"
+                        f"DAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
+                    ),
                 )
             else:
-                raise SPSDKValueError(
-                    f"DAC Verification failed: Invalid RKTH.\n"
-                    f"DAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
-                )
+                ret.add_record("RoT Hash", VerifierResult.SUCCEEDED, value=dc_rotkh.hex())
+
+        return ret
 
     def export(self) -> bytes:
         """Exports the DebugAuthenticationChallenge into bytes."""
@@ -127,7 +173,7 @@ class DebugAuthenticationChallenge:
         return data
 
     @staticmethod
-    def get_rot_hash_length(family: str, major_ver: int, minor_ver: int) -> int:
+    def get_rot_hash_length(family: FamilyRevision, major_ver: int, minor_ver: int) -> int:
         """Returns length of Root Of Trust hash length.
 
         :param family: The chip family name
@@ -135,17 +181,10 @@ class DebugAuthenticationChallenge:
         :param minor_ver: Minor version
         :return: Length of Root Of Trust hash in bytes
         """
-        db = get_db(family)
-        based_on_ele = DebugCredentialCertificate.dat_based_on_ele(family)
-
-        # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
-        if based_on_ele:
+        if get_db(family).get_bool(DatabaseManager.DAT, "dat_is_using_sha256_always", False):
             return 32
-        dat_is_using_sha256_always = db.get_bool(
-            DatabaseManager.DAT, "dat_is_using_sha256_always", False
-        )
 
-        if major_ver == 2 and not dat_is_using_sha256_always:
+        if major_ver == 2:
             if minor_ver == 1:
                 return 48
             if minor_ver == 2:
@@ -154,21 +193,22 @@ class DebugAuthenticationChallenge:
         return 32
 
     @classmethod
-    def parse(cls, data: bytes) -> "DebugAuthenticationChallenge":
+    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
         """Parse the data into a DebugAuthenticationChallenge.
 
         :param data: Raw data as bytes
+        :param family: The CPU family
         :return: DebugAuthenticationChallenge object
         """
         format_head = "<2HL16sL"
         version_major, version_minor, socc, uuid, rotid_rkh_revocation = unpack_from(
             format_head, data
         )
-        family_ambassador = DebugCredentialCertificate.get_family_ambassador(socc)
-        hash_length = cls.get_rot_hash_length(family_ambassador, version_major, version_minor)
+        db = get_db(family)
+
+        hash_length = cls.get_rot_hash_length(family, version_major, version_minor)
 
         # Some soc handles version differently in DAC
-        db = get_db(family_ambassador)
         swapped_version = db.get_bool(DatabaseManager.DAT, "dac_version_is_swapped", False)
         if swapped_version:
             version_major, version_minor = version_minor, version_major

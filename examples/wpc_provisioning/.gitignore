@@ -1,4 +1,5 @@
-config.yaml
+custom_config.yaml
 target_model/**/*.bin
 target_model/**/*.crt
 target_model/**/*.txt
+my_wpc_service_plugin

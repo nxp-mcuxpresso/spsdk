@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -170,7 +170,7 @@ class SecureBootV1(BaseClass):
 
         :param header_padding8: optional header padding, 8-bytes; recommended to use None to apply random value
         :param auth_padding: optional padding used after authentication; recommended to use None to apply random value
-        :return: serialize the instance into binary data
+        :return: Exported the instance into binary data
         :raises SPSDKError: Invalid section data
         :raises SPSDKError: Invalid padding length
         """

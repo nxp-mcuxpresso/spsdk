@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,15 +11,16 @@ import base64
 import json
 import logging
 import uuid
-from typing import Optional, Union
+from typing import Any, Optional
 
 import requests
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import load_secret
-from spsdk.wpc.utils import SPSDKWPCError, WPCCertChain, WPCCertificateService, WPCIdType
+from spsdk.utils.family import FamilyRevision
+from spsdk.wpc.wpc import SPSDKWPCError, WPCCertChain, WPCCertificateService, WPCIdType
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +45,10 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
 
     def __init__(
         self,
+        family: FamilyRevision,
         url: str,
-        qi_id: Union[str, int],
+        qi_id: int,
         api_key: str,
-        family: str,
         timeout: int = 60,
     ) -> None:
         """Initialize the EL2GO adapter.
@@ -60,7 +61,7 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
         """
         super().__init__(family=family)
         self.base_url = url
-        self.qi_id = int(qi_id)
+        self.qi_id = qi_id
         self.api_key = api_key
         self.timeout = timeout
         self.headers = {
@@ -70,28 +71,27 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
         }
 
     @classmethod
-    def get_validation_schema(cls) -> dict:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get JSON schema for validating configuration data."""
         schema = get_schema_file(DatabaseManager.WPC)
-        return schema["el2go"]
+        return [schema["el2go"]]
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
+    def load_from_config(cls, config: Config) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.
         To limit the scope of data, set cls.CONFIG_PARAMS (key in config data).
 
-        :param config_data: Configuration data
-        :param search_paths: Paths where to look for files referenced in config data, defaults to None
+        :param config: Configuration data
         :return: Instance of this class
         """
-        if cls.CONFIG_PARAMS in config_data:
-            config_data = config_data[cls.CONFIG_PARAMS]
-        cls.validate_config(config_data=config_data, search_paths=search_paths)
-        api_key = config_data.pop("api_key")
-        api_key = load_secret(api_key, search_paths=search_paths)
-        return cls(api_key=api_key, **config_data)
+        api_key = config.load_secret(f"{cls.CONFIG_PARAMS}/api_key")
+        url = config.get_str(f"{cls.CONFIG_PARAMS}/url")
+        qi_id = config.get_int(f"{cls.CONFIG_PARAMS}/qi_id")
+        family = FamilyRevision.load_from_config(config)
+        timeout = config.get_int(f"{cls.CONFIG_PARAMS}/timeout", 60)
+        return cls(family=family, url=url, qi_id=qi_id, api_key=api_key, timeout=timeout)
 
     def _handle_request(self, method: str, url: str, payload: dict) -> dict:
         final_url = f"{self.base_url}{url}"

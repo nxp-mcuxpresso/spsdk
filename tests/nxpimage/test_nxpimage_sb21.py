@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -563,28 +563,6 @@ def test_sb_21_invalid_signature_provider(cli_runner: CliRunner, tmpdir, nxpimag
         assert issubclass(result.exc_info[0], SPSDKError)
 
 
-def test_sb_21_invalid_parse():
-    with pytest.raises(SPSDKError, match="kek cannot be empty"):
-        BootImageV21.parse(data=bytes(232), kek=None)
-
-
-def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir):
-    cmd = "sb21 get-sbkek"
-    cli_runner.invoke(nxpimage.main, cmd.split())
-
-    cmd = f"sb21 get-sbkek -o {tmpdir}"
-    cli_runner.invoke(nxpimage.main, cmd.split())
-    assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
-    assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
-
-    test_key = "858A4A83D07C78656165CDDD3B7AF4BB20E534392E7AF99EF7C296F95205E680"
-
-    cmd = f"sb21 get-sbkek -k {test_key} -o {tmpdir}"
-    cli_runner.invoke(nxpimage.main, cmd.split())
-    assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
-    assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
-
-
 def test_nxpimage_parse_cli(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
     with use_working_directory(f"{nxpimage_data_dir}/sb_sources"):
         parsed_output = f"{tmpdir}/parsed_sb"
@@ -644,7 +622,7 @@ def test_nxpimage_sb21_hex_values(bd_file, legacy_sb, external, nxpimage_data_di
                 nxpimage_data_dir, "sb_sources/keys_and_certs/root_k3_signed_cert0_noca.der.cert"
             ),
         ]
-        parsed_config["mainCertPrivateKeyFile"] = os.path.join(
+        parsed_config["signer"] = os.path.join(
             nxpimage_data_dir, "sb_sources/keys_and_certs/k0_cert0_2048.pem"
         )
         sb2 = BootImageV21.load_from_config(
@@ -658,7 +636,6 @@ def test_nxpimage_sb21_hex_values(bd_file, legacy_sb, external, nxpimage_data_di
             ],
             root_key_certificate_paths=root_key_certs,
             rkth_out_path=os.path.join(tmpdir, "hash.bin"),
-            search_paths=[nxpimage_data_dir],
         )
         sb2.export()
 

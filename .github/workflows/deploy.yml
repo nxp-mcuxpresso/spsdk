@@ -15,12 +15,12 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
       - name: Build and Check Package
-        uses: hynek/build-and-inspect-python-package@v2.8.0
+        uses: hynek/build-and-inspect-python-package@v2.12.0
         with:
           attest-build-provenance-github: 'true'
 
@@ -34,13 +34,13 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.2.2
 
     - name: Download Package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v4.3.0
       with:
         name: Packages
         path: dist
 
     - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.9.0 # The authentication is provided by OpenID Connect: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+      uses: pypa/gh-action-pypi-publish@v1.12.4 # The authentication is provided by OpenID Connect: https://docs.pypi.org/trusted-publishers/adding-a-publisher/

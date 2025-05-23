@@ -1,6 +1,6 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: BSD-3-Clause
 
 hab_input:
   type: object
@@ -23,10 +23,10 @@ hab:
       title: HAB Options
       description: An options block contains zero or more name/value pairs and the option settings that assign values to global options used by the nxpimage to control the generation of the output file.
       allOf:
-        - required: [flags, startAddress]
+        - required: [family, flags, startAddress]
         - oneOf:
             - required: [ivtOffset, initialLoadSize]
-            - required: [family, bootDevice]
+            - required: [bootDevice]
       properties:
         flags:
           type:
@@ -66,8 +66,8 @@ hab:
         family:
           type: string
           title: Family
-          description: "Processor family. If not specified, the ivtOffset and initialLoadSize must be defined."
-          template_value: rt1010
+          description: "Processor family"
+          template_value: mimxrt1010
         bootDevice:
           type: string
           title: Boot device
@@ -76,8 +76,8 @@ hab:
         signatureTimestamp:
           type: string
           title: Timestamp of the signature
-          description: ""
-          template_value: "04/05/2023 11:27:43"
+          description: "Date and time when the signature was created. Format: day/month/year hour:minute:second (DD/MM/YYYY HH:MM:SS)"
+          template_value: "31/05/2023 11:22:33"
         DCDFilePath:
           type: string
           title: DCD file path
@@ -289,18 +289,12 @@ hab_sections:
                     enum:
                       - PKCS1
                       - CMS
-                  AuthenticateCsf_SignProvider:
+                  Signer:
                     type:
                       - string
-                    title: Signature Provider
-                    description: Signature provider configuration string. If not set, the value from AuthenticateCsf_PrivateKeyFile parameter will be used.
+                    title: Signer
+                    description: Signature provider configuration string or a path to authenticate CSF private key file.
                     template_value: "type=file;file_path=keys/CSF1_1_sha256_2048_65537_v3_usr_key.pem;password=PrivateKeyPwd"
-                  AuthenticateCsf_PrivateKeyFile:
-                    type: string
-                    format: file_name
-                    title: Private Key File
-                    description: Path to authenticate CSF private key file. If not set, the file will be determined from InstallCSFK_File parameter.
-                    template_value: "keys/CSF1_1_sha256_2048_65537_v3_usr_key.pem"
           - type: object
             required:
               - InstallKey
@@ -379,18 +373,12 @@ hab_sections:
                     title: Engine Configuration
                     description: Configuration flags for the engine. See the CSF manual.
                     template_value: 0
-                  AuthenticateData_SignProvider:
+                  Signer:
                     type:
                       - string
-                    title: Signature Provider
-                    description: Signature provider configuration string. If not set, the value from AuthenticateData_PrivateKeyFile parameter will be used.
+                    title: Signer
+                    description: Signature provider configuration string or a path to authenticate IMG private key file.
                     template_value: "type=file;file_path=keys/IMG1_1_sha256_2048_65537_v3_usr_key.pem;password=PrivateKeyPwd"
-                  AuthenticateData_PrivateKeyFile:
-                    type: string
-                    format: file_name
-                    title: Private Key File
-                    description: Path to authenticate IMG private key file. If not set, the file will be determined from InstallCSFK_File parameter.
-                    template_value: "keys/IMG1_1_sha256_2048_65537_v3_usr_key.pem"
                 required:
                   - AuthenticateData_VerificationIndex
           - type: object
@@ -458,10 +446,15 @@ hab_sections:
                       - OCOTP
                     template_value: OCOTP
                   Unlock_Features:
-                    type: string
+                    type: [string, array]
                     title: Features
                     description: Comma-separated list of features to unlock.
-                    template_value: JTAG, SRK REVOKE
+                    template_value: ['JTAG', 'SRK REVOKE']
+                  Unlock_UID:
+                    type: [string, array]
+                    title: Unlock UID
+                    description: List of UIDs.
+                    template_value: [0x1, 0x23, 0x45, 0x67]
           - type: object
             required:
               - SecretKey
@@ -513,6 +506,7 @@ hab_sections:
                     description: If set, the secret key from SecretKey_Name parameter will be used. If not, a random key will be generated and stored.
                     template_value: false
                 required:
+                  - SecretKey_Name
                   - SecretKey_TargetIndex
           - type: object
             required:
@@ -538,8 +532,9 @@ hab_sections:
                     title: Engine
                     description: MAC Engine.
                     enum:
-                      - CAAM
-                      - ANY
+                    - ANY
+                    - CAAM
+                    - DCP
                     template_value: ANY
                   Decrypt_EngineConfiguration:
                     type:

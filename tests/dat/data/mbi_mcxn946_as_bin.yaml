@@ -1,0 +1,17 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mcxn946
+revision: latest
+outputImageExecutionTarget: xip
+outputImageAuthenticationType: signed
+masterBootOutputFile: my_mbi.bin
+inputImageFile: my_application.bin
+outputImageExecutionAddress: 0
+firmwareVersion: 0
+outputImageSubtype: main
+imageVersion: 0
+certBlock: cert_block_mcxn946.bin
+signer: type=file;file_path=root_prv_key.pem
+trustZonePresetFile: my_tz_custom.yaml

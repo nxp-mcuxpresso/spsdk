@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,8 @@ from spsdk.crypto.symmetric import Counter
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.sbfile.sb2.sections import BootSectionV2, CertSectionV2
-from spsdk.utils.crypto.cert_blocks import CertBlockV1
+from spsdk.image.cert_block.cert_blocks import CertBlockV1
+from spsdk.utils.family import FamilyRevision
 
 
 def test_boot_section_v2():
@@ -82,7 +83,7 @@ def test_boot_section_v2_hmac_count():
 
 
 def _create_cert_block_v1(data_dir: str) -> CertBlockV1:
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cert_obj = Certificate.load(os.path.join(data_dir, "selfsign_v3.der.crt"))
     cb.set_root_key_hash(0, cert_obj.public_key_hash())
     cb.add_certificate(cert_obj)

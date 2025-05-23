@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK plugins manager."""
 
 import logging
@@ -147,34 +148,3 @@ class PluginsManager(metaclass=SingletonMeta):
         if name is None:
             raise SPSDKError("Plugin name could not be determined.")
         return name
-
-
-def load_plugin_from_source(source: str, name: Optional[str] = None) -> None:
-    """Load plugin from source.
-
-    :param source: The source to be loaded
-        Accepted values:
-            - Path to source file
-            - Existing module name
-            - Existing entrypoint
-    :param name: Name for the new module/plugin
-    """
-    manager = PluginsManager()
-    if name and name in manager.plugins:
-        logger.debug(f"Plugin {name} has been already registered.")
-        return
-    try:
-        return manager.load_from_source_file(source)
-    except SPSDKError:
-        pass
-    try:
-        manager.load_from_module_name(source)
-        return
-    except SPSDKError:
-        pass
-    try:
-        manager.load_from_entrypoints(source)
-        return
-    except SPSDKError:
-        pass
-    raise SPSDKError(f"Unable to load from source '{source}'.")

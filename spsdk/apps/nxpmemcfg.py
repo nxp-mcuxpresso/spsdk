@@ -11,7 +11,7 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import Any, Optional
+from typing import Optional
 
 import click
 import colorama
@@ -29,14 +29,14 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.memcfg.memcfg import Memory, MemoryConfig
-from spsdk.utils.misc import get_printable_path, load_configuration, write_file
-from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig, check_config
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import get_printable_path, write_file
 
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="nxpmemcfg", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="nxpmemcfg", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
     """Collection of utilities for memory configuration operations."""
@@ -52,7 +52,7 @@ def main(log_level: int) -> None:
     required=False,
     help="Restrict results just for this one peripheral, if used.",
 )
-def family_info(family: Optional[str], peripheral: Optional[str] = None) -> None:
+def family_info(family: Optional[FamilyRevision], peripheral: Optional[str] = None) -> None:
     """List known memory configurations for the family."""
 
     def _get_instance_val(val: list[int]) -> str:
@@ -74,7 +74,7 @@ def family_info(family: Optional[str], peripheral: Optional[str] = None) -> None
     for i, f in enumerate(families):
         row = [
             colorama.Fore.YELLOW + str(i) + colorama.Style.RESET_ALL,
-            colorama.Fore.GREEN + f + colorama.Style.RESET_ALL,
+            colorama.Fore.GREEN + str(f) + colorama.Style.RESET_ALL,
         ]
         for p in peripherals:
             row.append(_get_instance_val(MemoryConfig.get_peripheral_instances(f, p)))
@@ -158,7 +158,7 @@ def family_info(family: Optional[str], peripheral: Optional[str] = None) -> None
 )
 @spsdk_output_option(force=True)
 def parse_command(
-    family: str,
+    family: FamilyRevision,
     memory_chip: Optional[str],
     interface: Optional[str],
     peripheral: str,
@@ -173,14 +173,14 @@ def parse_command(
             memory_chip=memory_chip,
             interface=interface,
             option_word=option_word,
-        ).get_yaml(),
+        ).get_config_yaml(),
         output,
     )
     click.echo(f"Parsed option words has been stored: {os.path.abspath(output)}")
 
 
 def parse(
-    family: str,
+    family: FamilyRevision,
     peripheral: str,
     memory_chip: Optional[str],
     interface: Optional[str],
@@ -225,12 +225,12 @@ def parse(
 
 
 @main.command(name="export", no_args_is_help=True)
-@spsdk_config_option(help="Option word configuration YAML file")
+@spsdk_config_option(help="Option word configuration YAML file", klass=MemoryConfig)
 def export_command(
-    config: str,
+    config: Config,
 ) -> None:
     """Export the configuration option words from configuration."""
-    memcfg = export(config=load_configuration(config))
+    memcfg = export(config)
     if not memcfg.option_words:
         click.echo("No option words are defined in the configuration.")
     else:
@@ -239,19 +239,15 @@ def export_command(
         )
 
 
-def export(config: dict[str, Any]) -> MemoryConfig:
+def export(config: Config) -> MemoryConfig:
     """Export the configuration option words from configuration.
 
     :param config: Memory Configuration dictionary.
     """
     # Validate base items in config
-    check_config(config, MemoryConfig.get_validation_schemas_base())
-    memcfg = MemoryConfig(family=config["family"], peripheral=config["peripheral"])
-    check_config(config, memcfg.get_validation_schemas())
-
-    memcfg = MemoryConfig.load_config(config)
+    MemoryConfig.pre_check_config(config)
+    memcfg = MemoryConfig.load_from_config(config)
     logger.info(f"Family:     {memcfg.family}")
-    logger.info(f"Revision:   {memcfg.revision}")
     logger.info(f"Peripheral: {memcfg.peripheral}")
     logger.info(f"Interface:  {memcfg.interface}")
     return memcfg
@@ -287,6 +283,7 @@ def export(config: dict[str, Any]) -> MemoryConfig:
 )
 @spsdk_config_option(
     required=False,
+    klass=MemoryConfig,
     help="Option word configuration YAML file, in case that known chip has not been used",
 )
 @click.option("-ix", "--instance", type=INT(), help="Instance of peripheral if applicable")
@@ -311,7 +308,7 @@ def export(config: dict[str, Any]) -> MemoryConfig:
     help="Name of BLHOST script. If not specified, the script will be printed to command line",
 )
 def blhost_script_command(
-    config: Optional[str],
+    config: Optional[Config],
     family: Optional[str],
     peripheral: Optional[str],
     memory_chip: Optional[str],
@@ -334,14 +331,14 @@ def blhost_script_command(
                 "Config file or family/memory-chip/interface settings must be defined."
             )
         memcfg = parse(
-            family=family,
+            family=FamilyRevision(family),
             peripheral=peripheral,
             memory_chip=memory_chip,
             interface=interface,
             option_word=None,
         )
     else:
-        memcfg = export(load_configuration(config))
+        memcfg = export(config)
 
     script = memcfg.create_blhost_batch_config(
         instance=instance, fcb_output_name=fcb, secure_addresses=secure_addresses
@@ -357,24 +354,22 @@ def blhost_script_command(
 @main.command(name="get-templates", no_args_is_help=True)
 @spsdk_family_option(families=MemoryConfig.get_supported_families())
 @spsdk_output_option(directory=True, force=True)
-def get_templates_command(family: str, output: str) -> None:
+def get_templates_command(family: FamilyRevision, output: str) -> None:
     """Create template of Memory option words in YAML format."""
     get_templates(family, output)
 
 
-def get_templates(family: str, output: str) -> None:
+def get_templates(family: FamilyRevision, output: str) -> None:
     """Create template of Memory option words in YAML format."""
     for peripheral in MemoryConfig.get_supported_peripherals(family):
         memcfg = MemoryConfig(family=family, peripheral=peripheral)
-        schemas = memcfg.get_validation_schemas()
-        yaml_data = CommentedConfig(
-            main_title=f"Option Words Configuration template for {family}, {peripheral}.",
-            schemas=schemas,
-            note="Note for settings:\n" + Registers.TEMPLATE_NOTE,
-        ).get_template()
-
         full_file_path = os.path.join(output, f"ow_{peripheral}.yaml")
-        write_file(yaml_data, full_file_path)
+        write_file(
+            memcfg.get_config_template(
+                family=memcfg.family, peripheral=memcfg.peripheral, interface=memcfg.interface
+            ),
+            full_file_path,
+        )
         click.echo(
             f"The Memory Configuration template has been saved into '{get_printable_path(full_file_path)}' YAML file"
         )

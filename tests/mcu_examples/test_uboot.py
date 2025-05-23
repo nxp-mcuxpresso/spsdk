@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 import os
 import filecmp
 
@@ -20,7 +21,7 @@ REF_BINARY = os.path.join(IMX93_EXAMPLE_DIR, "outputs", "flash.bin")
 # def test_uboot_mx93(cli_runner: CliRunner, tmpdir):
 #     with use_working_directory(IMX93_EXAMPLE_DIR):
 #         binary_output = os.path.join(tmpdir, "flash.bin")
-#         cmd = f"bootable-image merge --config {IMX93_BOOTABLE_CONFIG} --output {binary_output}"
+#         cmd = f"bootable-image export --config {IMX93_BOOTABLE_CONFIG} --output {binary_output}"
 #         cli_runner.invoke(nxpimage.main, cmd.split())
 #         assert os.path.isfile(binary_output)
 #         data_output = load_binary(binary_output)

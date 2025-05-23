@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # =================================  Debug Credential file template for mx95 family.  ==================================
@@ -10,7 +10,7 @@
 # Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
 # default.
 # Possible options: <mx95>
-family: mx95
+family: mimx9596
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: latest
@@ -37,5 +37,5 @@ fuse_version: 0
 public_key_0: ../../_data/keys/dil3/dck_dil3.pub
 # ----------------------------------===== SRK container signing key 0 [Optional] =====----------------------------------
 # Description: Private key 0 used for sign the certificate container.
-signing_key_0: ../../_data/keys/dil3/dck_dil3.pem
+signer_0: ../../_data/keys/dil3/dck_dil3.pem
 

@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 family: mimx9352
 revision: latest
 # --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
@@ -33,11 +34,7 @@ sw_version: 0
 # -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
 # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
 # must not have been revoked.
-signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem
-# -----------------------------------===== Signature Provider [Optional] =====------------------------------------
-# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'. The
-# signature provider could be used instead of definition of 'signing_key'.
-# signature_provider: type=file;file_path=my_prv_key.pem
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
 
 # ================================================================================================================
 #                                      == Configuration of AHAB SRK table ==

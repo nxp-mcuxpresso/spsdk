@@ -14,7 +14,7 @@
     "rootCertificate0File": "rotk0_rsa_2048.pub",
     "rootCertificate1File": "rotk1_rsa_2048.pub",
     "rootCertificate2File": "",
-    "mainCertChainId": 0,
+    "mainRootCertId": 0,
     "mainCertPrivateKeyFile": "keys_and_certs/k0_cert0_2048.pem",
     "masterBootOutputFile": "output_images/application_signed.bin",
     "chainCertificate0File0": "Invalid_file.der"

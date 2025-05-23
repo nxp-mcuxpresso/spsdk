@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,9 +15,9 @@ import pytest
 from bitstring import BitArray
 
 from spsdk.crypto.certificate import Certificate
-from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider
 from spsdk.image.keystore import KeySourceType, KeyStore
-from spsdk.image.mbi.mbi import create_mbi_class
+from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.trustzone import TrustZone
 from spsdk.mboot.commands import KeyProvUserKeyType
 from spsdk.mboot.exceptions import McuBootConnectionError
@@ -26,7 +26,8 @@ from spsdk.mboot.mcuboot import McuBoot, PropertyTag
 from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.sb2.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
 from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV1, SBV2xAdvancedParams
-from spsdk.utils.crypto.otfad import KeyBlob, Otfad
+from spsdk.image.otfad.otfad import KeyBlob, Otfad
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, align_block, load_binary
 from tests.misc import compare_bin_files
 
@@ -366,7 +367,7 @@ def create_cert_block(data_dir: str) -> CertBlockV1:
             )
         )
     # create certification block
-    cert_block = CertBlockV1(build_number=1)
+    cert_block = CertBlockV1(FamilyRevision("mimxrt595s"), build_number=1)
     cert_block.add_certificate(cert_list[0])
     # add hashes
     for root_key_index, cert in enumerate(cert_list):
@@ -403,7 +404,10 @@ def test_xip_crc(data_dir: str, image_file_name: str) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = create_mbi_class("crc_xip", "rt5xx")(app=unsigned_image, load_address=0x08001000)
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("crc_xip", family)(
+        family=family, app=unsigned_image, load_address=0x08001000
+    )
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -427,7 +431,10 @@ def test_ram_crc(data_dir: str, image_file_name: str, ram_addr: int) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = create_mbi_class("crc_ram", "rt5xx")(app=unsigned_image, load_address=ram_addr)
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("crc_ram", family)(
+        family=family, app=unsigned_image, load_address=ram_addr
+    )
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -456,12 +463,14 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    mbi = create_mbi_class("signed_ram", "rt5xx")(
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("signed_ram", family)(
+        family=family,
         app=unsigned_img,
         load_address=ram_addr,
         key_store=keystore,
         hmac_key=MASTER_KEY,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
     )
@@ -496,10 +505,12 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = create_mbi_class("signed_ram", "rt5xx")(
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=ram_addr,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         key_store=key_store,
         cert_block=cert_block,
         signature_provider=signature_provider,
@@ -530,7 +541,9 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    mbi = create_mbi_class("signed_xip", "rt5xx")(
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
+        family=family,
         app=unsigned_img,
         load_address=0x08001000,
         cert_block=cert_block,
@@ -565,10 +578,12 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = create_mbi_class("encrypted_signed_ram", "rt5xx")(
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("encrypted_signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=ram_addr,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=hmac_user_key,
@@ -606,10 +621,12 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = create_mbi_class("encrypted_signed_ram", "rt5xx")(
+    family = FamilyRevision("rt5xx")
+    mbi = MasterBootImage.create_mbi_class("encrypted_signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=ram_addr,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=hmac_user_key,
@@ -649,8 +666,8 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(
-        dek=b"\xA0" * 32,
-        mac=b"\x0B" * 32,
+        dek=b"\xa0" * 32,
+        mac=b"\x0b" * 32,
         nonce=bytes(16),
         timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc),
     )
@@ -668,7 +685,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     # certificate + private key
     cert_block = create_cert_block(data_dir)
     priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
-    signature_provider = get_signature_provider(local_file_key=priv_key)
+    signature_provider = PlainFileSP(priv_key)
 
     boot_image.cert_block = cert_block
     boot_image.signature_provider = signature_provider
@@ -732,8 +749,8 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     sbkek = KeyStore.derive_sb_kek_key(bytes.fromhex(MASTER_KEY))
 
     adv_params = SBV2xAdvancedParams(
-        dek=b"\xA0" * 32,
-        mac=b"\x0B" * 32,
+        dek=b"\xa0" * 32,
+        mac=b"\x0b" * 32,
         nonce=bytes(16),
         timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc),
     )
@@ -752,7 +769,7 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     # certificate + private key
     cert_block = create_cert_block(data_dir)
     priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
-    signature_provider = get_signature_provider(local_file_key=priv_key)
+    signature_provider = PlainFileSP(priv_key)
 
     boot_image.cert_block = cert_block
     boot_image.signature_provider = signature_provider
@@ -813,8 +830,8 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(
-        dek=b"\xA0" * 32,
-        mac=b"\x0B" * 32,
+        dek=b"\xa0" * 32,
+        mac=b"\x0b" * 32,
         nonce=bytes(16),
         timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc),
     )
@@ -833,7 +850,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     # certificate + private key
     cert_block = create_cert_block(data_dir)
     priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
-    signature_provider = get_signature_provider(local_file_key=priv_key)
+    signature_provider = PlainFileSP(priv_key)
 
     boot_image.cert_block = cert_block
     boot_image.signature_provider = signature_provider
@@ -895,8 +912,8 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     key_store = get_keystore(data_dir)
 
     adv_params = SBV2xAdvancedParams(
-        dek=b"\xA0" * 32,
-        mac=b"\x0B" * 32,
+        dek=b"\xa0" * 32,
+        mac=b"\x0b" * 32,
         nonce=bytes(16),
         timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc),
     )
@@ -915,7 +932,8 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     # certificate + private key
     cert_block = create_cert_block(data_dir)
     priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
-    signature_provider = get_signature_provider(local_file_key=priv_key)
+
+    signature_provider = PlainFileSP(priv_key)
 
     boot_image.cert_block = cert_block
     boot_image.signature_provider = signature_provider
@@ -927,23 +945,20 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     fcb_data = align_block(fcb_data, 16)
     plain_image_data = align_block(plain_image_data, 16)
 
-    otfad = Otfad()
     # keys used to encrypt image, for RT5xx always define 4 key blobs!!
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+    otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
+
     counter = bytes.fromhex("5689fab8b4bfb264")
-    otfad.add_key_blob(
-        KeyBlob(0x8001000, 0x80FFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
+    otfad[0] = KeyBlob(0x8001000, 0x80FFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
     # to use random keys: otfad.add_key_blob(KeyBlob(0x8001000, 0x80FFFFF))
-    otfad.add_key_blob(
-        KeyBlob(0x8FFD000, 0x8FFDFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
-    otfad.add_key_blob(
-        KeyBlob(0x8FFE000, 0x8FFEFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
-    otfad.add_key_blob(
-        KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
+    otfad[1] = KeyBlob(0x8FFD000, 0x8FFDFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
+    otfad[2] = KeyBlob(0x8FFE000, 0x8FFEFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
+    otfad[3] = KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
     encr_image_data = otfad.encrypt_image(align_block(plain_image_data, 512), 0x8001000, False)
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.txt"), "r") as f:
         otfad_kek = f.readline()
@@ -1028,8 +1043,8 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     key_store = get_keystore(data_dir)
 
     adv_params = SBV2xAdvancedParams(
-        dek=b"\xA0" * 32,
-        mac=b"\x0B" * 32,
+        dek=b"\xa0" * 32,
+        mac=b"\x0b" * 32,
         nonce=bytes(16),
         timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc),
     )
@@ -1048,7 +1063,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     # certificate + private key
     cert_block = create_cert_block(data_dir)
     priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
-    signature_provider = get_signature_provider(local_file_key=priv_key)
+    signature_provider = PlainFileSP(priv_key)
 
     boot_image.cert_block = cert_block
     boot_image.signature_provider = signature_provider
@@ -1060,23 +1075,20 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     fcb_data = align_block(fcb_data, 16)
     plain_image_data = align_block(plain_image_data, 16)
 
-    otfad = Otfad()
     # keys used to encrypt image, for RT5xx always define 4 key blobs!!
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+    otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
+
     counter = bytes.fromhex("5689fab8b4bfb264")
-    otfad.add_key_blob(
-        KeyBlob(0x8001000, 0x80FFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
+    otfad[0] = KeyBlob(0x8001000, 0x80FFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
     # to use random keys: otfad.add_key_blob(KeyBlob(0x8001000, 0x80FFFFF))
-    otfad.add_key_blob(
-        KeyBlob(0x8FFD000, 0x8FFDFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
-    otfad.add_key_blob(
-        KeyBlob(0x8FFE000, 0x8FFEFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
-    otfad.add_key_blob(
-        KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
-    )  # zero_fill and crc should be used only for testing !
+    otfad[1] = KeyBlob(0x8FFD000, 0x8FFDFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
+    otfad[2] = KeyBlob(0x8FFE000, 0x8FFEFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
+    otfad[3] = KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
+    # zero_fill and crc should be used only for testing !
     encr_image_data = otfad.encrypt_image(align_block(plain_image_data, 512), 0x8001000, False)
 
     # create boot section 0

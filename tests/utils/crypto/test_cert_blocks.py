@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,9 +10,10 @@ import os
 import pytest
 
 from spsdk.crypto.certificate import Certificate
-from spsdk.crypto.signature_provider import get_signature_provider
-from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.crypto.cert_blocks import (
+from spsdk.crypto.signature_provider import PlainFileSP
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.config import Config
+from spsdk.image.cert_block.cert_blocks import (
     CertBlock,
     CertBlockHeader,
     CertBlockV1,
@@ -23,6 +24,7 @@ from spsdk.utils.crypto.cert_blocks import (
     find_root_certificates,
 )
 from spsdk.utils.misc import load_binary
+from spsdk.utils.family import FamilyRevision
 
 
 def test_cert_block_header():
@@ -47,7 +49,7 @@ def test_cert_block_header_invalid():
 
 
 def test_cert_block_basic():
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     # test default values
     assert cb.image_length == 0
     assert cb.alignment == 16
@@ -66,7 +68,7 @@ def test_cert_block_basic():
 def test_cert_block(data_dir):
     cert_obj = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
 
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cb.set_root_key_hash(0, cert_obj.public_key_hash())
     cb.add_certificate(cert_obj)
     assert cb.rkh_index == 0
@@ -84,20 +86,20 @@ def test_cert_block(data_dir):
         cb.add_certificate(ca0_cert)
 
     # test exception if no certificate specified
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cb.set_root_key_hash(0, cert_obj.public_key_hash())
     with pytest.raises(SPSDKError):
         cb.export()
 
     # test exception last certificate is set as CA
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cb.set_root_key_hash(0, ca0_cert.public_key_hash())
     cb.add_certificate(ca0_cert)
     with pytest.raises(SPSDKError):
         cb.export()
 
     # test exception if hash does not match any certificate
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cb.set_root_key_hash(0, ca0_cert.public_key_hash())
     cb.add_certificate(cert_obj)
     with pytest.raises(SPSDKError):
@@ -105,7 +107,7 @@ def test_cert_block(data_dir):
 
 
 def test_add_invalid_cert_in_cert_block(data_dir):
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
         cert_data = f.read()
     with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
@@ -121,7 +123,7 @@ def test_add_invalid_cert_in_cert_block(data_dir):
 
 def test_cert_block_export_invalid(data_dir):
     cert_obj = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cb.set_root_key_hash(0, cert_obj.public_key_hash())
     cb.add_certificate(cert_obj)
     cb.add_certificate(cert_obj)
@@ -143,12 +145,12 @@ def test_invalid_cert_block_header():
 
 
 def test_cert_block_invalid():
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     with pytest.raises(SPSDKError, match="Invalid image length"):
         cb.image_length = -2
     with pytest.raises(SPSDKError, match="Invalid alignment"):
         cb.alignment = -2
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     with pytest.raises(SPSDKError, match="Invalid length of key hash"):
         cb.set_root_key_hash(0, bytes(5))
 
@@ -159,7 +161,7 @@ def test_cert_block_invalid():
         ({}, False, SPSDKError),
         (
             {
-                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "signer": "k0_cert0_2048.pem",
                 "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
                 "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
             },
@@ -168,7 +170,7 @@ def test_cert_block_invalid():
         ),
         (
             {
-                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "signer": "k0_cert0_2048.pem",
                 "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
                 "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
                 "mainRootCertId": 1,
@@ -177,23 +179,20 @@ def test_cert_block_invalid():
             1,
         ),
         ({"mainRootCertId": 1}, True, 1),
-        ({"mainCertChainId": 1}, True, 1),
         ({"mainRootCertId": "2"}, True, 2),
-        ({"mainCertChainId": "2"}, True, 2),
-        ({"mainRootCertId": "1abc"}, False, SPSDKValueError),
-        ({"mainRootCertId": "1abc"}, False, SPSDKValueError),
-        ({"mainRootCertId": 1, "mainCertChainId": 1}, True, 1),
-        ({"mainRootCertId": 1, "mainCertChainId": 2}, False, SPSDKError),
+        ({"mainRootCertId": "1abc"}, False, SPSDKError),
+        ({"mainRootCertId": "1abc"}, False, SPSDKError),
     ],
 )
 def test_get_main_cert_index(data_dir, config, passed, expected_result):
-    search_paths = [os.path.join(data_dir, "certs_and_keys")]
+    cfg = Config(config)
+    cfg.search_paths = [os.path.join(data_dir, "certs_and_keys")]
     if passed:
-        result = CertBlockV1.get_main_cert_index(config, search_paths=search_paths)
+        result = CertBlockV1.get_main_cert_index(cfg)
         assert result == expected_result
     else:
         with pytest.raises(expected_result):
-            CertBlockV1.get_main_cert_index(config, search_paths=search_paths)
+            CertBlockV1.get_main_cert_index(cfg)
 
 
 @pytest.mark.parametrize(
@@ -201,7 +200,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
     [
         (
             {
-                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "signer": "k0_cert0_2048.pem",
                 "rootCertificate0File": "root_k1_signed_cert0_noca.der.cert",
                 "rootCertificate1File": "root_k0_signed_cert0_noca.der.cert",
                 "rootCertificate2File": "root_k1_signed_cert0_noca.der.cert",
@@ -212,7 +211,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
         ),
         (
             {
-                "mainRootCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "signer": "k0_cert0_2048.pem",
                 "rootCertificate0File": "root_k1_signed_cert0_noca.der.cert",
                 "rootCertificate1File": "root_k0_signed_cert0_noca.der.cert",
                 "rootCertificate2File": "root_k1_signed_cert0_noca.der.cert",
@@ -223,7 +222,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
         ),
         (
             {
-                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "signer": "k0_cert0_2048.pem",
                 "rootCertificate0File": "root_k1_signed_cert0_noca.der.cert",
                 "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
                 "rootCertificate2File": "root_k1_signed_cert0_noca.der.cert",
@@ -244,7 +243,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
         ),
         (
             {
-                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "signer": "k0_cert0_2048.pem",
                 "rootCertificate0File": "non_existing.cert",
                 "rootCertificate1File": "another_non_existing.cert",
                 "rootCertificate2File": "one_more_non_existing.cert",
@@ -254,7 +253,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
         ),
         (
             {
-                "mainCertPrivateKeyFile": "non_existing.pem",
+                "signer": "non_existing.pem",
                 "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
                 "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
                 "rootCertificate2File": "root_k2_signed_cert0_noca.der.cert",
@@ -269,8 +268,9 @@ def test_find_main_cert_index(data_dir, config, index, cert_block_version):
     cert_block_class: CertBlock = {"cert_block_v1": CertBlockV1, "cert_block_v21": CertBlockV21}[
         cert_block_version
     ]
-    search_paths = [os.path.join(data_dir, "certs_and_keys")]
-    found_index = cert_block_class.find_main_cert_index(config, search_paths=search_paths)
+    cfg = Config(config)
+    cfg.search_paths = [os.path.join(data_dir, "certs_and_keys")]
+    found_index = cert_block_class.find_main_cert_index(cfg)
     assert found_index == index
 
 
@@ -352,9 +352,7 @@ def test_isk_cert_lite(data_dir):
     pub_key = f"{data_dir}/ec_secp256r1_cert0.pem"
     isk_cert = load_binary(pub_key)
 
-    signature_provider = get_signature_provider(
-        local_file_key=main_root_private_key_file,
-    )
+    signature_provider = PlainFileSP(main_root_private_key_file)
 
     cert = IskCertificateLite(isk_cert)
     cert.create_isk_signature(signature_provider)
@@ -365,13 +363,11 @@ def test_isk_cert_lite(data_dir):
 def test_cert_block_vx(data_dir):
     main_root_private_key_file = f"{data_dir}/ec_pk_secp256r1_cert0.pem"
     isk_certificate = f"{data_dir}/ec_secp256r1_cert0.pem"
-
-    signature_provider = get_signature_provider(
-        local_file_key=main_root_private_key_file,
-    )
+    signature_provider = PlainFileSP(main_root_private_key_file)
     isk_cert = load_binary(isk_certificate)
 
     cert_block = CertBlockVx(
+        FamilyRevision("Ambassador"),
         signature_provider=signature_provider,
         isk_cert=isk_cert,
         self_signed=True,
@@ -387,14 +383,13 @@ def test_cert_block_v31(data_dir):
     main_root_private_key_file = f"{data_dir}/ec_pk_secp256r1_cert0.pem"
     isk_certificate = f"{data_dir}/ec_secp256r1_cert0.pem"
 
-    signature_provider = get_signature_provider(
-        local_file_key=main_root_private_key_file,
-    )
+    signature_provider = PlainFileSP(main_root_private_key_file)
     isk_cert = load_binary(isk_certificate)
 
     rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
 
     cert = CertBlockV21(
+        FamilyRevision("lpc55s36"),
         root_certs=rot,
         signature_provider=signature_provider,
         isk_cert=isk_cert,

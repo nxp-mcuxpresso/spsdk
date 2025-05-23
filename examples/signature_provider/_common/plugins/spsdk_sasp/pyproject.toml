@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["spsdk_sasp"]
+
+[tool.setuptools.dynamic]
+version = { attr = "spsdk_sasp.__version__" }
+
+
+[project]
+dynamic = ["version"]
+name = "spsdk_sasp"
+description = "My Signature Provider plugin for SPSDK."
+
+entry-points = { "spsdk.sp" = { mysp = "spsdk_sasp.provider" } }
+
+requires-python = ">= 3.9"
+dependencies = ["spsdk>2.1"]
+authors = [{ name = "NXP" }]
+maintainers = [
+    { name = "Marek Bohdan", email = "marek.bohdan@nxp.com" },
+]
+
+keywords = ["NXP", "SPSDK", "mysp"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+junit_family = "xunit1"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 100
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true

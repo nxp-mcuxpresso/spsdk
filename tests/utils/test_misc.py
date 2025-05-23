@@ -148,7 +148,7 @@ def test_align_block_invalid_input():
         # align to 4
         (b"\x00\x01\x02\x03", 4, 0, b"\x00\x01\x02\x03"),
         (b"\x00\x01\x02", 4, 0, b"\x00\x01\x02\x00"),
-        (b"\x00\x01", 4, 255, b"\x00\x01\xFF\xFF"),
+        (b"\x00\x01", 4, 255, b"\x00\x01\xff\xff"),
     ],
 )
 def test_add_padding(test_input: bytes, length: int, padding: int, expected: bytes) -> None:

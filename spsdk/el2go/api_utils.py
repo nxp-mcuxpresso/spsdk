@@ -14,15 +14,18 @@ import math
 import struct
 import time
 from enum import Enum
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from spsdk.el2go.client import EL2GOApiResponse, EL2GOClient, SPSDKHTTPClientError
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.el2go.secure_objects import SecureObjects
 from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation
-from spsdk.fuses.fuse_registers import FuseRegister, FuseRegisters
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.fuses.fuse_registers import FuseRegister
+from spsdk.fuses.fuses import Fuses
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
+from spsdk.utils.family import FamilyRevision, get_db, get_families, update_validation_schema_family
 from spsdk.utils.misc import Timeout, load_binary, value_to_int
 
 logger = logging.getLogger(__name__)
@@ -91,8 +94,7 @@ class EL2GOTPClient(EL2GOClient):
         api_key: str,
         nc12: int,
         device_group_id: int,
-        family: str,
-        revision: str = "latest",
+        family: FamilyRevision,
         url: str = "https://api.edgelock2go.com",
         timeout: int = 60,
         download_timeout: int = 300,
@@ -105,7 +107,6 @@ class EL2GOTPClient(EL2GOClient):
         :param nc12: Product (12NC) number
         :param device_group_id: Device group to work with
         :param family: Target chip family
-        :param revision: Target chip silicon revision, defaults to "latest"
         :param url: EL2GO Server API URL, defaults to "https://api.edgelock2go.com"
         :param timeout: Timeout for each API call, defaults to 60
         :param download_timeout: Timeout for downloading Secure Objects, defaults to 300
@@ -116,9 +117,8 @@ class EL2GOTPClient(EL2GOClient):
         self.delay = delay
         self.download_timeout = download_timeout
         self.family = family
-        self.revision = revision
 
-        self.db = get_db(device=family, revision=revision)
+        self.db = get_db(family=family)
         self.prov_method = ProvisioningMethod(
             self.db.get_str(DatabaseManager.EL2GO_TP, "prov_method")
         )
@@ -217,12 +217,12 @@ class EL2GOTPClient(EL2GOClient):
             "hardware-family-type": [self.hardware_family_type],
             "owner-domain-types": self.domains,
         }
+
         response = self._handle_el2go_request(method=self.Method.GET, url=url, param_data=data)
         self.response_handling(response=response, url=url)
         if not response.json_body["content"]:
-            raise SPSDKError(
-                f"No Secure Objects found for device {device_id} using domain(s): {', '.join(self.domains)}"
-            )
+            return WAIT_STATES[0]
+
         for provisioning in response.json_body["content"]:
             # fail early if generation failed
             if provisioning["provisioningState"] in BAD_STATES:
@@ -292,7 +292,11 @@ class EL2GOTPClient(EL2GOClient):
         return data
 
     def serialize_provisionings(self, provisionings: dict) -> bytes:
-        """Serialize Secure Objects from JSON object to bytes."""
+        """Serialize Secure Objects from JSON object to bytes.
+
+        :param provisionings: Dictionary containing provisioning information
+        :return: Serialized bytes of provisioning data
+        """
         data = bytes()
         for dev_prov in provisionings:
             data += self._serialize_single_provisioning(dev_prov)
@@ -547,8 +551,8 @@ class EL2GOTPClient(EL2GOClient):
             # don't use top-level import to save time in production, where this functionality is not required
             from spsdk.pfr.pfr import CMPA
 
-            cmpa = CMPA(family=self.family, revision=self.revision)
-            cmpa.set_config({})
+            cmpa = CMPA(family=self.family)
+            cmpa.set_config(Config())
             cmpa_data = cmpa.export(draw=False)
             cmpa_address = self.db.get_int(DatabaseManager.PFR, ["cmpa", "address"])
 
@@ -558,11 +562,15 @@ class EL2GOTPClient(EL2GOClient):
         raise SPSDKUnsupportedOperation(f"Unsupported cleanup method {self.clean_method}")
 
     @classmethod
-    def get_validation_schema(cls, family: str, revision: str = "latest") -> dict:  # type: ignore[override]  # pylint: disable=arguments-differ
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:  # type: ignore[override]  # pylint: disable=arguments-differ
         """Get JSON schema for validating configuration data."""
         schema_file = get_schema_file(DatabaseManager.EL2GO_TP)
+        schema_family = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch=schema_family["properties"], devices=cls.get_supported_families(), family=family
+        )
         schema = schema_file["el2go_tp"]
-        db = get_db(device=family, revision=revision)
+        db = get_db(family=family)
 
         # fw_load_address = db.get_int(DatabaseManager.EL2GO_TP, "fw_load_address")
         # if fw_load_address > 0:
@@ -586,21 +594,21 @@ class EL2GOTPClient(EL2GOClient):
             schema["properties"].update(schema_file["prov_fw_path"]["properties"])
             schema["required"].extend(schema_file["prov_fw_path"]["required"])
 
-        return schema
+        return [schema_family, schema]
 
     @classmethod
-    def get_supported_families(cls) -> list[str]:
+    def get_supported_families(cls) -> list[FamilyRevision]:
         """Get family names supported by WPCTarget."""
         return get_families(DatabaseManager.EL2GO_TP)
 
     @classmethod
-    def generate_config_template(cls, family: str, revision: str = "latest") -> str:  # type: ignore[override]  # pylint: disable=arguments-differ
+    def get_config_template(cls, family: FamilyRevision) -> str:  # type: ignore[override]  # pylint: disable=arguments-differ
         """Generate configuration YAML template for given family."""
-        schema = cls.get_validation_schema(family=family, revision=revision)
-        schema["properties"]["family"]["template_value"] = family
-        schema["properties"]["revision"]["template_value"] = revision
-        return super().generate_config_template(
-            schemas=[schema],
+        schema = cls.get_validation_schemas(family=family)
+
+        return super().get_config_template(
+            family,
+            schemas=schema,
             title=f"Configuration of EdgeLock 2GO Offline Provisioning flow for {family}",
         )
 
@@ -611,36 +619,25 @@ def split_user_data(data: bytes) -> tuple[bytes, bytes]:
     return internal, external
 
 
-def get_el2go_otp_binary(config_data: dict) -> bytes:
+def get_el2go_otp_binary(config: Config) -> bytes:
     """Create EL2GO OTP Binary from the user config data."""
-    if "family" not in config_data:
-        raise SPSDKError("Family is not defined in config data.")
-    if "registers" not in config_data:
-        raise SPSDKError("Registers are not defined in config data.")
+    defaults = Fuses.load_from_config(config)
 
-    family: str = config_data["family"]
-    revision: str = config_data.get("revision", "latest")
-    user_data: dict = config_data["registers"]
-    selected_register_names: list[str] = list(user_data.keys())
-
-    assert isinstance(family, str)
-    defaults = FuseRegisters(family=family, revision=revision)
-    defaults.load_yml_config(user_data)
-
-    logger.info(f"Selected registers {selected_register_names}")
+    selected_register_names: list[str] = list(config.get_dict("registers").keys())
     if not selected_register_names:
         raise SPSDKError("No OTP fuses were decoded from the user configuration.")
+    logger.info(f"Selected registers {selected_register_names}")
 
     selected_registers: list[FuseRegister] = []
     for reg_name in selected_register_names:
         try:
-            reg = defaults.find_reg(name=reg_name, include_group_regs=True)
+            reg = defaults.fuse_regs.find_reg(name=reg_name, include_group_regs=True)
             selected_registers.append(reg)
         except SPSDKRegsErrorRegisterNotFound as e:
             raise SPSDKError(f"Invalid fuse name found in user configuration: {reg_name}") from e
 
     data = bytes()
-    ignored = _get_ignored_otp_indexes(family=family)
+    ignored = _get_ignored_otp_indexes(family=defaults.family)
     for user_reg in selected_registers:
         if _should_ignore_register(reg=user_reg, ignore_list=ignored):
             logger.info(f"Ignoring OTP: {user_reg.uid} ({user_reg.name})")
@@ -659,10 +656,10 @@ def get_el2go_otp_binary(config_data: dict) -> bytes:
     return data
 
 
-def _get_ignored_otp_indexes(family: str) -> list[int]:
+def _get_ignored_otp_indexes(family: FamilyRevision) -> list[int]:
     """Get all list of indexes of OTPs that should be ignored."""
     result: list[int] = []
-    db = get_db(device=family)
+    db = get_db(family=family)
     ignored_otp = db.get_list(DatabaseManager.EL2GO_TP, "ignored_otp", default=[])
     ignored_otp_ranges = db.get_list(DatabaseManager.EL2GO_TP, "ignored_otp_ranges", default=[])
     for idx in ignored_otp:

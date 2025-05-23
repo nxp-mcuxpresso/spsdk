@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,13 +14,16 @@ from typing import Optional
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKNotImplementedError, SPSDKValueError
-from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import DatabaseManager, get_families
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import load_hex_string, write_file
 
 
-class DevHsm(BaseClass):
+class DevHsm(FeatureBaseClass):
     """Base class for DEVHSM."""
+
+    FEATURE = DatabaseManager.DEVHSM
 
     F_DEVHSM = DatabaseManager.DEVHSM
     F_BUFFER = DatabaseManager.COMM_BUFFER
@@ -39,13 +42,13 @@ class DevHsm(BaseClass):
 
     RESET_TIMEOUT = 500  # timeout for reset in milliseconds
 
-    def __init__(self, family: str, workspace: Optional[str] = None) -> None:
+    def __init__(self, family: FamilyRevision, workspace: Optional[str] = None) -> None:
         """Device HSM base class constructor.
 
         :param family: chip family
         :workspace: optional path to workspace
         """
-        self.database = DatabaseManager().db.devices.get(family).revisions.get("latest")
+        self.database = get_db(family)
 
         self.workspace = workspace
         self.family = family
@@ -55,24 +58,16 @@ class DevHsm(BaseClass):
             os.mkdir(self.workspace)
 
     @abc.abstractmethod
-    def __repr__(self) -> str:
-        """String representation."""
-
-    @abc.abstractmethod
-    def __str__(self) -> str:
-        """String object representation."""
-
-    @abc.abstractmethod
     def create_sb(self) -> None:
         """Create SB file."""
 
-    @abc.abstractmethod
-    def export(self) -> bytes:
-        """Export final SB file."""
-
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array."""
+        """Parse object from bytes array.
+
+        :param data: Object data
+        :raises SPSDKNotImplementedError: If parsing is not implemented
+        """
         raise SPSDKNotImplementedError("Not implemented")
 
     @abc.abstractmethod
@@ -84,19 +79,6 @@ class DevHsm(BaseClass):
         self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
     ) -> bytes:
         """Set OEM Master share on the device."""
-
-    @classmethod
-    @abc.abstractmethod
-    def generate_config_template(cls, family: str) -> str:
-        """Generate configuration for selected family."""
-
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Get the list of supported families by Device HSM.
-
-        :return: List of supported families.
-        """
-        return get_families(DatabaseManager.DEVHSM)
 
     def store_temp_res(self, file_name: str, data: bytes, group: Optional[str] = None) -> None:
         """Storing temporary files into workspace.
@@ -117,8 +99,8 @@ class DevHsm(BaseClass):
     def get_devbuff_base_address(self, index: int) -> int:
         """Get devbuff base address."""
         # pylint:disable=superfluous-parens; Not superfluous, readability counts
-        if not (0 <= index < 4):
-            raise SPSDKValueError(f"Invalid index: {index}. Expected 0-3.")
+        if not (0 <= index < 10):
+            raise SPSDKValueError(f"Invalid index: {index}. Expected 0-9.")
         return self.devbuff_base + index * self.DEVBUFF_SIZE
 
     def get_keyblob_offset(self) -> int:
@@ -132,19 +114,6 @@ class DevHsm(BaseClass):
     def get_keyblob_position(self) -> int:
         """Get keyblob position from database."""
         return self.database.get_int(self.F_DEVHSM, "key_blob_command_position")
-
-    @staticmethod
-    def get_cust_mk_sk(key: str, search_paths: Optional[list[str]] = None) -> bytes:
-        """Get binary from text or binary file.
-
-        :param key: Binary customer master key symmetric key file.
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :return: Binary array loaded from file.
-        :raises SPSDKValueError: When invalid input value is recognized.
-        """
-        return load_hex_string(
-            source=key, expected_size=32, search_paths=search_paths, name="CUST_MK_SK INPUT"
-        )
 
     @staticmethod
     def get_oem_share_input(
@@ -161,19 +130,8 @@ class DevHsm(BaseClass):
             source=binary, expected_size=16, search_paths=search_paths, name="OEM SHARE INPUT"
         )
 
-    @staticmethod
-    def get_oem_master_share(
-        binary: Optional[str], search_paths: Optional[list[str]] = None
-    ) -> Optional[bytes]:
-        """Get binary from text or binary file.
+    def __repr__(self) -> str:
+        return "DevHSM"
 
-        :param binary: Path to binary file.
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :return: Binary array loaded from file.
-        :raises SPSDKValueError: When invalid input value is recognized.
-        """
-        if not binary:
-            return None
-        return load_hex_string(
-            source=binary, expected_size=64, search_paths=search_paths, name="OEM ENC MASTER SHARE"
-        )
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__} for {self.family}"

@@ -98,21 +98,6 @@ It allows user to:
 
     blhost --help
 
-
-:ref:`ifr`
-================
-
-The *ifr* application allows user to generate IFR0:
-
-- generate user configuration
-- parse binary and extract configuration
-- generate binary data
-- list supported devices
-
-.. code:: bash
-
-    ifr --help
-
 :ref:`nxpcrypto`
 =================
 
@@ -216,14 +201,13 @@ The *nxpmemcfg* application allows users to:
 :ref:`pfr`
 ==========
 
-The *pfr* application is a utility for generating and parsing Protected Flash Region data (CMPA, CFPA).
+The *pfr* application is a utility for generating and parsing The protected flash region (called either IFR or PFR) data (CMPA, CFPA, ROMCFG, CMACTABLE).
 
 It allows user to:
 
 - generate user configuration
 - parse binary and extract configuration
 - generate binary data.
-- generate HTML page with brief description of CMPA/CFPA configuration fields
 - list supported devices
 
 .. code:: bash
@@ -288,6 +272,15 @@ The nxpuuu CLI application is designed for image deployment based on the libUUU 
 
     nxpuuu --help
 
+:ref:`nxpshe`
+=================
+
+The nxpshe CLI application is a tool for working with NXP's Secure Hardware Extension (SHE) protocol.
+
+.. code:: bash
+
+    nxpshe --help
+
 -------------------------------
 Deleted/deprecated applications
 -------------------------------
@@ -308,3 +301,20 @@ elftosb
 =========
 
 .. note:: This tool was replaced by :ref:`nxpimage`
+
+
+tpconfig
+========
+
+.. note:: SmartCard Trust Provisioning has been discontinued
+
+
+tphost
+========
+
+.. note:: SmartCard Trust Provisioning has been discontinued
+
+ifr
+========
+
+.. note:: The IFR tool hes been merged to ref:`pfr` tool

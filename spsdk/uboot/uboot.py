@@ -67,15 +67,19 @@ class UbootSerial:
         :param count: count of bytes
         :raises SPSDKError: Invalid CRC of data
         """
-        if not self.crc:
+        try:
+            if not self.crc:
+                return
+            crc_command = f"crc32 {hex(address)} {hex(count)}"
+            self.write(crc_command)
+            hexdump_str = self.LINE_FEED.join(self.read_output().splitlines())
+            if "==>" in hexdump_str:
+                hexdump_str += self.LINE_FEED.join(self.read_output().splitlines())
+            hexdump_str = hexdump_str.splitlines()[-2][-8:]
+            crc_obtained = int("0x" + hexdump_str, base=16)
+        except Exception as e:
+            logger.info(f"CRC calculation failed: {e}")
             return
-        crc_command = f"crc32 {hex(address)} {hex(count)}"
-        self.write(crc_command)
-        hexdump_str = self.LINE_FEED.join(self.read_output().splitlines())
-        if "==>" in hexdump_str:
-            hexdump_str += self.LINE_FEED.join(self.read_output().splitlines())
-        hexdump_str = hexdump_str.splitlines()[-2][-8:]
-        crc_obtained = int("0x" + hexdump_str, base=16)
         logger.debug(f"CRC command:\n{crc_command}\n{crc_obtained}")
         crc_ob = from_crc_algorithm(CrcAlg.CRC32)
         calculated_crc = crc_ob.calculate(data)
@@ -349,16 +353,20 @@ class UbootFastboot:
         :param count: count of bytes
         :raises SPSDKError: Invalid CRC of data
         """
-        if not self.crc:
-            return
-        crc_command = f"crc32 {hex(address)} {hex(count)}"
-        self.write(crc_command)
         try:
-            hexdump_str = self.uuu.response.splitlines()[0][-8:].strip()
-        except IndexError as e:
-            raise SPSDKIndexError("Cannot get CRC response") from e
-        logger.debug(f"CRC read: {hexdump_str}")
-        crc_obtained = int("0x" + hexdump_str, base=16)
+            if not self.crc:
+                return
+            crc_command = f"crc32 {hex(address)} {hex(count)}"
+            self.write(crc_command)
+            try:
+                hexdump_str = self.uuu.response.splitlines()[0][-8:].strip()
+            except IndexError as e:
+                raise SPSDKIndexError("Cannot get CRC response") from e
+            logger.debug(f"CRC read: {hexdump_str}")
+            crc_obtained = int("0x" + hexdump_str, base=16)
+        except Exception as e:
+            logger.info(f"CRC calculation failed: {e}")
+            return
         logger.debug(f"CRC command:\n{crc_command!r}\n{crc_obtained!r}")
         crc_ob = from_crc_algorithm(CrcAlg.CRC32)
         calculated_crc = crc_ob.calculate(data)

@@ -14,13 +14,14 @@ from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError
 from spsdk.image.keystore import KeySourceType, KeyStore
-from spsdk.image.mbi.mbi import MasterBootImage, create_mbi_class, get_all_mbi_classes
+from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mbi.mbi_mixin import Mbi_MixinRelocTable, MultipleImageEntry, MultipleImageTable
 from spsdk.image.trustzone import TrustZone
-from spsdk.utils.crypto.cert_blocks import CertBlockV1
+from spsdk.utils.config import Config
+from spsdk.image.cert_block.cert_blocks import CertBlockV1
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import load_binary, load_configuration, write_file
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.family import FamilyRevision
 
 #################################################################
 # To create data sets for Master Boot Image (MBI)
@@ -28,7 +29,9 @@ from spsdk.utils.schema_validator import check_config
 #################################################################
 
 
-def certificate_block(data_dir, der_file_names, index=0, chain_der_file_names=None) -> CertBlockV1:
+def certificate_block(
+    data_dir, family, der_file_names, index=0, chain_der_file_names=None
+) -> CertBlockV1:
     """
     :param data_dir: absolute path of data dir where the test keys are located
     :param der_file_names: list of filenames of the DER certificate
@@ -46,7 +49,7 @@ def certificate_block(data_dir, der_file_names, index=0, chain_der_file_names=No
             cert_data_list.append(None)
 
     # create certification block
-    cert_block = CertBlockV1(build_number=1)
+    cert_block = CertBlockV1(family=family, build_number=1)
     cert_block.add_certificate(cert_data_list[index])
     if chain_der_file_names:
         for der_file_name in chain_der_file_names:
@@ -75,7 +78,9 @@ def certificate_block(data_dir, der_file_names, index=0, chain_der_file_names=No
 )
 def test_lpc55s3x_image_version(img_ver, expected_val):
     """Test of generating of various image versions into binary MBI"""
-    mbi = create_mbi_class("crc_xip", "lpc55s3x")(
+    family = FamilyRevision("lpc55s3x")
+    mbi = MasterBootImage.create_mbi_class("crc_xip", family)(
+        family=family,
         app=bytes(range(256)),
         image_version=img_ver,
     )
@@ -121,10 +126,8 @@ def test_plain_xip_crc_no_tz(data_dir, input_img, expected_mbi: str):
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
 
-    mbi = create_mbi_class("crc_xip", "lpc55s6x")(
-        app=org_data,
-        trust_zone=TrustZone.disabled(),
-    )
+    family = FamilyRevision("lpc55s6x")
+    mbi = MasterBootImage.create_mbi_class("crc_xip", family)(family, app=org_data)
 
     assert _compare_image(mbi, data_dir, expected_mbi)
 
@@ -161,14 +164,16 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
+    family = FamilyRevision("rt6xx")
     # create certification block
-    cert_block = certificate_block(data_dir, [der_certificate])
+    cert_block = certificate_block(data_dir, family, [der_certificate])
 
     priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("signed_xip", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
+        family=family,
         app=org_data,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
     )
@@ -202,8 +207,9 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
+    family = FamilyRevision("rt6xx")
     # create certification block
-    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    cert_block = certificate_block(data_dir, family, ["selfsign_2048_v3.der.crt"])
 
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
@@ -214,10 +220,11 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
             key_store_bin = f.read()
         key_store = KeyStore(KeySourceType.KEYSTORE, key_store_bin)
 
-    mbi = create_mbi_class("signed_ram", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=0x12345678,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=user_key,
@@ -266,15 +273,17 @@ def test_encrypted_ram_single_certificate_no_tz(
             key_store_bin = f.read()
     key_store = KeyStore(keysource, key_store_bin)
     ctr_init_vector = bytes.fromhex(ctr_iv)
+    family = FamilyRevision("rt6xx")
     # create certification block
-    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    cert_block = certificate_block(data_dir, family, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
-    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("encrypted_signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=0x12345678,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=user_key,
@@ -291,13 +300,15 @@ def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store = KeyStore(KeySourceType.KEYSTORE, None)
-    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    family = FamilyRevision("rt6xx")
+    cert_block = certificate_block(data_dir, family, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("encrypted_signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=0x12345678,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=user_key,
@@ -345,14 +356,16 @@ def test_signed_xip_multiple_certificates_no_tz(
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
+    family = FamilyRevision("rt6xx")
     # create certification block
-    cert_block = certificate_block(data_dir, der_certificates, root_index)
+    cert_block = certificate_block(data_dir, family, der_certificates, root_index)
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
-    mbi = create_mbi_class("signed_xip", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
+        family=family,
         app=org_data,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
     )
@@ -362,6 +375,7 @@ def test_signed_xip_multiple_certificates_no_tz(
 
 def test_signed_xip_multiple_certificates_invalid_input(data_dir):
     """Test invalid input for multiple certificates"""
+    family = FamilyRevision("rt6xx")
     # indexed certificate is not specified
     der_file_names = [
         "selfsign_4096_v3.der.crt",
@@ -369,7 +383,7 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
         "selfsign_2048_v3.der.crt",
     ]
     with pytest.raises(IndexError):
-        certificate_block(data_dir, der_file_names, 3)
+        certificate_block(data_dir, family, der_file_names, 3)
 
     # indexed certificate is not specified
     der_file_names = [
@@ -379,17 +393,18 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
         "selfsign_2048_v3.der.crt",
     ]
     with pytest.raises(SPSDKError):
-        certificate_block(data_dir, der_file_names, 1)
+        certificate_block(data_dir, family, der_file_names, 1)
 
     # public key in certificate and private key does not match
     der_file_names = ["selfsign_4096_v3.der.crt"]
-    cert_block = certificate_block(data_dir, der_file_names, 0)
+    cert_block = certificate_block(data_dir, family, der_file_names, 0)
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     with pytest.raises(SPSDKError):
-        create_mbi_class("signed_xip", "rt6xx")(
+        MasterBootImage.create_mbi_class("signed_xip", family)(
+            family=family,
             app=bytes(range(128)),
-            trust_zone=TrustZone.disabled(),
+            trust_zone=None,
             cert_block=cert_block,
             signature_provider=signature_provider,
         ).export()
@@ -398,7 +413,7 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
     der_file_names = ["selfsign_4096_v3.der.crt"]
     chain_certificates = ["ch3_crt2_v3.der.crt"]
     with pytest.raises(SPSDKError):
-        certificate_block(data_dir, der_file_names, 0, chain_certificates)
+        certificate_block(data_dir, family, der_file_names, 0, chain_certificates)
 
 
 @pytest.mark.parametrize(
@@ -432,14 +447,16 @@ def test_signed_xip_certificates_chain_no_tz(
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
+    family = FamilyRevision("rt6xx")
     # create certification block
-    cert_block = certificate_block(data_dir, der_certificates, 0, chain_certificates)
+    cert_block = certificate_block(data_dir, family, der_certificates, 0, chain_certificates)
     priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
-    mbi = create_mbi_class("signed_xip", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
+        family=family,
         app=org_data,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
     )
@@ -463,10 +480,11 @@ def test_plain_xip_crc_default_tz(data_dir, input_img, expected_mbi):
     """
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
-
-    mbi = create_mbi_class("crc_xip", "rt6xx")(
+    family = FamilyRevision("rt6xx")
+    mbi = MasterBootImage.create_mbi_class("crc_xip", family)(
+        family=family,
         app=org_data,
-        trust_zone=TrustZone.enabled(),
+        trust_zone=TrustZone(FamilyRevision("rt6xx")),
     )
 
     assert _compare_image(mbi, data_dir, expected_mbi)
@@ -491,11 +509,12 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
     """
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
-
-    mbi = create_mbi_class("crc_ram", "rt6xx")(
+    family = FamilyRevision("rt6xx")
+    mbi = MasterBootImage.create_mbi_class("crc_ram", family)(
+        family=family,
         app=org_data,
         load_address=load_address,
-        trust_zone=TrustZone.enabled(),
+        trust_zone=TrustZone(family),
     )
 
     assert _compare_image(mbi, data_dir, expected_mbi)
@@ -544,7 +563,7 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
             "evkmimxrt595_hello_world.bin",
             "rt5xx_empty.yaml",
             "rt5xx",
-            "evkmimxrt595_hello_world_xip_crc_custom_tz_mbi.bin",
+            "evkmimxrt595_hello_world_xip_crc_default_tz_mbi.bin",
         ),
         (
             "evkmimxrt595_hello_world.bin",
@@ -588,11 +607,12 @@ def test_plain_xip_crc_custom_tz(data_dir, input_img, tz_config, family, expecte
     """
     org_data = load_binary(os.path.join(data_dir, input_img))
     # expected_data = load_binary(os.path.join(data_dir, expected_mbi))
-    tz_presets = load_configuration(os.path.join(data_dir, tz_config))["trustZonePreset"]
-
-    mbi = create_mbi_class("crc_xip", "rt6xx")(
+    tz_cfg = Config.create_from_file(os.path.join(data_dir, tz_config))
+    family = FamilyRevision(family)
+    mbi = MasterBootImage.create_mbi_class("crc_xip", family)(
+        family=family,
         app=org_data,
-        trust_zone=TrustZone(family=family, customizations=tz_presets),
+        trust_zone=TrustZone.load_from_config(tz_cfg),
     )
 
     assert _compare_image(mbi, data_dir, expected_mbi)
@@ -606,19 +626,19 @@ def test_multiple_images_with_relocation_table(data_dir):
     img1_data = load_binary(os.path.join(data_dir, "multicore", "testfffffff.bin"))
     img2_data = load_binary(os.path.join(data_dir, "multicore", "special_boot.bin"))
 
-    trust_zone_data = load_configuration(os.path.join(data_dir, "multicore", "rt5xxA0.yaml"))[
-        "trustZonePreset"
-    ]
+    trust_zone_config = Config.create_from_file(os.path.join(data_dir, "multicore", "rt5xxA0.yaml"))
 
     table = MultipleImageTable()
     table.add_entry(MultipleImageEntry(img1_data, 0x80000))
     table.add_entry(MultipleImageEntry(img2_data, 0x80600))
 
-    mbi = create_mbi_class("crc_ram", "rt6xx")(
+    family = FamilyRevision("rt6xx")
+    mbi = MasterBootImage.create_mbi_class("crc_ram", family)(
+        family=family,
         app=img_data,
         app_table=table,
         load_address=0,
-        trust_zone=TrustZone.custom("rt5xx", trust_zone_data),
+        trust_zone=TrustZone.load_from_config(trust_zone_config),
     )
 
     assert _compare_image(mbi, os.path.join(data_dir, "multicore"), "expected_output.bin")
@@ -634,12 +654,13 @@ def test_loading_relocation_table(tests_root_dir, data_dir):
             self.search_paths = [tests_root_dir]
 
     test_cls = TestAppTable()
-    cfg = load_configuration(os.path.join(data_dir, "test_app_table.yaml"))
+    cfg = Config.create_from_file(os.path.join(data_dir, "test_app_table.yaml"))
+    cfg.search_paths.append(tests_root_dir)
     # Test validation by JSON SCHEMA
     schemas = []
     schema_cfg = get_schema_file(DatabaseManager.MBI)
     schemas.append(schema_cfg["app_table"])
-    check_config(cfg, schemas, search_paths=[tests_root_dir])
+    cfg.check(schemas)
     # Test Load
     test_cls.mix_load_from_config(cfg)
 
@@ -663,13 +684,15 @@ def test_master_boot_image_invalid_hmac(data_dir):
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store = KeyStore(KeySourceType.KEYSTORE, None)
-    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    family = FamilyRevision("rt6xx")
+    cert_block = certificate_block(data_dir, family, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("encrypted_signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=0x12345678,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=user_key,
@@ -685,13 +708,15 @@ def test_invalid_export_mbi(data_dir):
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store_bin = None
     key_store = KeyStore(KeySourceType.KEYSTORE, key_store_bin)
-    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    family = FamilyRevision("rt6xx")
+    cert_block = certificate_block(data_dir, family, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
+    mbi = MasterBootImage.create_mbi_class("encrypted_signed_ram", family)(
+        family=family,
         app=org_data,
         load_address=0x12345678,
-        trust_zone=TrustZone.disabled(),
+        trust_zone=None,
         cert_block=cert_block,
         signature_provider=signature_provider,
         hmac_key=user_key,
@@ -708,7 +733,8 @@ def test_invalid_export_mbi(data_dir):
 
 
 def test_invalid_image_base_address(data_dir):
-    mbi = create_mbi_class("plain_xip", "rt6xx")()
+    family = FamilyRevision("rt6xx")
+    mbi = MasterBootImage.create_mbi_class("plain_xip", family)(family)
     with pytest.raises(SPSDKError):
         mbi.load_from_config(
             load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
@@ -724,10 +750,10 @@ def test_invalid_image_base_address(data_dir):
 @pytest.mark.parametrize(
     "family,mbi_image",
     [
-        ("mimxrt595s", "evkmimxrt595_hello_world_xip_crc_no_tz_mbi.bin"),
+        (FamilyRevision("mimxrt595s"), "evkmimxrt595_hello_world_xip_crc_no_tz_mbi.bin"),
     ],
 )
-def test_parse_image_with_additional_padding(data_dir, family: str, mbi_image: str):
+def test_parse_image_with_additional_padding(data_dir, family: FamilyRevision, mbi_image: str):
     with open(os.path.join(data_dir, mbi_image), "rb") as f:
         org_data = f.read()
     extra_padding = bytes(64)
@@ -735,7 +761,17 @@ def test_parse_image_with_additional_padding(data_dir, family: str, mbi_image: s
     assert isinstance(mbi, MasterBootImage)
 
 
-def test_get_mbi_classes():
-    mbi_classes = get_all_mbi_classes()
-    for mbi in mbi_classes:
-        assert issubclass(mbi, MasterBootImage)
+@pytest.mark.parametrize(
+    "name,expected_auth,expected_target",
+    [
+        ("plain_xip", "plain", "xip"),
+        ("crc_xip", "crc", "xip"),
+        ("signed_xip", "signed", "xip"),
+        ("nxp_signed_xip", "signed-nxp", "xip"),
+        ("plain_ram", "plain", "load-to-ram"),
+    ],
+)
+def test_parse_name(name: str, expected_auth: str, expected_target: str):
+    auth, target = MasterBootImage._parse_name(name)
+    assert auth == expected_auth
+    assert target == expected_target

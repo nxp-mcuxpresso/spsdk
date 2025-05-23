@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -165,9 +165,6 @@ features:
   sb21:
     supported_commands: [erase, load, enable, fill, jump, version_check]
     keyblobs: false
-
-  # ======== Trust provisioning section ========
-  tp: {}
 
   # ======== Memory configuration ========
   memcfg:

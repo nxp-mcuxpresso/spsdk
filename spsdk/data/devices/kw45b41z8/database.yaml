@@ -1,11 +1,11 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 revisions:
   a0:
     features:
-      ifr:
+      pfr:
         romcfg:
           reg_spec: ifr_romcfg_a0.json
         cmactable:
@@ -16,7 +16,7 @@ latest: a2
 
 # General MCU information
 info:
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   spsdk_predecessor_name: kw45xx
   # Web page of MCU representative
   web: https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45
@@ -54,14 +54,14 @@ info:
       interfaces: ["uart", "can", "spi", "i2c"]
 
 features:
-
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x3000_4000
     size: 0x1000
 
   # ======== Fuses description section ========
-  fuses: {}
+  fuses:
+    tool: blhost_legacy
 
   # ======== Certificate block section ========
   cert_block:
@@ -79,7 +79,7 @@ features:
     socc: 5 # SOCC identification
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
     dat_is_using_sha256_always: True
-    famode_cert: [signed, nxp_signed] # List of Fault analysis Mode certificates (names of MBI classes)
+    famode_cert: [signed_xip, nxp_signed_xip] # List of Fault analysis Mode certificates (names of MBI classes)
     famode_cfg_defaults: # Dictionary of default values of standard MBI members for FAmode image
       outputImageExecutionTarget: xip
       inputImageFile: generated
@@ -93,7 +93,7 @@ features:
   # ======== MBI section ========
   mbi:
     mbi_classes:
-      plain:
+      plain_xip:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -102,7 +102,7 @@ features:
           - Mbi_MixinTrustZoneMandatory
           - Mbi_MixinImageSubType
           - Mbi_ExportMixinAppTrustZone
-      crc:
+      crc_xip:
         image_type: CRC_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -112,7 +112,7 @@ features:
           - Mbi_MixinImageSubType
           - Mbi_ExportMixinAppTrustZone
           - Mbi_ExportMixinCrcSign
-      signed:
+      signed_xip:
         image_type: SIGNED_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -122,7 +122,7 @@ features:
           - Mbi_MixinManifestDigest
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
-      nxp_signed:
+      nxp_signed_xip:
         image_type: SIGNED_XIP_NXP_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -135,13 +135,14 @@ features:
           - Mbi_ExportMixinEccSign
     images:
       xip:
-        plain: plain
-        crc: crc
-        signed: signed
-        nxp_signed: nxp_signed
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+        nxp_signed: nxp_signed_xip
 
-  # ======== IFR section ========
-  ifr:
+  # ======== PFR section ========
+  pfr:
+    sub_features: [romcfg, cmactable]
     romcfg:
       address: 0x200_0000
       reg_spec: ifr_romcfg_a1.json
@@ -163,7 +164,7 @@ features:
 
   # ======== TrustZone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== EL2GO TP section ========
   el2go_tp:

@@ -12,8 +12,7 @@ comments:
   iskPublicKey: Is removed because ISK is not used in this certificates
   iskCertificateConstraint: Is removed because ISK is not used in this certificates
   iskCertData: Is removed because ISK is not used in this certificates
-  signPrivateKey: Path to private key file for signing the certificate block
-  signProvider: Is removed because we are using the private key directly
+  signer: Path to private key file for signing the certificate block
   rootCertificate0File: Change to existing path of Root of Trust key
   rootCertificate1File: Change to existing path of Root of Trust key
   rootCertificate2File: Change to existing path of Root of Trust key

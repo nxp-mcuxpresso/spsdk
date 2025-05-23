@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Master Boot Image converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -15,7 +16,7 @@ outputImageExecutionAddress: 0 # [Required], Loading address of application; App
 #                                    == ISK Certificate Settings ==
 # ----------------------------------------------------------------------------------------------------
 certBlock: cert_v21_1x256_none.yaml
-signProvider: type=file;file_path=ec_pk_secp256r1_cert0.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+signer: type=file;file_path=ec_pk_secp256r1_cert0.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
 # ----------------------------------------------------------------------------------------------------
 #                                      == Trust Zone Settings ==
 # ----------------------------------------------------------------------------------------------------

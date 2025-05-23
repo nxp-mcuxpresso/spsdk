@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  AHAB converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
@@ -26,7 +27,7 @@ containers: # [Required], List of containers present in AHAB; The order of conta
       srk_revoke_mask: 0 # [Optional], SRK revoke mask; Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
       fuse_version: 0 # [Required], Fuse version; The value must be equal or greater than the version stored in fuses to allow loading this container.
       sw_version: 0 # [Required], Software version; Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
-      signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem # [Conditionally required], AHAB container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem # [Conditionally required], AHAB container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
         # ----------------------------------------------------------------------------------------------------
         #               == Configuration of AHAB Container images (array of multiple images) ==
         # ----------------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 {
-    "cpu": "LPC5506",
+    "cpu": "lpc5506",
     "groups": [
         {
             "group": {

@@ -105,6 +105,17 @@ class Features:
         self.device = device
         self.features = features
 
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the Features object."""
+        return f"Features(name='{self.name}', is_latest={self.is_latest}, device={self.device})"
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Features object.
+
+        :return: String representation including name, latest status, and device.
+        """
+        return f"Features({self.device.name}[{self.name}])"
+
     def check_key(self, feature: str, key: Union[list[str], str]) -> bool:
         """Check if the key exists in the database.
 
@@ -777,7 +788,7 @@ class Device:
         :param device_alias: Device alias, defaults to None
         :param revisions: Device revisions, defaults to Revisions()
         """
-        self.name = name
+        self.name = name.lower()
         self.db = db
         self.latest_rev = latest_rev
         self.device_alias = device_alias
@@ -791,6 +802,7 @@ class Device:
         :returns: Copy of self.
         """
         name = new_name or self.name
+        name = name.lower()
         ret = Device(
             name=name,
             db=self.db,
@@ -819,10 +831,9 @@ class Device:
         """Less than comparison based on name."""
         return self.name < other.name
 
-    @property
-    def features_list(self) -> list[str]:
+    def get_features(self, revision: Optional[str] = None) -> list[str]:
         """Get the list of device features."""
-        return [str(k) for k in self.revisions.get().features.keys()]
+        return [str(k) for k in self.revisions.get(revision).features.keys()]
 
     @staticmethod
     def _load_alias(name: str, db: "Database", dev_cfg: dict[str, Any]) -> "Device":
@@ -833,6 +844,7 @@ class Device:
         :param dev_cfg: Already loaded configuration.
         :return: The Device object.
         """
+        name = name.lower()
         dev_alias_name = dev_cfg["alias"]
         # Let get() function raise exception in case that device not exists in database
         ret = db.devices.get(dev_alias_name).get_copy(name)
@@ -883,6 +895,7 @@ class Device:
         :param db: Base database object.
         :return: The Device object.
         """
+        name = name.lower()
         try:
             dev_cfg = load_configuration(
                 db.get_data_file_path(os.path.join("devices", name, "database.yaml"))
@@ -978,6 +991,7 @@ class Devices:
         # Check device name (it could be used predecessor SPSDK name)
         if not name:
             raise SPSDKErrorMissingDevice("The device name (family) is not specified.")
+        name = name.lower()
         if DatabaseManager()._quick_info:
             name = DatabaseManager().quick_info.devices.get_correct_name(name)
         if name not in self._devices_names:
@@ -1001,9 +1015,9 @@ class Devices:
         :return: Tuple of Device name, revision name and items value.
         """
         for device in self.devices:
-            if feature not in device.features_list:
-                continue
             for rev in device.revisions:
+                if feature not in device.get_features(rev.name):
+                    continue
                 value = rev.features[feature].get(key)
                 if value is None:
                     raise SPSDKValueError(f"Missing item '{key}' in feature '{feature}'!")
@@ -1012,6 +1026,7 @@ class Devices:
     def _load_and_append_device(self, dev_name: str) -> None:
         """Load and append device to the devices."""
         # Omit already loaded devices (used for multiple calls of this method (restricted data))
+        dev_name = dev_name.lower()
         if dev_name in self._devices_names:
             logger.debug(f"The device '{dev_name}' is already in database.")
             return
@@ -1042,33 +1057,47 @@ class Devices:
 class DeviceQuickInfo:
     """Device quick and short info."""
 
-    def __init__(self, features: Features, info: DeviceInfo) -> None:
+    def __init__(self, features: Revisions, info: DeviceInfo, latest_rev: str) -> None:
         """Constructor of Device quick information.
 
         :param features: Device features to get information from
+        :param info: Device information
+        :param latest_rev: Latest chip revision
         """
-        self.features: dict[str, Optional[list]] = {}
+        self.revision_features: dict[str, dict[str, Optional[list]]] = {}
         self.info = info
-        for k, v in features.features.items():
-            self.features[k] = v.get("sub_features")
+        self.latest_rev = latest_rev.lower()
+        for rev in features:
+            self.revision_features[rev.name] = {}
+            for k, v in rev.features.items():
+                self.revision_features[rev.name][k] = v.get("sub_features")
 
     @property
-    def features_list(self) -> list[str]:
-        """List of all supported features of device."""
-        return list(self.features.keys())
+    def revisions(self) -> list[str]:
+        """List of available revisions."""
+        return list(self.revision_features.keys())
 
-    def is_feature_supported(self, feature: str, sub_feature: Optional[str] = None) -> bool:
+    def get_features(self, revision: Optional[str] = None) -> list[str]:
+        """List of all supported features of device."""
+        revision = revision or self.latest_rev
+        return list(self.revision_features[revision].keys())
+
+    def is_feature_supported(
+        self, feature: str, sub_feature: Optional[str] = None, revision: Optional[str] = None
+    ) -> bool:
         """Return True if the feature is supported by devices.
 
         :param feature: Feature name
         :param sub_feature: Sub feature name to better granularity, defaults to None
+        :param revision: Specific device revision to check, defaults to latest revision
         :return: True if the feature is supported by devices, False otherwise.
         """
-        if feature in self.features:
+        features = self.revision_features[revision or self.latest_rev]
+        if feature in features:
             if sub_feature:
-                if self.features[feature] is None:
+                if features[feature] is None:
                     return False
-                sub_features: list = self.features[feature] or []
+                sub_features: list = features[feature] or []
                 return sub_feature in sub_features
             return True
         return False
@@ -1091,7 +1120,7 @@ class DevicesQuickInfo:
         dqi = {}
         pl = {}
         for dev in devices.devices:
-            info = DeviceQuickInfo(dev.revisions.get(), dev.info)
+            info = DeviceQuickInfo(dev.revisions, dev.info, dev.latest_rev)
             p_name = info.info.spsdk_predecessor_name
             if p_name:
                 if p_name not in pl:
@@ -1106,68 +1135,75 @@ class DevicesQuickInfo:
 
         return ret
 
-    def get_feature_list(self, dev_name: str) -> list[str]:
+    def get_feature_list(self, family: str, revision: Optional[str] = None) -> list[str]:
         """Get features list.
 
         If device is not used, the whole list of SPSDK features is returned
 
-        :param dev_name: Device name, defaults to None
+        :param family: Family name
+        :param revision: Optional device revision
         :returns: List of features.
         """
         if self.devices == {}:
             return []
-        return self.devices[dev_name].features_list
+        return self.devices[family.lower()].get_features(revision)
 
     def get_devices_with_feature(
         self, feature: str, sub_feature: Optional[str] = None
-    ) -> list[str]:
-        """Get the list of all device names that supports requested feature.
+    ) -> dict[str, list]:
+        """Get the list of all families that supports requested feature.
 
         :param feature: Name of feature
         :param sub_feature: Optional sub feature to better specify the families selection
         :returns: List of devices that supports requested feature.
         """
-        devices: list[str] = []
+        devices: dict[str, list] = {}
         for name, info in self.devices.items():
-            if info.is_feature_supported(feature, sub_feature):
-                devices.append(name)
+            for revision in info.revision_features.keys():
+                if info.is_feature_supported(feature, sub_feature, revision):
+                    if name not in devices:
+                        devices[name] = []
+                    devices[name].append(revision)
+        return dict(sorted(devices.items()))
 
+    def get_family_names(self) -> list[str]:
+        """Get the list of all families supported by SPSDK."""
+        devices = list(self.devices.keys())
         devices.sort()
         return devices
 
-    def get_predecessors(self, devices: list[str]) -> dict[str, str]:
+    def get_predecessors(self, families: list[str]) -> dict[str, str]:
         """Get the list of devices predecessors in previous SPSDK versions.
 
-        :param devices: List of current devices names.
-        :returns: Dictionary of predecessors SPSDK devices names.
+        :param families: List of current family names
+        :returns: Dictionary mapping predecessor family names to current names
         """
         pr_names: dict[str, str] = {}
-        for dev in devices:
-            d = dev.casefold()
-            pr_name = self.devices[d].info.spsdk_predecessor_name
+        for family in families:
+            pr_name = self.devices[family.lower()].info.spsdk_predecessor_name
             if pr_name is not None and pr_name not in pr_names:
                 assert isinstance(pr_name, str)
-                pr_names[pr_name] = d
+                pr_names[pr_name] = family
 
         return pr_names
 
-    def is_predecessor_name(self, device: str) -> bool:
+    def is_predecessor_name(self, family: str) -> bool:
         """Check if device name is predecessor SPSDK device name.
 
-        :param device: Any device name.
+        :param family: The CPU family name.
         :return: True if it's SPSDK predecessor name.
         """
-        return bool(device.casefold() in self.predecessor_lookup)
+        return bool(family.lower() in self.predecessor_lookup)
 
-    def get_correct_name(self, device: str) -> str:
+    def get_correct_name(self, family: str) -> str:
         """Get correct(latest) device name.
 
-        :param device: Any device name.
-        :return: Current database device name.
+        :param family: The CPU family name.
+        :return: Current database device name as string.
         """
-        if self.is_predecessor_name(device):
-            return self.predecessor_lookup[device.casefold()]
-        return device
+        if self.is_predecessor_name(family.lower()):
+            family = self.predecessor_lookup[family.lower()]
+        return family
 
 
 class FeaturesQuickData:
@@ -1247,7 +1283,7 @@ class QuickDatabase:
         ret.features_data = FeaturesQuickData.create(database.devices)
         return ret
 
-    def sort_devices_to_groups(self, devices: list[str]) -> dict[str, list[str]]:
+    def split_devices_to_groups(self, devices: list[str]) -> dict[str, list[str]]:
         """Sort given devices to groups by their purposes.
 
         :param devices: Input list of devices.
@@ -1255,10 +1291,10 @@ class QuickDatabase:
         """
         ret: dict[str, list[str]] = {}
         for device in devices:
-            dev_purpose = self.devices.devices[device].info.purpose
+            dev_purpose = self.devices.devices[device.lower()].info.purpose
             if dev_purpose not in ret:
                 ret[dev_purpose] = []
-            ret[dev_purpose].append(device)
+            ret[dev_purpose].append(device.lower())
 
         for grp in ret.values():
             grp.sort()
@@ -1477,20 +1513,16 @@ class Database:
 
         return deepcopy(features[feature])
 
-    def get_device_features(
-        self,
-        device: str,
-        revision: str = "latest",
-    ) -> Features:
+    def get_device_features(self, family: str, revision: str = "latest") -> Features:
         """Get device features database.
 
-        :param device: The device name.
-        :param revision: The revision of the silicon.
+        :param family: The family name.
+        :param revision: The revision name.
         :raises SPSDKValueError: Unsupported feature
         :return: The feature data.
         """
-        dev = self.devices.get(device)
-        return dev.revisions.get(revision)
+        dev = self.devices.get(family.lower())
+        return dev.revisions.get(revision.lower())
 
     def get_data_file_path(
         self, path: str, exc_enabled: bool = True, just_standard_lib: bool = False
@@ -1586,7 +1618,6 @@ class FeaturesEnum(SpsdkEnum):
     AHAB = (7, "ahab", "Boot container - Advanced High Assurance Boot")
     SIGNED_MSG = (8, "signed_msg", "Signed Message")
     PFR = (9, "pfr", "Protected Flash Region")
-    IFR = (10, "ifr", "Information Registers")
     BOOTABLE_IMAGE = (11, "bootable_image", "Bootable Image")
     FCB = (12, "fcb", "Flash Configuration Block")
     XMCD = (13, "xmcd", "External Memory Configuration Data")
@@ -1611,6 +1642,8 @@ class FeaturesEnum(SpsdkEnum):
     NXPUUU = (32, "nxpuuu", "NXP UUU")
     BCA = (33, "bca", "Bootloader Configuration Area")
     FCF = (34, "fcf", "Flash Configuration Field")
+    SBC = (35, "sbc", "sbc")
+    SHE_SCEC = (36, "she_scec", "Secure Hardware Extension")
 
 
 class DatabaseManager:
@@ -1765,7 +1798,9 @@ class DatabaseManager:
             if os.path.exists(common_defaults):
                 hash_file(common_defaults)
             # Hash devices database files
-            for device in os.listdir(os.path.join(path, "devices")):
+            devices = os.listdir(os.path.join(path, "devices"))
+            devices.sort()
+            for device in devices:
                 hash_obj.update(device.encode())
                 device_file = os.path.join(path, "devices", device, "database.yaml")
                 if os.path.exists(device_file):
@@ -1814,7 +1849,6 @@ class DatabaseManager:
     AHAB = FeaturesEnum.AHAB.label
     SIGNED_MSG = FeaturesEnum.SIGNED_MSG.label
     PFR = FeaturesEnum.PFR.label
-    IFR = FeaturesEnum.IFR.label
     BOOTABLE_IMAGE = FeaturesEnum.BOOTABLE_IMAGE.label
     FCB = FeaturesEnum.FCB.label
     XMCD = FeaturesEnum.XMCD.label
@@ -1839,38 +1873,8 @@ class DatabaseManager:
     NXPUUU = FeaturesEnum.NXPUUU.label
     BCA = FeaturesEnum.BCA.label
     FCF = FeaturesEnum.FCF.label
-
-
-def get_db(
-    device: str,
-    revision: str = "latest",
-) -> Features:
-    """Get device feature database.
-
-    :param device: The device name.
-    :param revision: The revision of the silicon.
-    :return: The feature data.
-    """
-    return DatabaseManager().db.get_device_features(device, revision)
-
-
-def get_device(device: str) -> Device:
-    """Get device database object.
-
-    :param device: The device name.
-    :return: The device data.
-    """
-    return DatabaseManager().db.devices.get(device)
-
-
-def get_families(feature: str, sub_feature: Optional[str] = None) -> list[str]:
-    """Get the list of all family names that supports requested feature.
-
-    :param feature: Name of feature.
-    :param sub_feature: Optional sub feature name to specify the more precise selection.
-    :return: List of devices that supports requested feature.
-    """
-    return DatabaseManager().quick_info.devices.get_devices_with_feature(feature, sub_feature)
+    SBC = FeaturesEnum.SBC.label
+    SHE_SCEC = FeaturesEnum.SHE_SCEC.label
 
 
 def get_schema_file(feature: str) -> dict[str, Any]:

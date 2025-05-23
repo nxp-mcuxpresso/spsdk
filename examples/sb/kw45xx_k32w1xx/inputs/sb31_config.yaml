@@ -4,7 +4,7 @@
 # =============================  Secure Binary v3.1 Configuration template for kw45b41z8.  =============================
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
@@ -16,7 +16,7 @@ family: kw45b41z8
 # Possible options: <a0, a1, a2, latest>
 revision: latest
 # ======================================================================================================================
-#                                                  == Basic Settings ==                                                 
+#                                                  == Basic Settings ==
 # ======================================================================================================================
 # ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
 # Description: Value compared with Secure_FW_Version monotonic counter value stored in protected memory (MCU specific).
@@ -26,22 +26,19 @@ firmwareVersion: 0
 # Description: Generated SB3 container filename.
 containerOutputFile: ../workspace/sb3.sb3
 # ======================================================================================================================
-#                                              == Image Signing Settings ==                                             
+#                                              == Image Signing Settings ==
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
-# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pem
-# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
-# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'.
-# signProvider: type=file;file_path=my_prv_key.pem
+# Description: Main Certificate private key used to sign certificate.
+signer: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pem
 # ======================================================================================================================
-#                                              == Certificate Block V2.1 ==                                             
+#                                              == Certificate Block V2.1 ==
 # ======================================================================================================================
 # -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
 # Description: Path to certificate block binary or config file.
 certBlock: cert_block_kw45_secure.yaml
 # ======================================================================================================================
-#                                           == Secure Binary v3.1 Settings ==                                           
+#                                           == Secure Binary v3.1 Settings ==
 # ======================================================================================================================
 # ----------------------------------------===== Part Common Key [Optional] =====----------------------------------------
 # Description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
@@ -62,15 +59,15 @@ containerConfigurationWord: 0
 # Description: Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
 description: 384_none_nbu_only
 # ======================================================================================================================
-#                                       == Secure Binary v3.1 Commands Settings ==                                      
+#                                       == Secure Binary v3.1 Commands Settings ==
 # ======================================================================================================================
 # ----------------------------------------===== SB3.1 Commands [Required] =====-----------------------------------------
 # Description: Secure Binary v3.1 commands block, list of all possible options - Modify it according to your application
 commands:
 
   # ====================================================================================================================
-  #                                          == List of possible 9 options. ==                                          
-  #   Options [erase, load, execute, programFuses, programIFR, loadCMAC, loadHashLocking, fillMemory, checkFwVersion]   
+  #                                          == List of possible 9 options. ==
+  #   Options [erase, load, execute, programFuses, programIFR, loadCMAC, loadHashLocking, fillMemory, checkFwVersion]
   # ====================================================================================================================
 
   #  =========================== [Example of possible configuration: #0 , erase if not used] ============================

@@ -9,6 +9,5 @@ custom_command: "%! nxpimage mbi get-templates -f mcxn946 -o workspace/ --force"
 
 comments:
   trustZonePresetFile: "This is not needed as TrustZone is disabled"
-  signPrivateKey: "This is not needed as it is replaced by signProvider parameter."
-  signProvider: "The configuration of signature provider defining the actual signature provider type and its parameters."
+  signer: "The configuration of signature provider defining the actual signature provider type and its parameters."
 

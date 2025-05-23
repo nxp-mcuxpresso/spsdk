@@ -9,9 +9,14 @@ This user's guide describes how to interface with the *EdgeLock 2GO service* and
 
 The *el2go-host* application is a command-line utility used on the host computer to act as an intermediate layer between Edgelock 2GO Service's REST API and Edgelock 2GO NXP Provisioning Firmware running on a device. The application only sends one command per invocation.
 
+Useful links:
+   * `EdgeLock 2GO Introduction <https://docs.nxp.com/bundle/AN14586/page/topics/introduction.html>`_
+   * `EdgeLock 2GO Provisioning Methods <https://docs.nxp.com/bundle/AN14544/page/topics/edgelock_2go_provisioning_methods.html>`_
+
 -------------
 Prerequisites
 -------------
+
 * Activate and configure your EdgeLock 2GO account (https://www.nxp.com/products/security-and-authentication/secure-service-2go-platform/edgelock-2go:EDGELOCK-2GO)
 * Install Secure Provisioning SDK(SPSDK)
 * Load on the device *EdgeLock 2GO NXP Provisioning Firmware*

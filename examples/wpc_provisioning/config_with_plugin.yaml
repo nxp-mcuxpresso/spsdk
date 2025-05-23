@@ -1,13 +1,22 @@
-# Copyright 2024 NXP
+# Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# =====================================  WPC Certificate injection configuration  ======================================
+
+# ===========================  wpc Configuration template for mwct2d17s, Revision: latest.  ============================
 
 # ======================================================================================================================
-#                                                 == General Options ==
+#                                                 == General Options ==                                                 
 # ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mwct2d17s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
 # --------------------------------===== Name of the WPC service adapter [Required] =====--------------------------------
 # Description: Name of the WPC service adapter
+# Possible options: <el2go, mywpc>
 service_type: mywpc
 # ----------------------------===== Parameters for the WPC service adapter [Required] =====-----------------------------
 # Description: Parameters for the WPC service adapter
@@ -20,6 +29,7 @@ service_parameters:
   param2: 123
 # ----------------------------------===== Name of the target adapter [Required] =====-----------------------------------
 # Description: Name of the target adapter
+# Possible options: <mboot, model>
 target_type: model
 # -------------------------------===== Parameters for the target adapter [Required] =====-------------------------------
 # Description: Parameters for the target adapter
@@ -27,7 +37,3 @@ target_parameters:
   # ---------------------------------------===== Model directory [Required] =====---------------------------------------
   # Description: Path to directory containing the model (config.yaml)
   model_dir: <path/to/model_dir>
-  # ----------------------------------------===== Target family [Required] =====----------------------------------------
-  # Description: Name of the target family
-  # Possible options: <mwct2d17s>
-  family: mwct2d17s

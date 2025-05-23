@@ -14,6 +14,7 @@ import re
 import textwrap
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.exceptions import SPSDKNotImplementedError
 from spsdk.utils.misc import load_configuration, load_text
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,12 @@ try:
                 self.user_config_widget,
                 self.config_download_button,
             ]
+
+        def __copy__(self):  # type: ignore
+            raise SPSDKNotImplementedError()
+
+        def __deepcopy__(self, memo):  # type: ignore
+            raise SPSDKNotImplementedError()
 
         def toggle_view(self) -> None:
             """Toggle between diff view and user config view."""

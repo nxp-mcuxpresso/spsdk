@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module is used to generate initialization SBx file."""
 
 import logging
-import os
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
+
+from typing_extensions import Self
 
 from spsdk.apps.utils.utils import format_raw_data
 from spsdk.crypto.rng import random_bytes
@@ -17,9 +18,9 @@ from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.sbx.images import SecureBinaryX
-from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import load_configuration
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +28,18 @@ logger = logging.getLogger(__name__)
 class DevHsmSBx(DevHsm):
     """Class to handle device HSM provisioning procedure for SBx."""
 
+    SUB_FEATURE = "DevHsmSBx"
+
     DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE = 52
     DEVBUFF_SB_SIGNATURE_SIZE = 32
 
     def __init__(
         self,
         mboot: McuBoot,
-        family: str,
+        family: FamilyRevision,
         oem_share_input: Optional[bytes] = None,
         oem_enc_master_share_input: Optional[bytes] = None,
-        cust_mk_sk: Optional[bytes] = None,
-        container_conf: Optional[str] = None,
+        sbx: Optional[SecureBinaryX] = None,
         workspace: Optional[str] = None,
         initial_reset: Optional[bool] = False,
         final_reset: Optional[bool] = True,
@@ -50,8 +52,7 @@ class DevHsmSBx(DevHsm):
         :param family: chip family
         :param oem_share_input: OEM share input data. Default: random 16 bytes.
         :param oem_enc_master_share_input: Used for setting the OEM share (recreating security session)
-        :param cust_mk_sk: Customer Master Key Symmetric Key.
-        :param container_conf: Optional configuration file (to specify user list of SB commands).
+        :param sbx: SBX container.
         :param workspace: Optional folder to store middle results.
         :param initial_reset: Reset device before DevHSM creation of SB3 file.
         :param final_reset: Reset device after DevHSM creation of SB3 file.
@@ -59,52 +60,61 @@ class DevHsmSBx(DevHsm):
         :param info_print: Method for printing out info messages. Default: built-in print
         :raises SPSDKError: In case of any problem.
         """
-        if cust_mk_sk:
-            raise SPSDKError("Customer master key is not supported for SBx HSM")
+        if not sbx:
+            raise SPSDKError("SBx must be provided")
 
-        if not container_conf:
-            raise SPSDKError("Container configuration must be provided for SBx")
-
-        if buffer_address is not None:
-            raise SPSDKError("Overriding buffer address for SBx is not supported")
+        super().__init__(family, workspace)
 
         self.mboot = mboot
         self.oem_share_input = oem_share_input or random_bytes(16)
         self.oem_enc_master_share_input = oem_enc_master_share_input
         self.info_print = info_print or print
-        self.workspace = workspace
         self.initial_reset = initial_reset
         self.final_reset = final_reset
-        self.family = DatabaseManager().quick_info.devices.get_correct_name(family)
+        self.sbx = sbx
 
-        config_data = load_configuration(container_conf)
-        family_from_cfg = config_data.get("family")
-        if family_from_cfg:
-            family_from_cfg = DatabaseManager().quick_info.devices.get_correct_name(family_from_cfg)
-        if self.family != family_from_cfg:
-            raise SPSDKError(
-                f"Family from json configuration file: {family_from_cfg} "
-                f"differs from the family parameter {self.family}"
-            )
-
-        config_dir = os.path.dirname(container_conf)
-        schemas = SecureBinaryX.get_validation_schemas(self.family, include_test_configuration=True)
-        check_config(config_data, schemas, search_paths=[config_dir])
-
-        self.sbx = SecureBinaryX.load_from_config(config_data, search_paths=[config_dir])
+        # Override the default buffer address
+        if buffer_address is not None:
+            self.devbuff_base = buffer_address
 
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.BIN", self.oem_share_input)
 
         self.final_sb = bytes()
-        super().__init__(self.family, workspace)
 
     @classmethod
-    def generate_config_template(cls, family: str) -> str:
-        """Generate configuration for selected family."""
-        return SecureBinaryX.generate_config_template(
-            DatabaseManager().quick_info.devices.get_correct_name(family)
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :param family: Family description.
+        :return: List of validation schemas.
+        """
+        schemas: list[dict[str, Any]] = []
+        devhsm_sch_cfg = get_schema_file(DatabaseManager.DEVHSM)
+        sbx_sch_cfg = get_schema_file(DatabaseManager.SBX)
+        family_sch = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_sch["properties"], cls.get_supported_families(), family
         )
+        comm_address = get_db(family).get_int(DatabaseManager.COMM_BUFFER, "address")
+        devhsm_sch_cfg["common"]["properties"]["bufferAddress"]["template_value"] = hex(
+            comm_address
+        )
+        schemas.append(family_sch)
+        schemas.append(devhsm_sch_cfg["common"])
+
+        schemas.extend(
+            [
+                sbx_sch_cfg[x]
+                for x in [
+                    "sbx",
+                    "signer",
+                    "sbx_commands",
+                ]
+            ]
+        )
+
+        return schemas
 
     def __repr__(self) -> str:
         return "SBx DevHSM"
@@ -122,8 +132,18 @@ class DevHsmSBx(DevHsm):
             self.info_print(" 1: Initial target reset is disabled ")
 
         # 2: Call GEN_OEM_MASTER_SHARE to generate OEM share
-        self.info_print(" 2: Generating OEM master share.")
-        oem_enc_share, *_ = self.oem_generate_master_share(self.oem_share_input)
+        if self.oem_enc_master_share_input and self.oem_share_input:
+            self.info_print(" 2: Setting OEM master share.")
+            oem_enc_share = self.oem_set_master_share(
+                oem_seed=self.oem_share_input, enc_oem_share=self.oem_enc_master_share_input
+            )
+        elif self.oem_share_input:
+            self.info_print(" 2: Generating OEM master share.")
+            oem_enc_share, _, _ = self.oem_generate_master_share(self.oem_share_input)
+        else:
+            raise SPSDKError(
+                "Creation of OEM MASTER SHARE is enabled but OEM_SHARE (OEM_ENC_MASTER_SHARE) not provided."
+            )
 
         # 3: Create SBx header
         self.info_print(" 3: Creating SBx header.")
@@ -309,3 +329,56 @@ class DevHsmSBx(DevHsm):
             encrypted_blocks.append(encrypted_block)
 
         return encrypted_blocks
+
+    @classmethod
+    def load_from_config(
+        cls, config: Config, mboot: Optional[McuBoot] = None, info_print: Optional[Callable] = None
+    ) -> Self:
+        """Load the class from configuration.
+
+        :param config: DEVHSM configuration file
+        :param mboot: mBoot object
+        :param info_print: Optional info print method
+        :return: DEVHSM SB3.1 class
+        """
+        if not mboot:
+            raise SPSDKError("Mboot must be defined to load DEVHSM SB3.1 class.")
+
+        family = FamilyRevision.load_from_config(config)
+
+        oem_share_in = (
+            config.load_symmetric_key(
+                key="oemRandomShare", expected_size=16, name="OEM SHARE INPUT"
+            )
+            if "oemRandomShare" in config
+            else None
+        )
+        enc_oem_master_share_in = (
+            config.load_symmetric_key(
+                key="oemEncMasterShare", expected_size=64, name="OEM ENC MASTER SHARE"
+            )
+            if "oemEncMasterShare" in config
+            else None
+        )
+
+        buffer_address = config.get_int(
+            "bufferAddress", get_db(family).get_int(DatabaseManager.COMM_BUFFER, "address")
+        )
+
+        sbx = SecureBinaryX.load_from_config(config)
+        return cls(
+            mboot=mboot,
+            family=family,
+            oem_share_input=oem_share_in,
+            oem_enc_master_share_input=enc_oem_master_share_in,
+            sbx=sbx,
+            workspace=config.get_output_file_name("workspace") if "workspace" in config else None,
+            initial_reset=config.get("initialReset", False),
+            final_reset=config.get("finalReset", True),
+            buffer_address=buffer_address,
+            info_print=info_print,
+        )
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature."""
+        raise SPSDKNotImplementedError()

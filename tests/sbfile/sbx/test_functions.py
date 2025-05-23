@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
 
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.sbfile.sbx.images import (
     SecureBinaryX,
+    SecureBinaryXCommands,
     SecureBinaryXHeader,
     SecureBinaryXType,
     TpHsmBlob,
     TpHsmBlobHeader,
 )
+from spsdk.utils.family import FamilyRevision
 
 
 def test_sbx():
+    family = FamilyRevision("mc56f81868")
     tphshm_header = TpHsmBlobHeader()
     tphsm_blob = TpHsmBlob(
         tphshm_header, hmac_key="51487d5c13d56346bc178d5050bc145a7924f76d77dce97456b8ef039c4f4590"
@@ -28,11 +32,16 @@ def test_sbx():
         image_type=SecureBinaryXType.OEM_PROVISIONING,
     )
 
+    sbx_commands = SecureBinaryXCommands(
+        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False, timestamp=25698748
+    )
+
     sbx = SecureBinaryX(
+        family=family,
         tphsm_blob=tphsm_blob,
+        commands=sbx_commands,
         firmware_version=2,
         description="Testing SBX file",
-        timestamp=25698748,
         image_type=SecureBinaryXType.OEM_PROVISIONING,
     )
 

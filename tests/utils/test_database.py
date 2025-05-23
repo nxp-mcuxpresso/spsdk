@@ -14,6 +14,7 @@ import pytest
 from spsdk import SPSDK_RESTRICTED_DATA_FOLDER
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils import database
+from spsdk.utils import family
 from spsdk.utils.database import (
     Database,
     DatabaseManager,
@@ -24,6 +25,7 @@ from spsdk.utils.database import (
     UsbId,
 )
 
+from spsdk.utils.family import get_db, get_device, get_families, FamilyRevision
 from spsdk.utils.misc import Endianness, load_text
 from spsdk.utils.registers import Registers
 
@@ -49,7 +51,7 @@ class SPSDK_TestDatabase:
         assert isinstance(quick_info, QuickDatabase)
         return quick_info
 
-    """List all SPSDK supported features"""
+    # List all SPSDK supported features
     FEATURE1 = "feature1"
     FEATURE2 = "feature2"
     FEATURE3 = "feature3"
@@ -62,6 +64,7 @@ def mock_test_database(monkeypatch, data_dir):
     SPSDK_TestDatabase._quick_info = QuickDatabase.create(SPSDK_TestDatabase._db)
     # SPSDK_TestDatabase._instance = DatabaseManager()
     monkeypatch.setattr(database, "DatabaseManager", SPSDK_TestDatabase)
+    monkeypatch.setattr(family, "DatabaseManager", SPSDK_TestDatabase)
 
 
 @pytest.fixture
@@ -74,6 +77,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
     SPSDK_TestDatabase._quick_info = QuickDatabase.create(SPSDK_TestDatabase._db)
     SPSDK_TestDatabase._instance = SPSDK_TestDatabase()
     monkeypatch.setattr(database, "DatabaseManager", SPSDK_TestDatabase)
+    monkeypatch.setattr(family, "DatabaseManager", SPSDK_TestDatabase)
 
 
 @pytest.mark.parametrize(
@@ -171,7 +175,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
     ],
 )
 def test_get_device_value(mock_test_database, device, revision, feature, key, value, default):
-    db = database.get_db(device=device, revision=revision)
+    db = get_db(FamilyRevision(device, revision))
     val = db.get_value(feature=feature, key=key, default=default)
     assert val == value
 
@@ -179,18 +183,108 @@ def test_get_device_value(mock_test_database, device, revision, feature, key, va
 @pytest.mark.parametrize(
     "feature,devices,sub_feature,invalid",
     [
-        ("feature1", ["dev1", "dev1_alias", "dev2"], None, False),
-        ("feature2", ["dev1", "dev1_alias", "dev2"], None, True),
-        ("feature2", ["dev1", "dev1_alias"], None, False),
-        ("feature3", ["dev1", "dev1_alias"], None, False),
-        ("feature1", ["dev2"], "sub_feature1", False),
+        (
+            "feature1",
+            [
+                FamilyRevision("dev1", "rev1"),
+                FamilyRevision("dev1", "rev2"),
+                FamilyRevision("dev1_alias", "rev1"),
+                FamilyRevision("dev1_alias", "rev2"),
+                FamilyRevision("dev1_alias", "new_rev"),
+                FamilyRevision("dev2", "rev1"),
+                FamilyRevision("dev2", "rev_test_invalid_computed"),
+                FamilyRevision("dev2", "rev_test_invalid_flush_func"),
+            ],
+            None,
+            False,
+        ),
+        (
+            "feature2",
+            [
+                FamilyRevision("dev1", "rev1"),
+                FamilyRevision("dev1", "rev2"),
+                FamilyRevision("dev1_alias", "rev1"),
+                FamilyRevision("dev1_alias", "rev2"),
+                FamilyRevision("dev1_alias", "new_rev"),
+                FamilyRevision("dev2", "rev1"),
+                FamilyRevision("dev2", "rev_test_invalid_computed"),
+                FamilyRevision("dev2", "rev_test_invalid_flush_func"),
+            ],
+            None,
+            True,
+        ),
+        (
+            "feature2",
+            [
+                FamilyRevision("dev1", "rev1"),
+                FamilyRevision("dev1", "rev2"),
+                FamilyRevision("dev1_alias", "rev1"),
+                FamilyRevision("dev1_alias", "rev2"),
+                FamilyRevision("dev1_alias", "new_rev"),
+            ],
+            None,
+            False,
+        ),
+        (
+            "feature3",
+            [
+                FamilyRevision("dev1", "rev1"),
+                FamilyRevision("dev1", "rev2"),
+                FamilyRevision("dev1_alias", "rev1"),
+                FamilyRevision("dev1_alias", "rev2"),
+                FamilyRevision("dev1_alias", "new_rev"),
+            ],
+            None,
+            False,
+        ),
+        (
+            "feature1",
+            [
+                FamilyRevision("dev2", "rev1"),
+                FamilyRevision("dev2", "rev_test_invalid_computed"),
+                FamilyRevision("dev2", "rev_test_invalid_flush_func"),
+            ],
+            "sub_feature1",
+            False,
+        ),
     ],
 )
-def test_supported_devices(mock_test_database, feature, devices: list[str], sub_feature, invalid):
-    dev_list = database.get_families(feature, sub_feature)
+def test_supported_devices(
+    mock_test_database, feature, devices: list[FamilyRevision], sub_feature, invalid
+):
+    dev_list = get_families(feature, sub_feature)
     dev_list.sort()
     devices.sort()
     assert (dev_list == devices) != invalid
+
+
+@pytest.mark.parametrize(
+    "feature,devices,sub_feature",
+    [
+        (
+            "feature1",
+            [
+                FamilyRevision("dev1", "rev2"),
+                FamilyRevision("dev1_alias", "rev2"),
+                FamilyRevision("dev2", "rev1"),
+            ],
+            None,
+        ),
+        ("feature2", [FamilyRevision("dev1", "rev2"), FamilyRevision("dev1_alias", "rev2")], None),
+        (
+            "feature1",
+            [FamilyRevision("dev2", "rev1")],
+            "sub_feature1",
+        ),
+    ],
+)
+def test_supported_devices_latest(
+    mock_test_database, feature, devices: list[FamilyRevision], sub_feature
+):
+    dev_list = get_families(feature, sub_feature, single_revision=True)
+    dev_list.sort()
+    devices.sort()
+    assert dev_list == devices
 
 
 @pytest.mark.parametrize(
@@ -204,7 +298,7 @@ def test_supported_devices(mock_test_database, feature, devices: list[str], sub_
 def test_isp(
     mock_test_database, device, rom_protocol, rom_usbid, flashloader_protocol, flashloader_usbid
 ):
-    dev_info = database.get_device(device).info
+    dev_info = get_device(FamilyRevision(device)).info
     assert dev_info.isp.rom.protocol == rom_protocol
     assert dev_info.isp.rom.usb_id == rom_usbid
     assert dev_info.isp.flashloader.protocol == flashloader_protocol
@@ -222,7 +316,7 @@ def test_isp(
 def test_isp_get_usb_config(
     mock_test_database, device, rom_protocol, rom_usbid, flashloader_protocol, flashloader_usbid
 ):
-    dev_info = database.get_device(device).info
+    dev_info = get_device(FamilyRevision(device)).info
     usb_list = dev_info.isp.get_usb_ids(rom_protocol)
     assert len(usb_list) == 1
     assert usb_list[0] == rom_usbid
@@ -240,7 +334,7 @@ def test_isp_get_usb_config(
     ],
 )
 def test_isp_get_is_protocol_supported(mock_test_database, device, supported_protocols):
-    dev_info = database.get_device(device).info
+    dev_info = get_device(FamilyRevision(device)).info
     for protocol in ["mboot", "sdp", "sdps"]:
         is_supported = dev_info.isp.is_protocol_supported(protocol)
         assert is_supported == (protocol in supported_protocols)
@@ -284,13 +378,13 @@ def test_restricted_data(data_dir, mock_test_database_restricted):
         simple_db.get_device_features("dev3")
     restr_db.get_device_features("dev3")
     # restricted device 2 contains a new register in shadow registers
-    r_dev2_regs = Registers(family="dev2", feature="fuses")
+    r_dev2_regs = Registers(family=FamilyRevision("dev2"), feature="fuses")
     r_dev2_regs.find_reg("RESTRICTED_REG")
 
 
 def test_load_yaml_cfg_registers_with_restricted_data(tmpdir, mock_test_database_restricted):
     std_regs = Registers(
-        family="dev2",
+        family=FamilyRevision("dev2"),
         feature="fuses",
         base_endianness=Endianness.LITTLE,
         just_standard_library_data=True,
@@ -300,12 +394,12 @@ def test_load_yaml_cfg_registers_with_restricted_data(tmpdir, mock_test_database
         reg.set_value(0xA + x)
     std_regs_cfg = std_regs.get_config(True)
     rstr_regs = Registers(
-        family="dev2",
+        family=FamilyRevision("dev2"),
         feature="fuses",
         base_endianness=Endianness.LITTLE,
         just_standard_library_data=False,
     )
-    rstr_regs.load_yml_config(std_regs_cfg)
+    rstr_regs.load_from_config(std_regs_cfg)
     std = std_regs.export()
     rstr = rstr_regs.export()
     assert std == rstr[: len(std)]
@@ -386,3 +480,18 @@ def test_restricted_data_devices():
     )
     for device in os.listdir(os.path.join(restricted_data, "devices")):
         assert db.devices.get(device)
+
+ALLOWED_PURPOSES = [
+        "32-bit DSC Series",
+        "LPC800 Series",
+        "MCX Series",
+        "Wireless Connectivity MCUs",
+        "i.MX Application Processors",
+        "Wireless Power",
+        "LPC5500 Series",
+        "i.MX RT Crossover MCUs",
+    ]
+def test_processor_purpose():
+    for dev, quick_info in DatabaseManager().quick_info.devices.devices.items():
+        assert quick_info.info.purpose in ALLOWED_PURPOSES , f"Device '{dev}' purpose {quick_info.info.purpose} is not amongst allowed purposes: {ALLOWED_PURPOSES}"
+

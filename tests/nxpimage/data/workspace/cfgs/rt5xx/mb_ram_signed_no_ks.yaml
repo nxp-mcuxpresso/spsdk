@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Master Boot Image converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -19,7 +20,7 @@ enableTrustZone: false # [Optional], TrustZone enable option; If not specified, 
 # ----------------------------------------------------------------------------------------------------
 #                                    == Certificate V1 Settings ==
 # ----------------------------------------------------------------------------------------------------
-signPrivateKey: .\sb_sources\keys_and_certs\k1_cert0_2048.pem # [Conditionally required], Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signer: .\sb_sources\keys_and_certs\k1_cert0_2048.pem
 certBlock: .\workspace\cfgs\cert_block\cert_v1_4x2048.yaml
 # ----------------------------------------------------------------------------------------------------
 #                                        == Encryption Settings ==

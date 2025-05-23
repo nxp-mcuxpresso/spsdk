@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =========================  Advanced High-Assurance Boot Certificate Configuration template.  =========================
 
 # ======================================================================================================================
@@ -37,10 +38,10 @@ fuse_version: 0
 public_key_0: ../../_data/keys/ecc521/imgkey_ecc521.pub
 # ---------------------------===== SRK container signing key 0 [Conditionally required] =====---------------------------
 # Description: Private key 0 used for sign the certificate container.
-signing_key_0: ../../_data/keys/ecc521/srk0_ecc521.pem
+signer_0: ../../_data/keys/ecc521/srk0_ecc521.pem
 # -----------------------------------===== Certificate public key 1 [Optional] =====------------------------------------
 # Description: Path to Public key 1 file.
 public_key_1: ../../_data/keys/dil3/imgkey_dil3.pub
 # ----------------------------------===== SRK container signing key 1 [Optional] =====----------------------------------
 # Description: Private key 1 used for sign the certificate container.
-signing_key_1: ../../_data/keys/dil3/srk0_dil3.pem
+signer_1: ../../_data/keys/dil3/srk0_dil3.pem

@@ -1,4 +1,4 @@
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,7 +21,7 @@ sb3_description:
       type: string
       title: Description
       description: Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
-      template_value: This is description of generated SB file.
+      template_value: My SB file
 sb3:
   type: object
   title: Secure Binary v3.1 Settings
@@ -130,26 +130,51 @@ sb3_commands:
                   file:
                     type: string
                     title: Binary file.
-                    description: Binary file to be loaded.
                     format: file
-                    template_value: my_binary.bin
+                    skip_in_template: True
                   values:
-                    type: [string, number]
-                    title: Binary values.
-                    description: 32-bit binary values delimited by comma to be loaded.
-                    template_value: 0x1234, 0x5678, 0, 12345678
+                    type: [string, number, array]
+                    title: 32-bit binary values delimited by comma to be programmed or a list with multiple values as integers or 32-bit binary values.
+                    skip_in_template: True
                   value:
                     type: [string, number]
                     title: Binary value
-                    description: Binary value to be loaded. Value will be converted to binary little endian format.
-                    template_value: "0xB38AA899"
-                  authentication:
-                    type: string
-                    title: Authentication
-                    description: If authentication is not used, just omit this option or set 'none'.
-                    enum: [none, cmac, hashlocking]
-                    template_value: cmac
+                    skip_in_template: True
+                  data:
+                    type: [string, number, array]
+                    title: Data to be loaded
+                    description: >
+                      The data to be loaded, it could be defined in following formats:
+                        - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+                        - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in little endian format. Example: 0x1234, 0x5678, 0, 12345678
+                        - List of integers passed as an array.
+                        - Path to binary file. Example: my_binary.bin
+                    template_value: my_binary.bin
+                  compress:
+                    type: boolean
+                    title: Data compression
+                    description: Use LZMA compression of date before loading onto the target
+                    template_value: false
+                  sectorSize:
+                    type: [string, number]
+                    title: Memory sector size
+                    description: Size of memory sector where data should be loaded.
+                    format: number
+                    template_value: 8_192
                 required: [address]
+                oneOf:
+                  - required: [data]
+                  - required: [file]
+                  - required: [value]
+                  - required: [values]
+                if:
+                  properties:
+                    compress:
+                      enum: [false, no, null]
+                then:
+                  required: []
+                else:
+                  required: [sectorSize]
 
           - type: object
             required: [execute]
@@ -220,20 +245,27 @@ sb3_commands:
                     template_value: 0x0
                   file:
                     type: string
-                    title: Binary file
-                    description: Binary file to be programmed.
+                    title: Binary file.
                     format: file
-                    template_value: my_binary.bin
+                    skip_in_template: True
+                  values:
+                    type: [string, number, array]
+                    title: 32-bit binary values delimited by comma to be programmed or a list with multiple values as integer or 32-bit binary values.
+                    skip_in_template: True
                   value:
                     type: [string, number]
                     title: Binary value
-                    description: Binary value to be programmed, at least 4 bytes. Value will be converted to binary little endian format.
-                    template_value: "0xB38AA899"
-                  values:
-                    type: [string, number]
-                    title: Binary values.
-                    description: 32-bit binary values delimited by comma to be programmed.
-                    template_value: 0x1234, 0x5678, 0, 12345678
+                    skip_in_template: True
+                  data:
+                    type: [string, number, array]
+                    title: Data to be loaded
+                    description: >
+                      The data to be loaded, it could be defined in following formats:
+                        - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+                        - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in little endian format. Example: 0x1234, 0x5678, 0, 12345678
+                        - List of integers passed as an array.
+                        - Path to binary file. Example: my_binary.bin
+                    template_value: my_binary.bin
                 required: [address]
 
           - type: object

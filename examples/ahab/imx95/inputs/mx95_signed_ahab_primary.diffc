@@ -9,7 +9,7 @@ comments:
   binary_container: "Define the path to the EdgeLock Enclave Firmware container"
   srk_set: "Define set is used to authenticate the container"
   srk_table: "All attributes related to the signing"
-  signing_key: "Define the path to the private key." 
+  signer: "Define the path to the private key."
   lpddr_imem: "Add path to the LPDDR IMEM image"
   lpddr_dmem_qb: "Optionally add path to the LPDDR DMEM quick boot image"
   lpddr_dmem: "Add path to the LPDDR DMEM image"

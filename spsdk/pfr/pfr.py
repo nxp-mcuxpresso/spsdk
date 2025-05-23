@@ -6,31 +6,35 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module provides support for Protected Flash Region areas (CMPA, CFPA)."""
-import copy
+
 import logging
 import math
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Type
+
+from typing_extensions import Self
 
 from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.exceptions import SPSDKError
+from spsdk.image.cert_block.rkht import RKHT
 from spsdk.pfr.exceptions import SPSDKPfrError, SPSDKPfrRotkhIsNotPresent
-from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
+from spsdk.utils.family import FamilyRevision, get_db, get_families, update_validation_schema_family
 from spsdk.utils.misc import BinaryPattern, Endianness, value_to_int
 from spsdk.utils.registers import Register, Registers
-from spsdk.utils.schema_validator import check_config, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
 
-class BaseConfigArea:
+class BaseConfigArea(FeatureBaseClass):
     """Base for CMPA and CFPA classes."""
 
-    FEATURE_NAME = DatabaseManager.PFR
-    DB_SUB_FEATURE: str = ""
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "SubClassDefineIt"
     BINARY_SIZE = 512
     ROTKH_SIZE = 32
     ROTKH_REGISTER = "ROTKH"
@@ -38,44 +42,54 @@ class BaseConfigArea:
     DESCRIPTION = "Base Config Area"
     IMAGE_PREFILL_PATTERN = "0x00"
 
-    def __init__(
-        self,
-        family: str,
-        revision: str = "latest",
-    ) -> None:
+    def __init__(self, family: FamilyRevision) -> None:
         """Initialize an instance.
 
         :param family: Family to use, list of supported families is available via 'get_supported_families' method
-        :param revision: silicon revision, if not specified, the latest is being used
         :raises SPSDKError: When no device is provided
         :raises SPSDKError: When no device is not supported
-        :raises SPSDKError: When there is invalid revision
         """
-        self.db = get_db(family, revision)
-        self.family = self.db.device.name
-        self.revision = self.db.name
-        self.registers = self._load_registers(family, revision)
+        self.db = get_db(family)
+        self.family = family
         self.computed_fields: dict[str, dict[str, str]] = self.db.get_dict(
-            self.FEATURE_NAME, [self.DB_SUB_FEATURE, "computed_fields"], {}
+            self.FEATURE, [self.SUB_FEATURE, "computed_fields"], {}
         )
+        self.registers = self._load_registers(family)
 
     @classmethod
-    def _load_registers(cls, family: str, revision: str = "latest") -> Registers:
+    def get_supported_families(cls, include_predecessors: bool = False) -> list[FamilyRevision]:
+        """Get supported families for the feature."""
+        sub_feature = None if cls.SUB_FEATURE == "SubClassDefineIt" else cls.SUB_FEATURE
+
+        return get_families(
+            feature=cls.FEATURE,
+            sub_feature=sub_feature,
+            include_predecessors=include_predecessors,
+        )
+
+    def __str__(self) -> str:
+        """String representation of PFR/IFR class."""
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        """String representation of PFR/IFR class."""
+        return f"{self.FEATURE} {self.SUB_FEATURE} class for {self.family}."
+
+    @classmethod
+    def _load_registers(cls, family: FamilyRevision) -> Registers:
         """Load register class for PFR tool.
 
         :param family: Device family name
-        :param revision: Revision of the chip, defaults to "latest"
         :return: Loaded register class
         """
         registers = Registers(
             family=family,
-            feature=cls.FEATURE_NAME,
-            base_key=cls.DB_SUB_FEATURE,
-            revision=revision,
+            feature=cls.FEATURE,
+            base_key=cls.SUB_FEATURE,
             base_endianness=Endianness.LITTLE,
         )
-        computed_fields: dict[str, dict[str, str]] = get_db(family, revision).get_dict(
-            cls.FEATURE_NAME, [cls.DB_SUB_FEATURE, "computed_fields"], {}
+        computed_fields: dict[str, dict[str, str]] = get_db(family).get_dict(
+            cls.FEATURE, [cls.SUB_FEATURE, "computed_fields"], {}
         )
         # Set the computed field handler
         for reg, fields in computed_fields.items():
@@ -122,15 +136,7 @@ class BaseConfigArea:
         return ret
 
     @classmethod
-    def get_supported_families(cls) -> list[str]:
-        """Classmethod to get list of supported families.
-
-        :return: List of supported families.
-        """
-        return get_families(cls.FEATURE_NAME, cls.DB_SUB_FEATURE)
-
-    @classmethod
-    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
+    def get_validation_schemas_basic(cls) -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for Shadow registers supported families.
@@ -142,57 +148,56 @@ class BaseConfigArea:
         return [sch_family, sch_cfg["pfr_base"]]
 
     @classmethod
-    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
+
+        If the class doesn't behave generally, just override this implementation.
+
+        :param config: Valid configuration
+        :return: Validation schemas
+        """
+        config.check(cls.get_validation_schemas_basic())
+        family = FamilyRevision.load_from_config(config)
+        area = config.get_str("type")
+        klass = get_ifr_pfr_class(area_name=area, family=family)
+
+        return klass.get_validation_schemas(FamilyRevision.load_from_config(config))
+
+    @classmethod
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
-        :param revision: Chip revision specification, as default, latest is used.
         :raises SPSDKError: Family or revision is not supported.
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.PFR)
         sch_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], cls.get_supported_families(), family, revision
+            sch_family["properties"], cls.get_supported_families(), family
         )
+        sch_family["main_title"] = (
+            f"{cls.FEATURE.upper()} {cls.SUB_FEATURE.upper()} configuration template for {family}"
+        )
+
         try:
-            regs = cls._load_registers(family=family, revision=revision)
+            regs = cls._load_registers(family=family)
             sch_cfg["pfr_base"]["properties"]["type"]["template_value"] = cls.__name__.upper()
             sch_cfg["pfr_base"]["properties"]["type"]["enum"] = [
                 cls.__name__.upper(),
                 cls.__name__.lower(),
             ]
-            sch_cfg["pfr_settings"]["properties"]["settings"][
-                "properties"
-            ] = regs.get_validation_schema()["properties"]
+            sch_cfg["pfr_settings"]["properties"]["settings"] = regs.get_validation_schema()
             return [sch_family, sch_cfg["pfr_base"], sch_cfg["pfr_settings"]]
         except (KeyError, SPSDKError) as exc:
-            raise SPSDKError(f"Family {family} or revision {revision} is not supported") from exc
+            raise SPSDKError(f"Family {family} is not supported") from exc
 
-    @classmethod
-    def validate_config(cls, cfg: dict[str, Any]) -> None:
-        """Validate input PFR configuration.
-
-        :param cfg: PFR configuration
-        """
-        base_schemas = cls.get_validation_schemas_family()
-        check_config(cfg, base_schemas)
-        description: Optional[dict[str, Any]] = cfg.get("description")
-        family = (
-            description["device"] if description else cfg.get("family", cfg.get("device", "N/A"))
-        )
-        revision = (
-            description.get("revision", "latest") if description else cfg.get("revision", "latest")
-        )
-        schemas = cls.get_validation_schemas(family=family, revision=revision)
-        check_config(cfg, schemas)
-
-    def set_config(self, cfg: dict[str, Any]) -> None:
+    def set_config(self, cfg: Config) -> None:
         """Set a new values configuration.
 
         :param cfg: Registers configuration.
         """
-        self.registers.load_yml_config(cfg)
+        self.registers.load_from_config(cfg)
         # Updates necessary register values
         for reg_uid, bitfields_rec in self.computed_fields.items():
             reg_name = self.registers.get_reg(uid=reg_uid).name
@@ -211,49 +216,33 @@ class BaseConfigArea:
                             )
                         )
 
-    @staticmethod
-    def load_from_config(config: dict[str, Any]) -> "BaseConfigArea":
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
         """Get Configuration class from configuration.
 
         :param config: PFR configuration.
         :returns: BaseConfigArea object
         """
-        description: Optional[dict[str, str]] = config.get("description")
-        if description:  # backward compatibility branch
-            family = description["device"]
-            revision = description.get("revision", "latest")
-            cls = CONFIG_AREA_CLASSES[description["type"].lower()]
-        else:
-            family = config.get("family", config.get("device"))
-            revision = config.get("revision", "latest")
-            cls = CONFIG_AREA_CLASSES[config["type"].lower()]
-        settings = config["settings"]
-        ret = cls(family=family, revision=revision)
+        family = FamilyRevision.load_from_config(config)
+        klass = CONFIG_AREA_CLASSES[config.get_str("type").lower()]
+        settings = config.get_config("settings")
+        ret = klass(family)
         ret.set_config(settings)
-        return ret
+        return ret  # type: ignore
 
-    def get_config(self, diff: bool = False) -> dict[str, Union[str, dict[str, Any]]]:
+    def get_config(self, data_path: str = "./", diff: bool = False) -> Config:
         """Return configuration from loaded PFR.
 
+        :param data_path: Data path is not used in PFR
         :param diff: Get only configuration with difference value to reset state.
         :return: PFR configuration in dictionary.
         """
-        res_data: dict[str, Union[str, dict[str, Any]]] = {}
-        res_data["family"] = self.family
-        res_data["revision"] = self.revision
+        res_data = Config()
+        res_data["family"] = self.family.name
+        res_data["revision"] = self.family.revision
         res_data["type"] = self.__class__.__name__.upper()
-        res_data["settings"] = self.registers.get_config(diff=diff)
+        res_data["settings"] = dict(self.registers.get_config(diff=diff))
         return res_data
-
-    def generate_config(self) -> dict:
-        """Generate configuration structure for user configuration.
-
-        :return: YAML commented map with PFR configuration  in reset state.
-        """
-        # Create own copy to keep self as is and get reset values by standard YML output
-        copy_of_self = copy.deepcopy(self)
-        copy_of_self.registers.reset_values()
-        return copy_of_self.get_config()
 
     def _calc_rotkh(self, keys: list[PublicKey]) -> bytes:
         """Calculate ROTKH (Root Of Trust Key Hash).
@@ -269,31 +258,11 @@ class BaseConfigArea:
         # detected the right algorithm and mandatory warn user about this selection because
         # it's MUST correspond to settings in eFuses!
         reg_rotkh = self.registers.find_reg("ROTKH")
-        assert isinstance(self.family, str)
-        cls = self.get_cert_block_class(family=self.family)
-        rkht = cls.from_keys(keys=keys)
+        rkht = RKHT.get_class(family=self.family).from_keys(keys=keys)
 
         if rkht.hash_algorithm_size > reg_rotkh.width:
             raise SPSDKPfrError("The ROTKH field is smaller than used algorithm width.")
         return rkht.rkth().ljust(reg_rotkh.width // 8, b"\x00")
-
-    @classmethod
-    def get_cert_block_class(cls, family: str) -> Type[RKHT]:
-        """Return the seal count.
-
-        :param family: The device name, if not specified, the general value is used.
-        :return: The seal count.
-        :raises SPSDKError: When there is invalid seal count
-        """
-        cert_blocks = {
-            "cert_block_1": RKHTv1,
-            "cert_block_21": RKHTv21,
-        }
-        val = get_db(family).get_str(DatabaseManager.CERT_BLOCK, "rot_type")
-        if val is None or val not in cert_blocks:
-            raise SPSDKError(f"Invalid certificate block version: {val}")
-
-        return cert_blocks[val]
 
     def _get_seal_start_address(self) -> int:
         """Function returns start of seal fields for the family.
@@ -301,7 +270,7 @@ class BaseConfigArea:
         :return: Start of seals fields.
         :raises SPSDKError: When 'seal_start_address' in database can not be found
         """
-        start = self.db.get_str(self.FEATURE_NAME, [self.DB_SUB_FEATURE, "seal_start"])
+        start = self.db.get_str(self.FEATURE, [self.SUB_FEATURE, "seal_start"])
         if not start:
             raise SPSDKError("Can't find 'seal_start_address' in database.")
         return self.registers.get_reg(start).offset
@@ -312,7 +281,7 @@ class BaseConfigArea:
         :return: Count of seals fields.
         :raises SPSDKError: When 'seal_count' in database can not be found
         """
-        count = self.db.get_int(self.FEATURE_NAME, [self.DB_SUB_FEATURE, "seal_count"])
+        count = self.db.get_int(self.FEATURE, [self.SUB_FEATURE, "seal_count"])
         if not count:
             raise SPSDKError("Can't find 'seal_count' in database")
         return value_to_int(count)
@@ -369,19 +338,25 @@ class BaseConfigArea:
             raise SPSDKError(f"The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}")
         return bytes(data)
 
-    def parse(self, data: bytes) -> None:
+    @classmethod
+    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
         """Parse input binary data to registers.
 
         :param data: Input binary data of PFR block.
+        :param family: The MCU family name.
+        :return: The PFR initialized class.
         """
-        self.registers.parse(data)
+        if family is None:
+            raise SPSDKPfrError("For PFR parse method the family parameter is mandatory")
+        ret = cls(family)
+        ret.registers.parse(data)
+        return ret
 
     def __eq__(self, obj: Any) -> bool:
         """Compare if the objects has same settings."""
         return (
             isinstance(obj, self.__class__)
             and obj.family == self.family
-            and obj.revision == self.revision
             and obj.registers == self.registers
         )
 
@@ -389,22 +364,22 @@ class BaseConfigArea:
 class CMPA(BaseConfigArea):
     """Customer Manufacturing Configuration Area."""
 
-    DB_SUB_FEATURE = "cmpa"
+    SUB_FEATURE = "cmpa"
     DESCRIPTION = "Customer Manufacturing Programmable Area"
 
 
 class CFPA(BaseConfigArea):
     """Customer In-Field Configuration Area."""
 
-    DB_SUB_FEATURE = "cfpa"
+    SUB_FEATURE = "cfpa"
     DESCRIPTION = "Customer In-field Programmable Area"
 
 
 class ROMCFG(BaseConfigArea):
     """Information flash region - ROMCFG."""
 
-    DB_SUB_FEATURE = "romcfg"
-    FEATURE_NAME = DatabaseManager.IFR
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "romcfg"
     BINARY_SIZE = 304
     IMAGE_PREFILL_PATTERN = "0xFF"
     DESCRIPTION = "ROM Bootloader configurations"
@@ -413,8 +388,8 @@ class ROMCFG(BaseConfigArea):
 class CMACTABLE(BaseConfigArea):
     """Information flash region - CMAC Table."""
 
-    DB_SUB_FEATURE = "cmactable"
-    FEATURE_NAME = DatabaseManager.IFR
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "cmactable"
     BINARY_SIZE = 128
     IMAGE_PREFILL_PATTERN = "0xFF"
     DESCRIPTION = "CMAC table - Used to save hashes of multiple boot components"
@@ -458,14 +433,11 @@ def calc_pub_key_hash(
     return get_hash(n2_bytes + n1_bytes, algorithm=EnumHashAlgorithm.from_label(f"sha{sha_width}"))
 
 
-def get_ifr_pfr_class(area_name: str, family: str) -> Type[BaseConfigArea]:
+def get_ifr_pfr_class(area_name: str, family: FamilyRevision) -> Type[BaseConfigArea]:
     """Return IFR/PFR class based on the name."""
     _cls: Type[BaseConfigArea] = globals()[area_name.upper()]
-    devices = _cls.get_supported_families()
-    if family not in devices + list(
-        DatabaseManager().quick_info.devices.get_predecessors(devices).keys()
-    ):
+    if family not in _cls.get_supported_families(True):
         raise SPSDKAppError(
-            f"The family has not support for {_cls.FEATURE_NAME.upper()} {area_name.upper()} area"
+            f"The family has not support for {_cls.FEATURE.upper()} {area_name.upper()} area"
         )
     return _cls

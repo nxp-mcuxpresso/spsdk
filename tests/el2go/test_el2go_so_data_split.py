@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-""" Tests for splitting Secure Objects into required and additional groups."""
+
+"""Tests for splitting Secure Objects into required and additional groups."""
 
 from pathlib import Path
 

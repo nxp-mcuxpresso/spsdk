@@ -12,7 +12,7 @@
     "rootCertificate2File": ".\\workspace\\keys_certs\\ec_secp384r1_cert2.pem",
     "rootCertificate3File": ".\\workspace\\keys_certs\\ec_secp384r1_cert3.pem",
     "mainRootCertId": 0,
-    "mainRootCertPrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp384r1_cert0.pem",
+    "signer": ".\\workspace\\keys_certs\\ec_pk_secp384r1_cert0.pem",
     "rootCertificateEllipticCurve": "secp384r1",
     "useIsk": true,
     "signingCertificateFile": ".\\workspace\\keys_certs\\ec_secp256r1_sign_cert.pem",

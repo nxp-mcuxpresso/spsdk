@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """DK6 Device Commands."""
 from struct import unpack_from
-from typing import Type, Union
+from typing import Optional, Type, Union
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -124,10 +125,10 @@ class CmdPacket:
         """Get object info."""
         return "CMDPacket[" + ", ".join(f"{b:02X}" for b in self.data) + "]"
 
-    def to_bytes(self) -> Union[bytes, None]:
-        """Serialize CmdPacket into bytes.
+    def export(self) -> Optional[bytes]:
+        """Export CmdPacket into bytes.
 
-        :return: Serialized object into bytes
+        :return: Exported object into bytes
         """
         return self.data
 
@@ -372,7 +373,7 @@ def parse_cmd_response(data: bytes, frame_type: int) -> Union[
 
     :param data: Input data in bytes
     :param frame_type: Frame Type
-    :return: De-serialized object from data
+    :return: Parsed object from data
     """
     known_response: dict[ResponseTag, Type[CmdResponse]] = {
         ResponseTag.RESET: GenericResponse,

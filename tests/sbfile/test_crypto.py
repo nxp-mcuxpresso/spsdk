@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -68,7 +68,7 @@ def test_aes_key_unwrap():
 def test_aes_ctr_encrypt():
     key = b"1234567812345678"
     nonce = b"\x00" * 16
-    plain_text = b"\x0A" * 16
+    plain_text = b"\x0a" * 16
     cipher_text = b'\x90\xe2\xf7\x08\xb9J"\x80\x04q\xb5\xfa\xfa\xb0^\xdc'
     calc_cipher_text = aes_ctr_encrypt(key, plain_text, nonce)
     assert calc_cipher_text == cipher_text
@@ -77,7 +77,7 @@ def test_aes_ctr_encrypt():
 def test_aes_ctr_decrypt():
     key = b"1234567812345678"
     nonce = b"\x00" * 16
-    plain_text = b"\x0A" * 16
+    plain_text = b"\x0a" * 16
     cipher_text = b'\x90\xe2\xf7\x08\xb9J"\x80\x04q\xb5\xfa\xfa\xb0^\xdc'
     calc_plain_text = aes_ctr_decrypt(key, cipher_text, nonce)
     assert calc_plain_text == plain_text

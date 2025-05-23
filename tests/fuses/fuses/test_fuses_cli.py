@@ -8,6 +8,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_configuration, load_file
 from tests.cli_runner import CliRunner
 from spsdk.apps import nxpfuses
@@ -16,19 +17,19 @@ from tests.fuses.fuses.fuses_test_operator import TestBlhostFuseOperator
 
 
 def mock_fuses_operator(*args, **kwargs):
-    return TestBlhostFuseOperator()
+    return TestBlhostFuseOperator(kwargs.get('family'))
 
 
 @pytest.mark.parametrize(
     "family",
     Fuses.get_supported_families(),
 )
-def test_nxpfuses_get_template(tmpdir: str, cli_runner: CliRunner, family: str):
+def test_nxpfuses_get_template(tmpdir: str, cli_runner: CliRunner, family: FamilyRevision):
     template = os.path.join(tmpdir, "template.yaml")
-    cmd = f"get-template -f {family} --output {template}"
+    cmd = f"get-template -f {family.name} --output {template}"
     cli_runner.invoke(nxpfuses.main, cmd.split())
     assert os.path.isfile(template)
-    assert load_configuration(template)["family"] == family
+    assert load_configuration(template)["family"] == family.name
 
 
 def test_nxpfuses_fuses_script(tmpdir: str, cli_runner: CliRunner, data_dir: str):
@@ -100,5 +101,5 @@ def test_nxpfuses_fuses_get_config(cli_runner: CliRunner, data_dir, caplog, tmpd
     cmd = f"get-config -f mimxrt798s -o {out} --diff-only"
     result = cli_runner.invoke(nxpfuses.main, cmd.split())
     cfg = load_configuration(out)
-    assert len(cfg["registers"]) == 3
-    assert "BOOT_CFG0" in cfg["registers"].keys()
+    assert len(cfg["registers"]) == 1
+    assert next(iter(cfg["registers"])) == "BOOT_CFG0"

@@ -1,13 +1,8 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-description:
-  # NXP IMXRT595 Shadow registers configuration
-  device: rt5xx # The NXP device name.
-  version: 1.7.1 # The SPSDK Shadow register tool version.
-  author: NXP # The author of the configuration.
-  release: alpha # The SPSDK release.
+family: mimxrt595s # The NXP device name.
 registers:
   RKTH: # SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).
     # For i in 0..3:

@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,7 +8,7 @@ latest: a0
 
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: i.MX 9 Applications Processors
+  purpose: i.MX Application Processors
   spsdk_predecessor_name: mx91
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/secure-energy-efficient-i-mx-91-family-brings-essential-linux-capabilities-for-thousands-of-edge-applications:i.MX91
@@ -158,6 +158,7 @@ features:
   dat:
     socc: 0x4D58005B # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    dat_is_using_sha256_always: True
     test_address: 0x2048_0000
     dmbox_ap_ix: 0
 

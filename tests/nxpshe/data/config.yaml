@@ -1,0 +1,54 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  she_scec Configuration template for mcxe247, Revision: latest.  ==========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe247
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+revision: latest
+# ======================================================================================================================
+#                                         == SHE Configuration for using SCEc ==
+# ======================================================================================================================
+# ------------------------------------===== Key for SCEc operation [Required] =====-------------------------------------
+# Description: Cryptographic key used in SHE (Secure Hardware Extension) SCEc operation
+key: 0f0e0d0c0b0a09080706050403020100
+# ----------------------------------------===== Key Identifier [Required] =====-----------------------------------------
+# Description: Unique identifier for the SCEc key slot
+key_id: USER_KEY_1
+# -------------------------------------===== SHE Unique Identifier [Optional] =====-------------------------------------
+# Description: Unique identifier for the SHE device
+uid: 1
+# --------------------------------------===== Authentication Key [Optional] =====---------------------------------------
+# Description: Authentication key for SHE (Secure Hardware Extension) SCEc operation
+auth_key: 000102030405060708090a0b0c0d0e0f
+# ---------------------------------===== Authentication Key Identifier [Optional] =====---------------------------------
+# Description: Unique identifier for the authentication key in SHE SCEc operation
+auth_key_id: MASTER_ECU_KEY
+# -----------------------------------------===== Counter Value [Optional] =====-----------------------------------------
+# Description: Counter used in SHE (Secure Hardware Extension) SCEc operation
+counter: 1
+# ======================================================================================================================
+#                                                == SHE-SCEc key flags ==
+# ======================================================================================================================
+# -------------------------------------===== Write Protection Flag [Optional] =====-------------------------------------
+# Description: Enable or disable write protection for the SHE-SCEc key
+write_protection: false
+# -------------------------------------===== Boot Protection Flag [Optional] =====--------------------------------------
+# Description: Enable or disable boot protection for the SHE-SCEc key
+boot_protection: false
+# -----------------------------------===== Debugger Protection Flag [Optional] =====------------------------------------
+# Description: Enable or disable debugger protection for the SHE-SCEc key
+debugger_protection: false
+# ----------------------------------------===== Key Usage Flag [Optional] =====-----------------------------------------
+# Description: Enable or disable key usage permissions for the SHE-SCEc key
+key_usage: false
+# ---------------------------------------===== Wildcard Key Flag [Optional] =====---------------------------------------
+# Description: Enable or disable wildcard key usage for the SHE-SCEc key
+wildcard: false

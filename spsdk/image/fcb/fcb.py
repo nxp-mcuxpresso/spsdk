@@ -8,20 +8,19 @@
 """This module contains FCB (Flash Configuration Block) related code."""
 
 
-import datetime
 import logging
 from typing import Any
 
 from typing_extensions import Self
 
-from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.mem_type import MemoryType
 from spsdk.image.segments_base import SegmentBase
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, update_validation_schema_family
 from spsdk.utils.misc import Endianness, swap_bytes
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +33,15 @@ class FCB(SegmentBase):
     TAG_SWAPPED = swap_bytes(TAG)
     SIZE = 0x200
 
-    def __init__(self, family: str, mem_type: MemoryType, revision: str = "latest") -> None:
+    def __init__(self, family: FamilyRevision, mem_type: MemoryType) -> None:
         """FCB Constructor.
 
         :param family: Chip family.
         :param mem_type: Used memory type.
-        :param revision: Optional Chip family revision.
         :raises SPSDKValueError: Unsupported family.
         """
-        super().__init__(family, revision)
-        mem_types = FCB.get_supported_memory_types(self.family, self.revision)
+        super().__init__(family)
+        mem_types = FCB.get_supported_memory_types(self.family)
         if mem_type not in mem_types:
             raise SPSDKValueError(
                 f"Unsupported memory type:{mem_type.label} not in {[mem_type.label for mem_type in mem_types]}"
@@ -53,7 +51,6 @@ class FCB(SegmentBase):
             family=family,
             feature=self.FEATURE,
             base_key=["mem_types", self.mem_type.label],
-            revision=revision,
             base_endianness=Endianness.LITTLE,
         )
 
@@ -67,9 +64,8 @@ class FCB(SegmentBase):
         cls,
         binary: bytes,
         offset: int = 0,
-        family: str = "Unknown",
+        family: FamilyRevision = FamilyRevision("Unknown"),
         mem_type: MemoryType = MemoryType.FLEXSPI_NOR,
-        revision: str = "latest",
     ) -> Self:
         """Parse binary block into FCB object.
 
@@ -77,10 +73,9 @@ class FCB(SegmentBase):
         :param offset: Offset of FCB in binary image.
         :param family: Chip family.
         :param mem_type: Used memory type.
-        :param revision: Optional Chip family revision.
         :raises SPSDKError: If given binary block contains wrong FCB tag
         """
-        fcb = cls(family=family, mem_type=mem_type, revision=revision)
+        fcb = cls(family=family, mem_type=mem_type)
         if len(binary[offset:]) < FCB.SIZE:
             raise SPSDKError(
                 f"Invalid input binary block size: ({len(binary[offset:])} < {FCB.SIZE})."
@@ -96,75 +91,85 @@ class FCB(SegmentBase):
             )
         return fcb
 
-    @staticmethod
-    def load_from_config(config: dict) -> "FCB":
-        """Load configuration file of FCB.
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
+        """Load FCB object from configuration.
 
-        :param config: FCB configuration file.
-        :return: FCB object.
+        :param config: Configuration dictionary.
+        :return: Initialized FCB object.
         """
         try:
-            family = config["family"]
-            mem_type = MemoryType.from_label(config["type"])
-            revision = config.get("revision", "latest")
-            fcb = FCB(family=family, mem_type=mem_type, revision=revision)
-            fcb_settings = config.get("fcb_settings", {})
-            fcb.registers.load_yml_config(fcb_settings)
+            family = FamilyRevision.load_from_config(config)
+            mem_type = MemoryType.from_label(config.get_str("type"))
+            fcb = cls(family=family, mem_type=mem_type)
+            fcb_settings = config.get_config("fcb_settings")
+            fcb.registers.load_from_config(fcb_settings)
         except (SPSDKError, AttributeError) as exc:
             raise SPSDKValueError(f"Cannot load FCB configuration: {str(exc)}") from exc
         return fcb
 
-    def create_config(self) -> str:
-        """Create current configuration YAML.
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the FCB.
 
-        :return: Configuration of FCB Block.
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.
         """
-        config: dict[str, Any] = {}
-        config["family"] = self.family
-        config["revision"] = self.revision
+        config = Config()
+        config["family"] = self.family.name
+        config["revision"] = self.family.revision
         config["type"] = self.mem_type.label
-        config["fcb_settings"] = self.registers.get_config()
-        schemas = self.get_validation_schemas(self.family, self.mem_type, self.revision)
-        return CommentedConfig(
-            main_title=(
-                f"FCB configuration for {self.family}.\n"
-                f"Created: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}.\n"
-                f"NXP SPSDK version: {spsdk_version}"
-            ),
-            schemas=schemas,
-        ).get_config(config)
+        config["fcb_settings"] = dict(self.registers.get_config())
+        return config
+
+    def _get_validation_schemas(self) -> list[dict[str, Any]]:
+        """Get validation schema for the object.
+
+        :return: List of validation schema dictionaries.
+        """
+        return self.get_validation_schemas(self.family, self.mem_type)
 
     @classmethod
     def get_validation_schemas(
-        cls, family: str, mem_type: MemoryType, revision: str = "latest"
+        cls, family: FamilyRevision, mem_type: MemoryType = MemoryType.FLEXSPI_NOR
     ) -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
         :param mem_type: Used memory type.
-        :param revision: Chip revision specification, as default, latest is used.
         :raises SPSDKError: Family or revision is not supported.
         :return: List of validation schemas.
         """
-        fcb_obj = FCB(family, mem_type, revision)
+        fcb_obj = FCB(family, mem_type)
         sch_cfg = get_schema_file(DatabaseManager.FCB)
         sch_family = get_schema_file("general")["family"]
+        sch_family["main_title"] = f"Flash Configuration Block template for {family}."
         try:
             update_validation_schema_family(
-                sch_family["properties"], FCB.get_supported_families(), family, revision
+                sch_family["properties"], FCB.get_supported_families(), family
             )
             sch_cfg["memory_type"]["properties"]["type"]["enum"] = [
-                mem_type.label
-                for mem_type in fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
+                mem_type.label for mem_type in fcb_obj.get_supported_memory_types(fcb_obj.family)
             ]
             sch_cfg["memory_type"]["properties"]["type"]["template_value"] = mem_type.label
             sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.registers.get_validation_schema()
             return [sch_family, sch_cfg["memory_type"], sch_cfg["fcb"]]
         except (KeyError, SPSDKError) as exc:
-            raise SPSDKError(f"Family {family} or {revision} is not supported") from exc
+            raise SPSDKError(f"Family {family} is not supported") from exc
+
+    @classmethod
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
+
+        :param config: Valid configuration
+        :return: Validation schemas
+        """
+        config.check(cls.get_validation_schemas_basic())
+        family = FamilyRevision.load_from_config(config)
+        mem_type = MemoryType.from_label(config["type"])
+        return cls.get_validation_schemas(family, mem_type)
 
     @staticmethod
-    def get_validation_schemas_family() -> list[dict[str, Any]]:
+    def get_validation_schemas_basic() -> list[dict[str, Any]]:
         """Create the validation schema just for supported families.
 
         :return: List of validation schemas for FCB supported families.
@@ -174,26 +179,18 @@ class FCB(SegmentBase):
         update_validation_schema_family(sch_family["properties"], FCB.get_supported_families())
         return [sch_family, sch_cfg["memory_type"]]
 
-    @staticmethod
-    def generate_config_template(
-        family: str, mem_type: MemoryType, revision: str = "latest"
+    @classmethod
+    def get_config_template(
+        cls, family: FamilyRevision, mem_type: MemoryType = MemoryType.FLEXSPI_NOR
     ) -> str:
-        """Generate configuration for selected family.
+        """Get configuration for selected family.
 
         :param family: Family description.
         :param mem_type: Used memory type.
-        :param revision: Chip revision specification, as default, latest is used.
-        :return: Template of FCB Block.
+        :return: Template of FCB Block configuration.
         """
-        ret = ""
-
-        if family in FCB.get_supported_families():
-            schemas = FCB.get_validation_schemas(family, mem_type, revision)
-            ret = CommentedConfig(
-                f"Flash Configuration Block template for {family}.", schemas
-            ).get_template()
-
-        return ret
+        schemas = cls.get_validation_schemas(family, mem_type)
+        return cls._get_config_template(family, schemas)
 
     def __repr__(self) -> str:
         return f"FCB Segment, memory type: {self.mem_type.description}"
@@ -202,6 +199,5 @@ class FCB(SegmentBase):
         return (
             "FCB Segment:\n"
             f" Family:           {self.family}\n"
-            f" Revision:         {self.revision}\n"
             f" Memory type:      {self.mem_type.description}\n"
         )

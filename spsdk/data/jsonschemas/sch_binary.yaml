@@ -1,4 +1,4 @@
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,12 +13,18 @@ properties:
   size:
     type: [string, number]
     title: Overall size of image
-    description: The overall size of merged image.
+    description: The overall size of merged image. If the size of merged blocks exceeds this size the merge failed, otherwise the merged blocks will be padded with defined pattern.
     format: number
     template_value: 1024
   pattern:
     title: Pattern defined as number or special values
-    description: The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
+    description: >
+      The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - [rand, zeros, ones, inc]
+        - any number pattern: The defined number pattern, that will be repeated to fill up gaps between blocks.
+        - rand: Random pattern
+        - zeros: The zeros pattern 0x0000000....
+        - ones: The 'ones' pattern 0xfffffff....
+        - inc: The byte incremental pattern 0x00010203.....fdfeff00010203....
     template_value: zeros
     oneOf:
       - type: [string, number]
@@ -59,8 +65,8 @@ properties:
                   template_value: my_binary_to_merge.bin
                 offset:
                   type: [string, number]
-                  title: Offset of image
-                  description: The offset of image to be merge on. The offset could be also negative - for example to 'erase' security bit from address.
+                  title: Offset of image in merged block
+                  description: The offset of image to be merged on. The offset could be also negative - for example to 'erase' security bit from address.
                     In case that offset definition is omitted, the block will be placed after previous one with defined alignment.
                   format: number
                   template_value: 1024
@@ -85,14 +91,20 @@ properties:
                   template_value: 0x200
                 offset:
                   type: [string, number]
-                  title: Offset of binary block
-                  description: The offset of binary block to be merge on. The offset could be also negative - for example to 'erase' security bit from address.
+                  title: Offset of binary block in merged block
+                  description: The offset of binary block to be merged on. The offset could be also negative.
                     In case that offset definition is omitted, the block will be placed after previous one with defined alignment.
                   format: number
                   template_value: 1024
                 pattern:
                   title: Pattern defined as number or special values
-                  description: The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
+                  description: >
+                    The pattern that will be used to fill up binary block. Number or choose from predefined patterns - [rand, zeros, ones, inc]
+                      - any number pattern: The defined number pattern, that will be repeated to fill up binary block.
+                      - rand: Random pattern
+                      - zeros: The zeros pattern 0x0000000....
+                      - ones: The 'ones' pattern 0xfffffff....
+                      - inc: The byte incremental pattern 0x00010203.....fdfeff00010203....
                   template_value: zeros
                   oneOf:
                     - type: [string, number]

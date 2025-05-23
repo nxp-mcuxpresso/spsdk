@@ -1,0 +1,56 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# =======================================  Binary Image Configuration template.  =======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== Image name [Required] =====-------------------------------------------
+# Description: The optional image name used just during prints to console during merging.
+name: Output merged binary file
+# --------------------------===== Pattern defined as number or special values [Optional] =====--------------------------
+# Description: The pattern that will be used to fill up gaps between defined regions. String or number or choose from
+# predefined patterns - rand, zeros, ones, inc
+pattern: zeros
+# ---------------------------------------===== Regions alignment [Optional] =====---------------------------------------
+# Description: The region alignment that will be used in case that offset is not specified.
+alignment: 1024
+
+# ======================================================================================================================
+#                                              == Binary images to merge ==                                             
+# ======================================================================================================================
+# --------------------------------===== Array of defined binary regions [Required] =====--------------------------------
+# Description: The array of individual regions to merge into final image.
+regions:
+  -
+  # ====================================================================================================================
+  #                                          == List of possible 2 options. ==                                          
+  #                                         Options [binary_file, binary_block]                                         
+  # ====================================================================================================================
+  #  =========================== [Example of possible configuration: #0 , erase if not used] ============================
+    # ----------------------------------------===== Binary file [Required] =====----------------------------------------
+    binary_file:
+      # ---------------------------------------===== Image name [Optional] =====----------------------------------------
+      # Description: The optional image name used just during prints to console during merging.
+      name: Image 1
+      offset: 0
+      # ---------------------------------------===== Binary file [Required] =====---------------------------------------
+      # Description: The path to binary file to merge into final image
+      path: evkmimxrt595_hello_world_s.s19
+  -
+  # ====================================================================================================================
+  #                                          == List of possible 2 options. ==                                          
+  #                                         Options [binary_file, binary_block]                                         
+  # ====================================================================================================================
+  #  =========================== [Example of possible configuration: #0 , erase if not used] ============================
+    # ----------------------------------------===== Binary file [Required] =====----------------------------------------
+    binary_file:
+      # ---------------------------------------===== Image name [Optional] =====----------------------------------------
+      # Description: The optional image name used just during prints to console during merging.
+      name: Image 2
+      offset: 0
+      # ---------------------------------------===== Binary file [Required] =====---------------------------------------
+      # Description: The path to binary file to merge into final image
+      path: evkmimxrt595_hello_world_ns.s19

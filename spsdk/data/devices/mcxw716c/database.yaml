@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,7 @@ info:
       interfaces: ["uart", "can", "spi", "i2c"]
 
 features:
-  # ======== IFR section ========
-  ifr:
+  # ======== PFR section ========
+  pfr:
     romcfg:
       reg_spec: ifr_romcfg_a2.json

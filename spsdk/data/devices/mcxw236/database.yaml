@@ -9,7 +9,7 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   # Web page of MCU representative
   web: https://www.nxp.com
   memory_map:
@@ -37,7 +37,7 @@ info:
       usb:
         vid: 0x1FC9
         pid: 0x0021
-  
+
 
 features:
   # ======== Communication buffer section ========
@@ -163,7 +163,7 @@ features:
 
   # ======== TrustZone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== Bootable image section ========
   bootable_image:

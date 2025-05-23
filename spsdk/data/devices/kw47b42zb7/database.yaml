@@ -5,17 +5,17 @@
 revisions:
   a0:
     features:
-      ifr:
+      pfr:
         romcfg:
           reg_spec: ifr_romcfg_a0.json
         cmactable:
           reg_spec: ifr_cmactable_a0.json
   a1: {}
-latest: a0
+latest: a1
 
 # General MCU information
 info:
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   spsdk_predecessor_name: kw47xx
   # Web page of MCU representative
   web: https://www.nxp.com
@@ -58,7 +58,7 @@ features:
     socc: 9 # SOCC identification
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
     dat_is_using_sha256_always: True
-    famode_cert: [signed, nxp_signed] # List of Fault analysis Mode certificates (names of MBI classes)
+    famode_cert: [signed_xip, nxp_signed_xip] # List of Fault analysis Mode certificates (names of MBI classes)
     famode_cfg_defaults: # Dictionary of default values of standard MBI members for FAmode image
       outputImageExecutionTarget: xip
       inputImageFile: generated
@@ -72,7 +72,7 @@ features:
   # ======== MBI section ========
   mbi:
     mbi_classes:
-      plain:
+      plain_xip:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -81,7 +81,7 @@ features:
           - Mbi_MixinTrustZoneMandatory
           - Mbi_MixinImageSubType
           - Mbi_ExportMixinAppTrustZone
-      crc:
+      crc_xip:
         image_type: CRC_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -91,7 +91,7 @@ features:
           - Mbi_MixinImageSubType
           - Mbi_ExportMixinAppTrustZone
           - Mbi_ExportMixinCrcSign
-      signed:
+      signed_xip:
         image_type: SIGNED_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -101,7 +101,7 @@ features:
           - Mbi_MixinManifestDigest
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
-      nxp_signed:
+      nxp_signed_xip:
         image_type: SIGNED_XIP_NXP_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -114,13 +114,14 @@ features:
           - Mbi_ExportMixinEccSign
     images:
       xip:
-        plain: plain
-        crc: crc
-        signed: signed
-        nxp_signed: nxp_signed
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+        nxp_signed: nxp_signed_xip
 
-  # ======== IFR section ========
-  ifr:
+  # ======== PFR section ========
+  pfr:
+    sub_features: [romcfg, cmactable]
     romcfg:
       address: 0x200_0000
       reg_spec: ifr_romcfg_a0.json
@@ -143,7 +144,7 @@ features:
 
   # ======== TrustZone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== Bootable image section ========
   bootable_image:

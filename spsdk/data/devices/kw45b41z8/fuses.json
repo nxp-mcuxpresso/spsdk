@@ -67,7 +67,7 @@
                     "description": "Debug Enable Lock.",
                     "index_int": "0x000B",
                     "individual_write_lock": "none",
-                    "reg_width": 1,
+                    "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
@@ -95,7 +95,7 @@
                     "description": "Debug Authentication Disabled.",
                     "index_int": "0x000C",
                     "individual_write_lock": "none",
-                    "reg_width": 1,
+                    "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
@@ -123,7 +123,7 @@
                     "description": "Trust Zone Mode Enable.",
                     "index_int": "0x000D",
                     "individual_write_lock": "none",
-                    "reg_width": 1,
+                    "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
@@ -151,7 +151,7 @@
                     "description": "Serial Download Disabled.",
                     "index_int": "0x0011",
                     "individual_write_lock": "none",
-                    "reg_width": 1,
+                    "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
@@ -179,7 +179,7 @@
                     "description": "Wakeup Disabled.",
                     "index_int": "0x0012",
                     "individual_write_lock": "none",
-                    "reg_width": 1,
+                    "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
@@ -207,7 +207,7 @@
                     "description": "Key revocation indicators of CUST_PROD_OEMFW_AUTH_PUK.",
                     "index_int": "0x0013",
                     "individual_write_lock": "none",
-                    "reg_width": 4
+                    "reg_width": 8
                 },
                 {
                     "id": "fuse21",

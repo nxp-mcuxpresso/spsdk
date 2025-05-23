@@ -243,19 +243,37 @@ def load_file(
         return f.read()
 
 
-def write_file(data: Union[str, bytes], path: str, mode: str = "w", encoding: str = "utf-8") -> int:
+def write_file(
+    data: Union[str, bytes],
+    path: str,
+    mode: str = "w",
+    encoding: str = "utf-8",
+    overwrite: bool = True,
+) -> int:
     """Writes data into a file.
 
     :param data: data to write
     :param path: Path to the file.
     :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
     :param encoding: Encoding of written file ('ascii', 'utf-8'), default is 'utf-8'.
+    :param overwrite: If False, doesn't overwrite existing file but creates new one with appended number
     :return: number of written elements
     """
     path = path.replace("\\", "/")
     folder = os.path.dirname(path)
     if folder and not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
+
+    # If overwrite is False and file exists, modify path by appending number
+    if not overwrite and os.path.exists(path):
+        base_path, ext = os.path.splitext(path)
+        counter = 1
+        new_path = f"{base_path}_{counter}{ext}"
+        while os.path.exists(new_path):
+            counter += 1
+            new_path = f"{base_path}_{counter}{ext}"
+        path = new_path
+        logger.debug(f"File already exists. Saving to {path} instead")
 
     logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path}")
     with open(path, mode, encoding=None if "b" in mode else encoding) as f:

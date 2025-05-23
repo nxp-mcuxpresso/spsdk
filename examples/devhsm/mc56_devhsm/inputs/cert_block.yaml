@@ -1,9 +1,19 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 # =====================================  Certification Block for MC56xx template  ======================================
-
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mwct20d2
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
 # ======================================================================================================================
 #                                             == ISK Certificate Settings ==
 # ======================================================================================================================
@@ -13,10 +23,7 @@ selfSigned: true
 iskPublicKey: ec_secp256r1_sign_cert.pem
 # -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
 # Description: Path to Main root Certification Private Key.
-signPrivateKey: ec_pk_secp256r1_sign_cert.pem
-# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
-# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-# signProvider: type=file;file_path=root_prv_key.pem
+signer: ec_pk_secp256r1_sign_cert.pem
 # ======================================================================================================================
 #                                                  == Basic Settings ==
 # ======================================================================================================================

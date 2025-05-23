@@ -16,6 +16,7 @@ import click
 from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_file, value_to_int
 from spsdk.utils.registers import Register, Registers, RegsBitField
 
@@ -211,7 +212,9 @@ def main(header: str, fcb: str, json: str, log_level: int) -> int:
     sp_struct = get_struct(header_file, fcb)
 
     offset = 0
-    regs = Registers(family="FCB", feature="PlaceHolder")
+    regs = Registers(
+        family=FamilyRevision("FCB"), feature="PlaceHolder", do_not_raise_exception=True
+    )
     for member in StructMemberIter(sp_struct):
         if member.name == "memConfig":
             gen_struct = get_struct(header_file, member.mem_type)

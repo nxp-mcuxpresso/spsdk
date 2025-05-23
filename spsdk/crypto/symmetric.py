@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -138,7 +138,7 @@ def aes_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] 
             "The key must be a valid AES key length: "
             f"{', '.join([str(k) for k in algorithms.AES.key_sizes])}"
         )
-    init_vector = iv_data or bytes(algorithms.AES.block_size)
+    init_vector = iv_data or bytes(algorithms.AES.block_size // 8)
     if len(init_vector) * 8 != algorithms.AES.block_size:
         raise SPSDKError(f"The initial vector length must be {algorithms.AES.block_size}")
     cipher = Cipher(algorithms.AES(key), modes.CBC(init_vector))

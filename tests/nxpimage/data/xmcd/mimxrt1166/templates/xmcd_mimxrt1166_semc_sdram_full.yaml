@@ -1,4 +1,7 @@
-# ===========================  External Memory Configuration Data template for mimxrt1166.  ============================
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =======================  External Memory Configuration Data for mimxrt1166, Revision: latest.  =======================
 
 
 # -------------------------------------------------------- Note --------------------------------------------------------
@@ -8,12 +11,11 @@
 # ======================================================================================================================
 #                                                 == General Options ==                                                 
 # ======================================================================================================================
-# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
-# Description: MCU family name.
-# Possible options: <mimxrt1166, mimxrt1176, mimxrt1189>
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
 family: mimxrt1166
-# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
-# Description: If needed this could be used to specify silicon revision of device.
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
 # Possible options: <a0, latest>
 revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
@@ -55,10 +57,10 @@ xmcd_settings:
     tag: 12
   # -----------------------------------------===== magicNumber [Optional] =====-----------------------------------------
   # Description: Offset: 0x00000004, Width: 8b; Fixed to 0xA1
-  magicNumber: '0x00'
+  magicNumber: '0xA1'
   # -------------------------------------------===== version [Optional] =====-------------------------------------------
   # Description: Offset: 0x00000005, Width: 8b; Set to 1 for this implementation
-  version: '0x00'
+  version: '0x01'
   # ----------------------------------------===== configOption [Optional] =====-----------------------------------------
   # Description: Offset: 0x00000006, Width: 8b; Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case
   configOption:

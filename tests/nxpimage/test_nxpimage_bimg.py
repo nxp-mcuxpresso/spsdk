@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,7 +17,9 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import BootableImageSegment
 from spsdk.image.mem_type import MemoryType
+from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
 
 FULL_LIST_TO_TEST = [
@@ -78,6 +80,7 @@ FULL_LIST_TO_TEST = [
     ("mcxn947", "flexspi_nor", "full", ["fcb", "mbi"]),
     ("mcxn947", "flexspi_nor", "starting_fcb_1", ["fcb", "mbi"]),
     ("rw612", "flexspi_nor", None, ["fcb", "mbi"]),
+    ("mimxrt798s", "xspi_nor", None, ["fcb", "mbi"]),
 ]
 
 
@@ -106,6 +109,7 @@ FULL_LIST_TO_TEST = [
         ("flexspi_nor", "mimxrt1189", "with_xmcd", "config_yaml.yaml"),
         ("semc_nand", "mimxrt1166", None, "config.yaml"),
         ("semc_nand", "mimxrt1176", None, "config.yaml"),
+        ("flexspi_nor", "mimxrt1176", "as_yaml", "config.yaml"),
         ("flexspi_nand", "mimxrt1166", None, "config.yaml"),
         ("flexspi_nand", "mimxrt1176", None, "config.yaml"),
         ("flexspi_nand", "mimxrt1176", None, "config_yaml.yaml"),
@@ -120,7 +124,7 @@ def test_nxpimage_bimg_merge(
             config_dir = os.path.join(config_dir, configuration)
         config_file_path = os.path.join(config_dir, config_file)
         out_file = os.path.join(tmpdir, f"bimg_{family}_merged.bin")
-        cmd = ["bootable-image", "merge", "-c", config_file_path, "-o", out_file]
+        cmd = ["bootable-image", "export", "-c", config_file_path, "-o", out_file]
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
@@ -202,6 +206,7 @@ def test_nxpimage_bimg_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
         if config_dir:
             reference_dir = os.path.join(reference_dir, config_dir)
         reference = load_configuration(os.path.join(reference_dir, "config.yaml"))
+        generated.pop("post_export")
         assert sorted(generated.keys()) == sorted(reference.keys())
 
 
@@ -222,6 +227,7 @@ def test_nxpimage_bimg_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
 def test_nxpimage_bimg_parse_autodetect_mem_type(data_dir, family, input_path, expected_mem_type):
     input_binary_path = os.path.join(data_dir, "bootable_image", input_path)
     input_binary = load_binary(input_binary_path)
+    family = FamilyRevision(family)
     if expected_mem_type:
         bimg = BootableImage.parse(input_binary, family)
         assert bimg.init_offset == 0
@@ -311,18 +317,23 @@ def test_nxpimage_bimg_parse_incomplete_cli(
 def test_find_the_exact_layout_match_first(caplog, data_dir):
     caplog.set_level(logging.WARNING)
     bimg_bin = os.path.join(data_dir, "bootable_image", "lpc55s36", "internal", "merged_image.bin")
-    bimg = BootableImage.parse(load_binary(bimg_bin), "lpc55s36")
+    bimg = BootableImage.parse(load_binary(bimg_bin), FamilyRevision("lpc55s36"))
     assert bimg.mem_type == "internal"
     # One warning regarding multiple mem types is shown
     # spi_recovery_mbi and internal should fit
-    assert len(caplog.messages) == 1
+    assert next(
+        msg
+        for msg in caplog.messages
+        if msg
+        == 'Multiple possible memory types detected: "Internal memory", "Recovery SPI with MBI".The "Internal memory" memory type will be used.'
+    )
 
 
 def test_get_segment(data_dir):
     bimg_bin = os.path.join(
         data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain", "merged_image.bin"
     )
-    bimg = BootableImage.parse(load_binary(bimg_bin), "rt5xx")
+    bimg = BootableImage.parse(load_binary(bimg_bin), FamilyRevision("rt5xx"))
     segments = {
         BootableImageSegment.FCB: 1024,
         BootableImageSegment.IMAGE_VERSION: 1536,
@@ -337,10 +348,10 @@ def test_image_info(data_dir):
     bimg_bin = os.path.join(
         data_dir, "bootable_image", family, "flexspi_nor", "xip_plain", "merged_image.bin"
     )
-    bimg = BootableImage.parse(load_binary(bimg_bin), family)
+    bimg = BootableImage.parse(load_binary(bimg_bin), FamilyRevision(family))
     info = bimg.image_info()
-    assert info.name == f"Bootable Image for {family}"
-    assert info.image_name == f"Bootable Image for {family}"
+    assert f"Bootable Image for {family}" in info.name
+    assert f"Bootable Image for {family}" in info.image_name
     assert info.offset == 0
     assert info.pattern.pattern == bimg.image_pattern
     sub_images = {"fcb": 1024, "image_version": 1536, "mbi": 4096}
@@ -364,7 +375,9 @@ def test_nxpimage_bimg_parse_image_adjustment(
         data_dir, "bootable_image", family, mem_type, configuration, "merged_image.bin"
     )
     input_binary = load_binary(input_binary_path)
-    bimg = BootableImage.parse(input_binary, family, MemoryType.from_label(mem_type))
+    bimg = BootableImage.parse(
+        input_binary, FamilyRevision(family), MemoryType.from_label(mem_type)
+    )
     assert bimg.init_offset == init_offset
     assert len(bimg.segments) == segments_count
 
@@ -391,6 +404,7 @@ def test_nxpimage_bimg_default_init_offset():
     ],
 )
 def test_nxpimage_bimg_init_offset_setter(family, mem_type, init_offset, actual_offset):
+    family = FamilyRevision(family)
     memory_type = MemoryType.from_label(mem_type)
     if actual_offset is not None:
         bimg = BootableImage(family=family, mem_type=memory_type, init_offset=init_offset)
@@ -411,8 +425,7 @@ def test_nxpimage_bimg_init_offset_setter(family, mem_type, init_offset, actual_
 def test_nxpimage_bimg_segments_index_is_updated(data_dir):
     config_dir = os.path.join(data_dir, "bootable_image", "mcxn947", "flexspi_nor", "starting_fcb")
     bimg = BootableImage.load_from_config(
-        load_configuration(os.path.join(config_dir, "config.yaml")),
-        search_paths=[config_dir],
+        Config.create_from_file(os.path.join(config_dir, "config.yaml"))
     )
     segments = {
         BootableImageSegment.FCB: 0x0,
@@ -465,7 +478,9 @@ def test_nxpimage_bimg_parse_export(data_dir, family, mem_type, configuration):
         data_dir, "bootable_image", family, mem_type, configuration, "merged_image.bin"
     )
     input_binary = load_binary(input_binary_path)
-    bimg = BootableImage.parse(input_binary, family, MemoryType.from_label(mem_type))
+    bimg = BootableImage.parse(
+        input_binary, FamilyRevision(family), MemoryType.from_label(mem_type)
+    )
     assert len(bimg.export()) == len(input_binary)
 
 
@@ -492,7 +507,7 @@ def test_bimg_get_supported_memory_types_all():
     ],
 )
 def test_bimg_get_supported_memory_types_family(family, mem_types):
-    ret_mem_types = BootableImage.get_supported_memory_types(family)
+    ret_mem_types = BootableImage.get_supported_memory_types(FamilyRevision(family))
     assert ret_mem_types == mem_types
 
 
@@ -510,3 +525,36 @@ def test_nxpimage_bimg_verify(
         if mem_type == "flexspi_nor":
             cmd = f"bootable-image verify -f {family} -m serial_downloader -b {input_binary} -p"
             cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=1)
+
+
+@pytest.mark.parametrize(
+    "mem_type,family,configuration,config_file",
+    [
+        ("serial_downloader", "mimx9352", None, "config.yaml"),
+    ],
+)
+def test_nxpimage_bimg_merge_post_export(
+    cli_runner: CliRunner, tmpdir, data_dir, mem_type, family, configuration, config_file
+):
+    with use_working_directory(data_dir):
+        config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
+        if configuration:
+            config_dir = os.path.join(config_dir, configuration)
+        config_file_path = os.path.join(config_dir, config_file)
+        out_file = os.path.join(tmpdir, f"bimg_{family}_merged.bin")
+        cmd = [
+            "bootable-image",
+            "export",
+            "-c",
+            config_file_path,
+            "-o",
+            out_file,
+            "-oc",
+            f"post_export={os.path.join(tmpdir, 'output')}",
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+        assert os.path.isfile(out_file)
+
+        # assert that the output directory is created and is not empty
+        assert os.path.exists(os.path.join(tmpdir, "output"))
+        assert len(os.listdir(os.path.join(tmpdir, "output"))) == 4

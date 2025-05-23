@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,3 +15,15 @@ class SPSDKUnsupportedImageType(SPSDKError):
 
 class SPSDKSegmentNotPresent(SPSDKError):
     """The segment is missing in the image."""
+
+
+class SPSDKRawDataException(SPSDKError):
+    """Raw data read failed."""
+
+
+class SPSDKStreamReadFailed(SPSDKRawDataException):
+    """Read_raw_data could not read stream."""
+
+
+class SPSDKNotEnoughBytesException(SPSDKRawDataException):
+    """Read_raw_data could not read enough data."""

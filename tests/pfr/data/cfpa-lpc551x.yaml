@@ -1,15 +1,12 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 # NXP lpc551x PFR CFPA configuration
-description: # The PFR CFPA configuration description.
-  device: lpc551x # The NXP device name.
-  revision: a # The NXP device revision.
-  type: CFPA # The PFR type (CMPA, CFPA).
-  version: 1.7.1 # The SPSDK tool version.
-  author: NXP # The author of the configuration.
-  release: alpha # The SPSDK release.
+family: lpc551x # The NXP device name.
+revision: a # The NXP device revision.
+type: CFPA # The PFR type (CMPA, CFPA).
+
 settings: # The PFR CFPA registers configuration.
   HEADER: # Header
     value: "0x00000000" # The value width: 32b

@@ -1,0 +1,39 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+#   mbi Configuration for mimxrt798s, Revision: latest..
+# Created: 15/04/2025 10:08:40.
+# NXP SPSDK version: 3.0.0.dev119+gc3921a529  
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimxrt798s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, b0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==                                                 
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, signed, crc>
+outputImageAuthenticationType: plain
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: mbi_mimxrt798s_xip_plain.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: application.bin
+# ----------------------------------------===== Image version. [Optional] =====-----------------------------------------
+# Description: Image version is used for dual boot. The boot ROM decides which image to boot first based on the image
+# version. It boots the one with the newer image version first, and in case of a failure, it boots the older one.
+imageVersion: 0

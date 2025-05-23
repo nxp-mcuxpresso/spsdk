@@ -18,7 +18,8 @@ from spsdk.mboot.commands import CommandTag
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.memories import ExtMemPropTags, MemoryRegion
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -198,6 +199,8 @@ class PropertyTag(SpsdkEnum):
     BOOT_STATUS_REGISTER       = (0x20, "BootStatusRegister", "Boot Status Register")
     FIRMWARE_VERSION           = (0x21, "FirmwareVersion", "Firmware Version")
     FUSE_PROGRAM_VOLTAGE       = (0x22, "FuseProgramVoltage", "Fuse Program Voltage")
+    SHE_FLASH_PARTITION        = (0x24, "SheFlashPartition", "Secure Hardware Extension: Flash Partition")
+    SHE_BOOT_MODE              = (0x25, "SheBootMode", "Secure Hardware Extension: Boot Mode")
     UNKNOWN                    = (0xFF, "Unknown", "Unknown property")
 
 
@@ -468,7 +471,7 @@ class DeviceUidValue(PropertyValueBase):
 
     def to_str(self) -> str:
         """Get stringified property representation."""
-        return " ".join(f"{item:02X}" for item in self.value)
+        return "".join(f"{item:02x}" for item in self.value)
 
 
 class ReservedRegionsValue(PropertyValueBase):
@@ -737,6 +740,68 @@ class FuseLockedStatus(PropertyValueBase):
         return fuses
 
 
+class SHEFlashPartition(PropertyValueBase):
+    """Class representing SHE Flash Partition property."""
+
+    __slots__ = ("max_keys", "flash_size")
+
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
+        """Initialize the SHE Flash Partition property object.
+
+        :param tag: Property tag, see: `PropertyTag`
+        :param raw_values: List of integers representing the property
+        """
+        super().__init__(tag)
+        self.max_keys = raw_values[0] & 0x03
+        self.flash_size = (raw_values[0] >> 8) & 0x03
+
+    def to_str(self) -> str:
+        """Get stringified property representation."""
+        max_keys_mapping = {
+            0: "0 Keys, CSEc disabled",
+            1: "max 5 Key",
+            2: "max 10 Keys",
+            3: "max 20 Keys",
+        }
+        flash_size_mapping = {
+            0: "64kB",
+            1: "48kB",
+            2: "32kB",
+            3: "0kB",
+        }
+        return (
+            f"{flash_size_mapping[self.flash_size]} EEPROM "
+            f"with {max_keys_mapping[self.max_keys]}"
+        )
+
+
+class SHEBootMode(PropertyValueBase):
+    """Class representing SHE Boot Mode property."""
+
+    __slots__ = ("size", "mode")
+
+    def __init__(self, tag: int, raw_values: list[int]) -> None:
+        """Initialize the SHE Boot Mode property object.
+
+        :param tag: Property tag, see: `PropertyTag`
+        :param raw_values: List of integers representing the property
+        """
+        super().__init__(tag)
+        self.size = raw_values[0] & 0x3FFF_FFFF
+        self.mode = (raw_values[0] >> 30) & 0x03
+
+    def to_str(self) -> str:
+        """Get stringified property representation."""
+        mode_mapping = {0: "Strict Boot", 1: "Serial Boot", 2: "Parallel Boot", 3: "Undefined"}
+        return (
+            f"SHE Boot Mode: {mode_mapping.get(self.mode, 'Unknown')} ({self.mode})\n"
+            f"SHE Boot Size: {size_fmt(self.size // 8)} (0x{self.size:_x})"
+        )
+
+    def __str__(self) -> str:
+        return self.to_str()
+
+
 ########################################################################################################################
 # McuBoot property response parser
 ########################################################################################################################
@@ -850,6 +915,8 @@ PROPERTIES: dict[int, dict] = {
             "false_string": "Normal Voltage (1.8 V)",
         },
     },
+    PropertyTag.SHE_FLASH_PARTITION.tag: {"class": SHEFlashPartition, "kwargs": {}},
+    PropertyTag.SHE_BOOT_MODE.tag: {"class": SHEBootMode, "kwargs": {}},
     PropertyTag.UNKNOWN.tag: {
         "class": IntListValue,
         "kwargs": {"str_format": "hex"},
@@ -929,7 +996,7 @@ def parse_property_value(
     property_tag: Union[int, PropertyTag],
     raw_values: list[int],
     ext_mem_id: Optional[int] = None,
-    family: Optional[str] = None,
+    family: Optional[FamilyRevision] = None,
 ) -> Optional[PropertyValueBase]:
     """Parse the property value received from the device.
 

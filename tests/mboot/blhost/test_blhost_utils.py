@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,8 +17,9 @@ from spsdk.apps.blhost_helper import (
     parse_trust_prov_oem_key_type,
     parse_trust_prov_wrapping_key_type,
 )
-from spsdk.utils.images import BinaryImage
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.interfaces.device.usbsio_device import UsbSioDevice
+from spsdk.utils.family import FamilyRevision
 
 
 @pytest.mark.parametrize(
@@ -44,14 +45,12 @@ def test_parse_property_tag(input, expected):
     [
         ("verify-erase", "kw45b41z8", 10),
         ("verify-erase", "k32w148", 10),
-        ("verify-erase", None, 0xFF),
-        ("current-version", None, 1),
         ("current-version", "kw45b41z8", 1),
         ("current-version", "k32w148", 1),
     ],
 )
 def test_parse_property_tag_override(input, family, expected):
-    actual = parse_property_tag(input, family)
+    actual = parse_property_tag(input, FamilyRevision(family))
     assert actual == expected
 
 
@@ -140,6 +139,9 @@ def test_parse_image_file_aligned_sizes(path, aligned_sizes: list[tuple[int, int
         ("0x5A3C", 23100),
         ("GETCUSTMKSK", 15450),
         ("0x3C5A", 15450),
+        ("ENCKEY", 15525),
+        ("0x3CA5", 15525),
+        ("0x3ca5", 15525),
     ],
 )
 def test_parse_tp_prov_oem_key_type(input_value, expected_output):

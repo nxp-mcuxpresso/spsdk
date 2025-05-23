@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,6 +15,7 @@ from ruamel.yaml import YAML
 
 from spsdk.apps import pfr as cli
 from spsdk.pfr.pfr import CMPA
+from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -54,12 +55,11 @@ def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
     test_data_dir = os.path.join(data_dir, "yaml_bin")
 
     cmd = [
-        "generate-binary",
+        "export",
         "--output",
         f"{tmpdir}/{name}_{type}.bin",
         "--config",
         f"{test_data_dir}/{name}_{type}.yaml",
-        "--calc-inverse",
         "--ignore",  # Omit PFRC tests
     ]
     logging.debug(cmd)
@@ -72,7 +72,7 @@ def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
 def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir, tmpdir):
     out_file = os.path.join(tmpdir, "cmpa_mcxn9xx.bin")
     cmd_cmpa_config = [
-        "generate-binary",
+        "export",
         "--output",
         out_file,
         "--config",
@@ -110,12 +110,11 @@ def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir, tmpdir):
 def test_generate_cmpa(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Generation CMPA binary."""
     cmd = [
-        "generate-binary",
+        "export",
         "--output",
         f"{tmpdir}/pnd.bin",
         "--config",
         f"{data_dir}/cmpa_96mhz.json",
-        "--calc-inverse",
         "--secret-file",
         f"{data_dir}/selfsign_privatekey_rsa2048.pem",
     ]
@@ -132,7 +131,7 @@ def test_generate_cmpa_with_elf2sb(cli_runner: CliRunner, data_dir, tmpdir):
     new_file = f"{tmpdir}/new.bin"
     big_file = f"{tmpdir}/big.bin"
 
-    cmd = "generate-binary --config cmpa_96mhz.json --calc-inverse"
+    cmd = "export --config cmpa_96mhz.json"
     # basic usage when keys are passed on command line
     cmd1 = cmd + f" -o {org_file} -sf rotk0_rsa_2048.pub -sf rotk1_rsa_2048.pub"
     # elf2sb config file contains previous two keys + one empty line + 4th entry is not present
@@ -153,7 +152,7 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
     """Test PFR CLI - Generation CMPA binary with elf2sb."""
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
-    cmd = f"generate-binary --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x.yaml -o {new}"
+    cmd = f"export --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x.yaml -o {new}"
 
     with use_working_directory(data_dir):
         result = CliRunner().invoke(cli.main, cmd.split())
@@ -164,7 +163,7 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
 def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Generation CMPA binary."""
     cmd = [
-        "generate-binary",
+        "export",
         "--output",
         f"{tmpdir}/cmpa_raw.bin",
         "--config",
@@ -179,7 +178,7 @@ def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir, tmpdir):
 def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Parsing CMPA binary to get config."""
     cmd = [
-        "parse-binary",
+        "parse",
         "--family",
         "lpc55s69",
         "--type",
@@ -193,8 +192,8 @@ def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
 
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
-    new_cfg = load_configuration(f"{tmpdir}/config.yml")
-    expected_cfg = load_configuration(f"{data_dir}/cmpa_96mhz_rotkh.yml")
+    new_cfg = Config.create_from_file(f"{tmpdir}/config.yml")
+    expected_cfg = Config.create_from_file(f"{data_dir}/cmpa_96mhz_rotkh.yml")
     created = CMPA.load_from_config(new_cfg)
     expected = CMPA.load_from_config(expected_cfg)
     assert created == expected
@@ -250,7 +249,7 @@ def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
     ]
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
-    pfr_config = load_configuration(f"{tmpdir}/pfr.yml")
+    pfr_config = Config.create_from_file(f"{tmpdir}/pfr.yml")
     assert pfr_config
     assert pfr_config["type"] == type.upper()
     assert pfr_config["family"] == family
@@ -285,7 +284,7 @@ def test_pfrc_integration_1(
         yaml = YAML()
         yaml.dump(config, fp)
 
-    cmd = f"generate-binary --config {cmpa_config_path} --output {output_bin}"
+    cmd = f"export --config {cmpa_config_path} --output {output_bin}"
     if ignore:
         cmd += " --ignore"
     logging.debug(cmd)
@@ -305,7 +304,7 @@ def test_generate_cmpa_certblock_lpc55s3x(cli_runner: CliRunner, data_dir, tmpdi
     """Test PFR CLI - Generation CMPA binary with elf2sb."""
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
-    cmd = f"generate-binary --config cmpa_lpc55s3x.json -e {secret} -o {new}"
+    cmd = f"export --config cmpa_lpc55s3x.json -e {secret} -o {new}"
 
     with use_working_directory(data_dir):
         logging.debug(cmd)

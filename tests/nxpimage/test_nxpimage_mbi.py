@@ -16,15 +16,23 @@ import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.hash import get_hash
-from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
+from spsdk.crypto.keys import PrivateKey, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
+from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError
 from spsdk.image.keystore import KeyStore
-from spsdk.image.mbi.mbi import create_mbi_class, get_mbi_class
+from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestCrc, Mbi_MixinHmac, Mbi_MixinIvt
-from spsdk.utils.crypto.cert_blocks import CertBlockV21, CertBlockVx
-from spsdk.utils.database import DatabaseManager, get_db
-from spsdk.utils.misc import Endianness, load_binary, load_configuration, use_working_directory
+from spsdk.image.cert_block.cert_blocks import CertBlockV21, CertBlockVx
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.utils.misc import (
+    Endianness,
+    load_binary,
+    load_configuration,
+    use_working_directory,
+)
 from tests.cli_runner import CliRunner
 
 mbi_basic_tests = [
@@ -121,36 +129,13 @@ def process_config_file(config_path: str, destination: str):
     return ref_binary, new_binary, new_config
 
 
-def get_main_root_key(config_file) -> PrivateKeyEcc:
-    config_data = load_configuration(config_file)
-    private_key_file = config_data.get(
-        "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
-    )
-    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
-
-
-def get_signing_key(config_file) -> PrivateKeyEcc:
-    config_data = load_configuration(config_file)
-    private_key_file = config_data.get(
-        "signPrivateKey",
-        config_data.get(
-            "mainRootCertPrivateKeyFile",
-            config_data.get("signingCertificatePrivateKeyFile"),
-        ),
-    )
-    if not private_key_file:
-        private_key_file = config_data.get("signProvider").split("=")[2]
-    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
-
-
-def get_isk_key(config_file) -> PrivateKeyEcc:
-    config_data = load_configuration(config_file)
-    private_key_file = config_data.get(
-        "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
-    )
-    if not private_key_file:
-        private_key_file = config_data.get("signProvider").split("=")[2]
-    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
+def get_signer_key(config: Config) -> PrivateKeyEcc:
+    try:
+        private_key_file = config.get_input_file_name("signer")
+    except SPSDKError:
+        # let's assume plain file signature provider
+        private_key_file = config.get_str("signer").split("=")[2]
+    return PrivateKeyEcc.load(private_key_file)
 
 
 @pytest.mark.parametrize("config_file,family", mbi_basic_tests)
@@ -206,10 +191,10 @@ def test_nxpimage_mbi_signed(
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-        signing_key = get_signing_key(config_file=config_file)
+        signing_key = get_signer_key(Config.create_from_file(config_file))
         signature_length = signing_key.signature_size
-        mbi_cls = get_mbi_class(load_configuration(new_config))
-        parsed_mbi = mbi_cls.parse(family=device, data=new_data)
+        mbi_cls = MasterBootImage.get_mbi_class(load_configuration(new_config))
+        parsed_mbi = mbi_cls.parse(family=FamilyRevision(device), data=new_data)
         assert hasattr(parsed_mbi, "cert_block")
         cert_block_v2: CertBlockV21 = parsed_mbi.cert_block
         cert_offset = Mbi_MixinIvt.get_cert_block_offset(new_data)
@@ -313,10 +298,12 @@ def test_nxpimage_mbi_signed_vx(
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-        signing_key = get_main_root_key(config_file=config_file)
-        signature_length = signing_key.signature_size
-        mbi_cls = get_mbi_class(load_configuration(new_config))
-        parsed_mbi = mbi_cls.parse(family="mc56f818xx", data=new_data)
+        signature_provider: SignatureProvider = get_signature_provider(
+            Config.create_from_file(config_file)
+        )
+        signature_length = signature_provider.signature_length
+        mbi_cls = MasterBootImage.get_mbi_class(load_configuration(new_config))
+        parsed_mbi = mbi_cls.parse(family=FamilyRevision(device), data=new_data)
         assert hasattr(parsed_mbi, "cert_block")
         cert_block: CertBlockVx = parsed_mbi.cert_block
 
@@ -329,7 +316,8 @@ def test_nxpimage_mbi_signed_vx(
         IMG_FCB_SIZE = 16
         IMG_ISK_OFFSET = IMG_FCB_OFFSET + IMG_FCB_SIZE
         IMG_ISK_CERT_HASH_OFFSET = 0x04A0
-
+        assert isinstance(signature_provider, PlainFileSP)
+        signing_key = PrivateKey.load(signature_provider.file_path)
         assert signing_key.get_public_key().verify_signature(
             ref_data[SIGN_OFFSET : (SIGN_OFFSET + signature_length)],
             ref_data[SIGN_DIGEST_OFFSET : (SIGN_DIGEST_OFFSET + SIGN_DIGEST_LENGTH)],
@@ -342,7 +330,7 @@ def test_nxpimage_mbi_signed_vx(
         )
 
         # Validate ISK signature
-        isk_key = get_isk_key(config_file=config_file)
+        isk_key = get_signer_key(Config.create_from_file(config_file))
 
         assert isk_key.get_public_key().verify_signature(
             cert_block.isk_certificate.signature,
@@ -421,30 +409,6 @@ def test_mbi_parser_signed(
         assert filecmp.cmp(input_image, parsed_app)
 
 
-@pytest.mark.parametrize("config_file,family,sign_digest", mbi_signed_tests)
-def test_mbi_parser_signed(
-    cli_runner: CliRunner, tmpdir, nxpimage_data_dir, family, config_file, sign_digest
-):
-    # Create new MBI file
-    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
-    config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
-
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
-
-    cmd = f"mbi export -c {new_config}"
-    with use_working_directory(nxpimage_data_dir):
-        cli_runner.invoke(nxpimage.main, cmd.split())
-
-    cmd = f"mbi parse -b {new_binary} -f {family} -o {tmpdir}/parsed"
-    cli_runner.invoke(nxpimage.main, cmd.split())
-
-    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
-    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
-    assert os.path.isfile(parsed_app)
-    if os.path.split(input_image)[1] == "bin":
-        assert filecmp.cmp(input_image, parsed_app)
-
-
 @pytest.mark.parametrize(
     "mbi_config_file,cert_block_config_file,device",
     [
@@ -470,7 +434,7 @@ def test_nxpimage_mbi_cert_block_signed(
             cert_config_file, tmpdir
         )
 
-        cmd = f"cert-block export -f {device} -c {cert_new_config}"
+        cmd = f"cert-block export -c {cert_new_config} -oc family={device}"
         cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(cert_new_binary)
 
@@ -478,7 +442,7 @@ def test_nxpimage_mbi_cert_block_signed(
         cert_ref_data = load_binary(cert_ref_binary)
         cert_new_data = load_binary(cert_new_binary)
         assert len(cert_ref_data) == len(cert_new_data)
-        isk_key = get_isk_key(cert_new_config)
+        isk_key = get_signer_key(Config.create_from_file(cert_new_config))
         length_to_compare = len(cert_new_data) - isk_key.signature_size
 
         assert cert_ref_data[:length_to_compare] == cert_new_data[:length_to_compare]
@@ -494,7 +458,7 @@ def test_nxpimage_mbi_cert_block_signed(
 
         # validate signatures
 
-        signing_key = get_signing_key(config_file=mbi_config_file)
+        signing_key = get_signer_key(Config.create_from_file(mbi_config_file))
         signature_length = signing_key.signature_size
 
         assert signing_key.get_public_key().verify_signature(
@@ -529,7 +493,7 @@ def test_nxpimage_mbi_cert_block_signed_invalid(
             cert_config_file, tmpdir
         )
 
-        cmd = f"cert-block export -f {device} -c {cert_new_config}"
+        cmd = f"cert-block export -c {cert_new_config} -oc family={device}"
         cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(cert_new_binary)
 
@@ -537,7 +501,7 @@ def test_nxpimage_mbi_cert_block_signed_invalid(
         cert_ref_data = load_binary(cert_ref_binary)
         cert_new_data = load_binary(cert_new_binary)
         assert len(cert_ref_data) == len(cert_new_data)
-        isk_key = get_isk_key(cert_new_config)
+        isk_key = get_signer_key(Config.create_from_file(cert_new_config))
         length_to_compare = len(cert_new_data) - isk_key.signature_size
 
         assert cert_ref_data[:length_to_compare] == cert_new_data[:length_to_compare]
@@ -573,10 +537,7 @@ def test_nxpimage_mbi_legacy_signed(
         with open(new_config, "r") as f:
             config_data = json.load(f)
 
-        signing_certificate_file_path = config_data.get(
-            "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
-        )
-        signing_key = PrivateKeyRsa.load(signing_certificate_file_path)
+        signing_key = PrivateKeyRsa.load(config_data["signer"])
         signature_length = signing_key.signature_size
         hmac_start = 0
         hmac_end = 0
@@ -667,10 +628,7 @@ def test_nxpimage_mbi_legacy_encrypted(
         with open(new_config, "r") as f:
             config_data = json.load(f)
 
-        signing_certificate_file_path = config_data.get(
-            "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
-        )
-        signing_key = PrivateKeyRsa.load(signing_certificate_file_path)
+        signing_key = PrivateKeyRsa.load(config_data["signer"])
 
         signature_length = signing_key.signature_size
         hmac_start = 0
@@ -734,7 +692,10 @@ def test_mbi_parser_legacy_encrypted(
 
 
 def test_mbi_lpc55s3x_invalid():
-    mbi = create_mbi_class("signed_xip", "lpc55s3x")(app=bytes(100), firmware_version=0)
+    family = FamilyRevision("lpc55s3x")
+    mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
+        family=family, app=bytes(100), firmware_version=0
+    )
     with pytest.raises(SPSDKError):
         mbi.validate()
 
@@ -766,7 +727,7 @@ def test_mbi_get_templates(cli_runner: CliRunner, tmpdir, family):
     cmd = f"mbi get-templates -f {family} --output {tmpdir}"
     result = cli_runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
-    images = get_db(family).get_dict(DatabaseManager.MBI, "images")
+    images = get_db(FamilyRevision(family)).get_dict(DatabaseManager.MBI, "images")
 
     for image in images:
         for config in images[image]:
@@ -928,18 +889,16 @@ def test_mbi_export_sign_provider_invalid_configuration(
 
 
 @pytest.mark.parametrize(
-    "plugin,main_root_cert_id,sign_provider,exit_code",
+    "main_root_cert_id,sign_provider,exit_code",
     [
-        (None, 0, "type=file;file_path=k0_cert0_2048.pem", 0),
-        (None, None, "type=file;file_path=k0_cert0_2048.pem", 0),
-        ("file_no_verify.py", 0, "type=file_no_verify;file_path=k0_cert0_2048.pem", 0),
-        ("file_no_verify.py", None, "type=file_no_verify;file_path=k0_cert0_2048.pem", 1),
-        (None, None, "type=file;file_path=k2_cert0_2048.pem", 1),
-        (None, 0, "type=file;file_path=k2_cert0_2048.pem", 1),
+        (0, "type=file;file_path=k0_cert0_2048.pem", 0),
+        (None, "type=file;file_path=k0_cert0_2048.pem", 0),
+        (None, "type=file;file_path=k2_cert0_2048.pem", 1),
+        (0, "type=file;file_path=k2_cert0_2048.pem", 1),
     ],
 )
 def test_mbi_signature_provider(
-    cli_runner: CliRunner, data_dir, tmpdir, plugin, main_root_cert_id, sign_provider, exit_code
+    cli_runner: CliRunner, data_dir, tmpdir, main_root_cert_id, sign_provider, exit_code
 ):
     # Copy all required files
     keys_to_copy = [
@@ -960,21 +919,18 @@ def test_mbi_signature_provider(
     # Prepare configuration
     config_data = load_configuration(os.path.join(data_dir, "mbi", "ext_xip_signed_rt5xx.yaml"))
     if sign_provider:
-        config_data["signProvider"] = sign_provider
+        config_data["signer"] = sign_provider
     config_file = os.path.join(tmpdir, "ext_xip_signed_rt5xx.yaml")
     with open(config_file, "w") as fp:
         yaml.dump(config_data, fp)
 
     cert_config_data = load_configuration(os.path.join(data_dir, "mbi", config_data["certBlock"]))
     if sign_provider:
-        cert_config_data["signProvider"] = sign_provider
+        cert_config_data["signer"] = sign_provider
     if main_root_cert_id is not None:
         cert_config_data["mainRootCertId"] = main_root_cert_id
     cert_config_file = os.path.join(tmpdir, config_data["certBlock"])
     with open(cert_config_file, "w") as fp:
         yaml.dump(cert_config_data, fp)
     cmd = f"mbi export -c {config_file}"
-    if plugin:
-        plugin_path = os.path.join(data_dir, "mbi", "signature_providers", plugin)
-        cmd = " ".join([cmd, f"--plugin {plugin_path}"])
     cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=exit_code)

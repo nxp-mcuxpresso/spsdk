@@ -4,6 +4,7 @@ options {
     productVersion = "1.00.00";
     componentVersion = "1.00.00";
     secureBinaryVersion = "2.1";
+    family = "rt5xx";
 }
 sources {
      myImage = "sb_sources/output_images/application_signed.bin";          // Put location of Signed or UnSigned image input

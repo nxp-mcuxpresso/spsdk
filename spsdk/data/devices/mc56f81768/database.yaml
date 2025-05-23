@@ -8,7 +8,7 @@ latest: b1
 
 # General MCU information
 info:
-  purpose: Digital Signal Controller
+  purpose: 32-bit DSC Series
   spsdk_predecessor_name: mc56f817xx
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx
@@ -39,17 +39,17 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinBcaTable
-          - Mbi_MixinFcfObsolete
-          - Mbi_ExportMixinAppFcf
+          - Mbi_MixinBca
+          - Mbi_MixinFcf
+          - Mbi_ExportMixinAppBcaFcf
       crc_xip:
         image_type: CRC_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinBcaTable
-          - Mbi_MixinFcfObsolete
+          - Mbi_MixinFcf
+          - Mbi_MixinBca
+          - Mbi_ExportMixinAppBcaFcf
           - Mbi_ExportMixinCrcSignBca
-          - Mbi_ExportMixinAppFcf
     images:
       xip:
         plain: plain_xip
@@ -63,3 +63,11 @@ features:
       internal:
         segments:
           mbi: 0x00
+
+  # ======== BCA section ========
+  bca:
+    reg_spec: bca.json
+
+  # ======== FCF section ========
+  fcf:
+    reg_spec: fcf.json

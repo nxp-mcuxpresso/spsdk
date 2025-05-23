@@ -1,4 +1,5 @@
 options {
+    family = mimxrt1166;
     flags = 0x00;
     startAddress = 0x30000000;
     ivtOffset = 0x1000;

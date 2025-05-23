@@ -281,7 +281,7 @@ features:
 
   # ======== Trust Zone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== OTFAD section ========
   otfad:

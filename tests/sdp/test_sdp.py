@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -86,7 +86,7 @@ class VirtualSDPInterface:
         self.device.write(data)
 
     def write_command(self, packet: CmdPacket):
-        data = packet.to_bytes()
+        data = packet.export()
         if not data:
             raise SPSDKAttributeError("Incorrect packet type")
         self.device.write(data)

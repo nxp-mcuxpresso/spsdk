@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,7 +20,8 @@ from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_key_unwrap, aes_key_wrap
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.image.cert_block.cert_blocks import CertBlockV1
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
 from spsdk.sbfile.sb2.commands import CmdHeader
@@ -28,11 +29,11 @@ from spsdk.sbfile.sb2.headers import ImageHeaderV2
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 from spsdk.sbfile.sb2.sections import BootSectionV2, CertSectionV2
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.crypto.cert_blocks import CertBlockV1
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, get_families, update_validation_schema_family
 from spsdk.utils.misc import (
     find_first,
-    load_configuration,
     load_hex_string,
     load_text,
     value_to_bool,
@@ -40,11 +41,7 @@ from spsdk.utils.misc import (
     value_to_int,
     write_file,
 )
-from spsdk.utils.schema_validator import (
-    CommentedConfig,
-    check_config,
-    update_validation_schema_family,
-)
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -362,10 +359,10 @@ class BootImageV20(BaseClass):
         self._boot_sections.append(section)
 
     def export(self, padding: Optional[bytes] = None) -> bytes:
-        """Serialize image object.
+        """Export image object.
 
-        :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
-        :return: exported bytes
+        :param padding: Header padding (8 bytes) for testing purpose; None to use random values (recommended)
+        :return: Exported bytes
         :raises SPSDKError: Raised when there are no boot sections or is not signed or private keys are missing
         :raises SPSDKError: Raised when there is invalid dek or mac
         :raises SPSDKError: Raised when certificate data is not present
@@ -684,10 +681,10 @@ class BootImageV21(BaseClass):
 
     # pylint: disable=too-many-locals
     def export(self, padding: Optional[bytes] = None) -> bytes:
-        """Serialize image object.
+        """Export image object.
 
-        :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
-        :return: exported bytes
+        :param padding: Header padding (8 bytes) for testing purpose; None to use random values (recommended)
+        :return: Exported bytes
         :raises SPSDKError: Raised when there is no boot section to be added
         :raises SPSDKError: Raised when certificate is not assigned
         :raises SPSDKError: Raised when private key is not assigned
@@ -843,7 +840,7 @@ class BootImageV21(BaseClass):
         return obj
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families() -> list[FamilyRevision]:
         """Return list of supported families.
 
         :return: List of supported families.
@@ -851,7 +848,9 @@ class BootImageV21(BaseClass):
         return get_families(DatabaseManager.SB21)
 
     @classmethod
-    def get_commands_validation_schemas(cls, family: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_commands_validation_schemas(
+        cls, family: Optional[FamilyRevision] = None
+    ) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Device family filter, if None all commands are returned.
@@ -861,7 +860,7 @@ class BootImageV21(BaseClass):
 
         schemas: list[dict[str, Any]] = [sb2_sch_cfg["sb2_sections"]]
         if family:
-            db = get_db(family, "latest")
+            db = get_db(family)
             # remove unused command for current family
             supported_commands = db.get_list(DatabaseManager.SB21, "supported_commands")
             list_of_commands: list[dict] = schemas[0]["properties"]["sections"]["items"][
@@ -879,7 +878,7 @@ class BootImageV21(BaseClass):
         return schemas
 
     @classmethod
-    def get_validation_schemas(cls, family: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Device family
@@ -893,15 +892,13 @@ class BootImageV21(BaseClass):
         )
 
         schemas: list[dict[str, Any]] = [family_schema]
-        schemas.extend([mbi_schema[x] for x in ["signature_provider", "cert_block_v1"]])
+        schemas.extend([mbi_schema[x] for x in ["signer", "cert_block_v1"]])
         schemas.extend([sb2_schema[x] for x in ["sb2_output", "common", "sb2", "sb2_test"]])
 
         add_keyblob = True
 
         if family:
-            add_keyblob = get_db(family, "latest").get_bool(
-                DatabaseManager.SB21, "keyblobs", default=True
-            )
+            add_keyblob = get_db(family).get_bool(DatabaseManager.SB21, "keyblobs", default=True)
 
         if add_keyblob:
             schemas.append(sb2_schema["keyblobs"])
@@ -910,7 +907,7 @@ class BootImageV21(BaseClass):
         return schemas
 
     @classmethod
-    def generate_config_template(cls, family: Optional[str]) -> str:
+    def get_config_template(cls, family: FamilyRevision) -> str:
         """Generate configuration template.
 
         :param family: Device family.
@@ -929,7 +926,7 @@ class BootImageV21(BaseClass):
         cls,
         config_path: str,
         external_files: Optional[list[str]] = None,
-    ) -> dict[Any, Any]:
+    ) -> Config:
         """Create lexer and parser, load the BD file content and parse it.
 
         :param config_path: Path to configuration file either BD or YAML formatted.
@@ -939,15 +936,24 @@ class BootImageV21(BaseClass):
         try:
             bd_file_content = load_text(config_path)
             parser = bd_parser.BDParser()
-            parsed_conf = parser.parse(text=bd_file_content, extern=external_files)
+            parsed_conf = Config(parser.parse(text=bd_file_content, extern=external_files))
             if parsed_conf is None:
                 raise SPSDKError("Invalid bd file, secure binary file generation terminated")
+            if "options" not in parsed_conf:
+                raise SPSDKValueError("Missing 'options' block in BD file.")
+            options: dict[str, Any] = parsed_conf["options"]
+            if "family" not in options:
+                raise SPSDKValueError("Missing 'family' key in BD file options block.")
+            parsed_conf["family"] = options.pop("family")
+            parsed_conf["revision"] = options.pop("revision", "latest")
+            parsed_conf.config_dir = os.path.dirname(config_path)
+            parsed_conf.search_paths = [parsed_conf.config_dir]
         except SPSDKError:
-            parsed_conf = load_configuration(config_path)
-            config_dir = os.path.dirname(config_path)
-            family = parsed_conf.get("family")
+            parsed_conf = Config.create_from_file(config_path)
+
+            family = FamilyRevision.load_from_config(parsed_conf)
             schemas = BootImageV21.get_validation_schemas(family)
-            check_config(parsed_conf, schemas, search_paths=[config_dir])
+            parsed_conf.check(schemas, check_unknown_props=True)
 
         return parsed_conf
 
@@ -976,14 +982,13 @@ class BootImageV21(BaseClass):
     @classmethod
     def load_from_config(
         cls,
-        config: dict[str, Any],
+        config: Config,
         key_file_path: Optional[str] = None,
         signature_provider: Optional[SignatureProvider] = None,
         signing_certificate_file_paths: Optional[list[str]] = None,
         root_key_certificate_paths: Optional[list[str]] = None,
         rkth_out_path: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-    ) -> "BootImageV21":
+    ) -> Self:
         """Creates an instance of BootImageV21 from configuration.
 
         :param config: Input standard configuration.
@@ -996,21 +1001,19 @@ class BootImageV21(BaseClass):
             passed in signing_certificate_file_paths.
         :param rkth_out_path: output path to hash of hashes of root keys. If set to
             None, 'hash.bin' is created under working directory.
-        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Instance of Secure Binary V2.1 class
         """
-        flags = config["options"].get(
+        options = config.get_config("options")
+        flags = options.get_int(
             "flags", BootImageV21.FLAGS_SHA_PRESENT_BIT | BootImageV21.FLAGS_ENCRYPTED_SIGNED_BIT
         )
-        # Flags may be a hex string
-        flags = value_to_int(flags)
 
-        product_version = config["options"].get("productVersion", "1.0.0")
-        component_version = config["options"].get("componentVersion", "1.0.0")
+        product_version = options.get_str("productVersion", "1.0.0")
+        component_version = options.get_str("componentVersion", "1.0.0")
 
         if signing_certificate_file_paths and root_key_certificate_paths:
-            build_number = config["options"].get("buildNumber", 1)
-            cert_block = CertBlockV1(build_number=build_number)
+            build_number = options.get_int("buildNumber", 1)
+            cert_block = CertBlockV1(family=FamilyRevision("Unknown"), build_number=build_number)
             for cert_path in signing_certificate_file_paths:
                 cert = Certificate.load(cert_path)
                 cert_block.add_certificate(cert)
@@ -1018,22 +1021,20 @@ class BootImageV21(BaseClass):
                 cert = Certificate.load(cert_path)
                 cert_block.set_root_key_hash(cert_idx, cert)
         else:
-            cert_block = CertBlockV1.from_config(config, search_paths=search_paths)
+            cert_block = CertBlockV1.load_from_config(config)
 
         if key_file_path:
-            key = key_file_path
+            sb_kek = load_hex_string(key_file_path, expected_size=32)
         else:
-            key = config["containerKeyBlobEncryptionKey"]
-
-        sb_kek = load_hex_string(key, expected_size=32, search_paths=search_paths)
+            sb_kek = config.load_symmetric_key("containerKeyBlobEncryptionKey", expected_size=32)
 
         # validate keyblobs and perform appropriate actions
         keyblobs = config.get("keyblobs", [])
 
         # get advanced params
-        advanced_params = cls.get_advanced_params(config["options"])
+        advanced_params = cls.get_advanced_params(options)
 
-        sb21_helper = SB21Helper(search_paths, zero_filling=advanced_params.zero_padding)
+        sb21_helper = SB21Helper(config.search_paths, zero_filling=advanced_params.zero_padding)
         sb_sections = []
         sections = config["sections"]
         for section_id, section in enumerate(sections):
@@ -1056,7 +1057,7 @@ class BootImageV21(BaseClass):
 
         # We have a list of sections and their respective commands, lets create
         # a boot image v2.1 object
-        secure_binary = BootImageV21(
+        secure_binary = cls(
             sb_kek,
             *sb_sections,
             product_version=product_version,
@@ -1071,19 +1072,19 @@ class BootImageV21(BaseClass):
         secure_binary.cert_block = cert_block
 
         if not signature_provider:
-            signing_key_path = config.get("signPrivateKey", config.get("mainCertPrivateKeyFile"))
-            signature_provider = get_signature_provider(
-                sp_cfg=config.get("signProvider"),
-                local_file_key=signing_key_path,
-                search_paths=search_paths,
-            )
+            signature_provider = get_signature_provider(config)
 
         secure_binary.signature_provider = signature_provider
 
         if not rkth_out_path:
-            rkth_out_path = config.get("RKTHOutputPath", os.path.join(os.getcwd(), "hash.bin"))
-        assert isinstance(rkth_out_path, str), "Hash of hashes path must be string"
-        write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
+            if "RKTHOutputPath" in config:
+                rkth_out_path = config.get_output_file_name("RKTHOutputPath")
+                # Only write the file if a path was explicitly provided
+                write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
+        else:
+            # rkth_out_path was provided, so write the file
+            assert isinstance(rkth_out_path, str), "Hash of hashes path must be string"
+            write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
 
         return secure_binary
 

@@ -153,7 +153,7 @@ def test_container_head_validate(container_head: HeaderContainer):
         container_head.verify_header().validate()
     container_head.tag = 0x01
 
-    container_head.length = None
+    container_head.length = 0
     with pytest.raises(SPSDKVerificationError):
         container_head.verify_header().validate()
     container_head.length = 0x01

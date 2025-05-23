@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -86,7 +86,7 @@ class CmdPacket(CmdPacketBase):
             f"Address=0x{self.address:04X}, Format={self.format}, Count={self.count}, Value=0x{self.value:08X}"
         )
 
-    def to_bytes(self, padding: bool = True) -> bytes:
+    def export(self, padding: bool = True) -> bytes:
         """Return command packet as bytes."""
         return pack(self.FORMAT, self.tag, self.address, self.format, self.count, self.value, 0)
 

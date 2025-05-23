@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,6 +16,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.misc import use_working_directory
+from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
 
 
@@ -130,6 +131,6 @@ def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_ty
 def test_fcb_parse_invalid(binary, fail, family, mem_type):
     if fail:
         with pytest.raises(SPSDKError):
-            FCB.parse(binary, family=family, mem_type=mem_type)
+            FCB.parse(binary, family=FamilyRevision(family), mem_type=mem_type)
     else:
-        FCB.parse(binary, family=family, mem_type=mem_type)
+        FCB.parse(binary, family=FamilyRevision(family), mem_type=mem_type)

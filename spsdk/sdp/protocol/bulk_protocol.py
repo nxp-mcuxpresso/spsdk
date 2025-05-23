@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -56,7 +56,7 @@ class SDPBulkProtocol(SDPProtocolBase):
         :param packet: Command packet object to be sent
         :raises SPSDKAttributeError: Command packed contains no data to be sent
         """
-        data = packet.to_bytes()
+        data = packet.export()
         if not data:
             raise SPSDKAttributeError("Incorrect packet type")
         report_id, report_size, _ = HID_REPORT["CMD"]

@@ -7,7 +7,6 @@ Application User Guides
     blhost
     dk6prog
     el2go-host
-    ifr
     lpcprog
     nxpcrypto
     nxpdebugmbox
@@ -21,7 +20,7 @@ Application User Guides
     sdphost
     sdpshost
     shadowregs
-    trust_provisioning
     nxpwpc
     nxpdice
     nxpuuu
+    nxpshe

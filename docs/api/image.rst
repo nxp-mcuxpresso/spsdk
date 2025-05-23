@@ -4,47 +4,6 @@ Image Module API
 Module implementing functionality of srktool, dcdgen, mkimage and other similar tools.
 
 
-Image Classes
--------------
-.. automodule:: spsdk.image.images
-   :exclude-members: EnumAppType
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Image Commands
---------------
-.. automodule:: spsdk.image.commands
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Image Headers
--------------
-
-.. automodule:: spsdk.image.header
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Secret Module
--------------
-.. automodule:: spsdk.image.secret
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Data Segments
--------------
-.. automodule:: spsdk.image.segments
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Image Segments
 --------------
 .. automodule:: spsdk.image.segments_base
@@ -170,7 +129,7 @@ HAB - High Assurance Boot
 
 HAB Container
 ----------------------------
-.. automodule:: spsdk.image.hab.hab_container
+.. automodule:: spsdk.image.hab.hab_image
    :members:
    :undoc-members:
    :show-inheritance:
@@ -178,6 +137,46 @@ HAB Container
 XMCD
 ----------------------------
 .. automodule:: spsdk.image.xmcd.xmcd
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Inline Encryption Engine (IEE)
+----------------------------------------------
+
+.. automodule:: spsdk.image.iee
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+On-the-Fly AES Decryption (OTFAD)
+-------------------------------------------------
+
+.. automodule:: spsdk.image.otfad
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Certification blocks
+-------------------------------------
+
+.. automodule:: spsdk.image.cert_block.cert_blocks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Certification blocks - Root Keys Hash Table (RKHT)
+--------------------------------------------------
+
+.. automodule:: spsdk.image.cert_block.rkht
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Certification blocks - Root Of Trust (RoT)
+------------------------------------------------
+
+.. automodule:: spsdk.image.cert_block.rot
    :members:
    :undoc-members:
    :show-inheritance:

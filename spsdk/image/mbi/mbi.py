@@ -13,214 +13,55 @@ import re
 from inspect import isclass
 from typing import Any, Callable, Optional, Type, Union
 
+from typing_extensions import Self
+
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.image.cert_block.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.mbi import mbi_mixin
-from spsdk.utils.crypto.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
-from spsdk.utils.images import BinaryImage
+from spsdk.image.mbi.mbi_data import MAP_AUTHENTICATIONS, MAP_IMAGE_TARGETS, MbiImageTypeEnum
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.binary_image import BinaryImage
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import get_key_by_val, write_file
-from spsdk.utils.schema_validator import (
-    CommentedConfig,
-    check_config,
-    update_validation_schema_family,
-)
+from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
 
-PLAIN_IMAGE = (0x00, "Plain Image (either XIP or Load-to-RAM)")
-SIGNED_RAM_IMAGE = (0x01, "Plain Signed Load-to-RAM Image")
-CRC_RAM_IMAGE = (0x02, "Plain CRC Load-to-RAM Image")
-ENCRYPTED_RAM_IMAGE = (0x03, "Encrypted Load-to-RAM Image")
-SIGNED_XIP_IMAGE = (0x04, "Plain Signed XIP Image")
-CRC_XIP_IMAGE = (0x05, "Plain CRC XIP Image")
-SIGNED_XIP_NXP_IMAGE = (0x08, "Plain Signed XIP Image NXP Keys")
-
 DEBUG_TRACE_ENABLE = False
 
-MAP_IMAGE_TARGETS = {
-    "targets": {
-        "xip": [
-            "xip",
-            "Internal flash (XIP)",
-            "External flash (XIP)",
-            "Internal Flash (XIP)",
-            "External Flash (XIP)",
-        ],
-        "load_to_ram": ["load-to-ram", "RAM", "ram"],
-    }
-}
-
-MAP_AUTHENTICATIONS = {
-    "plain": ["plain", "Plain"],
-    "crc": ["crc", "CRC"],
-    "signed": ["signed", "Signed"],
-    "nxp_signed": ["signed-nxp", "NXP Signed", "NXP signed", "nxp_signed"],
-    "encrypted": ["signed-encrypted", "Encrypted + Signed", "encrypted"],
-}
-
-
-def create_mbi_class(name: str, family: str, revision: str = "latest") -> Type["MasterBootImage"]:
-    """Create Master Boot image class.
-
-    :param name: Name of Class
-    :param family: Name of chip family
-    :param revision: Optional chip family revision.
-    :return: Master Boot Image class
-    """
-    db = get_db(family, revision)
-    mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")
-
-    if name not in mbi_classes:
-        raise SPSDKValueError(f"Unsupported MBI class to create: {name}")
-
-    class_descr: dict[str, Any] = mbi_classes[name]
-    # Get all members to be added to class
-    members = {"IMAGE_TYPE": globals()[class_descr["image_type"]]}
-    # Get all objects to be mixed together
-    base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [MasterBootImage]
-    for mixin in class_descr["mixins"]:
-        mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
-        if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
-            for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
-                if member not in members:
-                    members[member] = init_value
-        base_classes.append(mixin_cls)
-
-    mbi_cls = type(name, tuple(base_classes), members)
-
-    return mbi_cls
-
-
 # pylint: disable=too-many-ancestors
-def get_mbi_class(config: dict[str, Any]) -> Type["MasterBootImage"]:
-    """Get Master Boot Image class.
-
-    :raises SPSDKUnsupportedImageType: The invalid configuration.
-    :return: MBI Class.
-    """
-    schema_cfg = get_schema_file(DatabaseManager.MBI)
-    schema_family = get_schema_file("general")["family"]
-    # Validate needed configuration to recognize MBI class
-    check_config(config, [schema_cfg["image_type"], schema_family])
-    family = config["family"]
-    revision = config.get("revision", "latest")
-    db = get_db(family, revision)
-    try:
-        target = get_key_by_val(config["outputImageExecutionTarget"], MAP_IMAGE_TARGETS["targets"])
-        authentication = get_key_by_val(
-            config["outputImageAuthenticationType"], MAP_AUTHENTICATIONS
-        )
-        cls_name = db.get_str(DatabaseManager.MBI, ["images", target, authentication])
-    except (KeyError, SPSDKValueError) as exc:
-        raise SPSDKUnsupportedImageType(
-            f"Memory target {target} and authentication type {authentication} is not supported for {family} MBI."
-        ) from exc
-
-    return create_mbi_class(cls_name, family, revision)
 
 
-def get_mbi_classes(
-    family: str, revision: str = "latest"
-) -> dict[str, tuple[Type["MasterBootImage"], str, str]]:
-    """Get all Master Boot Image supported classes for chip family.
-
-    :param family: Chip family.
-    :param revision: Optional chip family revision.
-    :raises SPSDKValueError: The invalid family.
-    :return: Dictionary with key like image name and values are Tuple with it's MBI Class
-        and target and authentication type.
-    """
-    db = get_db(family, revision)
-    ret: dict[str, tuple[Type["MasterBootImage"], str, str]] = {}
-
-    images: dict[str, dict[str, str]] = db.get_dict(DatabaseManager.MBI, "images")
-
-    for target in images.keys():
-        for authentication in images[target]:
-            cls_name = images[target][authentication]
-
-            ret[f"{family}_{target}_{authentication}"] = (
-                create_mbi_class(cls_name, family, revision),
-                MAP_IMAGE_TARGETS["targets"][target][0],
-                MAP_AUTHENTICATIONS[authentication][0],
-            )
-
-    return ret
-
-
-def get_all_mbi_classes() -> list[Type["MasterBootImage"]]:
-    """Get all Master Boot Image supported classes.
-
-    :return: List with all MBI Classes.
-    """
-    mbi_families = mbi_get_supported_families()
-    cls_list = []
-    hash_set = set()
-    for family in mbi_families:
-        db = get_db(family, "latest")
-        mbi_classes: dict[str, Any] = db.get_dict(DatabaseManager.MBI, "mbi_classes")
-
-        for mbi_cls_name in mbi_classes:
-            cls = create_mbi_class(mbi_cls_name, family)
-            if cls.hash() not in hash_set:
-                hash_set.add(cls.hash())
-                cls_list.append(cls)
-
-    return cls_list
-
-
-def mbi_generate_config_templates(family: str, revision: str = "latest") -> dict[str, str]:
+def mbi_generate_config_templates(family: FamilyRevision) -> dict[str, str]:
     """Generate all possible configuration for selected family.
 
     :param family: Family description.
-    :param revision: Optional chip family revision.
     :return: Dictionary of individual templates (key is name of template, value is template itself).
     """
     ret: dict[str, str] = {}
     # 1: Generate all configuration for MBI
     try:
-        mbi_classes = get_mbi_classes(family, revision)
+        mbi_classes = MasterBootImage.get_mbi_classes(family)
     except SPSDKValueError:
         return ret
 
     for key, mbi in mbi_classes.items():
-        mbi_cls, target, authentication = mbi
-        schemas = mbi_cls.get_validation_schemas(family)
-
-        schemas[1]["properties"]["outputImageExecutionTarget"]["enum"] = ["xip", "load-to-ram"]
-        schemas[1]["properties"]["outputImageExecutionTarget"]["template_value"] = target
-        schemas[1]["properties"]["outputImageAuthenticationType"]["enum"] = [
-            "plain",
-            "crc",
-            "signed",
-            "signed-encrypted",
-            "signed-nxp",
-        ]
-        schemas[1]["properties"]["outputImageAuthenticationType"]["template_value"] = authentication
-
-        yaml_data = CommentedConfig(
-            f"Master Boot Image Configuration template for {family}:{revision}, {mbi_cls.IMAGE_TYPE[1]}.",
-            schemas,
-        ).get_template()
-
-        ret[key] = yaml_data
+        mbi_cls, _, _ = mbi
+        ret[key] = mbi_cls.get_config_template(family)
 
     return ret
 
 
-def mbi_get_supported_families() -> list[str]:
-    """Get supported families by MBI.
-
-    :return: List of supported family names.
-    """
-    return get_families(DatabaseManager.MBI)
-
-
-class MasterBootImage:
+class MasterBootImage(FeatureBaseClass):
     """Master Boot Image Interface."""
 
-    IMAGE_TYPE = PLAIN_IMAGE
+    FEATURE = DatabaseManager.MBI
+    IMAGE_TYPE = MbiImageTypeEnum.PLAIN_IMAGE
+    IMAGE_TARGET = "load_to_ram"
+    IMAGE_AUTHENTICATIONS = "plain"
 
     app: Optional[bytes]
     app_table: Optional[mbi_mixin.MultipleImageTable]
@@ -233,6 +74,130 @@ class MasterBootImage:
     disassemble_image: Callable[[bytes], None]
 
     @classmethod
+    def get_mbi_classes(cls, family: FamilyRevision) -> dict[str, tuple[Type[Self], str, str]]:
+        """Get all Master Boot Image supported classes for chip family.
+
+        :param family: Chip family.
+        :raises SPSDKValueError: The invalid family.
+        :return: Dictionary with key like image name and values are Tuple with it's MBI Class
+            and target and authentication type.
+        """
+        db = get_db(family)
+        ret: dict[str, tuple[Type[Self], str, str]] = {}
+
+        images: dict[str, dict[str, str]] = db.get_dict(DatabaseManager.MBI, "images")
+
+        for target in images.keys():
+            for authentication in images[target]:
+                cls_name = images[target][authentication]
+
+                ret[f"{family.name}_{target}_{authentication}"] = (
+                    cls.create_mbi_class(cls_name, family),
+                    MAP_IMAGE_TARGETS["targets"][target][0],
+                    MAP_AUTHENTICATIONS[authentication][0],
+                )
+
+        return ret
+
+    @classmethod
+    def get_mbi_class(cls, config: dict[str, Any]) -> Type[Self]:
+        """Get Master Boot Image class.
+
+        :raises SPSDKUnsupportedImageType: The invalid configuration.
+        :return: MBI Class.
+        """
+        schema_cfg = get_schema_file(DatabaseManager.MBI)
+        schema_family = get_schema_file("general")["family"]
+        # Validate needed configuration to recognize MBI class
+        check_config(config, [schema_cfg["image_type"], schema_family])
+        family = FamilyRevision.load_from_config(config)
+        db = get_db(family)
+        try:
+            target = get_key_by_val(
+                config["outputImageExecutionTarget"], MAP_IMAGE_TARGETS["targets"]
+            )
+            authentication = get_key_by_val(
+                config["outputImageAuthenticationType"], MAP_AUTHENTICATIONS
+            )
+            cls_name = db.get_str(DatabaseManager.MBI, ["images", target, authentication])
+        except (KeyError, SPSDKValueError) as exc:
+            raise SPSDKUnsupportedImageType(
+                f"Memory target {target} and authentication type {authentication} is not supported for {family} MBI."
+            ) from exc
+
+        return cls.create_mbi_class(cls_name, family)
+
+    @classmethod
+    def create_mbi_class(cls, name: str, family: FamilyRevision) -> Type[Self]:
+        """Create Master Boot image class.
+
+        :param name: Name of Class
+        :param family: Name of chip family
+        :return: Master Boot Image class
+        """
+        db = get_db(family)
+        mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")
+
+        if name not in mbi_classes:
+            raise SPSDKValueError(f"Unsupported MBI class to create: {name}")
+
+        class_descr: dict[str, Any] = mbi_classes[name]
+        authentication, target = cls._parse_name(name)
+        # Get all members to be added to class
+        members = {
+            "IMAGE_TYPE": globals()["MbiImageTypeEnum"].from_label(class_descr["image_type"]),
+            "IMAGE_TARGET": target,
+            "IMAGE_AUTHENTICATIONS": authentication,
+        }
+        # Get all objects to be mixed together
+        base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [
+            MasterBootImage
+        ]
+        for mixin in class_descr["mixins"]:
+            mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
+            if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
+                for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
+                    if member not in members:
+                        members[member] = init_value
+            base_classes.append(mixin_cls)
+
+        mbi_cls = type(name, tuple(base_classes), members)
+
+        return mbi_cls
+
+    @classmethod
+    def _parse_name(cls, name: str) -> tuple[str, str]:
+        """Parse configuration name into authentication, target tuple."""
+        auth = next(
+            (
+                MAP_AUTHENTICATIONS[auth_identifier][0]
+                for auth_identifier in MAP_AUTHENTICATIONS
+                if any(
+                    name.startswith(auth_type)
+                    for auth_type in MAP_AUTHENTICATIONS[auth_identifier] + [auth_identifier]
+                )
+            ),
+            None,
+        )
+        if not auth:
+            raise ValueError(f"Name {name} does not contain any known authentication type.")
+        target = next(
+            (
+                MAP_IMAGE_TARGETS["targets"][target_identifier][0]
+                for target_identifier in MAP_IMAGE_TARGETS["targets"]
+                if any(
+                    name.endswith(target_type)
+                    for target_type in MAP_IMAGE_TARGETS["targets"][target_identifier]
+                    + [target_identifier]
+                )
+            ),
+            None,
+        )
+        if not target:
+            raise ValueError(f"Name {name} does not contain any known target type.")
+        return auth, target
+
+    @classmethod
     def _get_mixins(cls) -> list[Type[mbi_mixin.Mbi_Mixin]]:
         """Get the list of Mbi Mixin classes.
 
@@ -241,15 +206,14 @@ class MasterBootImage:
         return [x for x in cls.__bases__ if issubclass(x, mbi_mixin.Mbi_Mixin)]
 
     @classmethod
-    def get_image_type(cls, family: str, data: bytes, revision: str = "latest") -> int:
+    def get_image_type(cls, family: FamilyRevision, data: bytes) -> int:
         """Get image type from MBI data and family.
 
         :param family: device family to be fetched from DB
         :param data: MBI raw data
-        :param revision: Optional chip family revision.
         :return: Image type int representation
         """
-        img_type = get_db(family, revision).get_int(DatabaseManager.MBI, ["fixed_image_type"], -1)
+        img_type = get_db(family).get_int(DatabaseManager.MBI, ["fixed_image_type"], -1)
         if img_type < 0:
             return mbi_mixin.Mbi_MixinIvt.get_image_type(data)
         return img_type
@@ -278,20 +242,19 @@ class MasterBootImage:
 
         return "-".join(acronyms)
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, family: FamilyRevision, **kwargs: Any) -> None:
         """Initialization of MBI.
 
         :param kwargs: Various input parameters based on used dynamic class.
         """
         # Check if all needed class instance members are available (validation of class due to mixin problems)
-        self.search_paths: Optional[list[str]] = None
-        self.family = "Unknown"
-        self.revision = "latest"
+        self.family = family
         self.dek: Optional[str] = None
         for k_arg, v_arg in kwargs.items():
             setattr(self, k_arg, v_arg)
 
         for base in self._get_mixins():
+            base.mix_init(self)  # type: ignore
             for member in base.NEEDED_MEMBERS:
                 if not hasattr(self, member):
                     raise SPSDKValueError(f"Missing member {member} in {self.__class__.__name__}")
@@ -304,7 +267,9 @@ class MasterBootImage:
         """
         ret = 0
         for base in self._get_mixins():
-            ret += base.mix_len(self)  # type: ignore
+            mixin_len = base.mix_len(self)  # type: ignore
+            ret += mixin_len
+            logger.debug(f"Mixin {base.__name__} length: {mixin_len}, total: {ret}")
         return ret
 
     @property
@@ -340,26 +305,40 @@ class MasterBootImage:
             return self.cert_block.rkth
         return None
 
-    def load_from_config(
-        self, config: dict[str, Any], search_paths: Optional[list[str]] = None
-    ) -> None:
+    @classmethod
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
+
+        :param config: Valid configuration
+        :return: Validation schemas
+        """
+        mbi_cls = cls.get_mbi_class(config)
+        config.check(mbi_cls.get_validation_schemas_basic())
+        family = FamilyRevision.load_from_config(config)
+        return mbi_cls.get_validation_schemas(family)
+
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :param search_paths: List of paths where to search for the file, defaults to None
         """
-        self.search_paths = search_paths
-        self.family = config.get("family", "Unknown")
-        self.revision = config.get("revision", "latest")
-        for base in self._get_mixins():
-            base.mix_load_from_config(self, config)  # type: ignore
+        family = FamilyRevision.load_from_config(config)
+        mbi_cls = cls.get_mbi_class(config)(family=family)
+
+        for base in mbi_cls._get_mixins():
+            base.mix_load_from_config(mbi_cls, config)  # type: ignore
+        return mbi_cls
 
     def export_image(self) -> BinaryImage:
         """Export final bootable image.
 
         :return: Bootable Image in Binary Image format.
         """
-        BinaryImage(name="MBI Image", description=f"MBI Image: {self.IMAGE_TYPE} for {self.family}")
+        BinaryImage(
+            name="MBI Image",
+            description=f"MBI Image: {self.IMAGE_TYPE.description} for {self.family}",
+        )
         # 1: Validate the input data
         self.validate()
         # 2: Collect all input data into raw image
@@ -392,27 +371,29 @@ class MasterBootImage:
         """
         return self.export_image().export()
 
-    @staticmethod
+    @classmethod
     def parse(
-        family: str, data: bytes, dek: Optional[str] = None, revision: str = "latest"
-    ) -> "MasterBootImage":
+        cls,
+        data: bytes,
+        family: FamilyRevision = FamilyRevision("Unknown"),
+        dek: Optional[str] = None,
+    ) -> Self:
         """Parse the final image to individual fields.
 
-        :param family: Device family
         :param data: Final Image in bytes
+        :param family: Device family
         :param dek: The decryption key for encrypted images
-        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Cannot determinate the decoding class
         :return: MBI parsed class
         """
         # 1: Get the right class to parse MBI
-        mbi_classes = get_mbi_classes(family, revision)
-        image_type = MasterBootImage.get_image_type(family, data, revision)
+        mbi_classes = cls.get_mbi_classes(family)
+        image_type = cls.get_image_type(family, data)
         authentication = None
         target = None
         mbi_cls_type = None
         for cls_info in mbi_classes.values():
-            if cls_info[0].IMAGE_TYPE[0] == image_type:
+            if cls_info[0].IMAGE_TYPE.tag == image_type:
                 mbi_cls_type = cls_info[0]
                 target = cls_info[1]
                 authentication = cls_info[2]
@@ -425,7 +406,7 @@ class MasterBootImage:
 
         if mbi_cls_type is None:
             raise SPSDKParsingError("Unsupported MBI type detected.")
-        mbi_cls = mbi_cls_type(family=family, revision=revision)
+        mbi_cls = mbi_cls_type(family=family)
         mbi_cls.dek = dek
 
         # 2: Parse individual mixins what is possible
@@ -467,16 +448,16 @@ class MasterBootImage:
 
         return mbi_cls
 
-    def create_config(self, output_folder: str) -> dict[str, Any]:
+    def get_config(self, data_path: str = "./") -> Config:
         """Create configuration file and its data files from the MBI class.
 
-        :param output_folder: Output folder to store the parsed data
+        :param data_path: Path to store the data files of configuration.
         :returns: Configuration dictionary.
         """
-        cfg_values: dict[str, Union[str, int]] = {}
+        cfg_values = Config()
         for mixin in self._get_mixins():
-            cfg_values.update(mixin.mix_get_config(self, output_folder))  # type: ignore
-        mbi_classes = get_mbi_classes(self.family, self.revision)
+            cfg_values.update(mixin.mix_get_config(self, data_path))  # type: ignore
+        mbi_classes = self.get_mbi_classes(self.family)
         for mbi_class in mbi_classes.values():
             if mbi_class[0].__name__ == self.__class__.__name__:
                 target = mbi_class[1]
@@ -485,45 +466,60 @@ class MasterBootImage:
 
         assert isinstance(target, str) and isinstance(authentication, str)
 
-        cfg_values["family"] = self.family
-        cfg_values["revision"] = self.revision
-        cfg_values["masterBootOutputFile"] = f"mbi_{self.family}_{target}_{authentication}.bin"
+        cfg_values["family"] = self.family.name
+        cfg_values["revision"] = self.family.revision
+        cfg_values["masterBootOutputFile"] = f"mbi_{self.family.name}_{target}_{authentication}.bin"
         cfg_values["outputImageExecutionTarget"] = target
         cfg_values["outputImageAuthenticationType"] = authentication
 
         return cfg_values
 
     @classmethod
-    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
+    def get_validation_schemas_basic(cls) -> list[dict[str, Any]]:
         """Create the validation family schema for current image type.
 
         :return: Validation schema.
         """
         schema_family = get_schema_file("general")["family"]
-        update_validation_schema_family(schema_family["properties"], mbi_get_supported_families())
+        update_validation_schema_family(schema_family["properties"], cls.get_supported_families())
         return [schema_family]
 
     @classmethod
-    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the validation schema for current image type.
 
         :param family: Family description.
-        :param revision: Family revision.
         :return: Validation schema.
         """
         schemas = []
         schema_cfg = get_schema_file(DatabaseManager.MBI)
         schema_family = get_schema_file("general")["family"]
         update_validation_schema_family(
-            schema_family["properties"], mbi_get_supported_families(), family, revision
+            schema_family["properties"], cls.get_supported_families(), family
         )
         schemas.append(schema_family)
-        schemas.append(schema_cfg["image_type"])
+        schema_image_type = schema_cfg["image_type"]
+        schema_image_type["properties"]["outputImageExecutionTarget"][
+            "template_value"
+        ] = cls.IMAGE_TARGET
+        schema_image_type["properties"]["outputImageAuthenticationType"][
+            "template_value"
+        ] = cls.IMAGE_AUTHENTICATIONS
+        images: dict[str, dict[str, str]] = get_db(family).get_dict(DatabaseManager.MBI, "images")
+        schema_image_type["properties"]["outputImageExecutionTarget"]["enum_template"] = [
+            MAP_IMAGE_TARGETS["targets"][target][0] for target in images.keys()
+        ]
+        authentication_types = []
+        for target in images.keys():
+            for authentication in images[target]:
+                authentication_types.append(MAP_AUTHENTICATIONS[authentication][0])
+        schema_image_type["properties"]["outputImageAuthenticationType"]["enum_template"] = list(
+            set(authentication_types)
+        )
+        schemas.append(schema_image_type)
         schemas.append(schema_cfg["output_file"])
         for base in cls._get_mixins():
-            for sch in base.VALIDATION_SCHEMAS:
-                schemas.append(schema_cfg[sch])
-            schemas.extend(base.mix_get_extra_validation_schemas())
+            schemas.extend(base.mix_get_validation_schemas(family))
 
         return schemas
 
@@ -531,3 +527,14 @@ class MasterBootImage:
         """Validate the setting of image."""
         for base in self._get_mixins():
             base.mix_validate(self)  # type: ignore
+
+    def __repr__(self) -> str:
+        return f"MBI class {self.family}, {self.IMAGE_TYPE.description}"
+
+    def __str__(self) -> str:
+        ret = (
+            f"MBI class for {self.family}, {self.IMAGE_TYPE.description}:\n" " List of mixins:\n - "
+        )
+        ret += "\n - ".join([x.__name__.replace("Mbi_Mixin", "") for x in self._get_mixins()])
+
+        return ret

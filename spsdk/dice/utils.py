@@ -13,13 +13,14 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from spsdk.dice.exceptions import SPSDKDICEError
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.registers import Register, Registers, RegsBitField
 
 logger = logging.getLogger(__name__)
 
 
-def get_supported_devices() -> list[str]:
+def get_supported_devices() -> list[FamilyRevision]:
     """List devices supported by DICE."""
     return get_families(DatabaseManager.DICE)
 
@@ -37,7 +38,11 @@ def reconstruct_ecc_key(puk_data: Union[str, bytes]) -> ec.EllipticCurvePublicKe
 
 
 def serialize_ecc_key(key: ec.EllipticCurvePublicKey) -> str:
-    """Serialize public key into PEM-formatted string."""
+    """Serialize public key into PEM-formatted string.
+
+    :param key: ECC public key to serialize
+    :return: PEM-encoded public key as string
+    """
     return key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -50,14 +55,14 @@ HADDifferences = list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, R
 class HADDiff:
     """Helper class to parse differences in HAD values."""
 
-    def __init__(self, family: str) -> None:
+    def __init__(self, family: FamilyRevision) -> None:
         """Initialize the HADDiff instance.
 
         :param family: Selected family for HAD data parsing
         :raises SPSDKDICEError: Unsupported family
         """
         self.family = family
-        database = get_db(device=self.family)
+        database = get_db(self.family)
         self.had_length = database.get_int(DatabaseManager.DICE, "had_length")
         self.critical_registers = database.get_list(DatabaseManager.DICE, "critical_had_members")
 

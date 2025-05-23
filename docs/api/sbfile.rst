@@ -127,6 +127,28 @@ SBFile Version X - DEVHSM
    :undoc-members:
    :show-inheritance:
 
+SBFile Version C
+-----------------
+.. automodule:: spsdk.sbfile.sbc   
+   :no-index:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SBFile Version C - images
+---------------------------
+.. automodule:: spsdk.sbfile.sbc.images
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SBFile Version C - DEVHSM
+--------------------------
+.. automodule:: spsdk.sbfile.sbc.devhsm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 SBFile - miscellaneous functions
 ----------------------------------
 .. automodule:: spsdk.sbfile.misc

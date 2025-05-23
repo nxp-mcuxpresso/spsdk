@@ -60,7 +60,7 @@
                         {
                             "width": 16,
                             "reset_value_int": "0x9635",
-                            "access": "RO",
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "CFPA_HEADER",
                             "description": "CFPA Header marker should be set to 0x9635. \nAfter this header is set, all non-zero values will take effect; leaving  all values set to 0xff will cause undefined behavior. \nIt is recommended to set all values to 0x00 before setting the CFPA header."
@@ -5924,7 +5924,6 @@
                     "name": "Reserved 0x00180",
                     "description": "This field is 0.",
                     "offset_int": "0x0180",
-                    "access": "RO",
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
@@ -5934,7 +5933,6 @@
                     "name": "Reserved 0x00184",
                     "description": "This field is 0.",
                     "offset_int": "0x0184",
-                    "access": "RO",
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
@@ -5944,7 +5942,6 @@
                     "name": "Reserved 0x00188",
                     "description": "This field is 0.",
                     "offset_int": "0x0188",
-                    "access": "RO",
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
@@ -5954,7 +5951,6 @@
                     "name": "Reserved 0x0018C",
                     "description": "This field is 0.",
                     "offset_int": "0x018C",
-                    "access": "RO",
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"

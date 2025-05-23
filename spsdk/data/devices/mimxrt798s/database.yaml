@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 revisions:
-  a0: {}
+  a0:
+    features:
+        fuses:
+          reg_spec: fuses_a0.json
   a1:
     features:
       mbi:
@@ -34,7 +37,17 @@ revisions:
               - Mbi_MixinFwVersion
               - Mbi_ExportMixinAppCertBlockManifest
               - Mbi_ExportMixinEccSign
-latest: a0
+        fuses:
+          reg_spec: fuses_a0.json
+  b0:
+    features:
+      fcb:
+        mem_types:
+          xspi_nor:
+            reg_spec: fcb_xspi_nor_b0.json
+      fuses:
+        reg_spec: fuses_b0.json
+latest: b0
 
 # General MCU information
 info:
@@ -139,6 +152,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddressOptional
           - Mbi_MixinImageVersion
           - Mbi_ExportMixinAppTrustZone
       plain_ram:
@@ -225,7 +239,7 @@ features:
   fcb:
     mem_types:
       xspi_nor:
-        reg_spec: fcb_xspi_nor.json
+        reg_spec: fcb_xspi_nor_a0.json
 
   # ======== XMCD section ========
   xmcd:
@@ -240,7 +254,7 @@ features:
     mem_types:
       xspi_nor:
         segments:
-          fcb_xspi: 0x0000
+          fcb: 0x0000
           xmcd: 0x0300
           mbi: 0x4000
         remap_align: 0x40000 # 256 KB
@@ -256,13 +270,13 @@ features:
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    sub_features: [DevHsmSB31]
     key_blob_offset: 0
     key_blob_command_position: -1
-    devhsm_class: DevHsmSB31
 
   # ======== Trust Zone section ========
   tz:
-    data_file: tz.yaml
+    data_file: tz.json
 
   # ======== Memory configuration ========
   memcfg:

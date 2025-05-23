@@ -22,7 +22,6 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
-    spsdk_revision_option,
 )
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, progress_bar
@@ -31,6 +30,7 @@ from spsdk.exceptions import SPSDKError, SPSDKTypeError
 from spsdk.fuses.fuse_registers import FuseRegister
 from spsdk.fuses.fuses import (
     BlhostFuseOperator,
+    BlhostFuseOperatorLegacy,
     FuseOperator,
     Fuses,
     NxpeleFuseOperator,
@@ -38,8 +38,9 @@ from spsdk.fuses.fuses import (
 )
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.misc import get_printable_path, load_configuration, value_to_int, write_file
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import get_printable_path, value_to_int, write_file
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +87,7 @@ def prompt_for_write_permission(skip: bool = False) -> bool:
 
 
 def get_fuse_operator(
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     port: Optional[str],
     usb: Optional[str],
     lpcusbsio: Optional[str],
@@ -100,7 +100,7 @@ def get_fuse_operator(
     fb_size: Optional[int],
 ) -> FuseOperator:
     """Get fuse operator."""
-    operator_class = Fuses.get_fuse_operator_type(family, revision)
+    operator_class = Fuses.get_fuse_operator_type(family)
     if operator_class == BlhostFuseOperator:
         iface_params = load_interface_config(
             {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
@@ -108,10 +108,16 @@ def get_fuse_operator(
         interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
         interface = interface_cls.scan_single(**iface_params.get_scan_args())
         return BlhostFuseOperator(McuBoot(interface))
+    if operator_class == BlhostFuseOperatorLegacy:
+        iface_params = load_interface_config(
+            {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
+        )
+        interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
+        interface = interface_cls.scan_single(**iface_params.get_scan_args())
+        return BlhostFuseOperatorLegacy(McuBoot(interface))
     if operator_class == NxpeleFuseOperator:
         ele_message_handler = EleMessageHandler.get_message_handler(
             family=family,
-            revision=revision,
             device=device,
             fb_addr=fb_addr,
             fb_size=fb_size,
@@ -127,7 +133,7 @@ def get_fuse_operator(
     raise SPSDKTypeError(f"Unsupported fuse operator type: {operator_class.__name__}")
 
 
-@click.group(name="nxpfuses", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="nxpfuses", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
     """NXP Fuse Tool."""
@@ -136,11 +142,10 @@ def main(log_level: int) -> None:
 
 @main.command(name="get-template", no_args_is_help=True)
 @spsdk_family_option(families=Fuses.get_supported_families())
-@spsdk_revision_option
 @spsdk_output_option(force=True)
-def get_template(family: str, revision: str, output: str) -> None:
+def get_template(family: FamilyRevision, output: str) -> None:
     """Generate the template of Fuses YAML configuration file."""
-    template = Fuses.generate_config_template(family, revision)
+    template = Fuses.get_config_template(family)
     write_file(template, output, encoding="utf-8")
     click.echo(
         f"The Fuses template for {family} has been saved into "
@@ -150,7 +155,7 @@ def get_template(family: str, revision: str, output: str) -> None:
 
 @main.command(name="write", no_args_is_help=True)
 @nxpele_options
-@spsdk_config_option()
+@spsdk_config_option(klass=Fuses)
 @click.option(
     "-y",
     "--yes",
@@ -169,7 +174,7 @@ def write(
     buffer_size: Optional[int],
     fb_addr: Optional[int],
     fb_size: Optional[int],
-    config: str,
+    config: Config,
     yes: bool,
 ) -> None:
     """Write fuses from configuration into device."""
@@ -193,11 +198,9 @@ def write(
     permitted = prompt_for_write_permission(yes)
     if not permitted:
         return
-    config_data = load_configuration(config)
-    fuses = Fuses.load_from_config(config_data)
+    fuses = Fuses.load_from_config(config)
     fuses.fuse_operator = get_fuse_operator(
         family=fuses.family,
-        revision=fuses.revision,
         port=port,
         usb=usb,
         lpcusbsio=lpcusbsio,
@@ -230,7 +233,6 @@ def write(
 @main.command(name="write-single", no_args_is_help=True)
 @nxpele_options
 @spsdk_family_option(families=Fuses.get_supported_families())
-@spsdk_revision_option
 @click.option(
     "-n", "--name", type=str, required=True, help="Fuse name/uid/otp_index to be written."
 )
@@ -254,8 +256,7 @@ def write_single(
     buffer_size: Optional[int],
     fb_addr: Optional[int],
     fb_size: Optional[int],
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     name: str,
     value: str,
     lock: bool,
@@ -267,7 +268,6 @@ def write_single(
         return
     fuse_operator = get_fuse_operator(
         family=family,
-        revision=revision,
         port=port,
         usb=usb,
         lpcusbsio=lpcusbsio,
@@ -279,7 +279,7 @@ def write_single(
         fb_addr=fb_addr,
         fb_size=fb_size,
     )
-    fuses = Fuses(family=family, revision=revision, fuse_operator=fuse_operator)
+    fuses = Fuses(family=family, fuse_operator=fuse_operator)
     try:
         otp_index = value_to_int(name)  # name is otp index
         name = fuses.fuse_regs.get_by_otp_index(otp_index).uid
@@ -297,14 +297,12 @@ def write_single(
 @main.command(name="print", no_args_is_help=True)
 @nxpele_options
 @spsdk_family_option(families=Fuses.get_supported_families())
-@spsdk_revision_option
 @click.option(
     "-n",
     "--name",
     help="Fuse name/uid/otp_index to be printed.",
 )
 @click.option(
-    "-r",
     "--rich",
     is_flag=True,
     default=False,
@@ -321,15 +319,13 @@ def print_fuses(
     buffer_size: Optional[int],
     fb_addr: Optional[int],
     fb_size: Optional[int],
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     name: Optional[str],
     rich: bool,
 ) -> None:
     """Print the current state of fuses from device."""
     fuse_operator = get_fuse_operator(
         family=family,
-        revision=revision,
         port=port,
         usb=usb,
         lpcusbsio=lpcusbsio,
@@ -341,7 +337,7 @@ def print_fuses(
         fb_addr=fb_addr,
         fb_size=fb_size,
     )
-    fuses = Fuses(family=family, revision=revision, fuse_operator=fuse_operator)
+    fuses = Fuses(family=family, fuse_operator=fuse_operator)
     if name:
         try:
             otp_index = value_to_int(name)  # name is otp index
@@ -364,12 +360,11 @@ def print_fuses(
 
 
 @main.command(name="fuses-script", no_args_is_help=True)
-@spsdk_config_option(required=True)
+@spsdk_config_option(klass=Fuses)
 @spsdk_output_option(help="Path to a text file with blhost commands, where to store the output.")
-def fuses_script(config: str, output: str) -> None:
+def fuses_script(config: Config, output: str) -> None:
     """The command generates blhost/nxpele script to burn fuses from configuration."""
-    config_data = load_configuration(config)
-    fuses = Fuses.load_from_config(config_data)
+    fuses = Fuses.load_from_config(config)
     fuse_script = fuses.create_fuse_script()
     write_file(fuse_script, output)
     click.echo(f"Fuse script for '{fuses.fuse_operator_type.NAME}' has been generated: {output}")
@@ -378,10 +373,9 @@ def fuses_script(config: str, output: str) -> None:
 @main.command(name="get-config", no_args_is_help=True)
 @nxpele_options
 @spsdk_family_option(families=Fuses.get_supported_families())
-@spsdk_revision_option
 @spsdk_output_option()
 @click.option(
-    "-d",
+    "-do",
     "--diff-only",
     is_flag=True,
     default=False,
@@ -398,15 +392,13 @@ def get_config(
     buffer_size: Optional[int],
     fb_addr: Optional[int],
     fb_size: Optional[int],
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     output: str,
     diff_only: bool,
 ) -> None:
     """Save the current state of fuses to config file."""
     fuse_operator = get_fuse_operator(
         family=family,
-        revision=revision,
         port=port,
         usb=usb,
         lpcusbsio=lpcusbsio,
@@ -418,7 +410,7 @@ def get_config(
         fb_addr=fb_addr,
         fb_size=fb_size,
     )
-    fuses = Fuses(family=family, revision=revision, fuse_operator=fuse_operator)
+    fuses = Fuses(family=family, fuse_operator=fuse_operator)
     try:
         total = 0
         with progress_bar(label="Reading fuses") as progress_callback:
@@ -434,10 +426,7 @@ def get_config(
                     total += 1
     except SPSDKError as exc:
         raise SPSDKAppError(f"Reading the fuses failed: ({str(exc)})") from exc
-    cfg = fuses.get_config(diff_only)
-    schemas = fuses.get_validation_schemas(fuses.family, fuses.revision)
-    ret = CommentedConfig(main_title="Fuses configuration", schemas=schemas).get_config(cfg)
-    write_file(ret, output)
+    write_file(fuses.get_config_yaml(diff=diff_only), output)
     click.echo(f"The fuses configuration has been saved into {output}")
 
 

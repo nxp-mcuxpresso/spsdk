@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -31,6 +31,7 @@ from spsdk.ele.ele_constants import (
 )
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.signed_msg import SignedMessage
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, align, align_block
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -969,17 +970,16 @@ class EleMessageSigned(EleMessage):
 
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
-    def __init__(self, signed_msg: bytes, family: str, revision: str = "latest") -> None:
+    def __init__(self, signed_msg: bytes, family: FamilyRevision) -> None:
         """Class object initialized.
 
         :param signed_msg: Signed message container.
         :param family: Chip family name.
-        :param revision: Chip family revision name.
         """
         super().__init__()
         self.signed_msg_binary = signed_msg
         # Get the command inside the signed message
-        self.signed_msg = SignedMessage(family=family, revision=revision)
+        self.signed_msg = SignedMessage(family=family)
         self.signed_msg.parse(signed_msg)
         self.signed_msg.verify().validate()
         if not (

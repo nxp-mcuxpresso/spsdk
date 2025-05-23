@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Adapter for BLHost/Mboot communication layer covering DICE operations."""
@@ -11,7 +11,8 @@ from spsdk.dice.exceptions import SPSDKDICEError
 from spsdk.dice.models import DICETarget
 from spsdk.mboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +20,12 @@ logger = logging.getLogger(__name__)
 class BlhostDICETarget(DICETarget):
     """BLHost/MBoot adapter for DICE operations."""
 
-    def __init__(self, family: str, interface: MbootProtocolBase) -> None:
+    def __init__(self, family: FamilyRevision, interface: MbootProtocolBase) -> None:
         """Initialize Mboot adapter."""
         super().__init__()
         self.family = family
         self.interface = interface
-        self.database = get_db(device=self.family)
+        self.database = get_db(self.family)
 
     def load_dice_fw(self, firmware: str) -> bool:
         """Prepare MCU for DICE firmware and load the FW itself."""

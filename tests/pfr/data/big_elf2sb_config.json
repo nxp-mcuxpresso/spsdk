@@ -12,7 +12,7 @@
     "useKeyStore": false,
     "keyStoreFile": "",
     "certBlock": "cert_block.yaml",
-    "mainCertChainId": 0,
+    "mainRootCertId": 0,
     "mainCertPrivateKeyFile": "keys_and_certs/k0_cert0_2048.pem",
     "masterBootOutputFile": "output_images/application_signed.bin"
 }

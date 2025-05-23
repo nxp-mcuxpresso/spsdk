@@ -73,7 +73,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         :param packet: Command packet object to be sent
         :raises SPSDKAttributeError: Command packed contains no data to be sent
         """
-        data = packet.to_bytes(padding=False)
+        data = packet.export(padding=False)
         if not data:
             raise SPSDKAttributeError("Incorrect packet type")
         frame = self._create_frame(data, ReportId.CMD_OUT)

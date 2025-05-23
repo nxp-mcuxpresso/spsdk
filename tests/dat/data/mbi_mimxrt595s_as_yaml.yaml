@@ -1,0 +1,23 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt595s
+revision: latest
+outputImageExecutionTarget: load-to-ram
+outputImageAuthenticationType: signed
+masterBootOutputFile: my_mbi.bin
+inputImageFile: my_application.bin
+applicationTable:
+  -
+    binary: my_additional_binary.bin
+    destAddress: 536870912
+    load: true
+outputImageExecutionAddress: 0
+enableHwUserModeKeys: false
+enableTrustZone: false
+trustZonePresetFile: my_tz_custom.yaml
+certBlock: cert_block_mimxrt595s.yaml
+signer: type=file;file_path=root_prv_key.pem
+outputImageEncryptionKeyFile: otp_master_key.bin
+keyStoreFile: my_key_store_data.bin

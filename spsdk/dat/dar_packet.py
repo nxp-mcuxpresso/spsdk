@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module with Debug Authentication Response (DAR) Packet."""
 
-import os
 from struct import pack
-from typing import Any, Optional, Type, cast
+from typing import Any, Optional, Type
 
 from typing_extensions import Self
 
@@ -20,24 +19,27 @@ from spsdk.dat.debug_credential import (
     DebugCredentialEdgeLockEnclaveV2,
     ProtocolVersion,
 )
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueError
 from spsdk.image.ahab.signed_msg import SignedMessage
-from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import load_binary
-from spsdk.utils.schema_validator import CommentedConfig
 
 
-class DebugAuthenticateResponse:
+class DebugAuthenticateResponse(FeatureBaseClass):
     """Class for DAR packet."""
+
+    FEATURE = DatabaseManager.DAT
 
     def __init__(
         self,
-        family: str,
+        family: FamilyRevision,
         debug_credential: DebugCredentialCertificate,
         auth_beacon: int,
         dac: DebugAuthenticationChallenge,
         sign_provider: Optional[SignatureProvider],
-        revision: str = "latest",
     ) -> None:
         """Initialize the DebugAuthenticateResponse object.
 
@@ -46,15 +48,12 @@ class DebugAuthenticateResponse:
         :param auth_beacon: authentication beacon value
         :param dac: the path, where the dac is store
         :param path_dck_private: the path, where the dck private key is store
-        :param revision: Chip revision, if not specified the latest revision is used
         """
         self.debug_credential = debug_credential
         self.auth_beacon = auth_beacon
         self.dac = dac
         self.family = family
         self.sign_provider = sign_provider
-        db = get_db(family, revision=revision)
-        self.revision = db.name
 
     def __repr__(self) -> str:
         return f"DAR v{self.dac.version}, SOCC: 0x{self.dac.socc:08X}"
@@ -97,58 +96,35 @@ class DebugAuthenticateResponse:
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse the DAR.
-
-        :param data: Raw data as bytes
-        :return: DebugAuthenticateResponse object
-        :raises NotImplementedError: Derived class has to implement this method
-        """
-        raise NotImplementedError("Derived class has to implement this method.")
-
-    @staticmethod
-    def _get_class(
-        family: str, protocol_version: ProtocolVersion, revision: str = "latest"
-    ) -> "Type[DebugAuthenticateResponse]":
-        """Get the right Debug Authentication Response class by the protocol version.
-
-        :param version: DAT protocol version
-        """
-        db = get_db(family, revision)
-        if (
-            db.get_bool(DatabaseManager.DAT, "based_on_ele", False)
-            and db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1) == 2
-        ):
-            return DebugAuthenticateResponseEdgelockEnclaveV2
-
-        return _version_mapping[protocol_version.version]
+        """Parse the DAR."""
+        raise SPSDKNotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def load_from_config(
         cls,
-        config: dict[str, Any],
-        dac: DebugAuthenticationChallenge,
-        search_paths: Optional[list[str]] = None,
+        config: Config,
+        dac: Optional[DebugAuthenticationChallenge] = None,
     ) -> Self:
         """Converts the configuration option into an Debug authentication response object.
 
         :param config: Debug authentication response configuration dictionaries.
         :param dac: Debug Credential Challenge
-        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Debug authentication response object.
         """
-        dc = DebugCredentialCertificate.parse(load_binary(config["certificate"], search_paths))
-        if isinstance(dc, DebugCredentialEdgeLockEnclaveV2):
-            klass: Type[DebugAuthenticateResponse] = DebugAuthenticateResponseEdgelockEnclaveV2
-        else:
-            klass = DebugAuthenticateResponse._get_class(
-                family=config["family"],
-                protocol_version=dc.version,
-                revision=config.get("revision", "latest"),
-            )
-        return klass._load_from_config(config, dc, dac, search_paths)  # type:ignore
+        if dac is None:
+            raise SPSDKValueError("DAC object must be specified for proper DAR creating response.")
+        family = FamilyRevision.load_from_config(config)
+        auth_beacon = config.get_int("beacon", 0)
+        dck = get_signature_provider(config, pss_padding=cls._use_pss_padding(family))
+        dc = DebugCredentialCertificate.parse(
+            load_binary(config.get_input_file_name("certificate")), family=family
+        )
+        return cls(
+            family=family, debug_credential=dc, auth_beacon=auth_beacon, dac=dac, sign_provider=dck
+        )
 
     @staticmethod
-    def _use_pss_padding(family: str) -> bool:
+    def _use_pss_padding(family: FamilyRevision) -> bool:
         """Check if it's needed to use PSS padding."""
         db = get_db(family)
         if DatabaseManager.SIGNING not in db.features:
@@ -156,147 +132,73 @@ class DebugAuthenticateResponse:
         return db.get_bool(DatabaseManager.SIGNING, "pss_padding", False)
 
     @classmethod
-    def _load_from_config(
-        cls,
-        config: dict[str, Any],
-        dc: DebugCredentialCertificate,
-        dac: DebugAuthenticationChallenge,
-        search_paths: Optional[list[str]] = None,
-    ) -> Self:
-        """Converts the configuration option into an Debug authentication response object.
-
-        :param config: Debug authentication response configuration dictionaries.
-        :param dac: Debug Credential Challenge
-        :param dc: Debug Credential Certificate
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :return: Debug authentication response object.
-        """
-        family = config["family"]
-        revision = config.get("revision", "latest")
-        auth_beacon = config.get("beacon", 0)
-        dck = get_signature_provider(
-            sp_cfg=config.get("sign_provider"),
-            local_file_key=config.get("dck_private_key"),
-            pss_padding=cls._use_pss_padding(family),
-            search_paths=search_paths,
-        )
-        return cls(
-            family=family,
-            debug_credential=dc,
-            auth_beacon=auth_beacon,
-            dac=dac,
-            sign_provider=dck,
-            revision=revision,
-        )
-
-    @classmethod
-    def create(
-        cls,
-        family: Optional[str],
-        version: Optional[ProtocolVersion],
-        dc: DebugCredentialCertificate,
-        auth_beacon: int,
-        dac: DebugAuthenticationChallenge,
-        dck: str,
-    ) -> "DebugAuthenticateResponse":
-        """Create a dar object out of input parameters.
-
-        :param family: Family name of the used chip
-        :param version: protocol version
-        :param dc: debug credential object
-        :param auth_beacon: authentication beacon value
-        :param dac: DebugAuthenticationChallenge object
-        :param dck: string containing path to dck key
-        :return: DAR object
-        """
-        if not family:
-            families_socc = dc.get_socc_list()
-            family = list(families_socc[dc.socc].keys())[0]
-
-        if isinstance(dc, DebugCredentialEdgeLockEnclaveV2):
-            klass: Type[DebugAuthenticateResponse] = DebugAuthenticateResponseEdgelockEnclaveV2
-        else:
-            klass = DebugAuthenticateResponse._get_class(
-                family=family, protocol_version=version or dc.version
-            )
-        sp_cfg = None
-        local_file_key = None
-        if os.path.isfile(dck):
-            local_file_key = dck
-        else:
-            sp_cfg = dck
-
-        dck_sign_provider = get_signature_provider(
-            sp_cfg=sp_cfg,
-            local_file_key=local_file_key,
-            pss_padding=cls._use_pss_padding(family),
-        )
-        dar_obj = klass(
-            family=family,
-            debug_credential=dc,
-            auth_beacon=auth_beacon,
-            dac=dac,
-            sign_provider=dck_sign_provider,
-        )
-        return dar_obj
-
-    @classmethod
-    def _get_family_validation_schemas(
-        cls, family: str, revision: str = "latest"
-    ) -> dict[str, Any]:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
-        :param revision: Chip revision specification, as default, latest is used.
-        :raises SPSDKError: Family or revision is not supported.
-        :return: List of validation schemas.
-        """
-        schemas = get_schema_file("general")["family"]
-        schemas["properties"]["family"]["template_value"] = family
-        schemas["properties"]["revision"]["template_value"] = revision
-        return schemas
-
-    @classmethod
-    def _get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
-        """Create the validation schema.
-
-        :param family: Family description.
-        :param revision: Chip revision specification, as default, latest is used.
         :raises SPSDKError: Family or revision is not supported.
         :return: List of validation schemas.
         """
         schemas = get_schema_file(DatabaseManager.DAT)
-        return [cls._get_family_validation_schemas(family, revision), schemas["dat_classic"]]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
+        )
+        return [family_schema, schemas["dat_classic"]]
 
     @classmethod
-    def get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
-        """Create the validation schema.
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
 
-        :param family: Family description.
-        :param revision: Chip revision specification, as default, latest is used.
-        :raises SPSDKError: Family or revision is not supported.
-        :return: List of validation schemas.
+        If the class doesn't behave generally, just override this implementation.
+
+        :param config: Valid configuration
+        :return: Validation schemas
         """
-        # The version for validation schemas is not important
-        return cls._get_class(family, ProtocolVersion("1.0"), revision)._get_validation_schemas(
-            family, revision
+        config.check(cls.get_validation_schemas_basic())
+        family = FamilyRevision.load_from_config(config)
+        return cls._get_class_from_cfg(config).get_validation_schemas(family)
+
+    @classmethod
+    def _get_class_from_cfg(cls, config: Config) -> Type[Self]:
+        """Get DAR class based on input configuration.
+
+        :param config: CConfiguration of DAT
+        :return: Class of DAR
+        """
+        family = FamilyRevision.load_from_config(config)
+        db = get_db(family)
+        if (
+            db.get_bool(DatabaseManager.DAT, "based_on_ele", False)
+            and db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1) == 2
+        ):
+            return DebugAuthenticateResponseEdgelockEnclaveV2  # type: ignore
+
+        dc = DebugCredentialCertificate.parse(
+            load_binary(config.get_input_file_name("certificate")), family=family
         )
 
-    @staticmethod
-    def generate_config_template(family: str, revision: str = "latest") -> str:
-        """Generate AHAB configuration template.
+        return cls._get_class(family=family, protocol_version=dc.version)
 
-        :param family: Family for which the template should be generated.
-        :param revision: Family revision of chip.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+    @classmethod
+    def _get_class(cls, family: FamilyRevision, protocol_version: ProtocolVersion) -> Type[Self]:
+        """Get the right Debug Authentication Response class by the protocol version.
+
+        :param family: The chip family name
+        :param protocol_version: DAT protocol version
         """
-        val_schemas = DebugAuthenticateResponse.get_validation_schemas(family, revision)
+        db = get_db(family)
+        if (
+            db.get_bool(DatabaseManager.DAT, "based_on_ele", False)
+            and db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1) == 2
+        ):
+            return DebugAuthenticateResponseEdgelockEnclaveV2  # type: ignore
 
-        yaml_data = CommentedConfig(
-            f"Debug Authentication Configuration template for {family}.", val_schemas
-        ).get_template()
+        return _version_mapping[protocol_version.version]  # type: ignore
 
-        return yaml_data
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature."""
+        raise SPSDKNotImplementedError
 
 
 class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
@@ -343,12 +245,11 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
 
     def __init__(
         self,
-        family: str,
+        family: FamilyRevision,
         debug_credential: DebugCredentialCertificate,
         auth_beacon: int,
         dac: DebugAuthenticationChallenge,
         sign_message: SignedMessage,
-        revision: str = "latest",
     ) -> None:
         """Constructor of DAR for devices that using EdgeLock Enclave with AHAB v2."""
         super().__init__(
@@ -357,7 +258,6 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
             auth_beacon,
             dac,
             None,
-            revision,
         )
         self.sign_message = sign_message
 
@@ -374,30 +274,29 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         return self.sign_message.export()
 
     @classmethod
-    def _load_from_config(
+    def load_from_config(
         cls,
-        config: dict[str, Any],
-        dc: DebugCredentialCertificate,
-        dac: DebugAuthenticationChallenge,
-        search_paths: Optional[list[str]] = None,
+        config: Config,
+        dac: Optional[DebugAuthenticationChallenge] = None,
     ) -> Self:
         """Converts the configuration option into an Debug authentication response object.
 
         :param config: Debug authentication response configuration dictionaries.
         :param dac: Debug Credential Challenge
-        :param dc: Debug Credential Certificate
-        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Debug authentication response object.
         """
-        family = config["family"]
-        revision = config.get("revision", "latest")
+        if dac is None:
+            raise SPSDKValueError("DAC object must be specified for proper DAR creating response.")
+        family = FamilyRevision.load_from_config(config)
         auth_beacon = config.get("beacon", 0)
-        dc_correct = cast(DebugCredentialEdgeLockEnclaveV2, dc)
+        dc = DebugCredentialEdgeLockEnclaveV2.parse(
+            load_binary(config.get_input_file_name("certificate")), family=family
+        )
         # add missing parts to config from DC & DAC
-        config["fuse_version"] = dc_correct.certificate.fuse_version
+        config["fuse_version"] = dc.certificate.fuse_version
         config["sw_version"] = 0
         message = {
-            "uuid": dc_correct.uuid.hex(),
+            "uuid": dc.uuid.hex(),
             "command": {
                 "DAT_AUTHENTICATION_REQ": {
                     "challenge_vector": dac.challenge.hex(),
@@ -407,7 +306,7 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         }
         config["message"] = message
 
-        sign_msg = SignedMessage.load_from_config(config, search_paths)
+        sign_msg = SignedMessage.load_from_config(config)
 
         return cls(
             family=family,
@@ -415,19 +314,21 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
             auth_beacon=auth_beacon,
             dac=dac,
             sign_message=sign_msg,
-            revision=revision,
         )
 
     @classmethod
-    def _get_validation_schemas(cls, family: str, revision: str = "latest") -> list[dict[str, Any]]:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the validation schema.
 
         :param family: Family description.
-        :param revision: Chip revision specification, as default, latest is used.
         :raises SPSDKError: Family or revision is not supported.
         :return: List of validation schemas.
         """
-        schemas_smsg = SignedMessage.get_validation_schemas(family, revision)[1]
+        family_schema = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
+        )
+        schemas_smsg = SignedMessage.get_validation_schemas(family)[1]
         schemas_smsg["required"].remove("output")
         schemas_smsg["required"].remove("fuse_version")
         schemas_smsg["required"].remove("sw_version")
@@ -440,7 +341,7 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         schemas_smsg["properties"].pop("iv_path")
         schemas_smsg["properties"].pop("message")
 
-        return [cls._get_family_validation_schemas(family, revision), schemas_smsg]
+        return [family_schema, schemas_smsg]
 
 
 _version_mapping = {

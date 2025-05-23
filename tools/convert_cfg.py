@@ -21,21 +21,22 @@ from spsdk.exceptions import SPSDKError
 from spsdk.fuses.shadowregs import ShadowRegisters
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
-from spsdk.image.bee import BeeNxp
+from spsdk.image.bee import Bee
 from spsdk.image.bootable_image.bimg import BootableImage
+from spsdk.image.cert_block.cert_blocks import CertBlockV21
 from spsdk.image.fcb.fcb import FCB
-from spsdk.image.mbi.mbi import get_mbi_class
+from spsdk.image.iee.iee import Iee
+from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mem_type import MemoryType
+from spsdk.image.otfad.otfad import Otfad
 from spsdk.image.trustzone import TrustZone
 from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.pfr.pfr import CFPA, CMACTABLE, CMPA, ROMCFG
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31
-from spsdk.utils.crypto.cert_blocks import CertBlockV21
-from spsdk.utils.crypto.iee import IeeNxp
-from spsdk.utils.crypto.otfad import OtfadNxp
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.images import BinaryImage
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_configuration, load_text, write_file
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
@@ -71,8 +72,8 @@ def get_schemas_mbi(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of MBI
     :return: Validation JSON schemas
     """
-    mbi_cls = get_mbi_class(config)
-    schemas = mbi_cls.get_validation_schemas(config["family"])
+    mbi_cls = MasterBootImage.get_mbi_class(config)
+    schemas = mbi_cls.get_validation_schemas(FamilyRevision.load_from_config(config))
     check_config(config=config, schemas=schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -83,8 +84,8 @@ def get_schemas_sb31(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of SB3.1
     :return: Validation JSON schemas
     """
-    check_config(config, SecureBinary31.get_validation_schemas_family())
-    schemas = SecureBinary31.get_validation_schemas(config["family"])
+    check_config(config, SecureBinary31.get_validation_schemas_basic())
+    schemas = SecureBinary31.get_validation_schemas(FamilyRevision.load_from_config(config))
     check_config(config=config, schemas=schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -95,9 +96,9 @@ def get_schemas_devhsm(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of DEVHSM
     :return: Validation JSON schemas
     """
-    check_config(config, SecureBinary31.get_validation_schemas_family())
+    check_config(config, SecureBinary31.get_validation_schemas_basic())
 
-    schemas = DevHsmSB31.get_validation_schemas(config["family"])
+    schemas = DevHsmSB31.get_validation_schemas(FamilyRevision.load_from_config(config))
     check_config(config=config, schemas=schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -108,7 +109,7 @@ def get_schemas_cert_block(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of Certification block
     :return: Validation JSON schemas
     """
-    schemas = CertBlockV21.get_validation_schemas()
+    schemas = CertBlockV21.get_validation_schemas(FamilyRevision.load_from_config(config))
     schemas.append(get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"])
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
@@ -120,8 +121,8 @@ def get_schemas_ahab(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of AHAB
     :return: Validation JSON schemas
     """
-    check_config(config, AHABImage.get_validation_schemas_family())
-    schemas = AHABImage.get_validation_schemas(config["family"], config.get("revision", "latest"))
+    check_config(config, AHABImage.get_validation_schemas_basic())
+    schemas = AHABImage.get_validation_schemas(FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -132,9 +133,7 @@ def get_schemas_signed_message(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of Signed Message
     :return: Validation JSON schemas
     """
-    schemas = SignedMessage.get_validation_schemas(
-        config["family"], config.get("revision", "latest")
-    )
+    schemas = SignedMessage.get_validation_schemas(FamilyRevision.load_from_config(config))
 
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
@@ -148,11 +147,11 @@ def get_schemas_otfad(config: dict[str, Any]) -> list[dict[str, Any]]:
     """
     check_config(
         config,
-        OtfadNxp.get_validation_schemas_family(),
+        Otfad.get_validation_schemas_basic(),
         extra_formatters=disable_files_dirs_formatters,
     )
-    family = config["family"]
-    schemas = OtfadNxp.get_validation_schemas(family)
+    family = FamilyRevision.load_from_config(config)
+    schemas = Otfad.get_validation_schemas(family)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -165,11 +164,11 @@ def get_schemas_iee(config: dict[str, Any]) -> list[dict[str, Any]]:
     """
     check_config(
         config,
-        IeeNxp.get_validation_schemas_family(),
+        Iee.get_validation_schemas_basic(),
         extra_formatters=disable_files_dirs_formatters,
     )
-    family = config["family"]
-    schemas = IeeNxp.get_validation_schemas(family)
+    family = FamilyRevision.load_from_config(config)
+    schemas = Iee.get_validation_schemas(family)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -180,11 +179,10 @@ def get_schemas_fcb(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of FCB
     :return: Validation JSON schemas
     """
-    check_config(config, FCB.get_validation_schemas_family())
-    chip_family = config["family"]
+    check_config(config, FCB.get_validation_schemas_basic())
+    chip_family = FamilyRevision.load_from_config(config)
     mem_type = MemoryType.from_label(config.get("type", "Unknown"))
-    revision = config.get("revision", "latest")
-    schemas = FCB.get_validation_schemas(chip_family, mem_type, revision)
+    schemas = FCB.get_validation_schemas(chip_family, mem_type)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
 
     return schemas
@@ -196,11 +194,11 @@ def get_schemas_bootable_image(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of bootable image
     :return: Validation JSON schemas
     """
-    check_config(config, BootableImage.get_validation_schemas_family())
-    chip_family = config["family"]
+    check_config(config, BootableImage.get_validation_schemas_basic())
+    chip_family = FamilyRevision.load_from_config(config)
     mem_type = MemoryType.from_label(config["memory_type"])
-    revision = config.get("revision", "latest")
-    schemas = BootableImage.get_validation_schemas(chip_family, mem_type, revision)
+
+    schemas = BootableImage.get_validation_schemas(chip_family, mem_type)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
 
     return schemas
@@ -212,12 +210,12 @@ def get_schemas_xmcd(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of XMCD
     :return: Validation JSON schemas
     """
-    check_config(config, XMCD.get_validation_schemas_family())
-    chip_family = config["family"]
+    check_config(config, XMCD.get_validation_schemas_basic())
+    chip_family = FamilyRevision.load_from_config(config)
     mem_type = config["mem_type"]
     config_type = config["config_type"]
-    revision = config.get("revision", "latest")
-    schemas = XMCD.get_validation_schemas(chip_family, mem_type, config_type, revision)
+
+    schemas = XMCD.get_validation_schemas(chip_family, mem_type, config_type)
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
 
     return schemas
@@ -229,7 +227,9 @@ def get_schemas_bee(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of BEE
     :return: Validation JSON schemas
     """
-    schemas = BeeNxp.get_validation_schemas()
+    schemas = Bee.get_validation_schemas(
+        FamilyRevision("mimxrt1050")
+    )  # Just temporary solution for old configurations
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -240,8 +240,8 @@ def get_schemas_trust_zone(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of Trust Zone
     :return: Validation JSON schemas
     """
-    check_config(config, TrustZone.get_validation_schemas_family())
-    schemas = TrustZone.get_validation_schemas(config["family"])
+    check_config(config, TrustZone.get_validation_schemas_basic())
+    schemas = TrustZone.get_validation_schemas(FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -263,9 +263,7 @@ def get_schemas_pfr_cmpa(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of PFR CMPA
     :return: Validation JSON schemas
     """
-    schemas = CMPA.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
-    )
+    schemas = CMPA.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -276,9 +274,7 @@ def get_schemas_pfr_cfpa(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of PFR CFPA
     :return: Validation JSON schemas
     """
-    schemas = CFPA.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
-    )
+    schemas = CFPA.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -289,9 +285,7 @@ def get_schemas_ifr_romcfg(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of IFR ROMCFG
     :return: Validation JSON schemas
     """
-    schemas = ROMCFG.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
-    )
+    schemas = ROMCFG.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -302,9 +296,7 @@ def get_schemas_ifr_cmactable(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of IFR CMACTABLE
     :return: Validation JSON schemas
     """
-    schemas = CMACTABLE.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
-    )
+    schemas = CMACTABLE.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -315,9 +307,7 @@ def get_schemas_shadowregs(config: dict[str, Any]) -> list[dict[str, Any]]:
     :param config: Any configuration of Shadow  registers
     :return: Validation JSON schemas
     """
-    schemas = ShadowRegisters.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
-    )
+    schemas = ShadowRegisters.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -329,7 +319,7 @@ def get_schemas_dc(config: dict[str, Any]) -> list[dict[str, Any]]:
     :return: Validation JSON schemas
     """
     schemas = DebugCredentialCertificate.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
+        family=FamilyRevision.load_from_config(config)
     )
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
@@ -342,7 +332,7 @@ def get_schemas_dat(config: dict[str, Any]) -> list[dict[str, Any]]:
     :return: Validation JSON schemas
     """
     schemas = DebugAuthenticateResponse.get_validation_schemas(
-        family=config["family"], revision=config.get("revision", "latest")
+        family=FamilyRevision.load_from_config(config)
     )
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas

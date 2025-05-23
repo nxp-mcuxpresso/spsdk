@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Secure Binary v3.1 converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -12,11 +13,8 @@ containerOutputFile: .\workspace\output_images\k32w1xx\sb3_384_none.sb3 # [Requi
 #                                              == Image Signing Settings ==
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
-# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: .\workspace\keys_certs\ec_pk_secp384r1_cert0.pem
-# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
-# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-# signProvider: type=file;file_path=my_prv_key.pem
+# Description: Main Certificate private key used to sign certificate.
+signer: .\workspace\keys_certs\ec_pk_secp384r1_cert0.pem
 # ======================================================================================================================
 #                                               == Certificate Block V2 ==
 # ======================================================================================================================

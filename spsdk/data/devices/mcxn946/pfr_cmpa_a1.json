@@ -1,5 +1,5 @@
 {
-    "cpu": "MCXN946",
+    "cpu": "mcxn946",
     "groups": [
         {
             "group": {
@@ -166,7 +166,7 @@
                         {
                             "width": 16,
                             "reset_value_int": "0x5963",
-                            "access": "RO",
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "HEADER",
                             "description": "CMPA Header marker should be set to 0x5963. After this header is set, all non-zero values will take effect; leaving all settings at 0xff will cause undefined behavior. It is recommended to set all values to 0x00 before setting the CMPA header value."

@@ -10,7 +10,7 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: General Purpose Processor
+  purpose: MCX Series
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-c-series-microcontrollers/mcx-c04x-mcus-with-arm-cortex-m0-plus-entry-level-mcus-with-classical-peripherals:MCX-C04x
   memory_map: # Memory map basic info
@@ -61,7 +61,7 @@ features:
   # ======== MBI section ========
   mbi:
     mbi_classes:
-      plain:
+      plain_xip:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
@@ -70,4 +70,4 @@ features:
           - Mbi_ExportMixinApp
     images:
       xip:
-        plain: plain
+        plain: plain_xip

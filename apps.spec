@@ -7,6 +7,7 @@
 """Configuration file for PyInstaller for SPSDK Applications."""
 
 import importlib
+import importlib.metadata
 import importlib.resources
 import os
 import re
@@ -47,8 +48,7 @@ datas = []
 datas.extend(copy_metadata("setuptools", recursive=False))
 
 # exclude imports and make them available outside of the executable
-# smartcard is LGPL so make it external outside of the executable so it can be replaced
-excluded_imports = ["smartcard"]
+excluded_imports = []
 macos_dirs_to_copy = list()
 for pkg in excluded_imports:
     module = importlib.import_module(pkg)
@@ -75,8 +75,6 @@ def create_runtime_hook_entry_points(
     :return: dictionary with entry point name and appropriate list of items
     """
     hook_ep_packages: Dict[str, List[str]] = {}
-    import importlib
-    from importlib_metadata import entry_points
 
     for ep_package in ep_packages:
         for entry_point in importlib.metadata.entry_points(group=ep_package):
@@ -211,10 +209,7 @@ a_nxpele = analyze(["spsdk/apps/nxpele.py"])
 a_nxpdevhsm = analyze(["spsdk/apps/nxpdevhsm.py"])
 a_nxpimage = analyze(["spsdk/apps/nxpimage.py"])
 a_shadowregs = analyze(["spsdk/apps/shadowregs.py"])
-a_tphost = analyze(["spsdk/apps/tphost.py"])
-a_tpconfig = analyze(["spsdk/apps/tpconfig.py"])
 a_nxpdevscan = analyze(["spsdk/apps/nxpdevscan.py"])
-a_ifr = analyze(["spsdk/apps/ifr.py"])
 a_nxpcrypto = analyze(["spsdk/apps/nxpcrypto.py"])
 a_nxpmemcfg = analyze(["spsdk/apps/nxpmemcfg.py"])
 a_nxpwpc = analyze(["spsdk/apps/nxpwpc.py"])
@@ -236,9 +231,6 @@ MERGE(
     (a_nxpdevhsm, "nxpdevhsm", "nxpdevhsm"),
     (a_nxpimage, "nxpimage", "nxpimage"),
     (a_shadowregs, "shadowregs", "shadowregs"),
-    (a_tphost, "tphost", "tphost"),
-    (a_tpconfig, "tpconfig", "tpconfig"),
-    (a_ifr, "ifr", "ifr"),
     (a_nxpdevscan, "nxpdevscan", "nxpdevscan"),
     (a_nxpcrypto, "nxpcrypto", "nxpcrypto"),
     (a_nxpmemcfg, "nxpmemcfg", "nxpmemcfg"),
@@ -263,10 +255,7 @@ exe_nxpele = executable(a_nxpele, "nxpele", "tools/pyinstaller/nxpele_version_in
 exe_nxpdevhsm = executable(a_nxpdevhsm, "nxpdevhsm", "tools/pyinstaller/nxpdevhsm_version_info.txt")
 exe_nxpimage = executable(a_nxpimage, "nxpimage", "tools/pyinstaller/nxpimage_version_info.txt")
 exe_shadowregs = executable(a_shadowregs, "shadowregs", "tools/pyinstaller/shadowregs_version_info.txt")
-exe_tphost = executable(a_tphost, "tphost", "tools/pyinstaller/tphost_version_info.txt")
-exe_tpconfig = executable(a_tpconfig, "tpconfig", "tools/pyinstaller/tpconfig_version_info.txt")
 exe_nxpdevscan = executable(a_nxpdevscan, "nxpdevscan", "tools/pyinstaller/nxpdevscan_version_info.txt")
-exe_ifr = executable(a_ifr, "ifr", "tools/pyinstaller/ifr_version_info.txt")
 exe_nxpcrypto = executable(a_nxpcrypto, "nxpcrypto", "tools/pyinstaller/nxpcrypto_version_info.txt")
 exe_nxpmemcfg = executable(a_nxpmemcfg, "nxpmemcfg", "tools/pyinstaller/nxpmemcfg_version_info.txt")
 exe_nxpwpc = executable(a_nxpwpc, "nxpwpc", "tools/pyinstaller/nxpwpc_version_info.txt")
@@ -289,10 +278,7 @@ coll_apps = COLLECT(
     exe_nxpimage,
     exe_nxpuuu,
     exe_shadowregs,
-    exe_tphost,
-    exe_tpconfig,
     exe_nxpdevscan,
-    exe_ifr,
     exe_nxpcrypto,
     exe_nxpfuses,
     exe_nxpmemcfg,
@@ -325,18 +311,9 @@ coll_apps = COLLECT(
     a_shadowregs.binaries,
     a_shadowregs.zipfiles,
     a_shadowregs.datas,
-    a_tphost.binaries,
-    a_tphost.zipfiles,
-    a_tphost.datas,
-    a_tpconfig.binaries,
-    a_tpconfig.zipfiles,
-    a_tpconfig.datas,
     a_nxpdevscan.binaries,
     a_nxpdevscan.zipfiles,
     a_nxpdevscan.datas,
-    a_ifr.binaries,
-    a_ifr.zipfiles,
-    a_ifr.datas,
     a_nxpcrypto.binaries,
     a_nxpcrypto.zipfiles,
     a_nxpcrypto.datas,

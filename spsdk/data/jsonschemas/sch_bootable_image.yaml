@@ -1,4 +1,4 @@
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -197,3 +197,12 @@ sb31:
         Secure Binary v3.1 image path. It could be used as pre-prepared binary form of Secure Binary v3.1 and also YAML configuration file for Secure Binary v3.1.
         In case that YAML configuration file is used, the Bootable image tool build the Secure Binary v3.1 itself.
       template_value: secure_binary_21.yaml
+
+post_export:
+  title: General Options
+  properties:
+    post_export:
+      type: string
+      title: Path to directory for post export
+      description: Path to directory where post export artifacts like fuse scripts, keyblobs etc. will be exported
+      template_value: output

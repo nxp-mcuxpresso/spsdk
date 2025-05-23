@@ -1,4 +1,4 @@
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,8 +16,8 @@ iee_output:
       type: string
       title: Output binary image filename
       description: Filename of the output image containing keyblobs and encrypted data blobs without file extension (.bin will be appended)
-      template_value: "iee_whole_image"
-      default: "iee_whole_image"
+      template_value: "iee_full_image"
+      default: "iee_full_image"
 
     keyblob_name:
       type: string

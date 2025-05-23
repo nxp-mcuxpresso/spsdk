@@ -13,7 +13,7 @@ revisions:
         cmpa:
           reg_spec: pfr_cmpa_a0.json
       tz:
-        reg_spec: tz_a0.yaml
+        reg_spec: tz_a0.json
   a1:
     features:
       pfr:
@@ -22,7 +22,7 @@ revisions:
         cmpa:
           reg_spec: pfr_cmpa_a1.json
       tz:
-        reg_spec: tz_a1.yaml
+        reg_spec: tz_a1.json
       dice:
         reg_spec: dice_had_a1.json
 latest: a1
@@ -30,7 +30,7 @@ latest: a1
 # General MCU information
 info:
   use_in_doc: True
-  purpose: MCX Industrial and IoT Microcontrollers
+  purpose: MCX Series
   spsdk_predecessor_name: mcxn9xx
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X
@@ -74,7 +74,7 @@ info:
   isp:
     rom:
       protocol: mboot
-      interfaces: ["usb","uart", "spi", "i2c", "can"]
+      interfaces: ["usb", "uart", "spi", "i2c", "can"]
       usb:
         vid: 0x1FC9
         pid: 0x014F
@@ -324,9 +324,9 @@ features:
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    sub_features: [DevHsmSB31]
     key_blob_offset: 0x0
     key_blob_command_position: -1
-    devhsm_class: DevHsmSB31
     supported_commands:
       - erase
       - load
@@ -350,19 +350,6 @@ features:
           address: 0x100_0000
       - loadKeyBlob:
           offset: 0x0
-
-  # ======== Trust provisioning section ========
-  tp:
-    need_cfpa_update: false
-    use_prov_data: true
-    key_flags_version: 1
-    die_id_cert_version: 1
-    erase_memory: false
-    need_tp_fw: true
-    need_revoke_update: true
-    version_offset: 0x4
-    revoke_offset: 0x18
-    max_oem_cert_size: 1000
 
   # ======== TrustZone section ========
   tz: {}

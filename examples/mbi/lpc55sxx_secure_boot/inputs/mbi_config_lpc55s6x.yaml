@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -44,8 +44,5 @@ certBlock: inputs/cert_block.yaml
 #                                              == Image Signing Settings ==
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
-# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ../../_data/keys/rsa2048/IMG1_1_sha256_2048_65537_v3_usr_key.pem
-# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
-# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-# signProvider: type=file;file_path=my_prv_key.pem
+# Description: Main Certificate private key used to sign certificate.
+signer: ../../_data/keys/rsa2048/IMG1_1_sha256_2048_65537_v3_usr_key.pem

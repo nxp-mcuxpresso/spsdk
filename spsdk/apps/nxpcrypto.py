@@ -8,6 +8,7 @@
 """CLI application for various cryptographic operations."""
 
 import base64
+import glob
 import hashlib
 import logging
 import os
@@ -15,17 +16,16 @@ import sys
 from typing import Any, Optional, Union
 
 import click
-from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
+from click_option_group import optgroup
 
-from spsdk.apps.nxpcertgen import main as cert_gen_main
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     SpsdkClickGroup,
     spsdk_apps_common_options,
+    spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
-    spsdk_revision_option,
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
@@ -38,19 +38,36 @@ from spsdk.crypto.keys import (
     PrivateKeySM2,
     PublicKey,
     PublicKeyEcc,
+    SPSDKKeyPassphraseMissing,
     get_ecc_curve,
     get_supported_keys_generators,
+    prompt_for_passphrase,
 )
-from spsdk.crypto.signature_provider import get_signature_provider
-from spsdk.crypto.utils import extract_public_key
-from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError, SPSDKValueError
-from spsdk.utils.crypto.rot import Rot
-from spsdk.utils.misc import Endianness, get_printable_path, load_binary, write_file
+from spsdk.crypto.signature_provider import get_signature_provider_from_config_str
+from spsdk.crypto.utils import (
+    extract_public_key,
+    generate_img_csf_key,
+    generate_key_pair,
+    generate_srk_keys,
+)
+from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError
+from spsdk.image.cert_block.rot import Rot
+from spsdk.utils.config import Config
+from spsdk.utils.database import get_common_data_file_path
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import (
+    Endianness,
+    get_printable_path,
+    load_binary,
+    load_secret,
+    load_text,
+    write_file,
+)
 
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="nxpcrypto", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="nxpcrypto", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
     """Collection of utilities for cryptographic operations."""
@@ -105,14 +122,13 @@ def digest(hash_name: str, input_file: str, compare: str) -> None:
             raise SPSDKAppError("Digests differ!")
 
 
-@main.group(name="rot", no_args_is_help=True, cls=SpsdkClickGroup)
+@main.group(name="rot", cls=SpsdkClickGroup)
 def rot_group() -> None:
     """Group of RoT commands."""
 
 
 @rot_group.command(name="export", no_args_is_help=True)
 @spsdk_family_option(families=Rot.get_supported_families())
-@spsdk_revision_option
 @click.option(
     "-k",
     "--key",
@@ -126,9 +142,9 @@ def rot_group() -> None:
     help="Password when using encrypted private keys.",
 )
 @spsdk_output_option(required=False)
-def export(family: str, revision: str, key: list[str], password: str, output: str) -> None:
+def export(family: FamilyRevision, key: list[str], password: str, output: str) -> None:
     """Export RoT table."""
-    _rot = Rot(family, revision, keys_or_certs=key, password=password)
+    _rot = Rot(family, keys_or_certs=key, password=password)
     rot_hash = _rot.export()
     click.echo(str(_rot))
     if output:
@@ -139,7 +155,6 @@ def export(family: str, revision: str, key: list[str], password: str, output: st
 
 @rot_group.command(name="calculate-hash", no_args_is_help=True)
 @spsdk_family_option(families=Rot.get_supported_families())
-@spsdk_revision_option
 @click.option(
     "-k",
     "--key",
@@ -162,10 +177,10 @@ def export(family: str, revision: str, key: list[str], password: str, output: st
 )
 @spsdk_output_option(required=False)
 def calculate_hash(
-    family: str, revision: str, key: list[str], password: str, output: str, _base64: bool
+    family: FamilyRevision, key: list[str], password: str, output: str, _base64: bool
 ) -> None:
     """Calculate RoT hash."""
-    _rot = Rot(family, revision, keys_or_certs=key, password=password)
+    _rot = Rot(family, keys_or_certs=key, password=password)
     rot_hash = _rot.calculate_hash()
     if _base64:
         rot_hash = base64.b64encode(rot_hash)
@@ -177,18 +192,180 @@ def calculate_hash(
         click.echo(f"Result has been stored in: {output}")
 
 
-@main.group(name="cert", no_args_is_help=True, cls=SpsdkClickGroup)
-def cert() -> None:
+@main.group(name="cert", cls=SpsdkClickGroup)
+def cert_group() -> None:
     """Group of command for working with x509 certificates."""
 
 
-cert.add_command(cert_gen_main.commands["convert"], name="convert")
-cert.add_command(cert_gen_main.commands["generate"], name="generate")
-cert.add_command(cert_gen_main.commands["get-template"], name="get-template")
-cert.add_command(cert_gen_main.commands["verify"], name="verify")
+@cert_group.command(name="convert", no_args_is_help=True)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(["PEM", "DER"], case_sensitive=False),
+    required=True,
+    help="Desired output format.",
+)
+@click.option(
+    "-i",
+    "--input-file",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to certificate file to convert.",
+)
+@spsdk_output_option()
+def cert_convert(encoding: str, input_file: str, output: str) -> None:
+    """Convert certificate format."""
+    logger.info(f"Loading certificate from: {input_file}")
+    cert = Certificate.load(input_file)
+    encoding_type = {"PEM": SPSDKEncoding.PEM, "DER": SPSDKEncoding.DER}[encoding]
+    cert.save(output, encoding_type)
+    click.echo(f"The certificate file has been created: {get_printable_path(output)}")
 
 
-@main.group(name="key", no_args_is_help=True, cls=SpsdkClickGroup)
+class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
+    """Configuration object for creating the certificate."""
+
+    def __init__(self, config: Config) -> None:
+        """Initialize cert_config from yml config data."""
+        try:
+            self.issuer_private_key = config.get_input_file_name("issuer_private_key")
+            self.issuer_private_key_password = config.get("issuer_private_key_password")
+            self.subject_public_key = config.get_input_file_name("subject_public_key")
+            self.serial_number = (
+                config.get_int("serial_number") if "serial_number" in config else None
+            )
+            self.duration = config.get_int("duration") if "duration" in config else None
+            self.issuer_name = generate_name(config.get("issuer"))
+            self.subject_name = generate_name(config.get("subject"))
+            self.extensions = None
+            if "extensions" in config:
+                self.extensions = generate_extensions(config.get_dict("extensions"))
+            self.pss_padding = config.get("pss_padding")
+        except KeyError as e:
+            raise SPSDKError(f"Error found in configuration: {e} not found") from e
+
+
+@cert_group.command(name="generate", no_args_is_help=True)
+@spsdk_config_option()
+@spsdk_output_option(force=True)
+@click.option(
+    "-e",
+    "--encoding",
+    required=False,
+    type=click.Choice(["PEM", "DER"], case_sensitive=False),
+    default="PEM",
+    help="Encoding type. Default is PEM",
+)
+def generate(config: Config, output: str, encoding: str) -> None:
+    """Generate certificate.
+
+    The configuration template files could be generated by subcommand 'get-template'.
+    """
+    logger.info("Generating Certificate...")
+    logger.info("Loading configuration from yml file...")
+    cert_config = CertificateParametersConfig(config)
+    try:
+        password = (
+            load_secret(cert_config.issuer_private_key_password)
+            if cert_config.issuer_private_key_password
+            else None
+        )
+        priv_key = PrivateKey.load(cert_config.issuer_private_key, password=password)
+    except SPSDKKeyPassphraseMissing:
+        password = prompt_for_passphrase()
+        priv_key = PrivateKey.load(cert_config.issuer_private_key, password=password)
+    pub_key = extract_public_key(cert_config.subject_public_key)
+
+    certificate = Certificate.generate_certificate(
+        subject=cert_config.subject_name,
+        issuer=cert_config.issuer_name,
+        subject_public_key=pub_key,
+        issuer_private_key=priv_key,
+        serial_number=cert_config.serial_number,
+        duration=cert_config.duration,
+        extensions=cert_config.extensions,
+        pss_padding=cert_config.pss_padding,
+    )
+    logger.info("Saving the generated certificate to the specified path...")
+    encoding_type = SPSDKEncoding.PEM if encoding.lower() == "pem" else SPSDKEncoding.DER
+    certificate.save(output, encoding_type=encoding_type)
+    logger.info("Certificate generated successfully...")
+    click.echo(f"The certificate file has been created: {get_printable_path(output)}")
+
+
+@cert_group.command(name="get-template", no_args_is_help=True)
+@spsdk_output_option(force=True)
+def get_template(output: str) -> None:
+    """Generate the template of Certificate generation YML configuration file."""
+    logger.info("Creating Certificate template...")
+    write_file(load_text(get_common_data_file_path("certgen_config.yaml")), output)
+    click.echo(
+        f"The Certificate template has been saved into {get_printable_path(output)} YAML file"
+    )
+
+
+@cert_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-c",
+    "--certificate",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to certificate to verify",
+)
+@optgroup.group("Type of verification")
+@optgroup.option(
+    "-s",
+    "--sign",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to key to verify certificate signature",
+)
+@optgroup.option(
+    "-p",
+    "--puk",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to key to verify public key in certificate",
+)
+def verify(certificate: str, sign: str, puk: str) -> None:
+    """Verify signature or public key in certificate."""
+    logger.info(f"Loading certificate from: {certificate}")
+    cert = Certificate.load(certificate)
+    if sign:
+        logger.info("Performing signature verification")
+        sign_algorithm = cert.signature_algorithm_oid._name
+        logger.debug(f"Signature algorithm: {sign_algorithm}")
+        if "ecdsa" not in sign_algorithm:
+            raise SPSDKAppError(
+                f"Unsupported signature algorithm: {sign_algorithm}. "
+                "Only ECDSA signatures are currently supported."
+            )
+        verification_key = extract_public_key(sign)
+        if not isinstance(verification_key, PublicKeyEcc):
+            raise SPSDKError("Currently only ECC keys are supported.")
+        if not cert.signature_hash_algorithm:
+            raise SPSDKError("Certificate doesn't contain info about hashing alg.")
+
+        if not verification_key.verify_signature(
+            cert.signature,
+            cert.tbs_certificate_bytes,
+            EnumHashAlgorithm.from_label(cert.signature_hash_algorithm.name),
+        ):
+            raise SPSDKAppError("Invalid signature")
+        click.echo("Signature is OK")
+
+    if puk:
+        logger.info("Performing public key verification")
+        cert_puk = cert.get_public_key()
+        other_puk = extract_public_key(puk)
+        logger.debug(f"Certificate public key: {str(cert_puk)}")
+        logger.debug(f"Other public key: {str(other_puk)}")
+
+        if cert_puk == other_puk:
+            click.echo("Public key in certificate matches the input")
+        else:
+            raise SPSDKAppError("Public key in certificate differs from the input")
+
+
+@main.group(name="key", cls=SpsdkClickGroup)
 def key_group() -> None:
     """Group of commands for working with asymmetric keys."""
 
@@ -264,7 +441,7 @@ def key_generate(key_type: str, output: str, password: str, encoding: str) -> No
     default=False,
     help="Extract public key instead of converting private key.",
 )
-def convert(encoding: str, input_file: str, output: str, puk: bool) -> None:
+def key_convert(encoding: str, input_file: str, output: str, puk: bool) -> None:
     """Convert Asymmetric key into various formats."""
     key_data = load_binary(input_file)
     key = reconstruct_key(key_data=key_data)
@@ -348,7 +525,7 @@ def reconstruct_key(
     raise SPSDKError(f"Can't recognize key with length {key_length}")
 
 
-@main.group(name="signature", no_args_is_help=True, cls=SpsdkClickGroup)
+@main.group(name="signature", cls=SpsdkClickGroup)
 def signature_group() -> None:
     """Group of commands for working with signature."""
 
@@ -383,22 +560,16 @@ def cut_off_data_regions(data: bytes, regions: list[str]) -> bytes:
 
 
 @signature_group.command(name="create", no_args_is_help=True)
-@optgroup.group("Signee type", cls=RequiredMutuallyExclusiveOptionGroup)
-@optgroup.option(
-    "-k",
-    "--private-key",
-    type=click.Path(exists=True, dir_okay=False),
+@click.option(
+    "-s",
+    "--signer",
+    type=click.STRING,
+    required=True,
     help=f"""\b
-        Path to private key to be used for signing.
+        Signature provider configuration string or path to private key to be used for signing.
         Supported private keys:
         {", ".join(list(get_supported_keys_generators()))}.
         """,
-)
-@optgroup.option(
-    "-sp",
-    "--signature-provider",
-    type=click.STRING,
-    help="Signature provider configuration string.",
 )
 @click.option(
     "-p",
@@ -456,8 +627,7 @@ def cut_off_data_regions(data: bytes, regions: list[str]) -> bytes:
 )
 @spsdk_output_option(force=True)
 def signature_create(
-    private_key: str,
-    signature_provider: str,
+    signer: str,
     password: str,
     algorithm: str,
     input_file: str,
@@ -467,15 +637,10 @@ def signature_create(
     output: str,
 ) -> None:
     """Sign the data with given private key."""
-    if not (signature_provider or private_key):
-        raise SPSDKValueError("Signature provider or private key must be specified.")
-    if signature_provider and private_key:
-        raise SPSDKValueError("One of signature provider and private key must be specified.")
     hash_alg = EnumHashAlgorithm.from_label(algorithm) if algorithm else None
     encoding_obj = SPSDKEncoding(encoding.upper()) if encoding else None
-    signature_provider_obj = get_signature_provider(
-        sp_cfg=signature_provider,
-        local_file_key=private_key,
+    signature_provider_obj = get_signature_provider_from_config_str(
+        signer,
         password=password,
         pss_padding=pss_padding,
         hash_alg=hash_alg,
@@ -584,7 +749,7 @@ def signature_verify_command(
     return result
 
 
-@main.group(name="pki-tree", no_args_is_help=True, cls=SpsdkClickGroup)
+@main.group(name="pki-tree", cls=SpsdkClickGroup)
 def pki_group() -> None:
     """Group of commands for generation of PKI tree."""
 
@@ -666,10 +831,10 @@ def ahab_tree_generate(
                            | | |
                   -------- + | +---------------
                 /            |                 \\
-                SRK1        SRK2       ...      SRK N
+                SRK0        SRK1       ...      SRK N
                 |            |                   |
                 |            |                   |
-                SGK1        SGK2                SGK N
+                SGK0        SGK1                SGK N
 
     where: N can be 1 to 4.
 
@@ -682,13 +847,88 @@ def ahab_tree_generate(
                           | | |
                  -------- + | +---------------
                 /           |                 \\
-            SRK1          SRK2       ...      SRK N
+            SRK0          SRK1       ...      SRK N
 
     """
     click.echo("Generating PKI Tree for AHAB")
     ahab_tree_generate_command(
         key_type, output, password, encoding, keys_number, duration, serial, srk_is_ca
     )
+
+
+@pki_group.command(name="ahab-extend", no_args_is_help=True)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(list(SPSDKEncoding.cryptography_encodings()), case_sensitive=False),
+    default="PEM",
+)
+@click.option(
+    "-n",
+    "--keys-number",
+    type=INT(),
+    default="1",
+    help="Number of SRK keys and certificates that will be created (default 1)",
+)
+@click.option(
+    "-d",
+    "--duration",
+    type=click.IntRange(1, 100),
+    default=10,
+    help="Duration of certificates validity in years (default 10)",
+)
+@click.option(
+    "-s",
+    "--serial",
+    type=INT(),
+    multiple=True,
+    help="""Serial number of SRK certificates. If not specified, random number will be used.
+    """,
+)
+@click.option(
+    "-p",
+    "--password",
+    "password",
+    metavar="PASSWORD",
+    help="Password with which the keys will be encrypted. "
+    "If not provided, the keys will be unencrypted.",
+)
+@click.option(
+    "-i",
+    "--input",
+    "tree_path",
+    type=click.Path(exists=True, file_okay=False),
+    required=True,
+    help="Path to the existing AHAB PKI tree.",
+)
+def ahab_tree_extend(
+    tree_path: str,
+    password: str,
+    encoding: str,
+    keys_number: int,
+    duration: int,
+    serial: Optional[list[int]],
+) -> None:
+    """Extend a basic AHAB PKI tree.
+
+    This command will extend the existing AHAB PKI tree with additional SRK keys and certificates.
+    If the SRKs are chosen to be CA certificates then this command will generate the
+    following PKI tree:
+
+    \b
+                        CA Certificate
+                           | | |
+                  -------- + | +---------------
+                /            |                 \\
+                SRK1        SRK2       ...      SRK N
+                |            |                   |
+                |            |                   |
+                SGK1        SGK2                SGK N
+
+
+    """
+    click.echo("Generating PKI Tree for AHAB")
+    ahab_extend_tree_command(tree_path, password, encoding, keys_number, duration, serial)
 
 
 @pki_group.command(name="hab", no_args_is_help=True)
@@ -746,7 +986,7 @@ def ahab_tree_generate(
     "--srk-is-ca",
     is_flag=True,
     default=False,
-    help="True if SRK is certificate authority. In this case SGK keys will be generated",
+    help="True if SRK is certificate authority. In this case IMG and CSF keys will be generated",
 )
 def hab_tree_generate(
     key_type: str,
@@ -768,12 +1008,10 @@ def hab_tree_generate(
                           | | |
                  -------- + | +---------------
                 /           |                 \\
-             SRK1          SRK2       ...      SRK N
+             SRK0          SRK1       ...      SRK N
              / \\            / \\                / \\
             /   \\          /   \\              /   \\
-        CSF1_1  IMG1_1  CSF2_1  IMG2_1 ... CSF N_1  IMG N_1
-
-    where: N can be 1 to 4.
+        CSF0_0  IMG0_0  CSF1_0  IMG1_0 ... CSF N_0  IMG N_0
 
 
     If the SRKs are chosen to be non-CA certificate then this command will
@@ -784,7 +1022,7 @@ def hab_tree_generate(
                           | | |
                  -------- + | +---------------
                 /           |                 \\
-            SRK1          SRK2       ...      SRK N
+            SRK0          SRK1       ...      SRK N
 
     """
     click.echo("Generating PKI Tree for HABv4")
@@ -793,53 +1031,95 @@ def hab_tree_generate(
     )
 
 
-def generate_key_pair(
-    key_type: str,
-    encoding: str,
-    keys_path: str,
-    key_prefix: str,
-    idx: int,
-    is_ca: bool,
+@pki_group.command(name="hab-extend", no_args_is_help=True)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(list(SPSDKEncoding.cryptography_encodings()), case_sensitive=False),
+    default="PEM",
+)
+@click.option(
+    "-n",
+    "--keys-number",
+    type=INT(),
+    default="1",
+    help="Number of SRK keys and certificates that will be created (default 1)",
+)
+@click.option(
+    "-d",
+    "--duration",
+    type=click.IntRange(1, 100),
+    default=10,
+    help="Duration of certificates validity in years (default 10)",
+)
+@click.option(
+    "-s",
+    "--serial",
+    type=INT(),
+    multiple=True,
+    help="""Serial number of SRK certificates. If not specified, random number will be used.
+    """,
+)
+@click.option(
+    "-p",
+    "--password",
+    "password",
+    metavar="PASSWORD",
+    help="Password with which the keys will be encrypted. "
+    "If not provided, the keys will be unencrypted.",
+)
+@click.option(
+    "-i",
+    "--input",
+    "tree_path",
+    type=click.Path(exists=True, file_okay=True),
+    required=True,
+    help="Path to the existing AHAB PKI tree or SRK certificate.",
+)
+def hab_tree_extend(
+    tree_path: str,
     password: str,
-) -> tuple[PrivateKey, PublicKey, str, str]:
-    """Generate key pair with the naming convention.
+    encoding: str,
+    keys_number: int,
+    duration: int,
+    serial: Optional[list[int]],
+) -> None:
+    """Extends a basic HABv4 PKI tree.
 
-    :param key_type: Key type from get_supported_keys_generators()
-    :param encoding: Key encoding - DER, PEM
-    :param keys_path: path to keys folder
-    :param key_prefix: prefix of the key name e.g. CA
-    :param idx: index of the key
-    :param is_ca: True if the certificate with this key is certificate authority
-    :param password: password of the key
-    :return: Tuple of private key, public key, key name and certificate name
+    1) If the path provided is a path to root directory of tree, then this command will
+    extend the existing HAB PKI tree with additional SRK keys and certificates and their
+    corresponding CSF and IMG keys if SRK is CA certificate.
+
+    2) If the path provided is a path to SRK certificate, then this command will generate
+    additional CSF and IMG keys for the given SRK certificate.
+
+    If the SRKs are chosen to be CA certificate then this command will generate the
+    following PKI tree:
+
+    \b
+                     CA Certificate
+                          | | |
+                 -------- + | +---------------
+                /           |                 \\
+             SRK0          SRK1       ...      SRK N
+             / \\            / \\                / \\
+            /   \\          /   \\              /   \\
+        CSF0_0  IMG0_0  CSF1_0  IMG1_0 ... CSF N_0  IMG N_0
+
+
+    If the SRKs are chosen to be non-CA certificate then this command will
+    generate the following PKI Certificate:
+
+    \b
+                      CA Certificate
+                          | | |
+                 -------- + | +---------------
+                /           |                 \\
+            SRK0          SRK1       ...      SRK N
+
     """
-    key_param = key_type.lower().strip()
-    encoding_param = encoding.upper().strip()
-    encoding_enum = SPSDKEncoding.all()[encoding_param]
-
-    # Generate key
-    ca_str = "_ca" if is_ca else ""
-    key_name = f"{key_prefix}{idx}_{key_param}{ca_str}_key"
-    cert_name = f"{key_prefix}{idx}_{key_param}{ca_str}_cert.{encoding_param.lower()}"
-    private_key_path = os.path.join(keys_path, f"{key_name}.{encoding_param.lower()}")
-    public_key_path = os.path.join(keys_path, f"{key_name}.pub")
-
-    # Get generator according to the provided parameter
-    generators = get_supported_keys_generators()
-    func, params = generators[key_param]
-
-    # generate public and private key
-    private_key = func(**params)
-    public_key = private_key.get_public_key()
-
-    # save keys
-    private_key.save(private_key_path, password if password else None, encoding=encoding_enum)
-    public_key.save(public_key_path, encoding=encoding_enum)
-    click.echo(
-        f"The {key_prefix}{idx} key pair has been created: {(public_key_path)}, {private_key_path}"
-    )
-
-    return private_key, public_key, key_name, cert_name
+    click.echo("Extending PKI Tree for HAB")
+    hab_extend_tree_command(tree_path, password, encoding, keys_number, duration, serial)
 
 
 def ahab_tree_generate_command(
@@ -852,7 +1132,7 @@ def ahab_tree_generate_command(
     serial: Optional[list[int]],
     srk_is_ca: bool,
 ) -> None:
-    """Generate HAB tree.
+    """Generate AHAB tree.
 
     :param key_type: key type
     :param output: output directory
@@ -909,57 +1189,132 @@ def ahab_tree_generate_command(
     click.echo(f"The CA0 certificate has been created: {ca_cert_path}")
     logger.info(ca_cert)
 
-    # Generate SRK keys
-    for idx in range(keys_number):
-        srk_private_key, srk_public_key, srk_key_name, srk_cert_name = generate_key_pair(
-            key_type,
-            encoding,
-            keys_path,
-            "SRK",
-            idx,
-            srk_is_ca,
-            password,
+    generate_srk_keys(
+        key_type=key_type,
+        encoding=encoding,
+        keys_path=keys_path,
+        crts_path=crts_path,
+        keys_number=keys_number,
+        duration=duration,
+        serial=serial,
+        ca_private_key=ca_private_key,
+        ca_issuer=ca_issuer,
+        srk_is_ca=srk_is_ca,
+        password=password,
+        print_func=click.echo,
+    )
+
+
+def ahab_extend_tree_command(
+    tree_path: str,
+    password: str,
+    encoding: str,
+    keys_number: int,
+    duration: int,
+    serial: Optional[list[int]],
+) -> None:
+    """Extend existing AHAB PKI tree.
+
+    :param tree_path: path to existing AHAB PKI tree
+    :param password: password for key protection
+    :param encoding: encoding DER or PEM
+    :param keys_number: number of keys to generate
+    :param duration: duration of certificates in years
+    :param serial: list of serial number of SRK certificates
+    :raises SPSDKAppError: Serial number provided is lower than count of keys
+    :raises SPSDKAppError: Path to the existing AHAB PKI tree is invalid
+    :raises SPSDKAppError: Path to the existing AHAB PKI tree is not a directory
+    :raises SPSDKAppError: Path to the existing AHAB PKI tree does not contain keys and crts directories
+    :raises SPSDKAppError: The existing AHAB PKI tree does not contain CA certificates
+    """
+    # Check if the tree path is valid
+    if not os.path.exists(tree_path):
+        raise SPSDKAppError(f"Path to the existing AHAB PKI tree is invalid: {tree_path}")
+
+    # Check if the tree path is a directory
+    if not os.path.isdir(tree_path):
+        raise SPSDKAppError(f"Path to the existing AHAB PKI tree is not a directory: {tree_path}")
+
+    # Check if the tree path contains the keys and crts directories
+    keys_path = os.path.join(tree_path, "keys")
+    crts_path = os.path.join(tree_path, "crts")
+    if not os.path.exists(keys_path) or not os.path.exists(crts_path):
+        raise SPSDKAppError(
+            f"Path to the existing AHAB PKI tree does not contain keys and crts directories: {tree_path}"
         )
 
-        srk_cert_path = os.path.join(crts_path, srk_cert_name)
-        subject = generate_name([{"COMMON_NAME": srk_key_name}])
-        # generate SRK certificate signed by CA certificate
-        srk_cert = Certificate.generate_certificate(
-            subject=subject,
-            issuer=ca_issuer,
-            subject_public_key=srk_public_key,
-            issuer_private_key=ca_private_key,
-            serial_number=serial[idx],
-            duration=duration * 365,
-            extensions=generate_extensions(
-                {"BASIC_CONSTRAINTS": {"ca": srk_is_ca}},
-            ),
-        )
-        srk_cert.save(srk_cert_path, encoding_enum)
-        click.echo(f"The SRK{idx} certificate has been created: {srk_cert_path}")
-        logger.info(srk_cert)
-        # In case the SRK is CA, create SGK certificates
-        if srk_is_ca:
-            _, sgk_public_key, sgk_key_name, sgk_cert_name = generate_key_pair(
-                key_type, encoding, keys_path, "SGK", idx, False, password
-            )
-            sgk_cert_path = os.path.join(crts_path, sgk_cert_name)
-            subject = generate_name([{"COMMON_NAME": sgk_key_name}])
-            # generate SGK certificate signed by SRK certificate
-            sgk_cert = Certificate.generate_certificate(
-                subject=subject,
-                issuer=ca_issuer,
-                subject_public_key=sgk_public_key,
-                issuer_private_key=srk_private_key,
-                serial_number=serial[idx],
-                duration=duration * 365,
-                extensions=generate_extensions(
-                    {"BASIC_CONSTRAINTS": {"ca": False}},
-                ),
-            )
-            sgk_cert.save(sgk_cert_path, encoding_enum)
-            click.echo(f"The SGK{idx} certificate has been created: {sgk_cert_path}")
-            logger.info(sgk_cert)
+    # Find the CA certificate
+    ca_cert_files = glob.glob(os.path.join(crts_path, "CA0*"))
+    if not ca_cert_files:
+        raise SPSDKAppError("The existing AHAB PKI tree does not contain CA certificates")
+
+    if len(ca_cert_files) > 1:
+        raise SPSDKAppError("The existing AHAB PKI tree contains more than one CA certificate")
+
+    ca_cert_file = ca_cert_files[0]
+    # Load the CA certificate
+    ca_cert = Certificate.load(ca_cert_file)
+
+    # Check if SRK certificates are CA certificates
+    srk_is_ca = False
+    sgk_files = glob.glob(os.path.join(crts_path, "SGK*"))
+    if sgk_files:
+        srk_is_ca = True
+
+    # Load the keys that belong to the CA certificate, they should be in the keys directory
+    ca_key_files = glob.glob(
+        os.path.join(keys_path, f"{os.path.basename(ca_cert_file).replace('cert', 'key')}*")
+    )
+
+    if not ca_key_files:
+        raise SPSDKAppError("The existing AHAB PKI tree does not contain CA keys")
+
+    # Load the CA private key, try all the files that belong to the CA certificate
+    ca_private_key = None
+    for ca_key_file in ca_key_files:
+        try:
+            ca_private_key = PrivateKey.load(ca_key_file, password)
+            break
+        except SPSDKError:
+            continue
+    if not ca_private_key:
+        raise SPSDKAppError("The existing AHAB PKI tree does not contain CA private key")
+
+    # check if the CA private key matches the CA certificate
+    if not ca_private_key.get_public_key() == ca_cert.get_public_key():
+        raise SPSDKAppError("The CA private key does not match the CA certificate")
+
+    # detect the key type of existing keys by parsing it from the key name
+    supported_keys = list(get_supported_keys_generators(basic=True))
+    key_type = None
+    # Key type is part of the name of the key file
+    for key in supported_keys:
+        if key in os.path.basename(ca_key_files[0]):
+            key_type = key
+            break
+
+    if not key_type:
+        raise SPSDKAppError("The existing AHAB PKI tree does not contain supported key types")
+
+    # count the number of existing SRK certs
+    existing_srk_files = glob.glob(os.path.join(crts_path, "SRK*"))
+    start_idx = len(existing_srk_files)
+
+    generate_srk_keys(
+        key_type=key_type,
+        encoding=encoding,
+        keys_path=keys_path,
+        crts_path=crts_path,
+        password=password,
+        keys_number=keys_number,
+        duration=duration,
+        serial=serial,
+        ca_issuer=ca_cert.issuer,
+        ca_private_key=ca_private_key,
+        srk_is_ca=srk_is_ca,
+        start_idx=start_idx,
+        print_func=click.echo,
+    )
 
 
 def hab_tree_generate_command(
@@ -1031,81 +1386,222 @@ def hab_tree_generate_command(
     click.echo(f"The CA0 certificate has been created: {ca_cert_path}")
     logger.info(ca_cert)
 
-    # Generate SRK keys
-    for idx in range(keys_number):
-        srk_private_key, srk_public_key, srk_key_name, srk_cert_name = generate_key_pair(
-            key_type,
-            encoding,
-            keys_path,
-            "SRK",
-            idx,
-            srk_is_ca,
-            password,
+    generate_srk_keys(
+        key_type=key_type,
+        encoding=encoding,
+        keys_path=keys_path,
+        crts_path=crts_path,
+        password=password,
+        keys_number=keys_number,
+        duration=duration,
+        serial=serial,
+        ca_issuer=ca_cert.issuer,
+        ca_private_key=ca_private_key,
+        srk_is_ca=srk_is_ca,
+        print_func=click.echo,
+        use_img_csf=True,
+    )
+
+
+def hab_extend_tree_command(
+    tree_path: str,
+    password: str,
+    encoding: str,
+    keys_number: int,
+    duration: int,
+    serial: Optional[list[int]],
+) -> None:
+    """Extend existing HABv4 PKI tree.
+
+    :param tree_path: path to existing HAB PKI tree
+    :param password: password for key protection
+    :param encoding: encoding DER or PEM
+    :param keys_number: number of keys to generate
+    :param duration: duration of certificates in years
+    :param serial: list of serial number of SRK certificates
+    :raises SPSDKAppError: Serial number provided is lower than count of keys
+    :raises SPSDKAppError: Path to the existing HAB PKI tree is invalid
+    :raises SPSDKAppError: Path to the existing HAB PKI tree is not a directory
+    :raises SPSDKAppError: Path to the existing HAB PKI tree does not contain keys and crts directories
+    :raises SPSDKAppError: The existing HAB PKI tree does not contain CA certificates
+    """
+    # Check if the tree path is valid
+    if not os.path.exists(tree_path):
+        raise SPSDKAppError(f"Path to the existing HAB PKI tree is invalid: {tree_path}")
+
+    # Check if the tree path is a directory
+    if not os.path.isdir(tree_path):
+        hab_extend_srk(tree_path, password, encoding, keys_number, duration, serial)
+    else:
+        # Check if the tree path contains the keys and crts directories
+        keys_path = os.path.join(tree_path, "keys")
+        crts_path = os.path.join(tree_path, "crts")
+        if not os.path.exists(keys_path) or not os.path.exists(crts_path):
+            raise SPSDKAppError(
+                f"Path to the existing HAB PKI tree does not contain keys and crts directories: {tree_path}"
+            )
+
+        # Find the CA certificate
+        ca_cert_files = glob.glob(os.path.join(crts_path, "CA0*"))
+        if not ca_cert_files:
+            raise SPSDKAppError("The existing HAB PKI tree does not contain CA certificates")
+
+        if len(ca_cert_files) > 1:
+            raise SPSDKAppError("The existing HAB PKI tree contains more than one CA certificate")
+
+        ca_cert_file = ca_cert_files[0]
+        # Load the CA certificate
+        ca_cert = Certificate.load(ca_cert_file)
+
+        # Check if SRK certificates are CA certificates
+        srk_is_ca = False
+        img_files = glob.glob(os.path.join(crts_path, "IMG*"))
+        csf_files = glob.glob(os.path.join(crts_path, "CSF*"))
+        if img_files and csf_files:
+            srk_is_ca = True
+
+        # Load the keys that belong to the CA certificate, they should be in the keys directory
+        ca_key_files = glob.glob(
+            os.path.join(keys_path, f"{os.path.basename(ca_cert_file).replace('cert', 'key')}*")
         )
 
-        srk_cert_path = os.path.join(crts_path, srk_cert_name)
-        subject = generate_name([{"COMMON_NAME": srk_key_name}])
-        # generate SRK certificate signed by CA certificate
-        srk_cert = Certificate.generate_certificate(
-            subject=subject,
-            issuer=ca_issuer,
-            subject_public_key=srk_public_key,
-            issuer_private_key=ca_private_key,
-            serial_number=serial[idx],
-            duration=duration * 365,
-            extensions=generate_extensions(
-                {"BASIC_CONSTRAINTS": {"ca": srk_is_ca}},
-            ),
+        if not ca_key_files:
+            raise SPSDKAppError("The existing HAB PKI tree does not contain CA keys")
+
+        # Load the CA private key, try all the files that belong to the CA certificate
+        ca_private_key = None
+        for ca_key_file in ca_key_files:
+            try:
+                ca_private_key = PrivateKey.load(ca_key_file, password)
+                break
+            except SPSDKError:
+                continue
+        if not ca_private_key:
+            raise SPSDKAppError("The existing HAB PKI tree does not contain CA private key")
+
+        # check if the CA private key matches the CA certificate
+        if not ca_private_key.get_public_key() == ca_cert.get_public_key():
+            raise SPSDKAppError("The CA private key does not match the CA certificate")
+
+        # detect the key type of existing keys by parsing it from the key name
+        supported_keys = list(get_supported_keys_generators(basic=True))
+        key_type = None
+        # Key type is part of the name of the key file
+        for key in supported_keys:
+            if key in os.path.basename(ca_key_files[0]):
+                key_type = key
+                break
+
+        if not key_type:
+            raise SPSDKAppError("The existing HAB PKI tree does not contain supported key types")
+
+        # count the number of existing SRK certs
+        existing_srk_files = glob.glob(os.path.join(crts_path, "SRK*"))
+        start_idx = len(existing_srk_files)
+
+        generate_srk_keys(
+            key_type=key_type,
+            encoding=encoding,
+            keys_path=keys_path,
+            crts_path=crts_path,
+            password=password,
+            keys_number=keys_number,
+            duration=duration,
+            serial=serial,
+            ca_issuer=ca_cert.issuer,
+            ca_private_key=ca_private_key,
+            srk_is_ca=srk_is_ca,
+            start_idx=start_idx,
+            print_func=click.echo,
+            use_img_csf=True,
         )
-        srk_cert.save(srk_cert_path, encoding_enum)
-        click.echo(f"The SRK{idx} certificate has been created: {srk_cert_path}")
-        logger.info(srk_cert)
-        # In case the SRK is CA, create IMG and CSF certificates
-        if srk_is_ca:
-            _, csf_public_key, csf_key_name, csf_cert_name = generate_key_pair(
-                key_type, encoding, keys_path, "CSF", idx, False, password
-            )
 
-            csf_cert_path = os.path.join(crts_path, csf_cert_name)
-            subject = generate_name([{"COMMON_NAME": csf_key_name}])
-            # generate CSF certificate signed by SRK certificate
-            csf_cert = Certificate.generate_certificate(
-                subject=subject,
-                issuer=ca_issuer,
-                subject_public_key=csf_public_key,
-                issuer_private_key=srk_private_key,
-                serial_number=serial[idx],
-                duration=duration * 365,
-                extensions=generate_extensions(
-                    {"BASIC_CONSTRAINTS": {"ca": False}},
-                ),
-            )
-            csf_cert.save(csf_cert_path, encoding_enum)
-            click.echo(f"The CSF{idx} certificate has been created: {csf_cert_path}")
-            logger.info(csf_cert)
 
-            # Create IMG certificates
-            _, img_public_key, img_key_name, img_cert_name = generate_key_pair(
-                key_type, encoding, keys_path, "IMG", idx, False, password
-            )
+def hab_extend_srk(
+    tree_path: str,
+    password: str,
+    encoding: str,
+    keys_number: int,
+    duration: int,
+    serial: Optional[list[int]],
+) -> None:
+    """Extend existing HABv4 SRK PKI tree."""
+    logger.info(
+        f"Path to the existing HAB PKI tree is not a directory: {tree_path}, checking if the path SRK certificate"
+    )
 
-            img_cert_path = os.path.join(crts_path, img_cert_name)
-            subject = generate_name([{"COMMON_NAME": img_key_name}])
-            # generate CSF certificate signed by SRK certificate
-            img_cert = Certificate.generate_certificate(
-                subject=subject,
-                issuer=ca_issuer,
-                subject_public_key=img_public_key,
-                issuer_private_key=srk_private_key,
-                serial_number=serial[idx],
-                duration=duration * 365,
-                extensions=generate_extensions(
-                    {"BASIC_CONSTRAINTS": {"ca": False}},
-                ),
-            )
-            img_cert.save(img_cert_path, encoding_enum)
-            click.echo(f"The IMG{idx} certificate has been created: {img_cert_path}")
-            logger.info(img_cert)
+    try:
+        srk_cert = Certificate.load(tree_path)
+    except SPSDKError as exc:
+        raise SPSDKAppError(
+            f"Path to the existing HAB PKI tree is not a directory and not a valid certificate: {tree_path}"
+        ) from exc
+
+    keys_path = os.path.join(os.path.dirname(tree_path), "..", "keys")
+    crts_path = os.path.join(os.path.dirname(tree_path), "..", "crts")
+    if not os.path.exists(keys_path) or not os.path.exists(crts_path):
+        raise SPSDKAppError(
+            "Path to the existing HAB PKI tree does not contain keys and crts directories: "
+            f"{keys_path}, {crts_path}"
+        )
+
+    # Load the private key file that belongs to the SRK certificate
+    srk_private_key_file = os.path.join(
+        keys_path,
+        f"{os.path.basename(tree_path).replace('cert', 'key')}",
+    )
+
+    try:
+        srk_private_key = PrivateKey.load(srk_private_key_file, password)
+    except SPSDKError as exc:
+        raise SPSDKAppError(
+            f"Cannot load the private key file that belongs to the SRK certificate: {srk_private_key_file}"
+        ) from exc
+
+    # Check if the private key belongs to the certificate
+    if not srk_private_key.get_public_key() == srk_cert.get_public_key():
+        raise SPSDKAppError("The SRK private key does not match the SRK certificate")
+
+    # detect the key type of existing key by parsing it from the key name
+    supported_keys = list(get_supported_keys_generators(basic=True))
+    key_type = None
+    # Key type is part of the name of the key file
+    for key in supported_keys:
+        if key in os.path.basename(srk_private_key_file):
+            key_type = key
+            break
+
+    if not key_type:
+        raise SPSDKAppError("The existing HAB PKI tree does not contain supported key types")
+
+    # Detect the index of the SRK certificate number after SRK prefix
+    # for example SRK0_rsa4096_ca_cert.pem - the index is 0
+    try:
+        srk_idx = int(os.path.basename(tree_path).split("_")[0].replace("SRK", ""))
+    except ValueError as exc:
+        raise SPSDKAppError(
+            f"Cannot detect the index of the SRK certificate number from the path: {tree_path}"
+        ) from exc
+
+    # Get number of IMG certs to generate that belong to the selected SRK index
+    img_files = glob.glob(os.path.join(crts_path, f"IMG{srk_idx}*"))
+    start_idx = len(img_files)
+
+    for key_number in range(keys_number):
+        generate_img_csf_key(
+            key_type=key_type,
+            encoding=encoding,
+            keys_path=keys_path,
+            crts_path=crts_path,
+            password=password,
+            duration=duration,
+            serial=serial,
+            ca_issuer=srk_cert.issuer,
+            srk_private_key=srk_private_key,
+            idx=srk_idx,
+            print_func=click.echo,
+            key_postfix=str(start_idx + key_number),
+        )
 
 
 @catch_spsdk_error

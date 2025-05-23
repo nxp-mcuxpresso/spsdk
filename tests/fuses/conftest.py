@@ -9,7 +9,7 @@ from typing import Optional
 import pytest
 from spsdk.utils import database
 from spsdk.utils.database import Database, DevicesQuickInfo, QuickDatabase
-from spsdk.utils import schema_validator
+from spsdk.utils import family
 
 
 class TestDatabaseManager:
@@ -48,4 +48,4 @@ def mock_test_database(monkeypatch, data_dir):
         os.path.join(data_dir, "../../../utils/data/test_db"), complete_load=True
     )
     TestDatabaseManager._quick_info = QuickDatabase.create(TestDatabaseManager._db)
-    monkeypatch.setattr(schema_validator, "DatabaseManager", TestDatabaseManager)
+    monkeypatch.setattr(family, "DatabaseManager", TestDatabaseManager)

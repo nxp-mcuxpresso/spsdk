@@ -7,14 +7,12 @@
 
 """AHAB utils module."""
 import logging
-import os
 import struct
-from typing import Callable, Optional
+from typing import Optional
 
 from spsdk.apps.utils.utils import SPSDKError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.signature_provider import SignatureProvider
-from spsdk.fuses.fuses import FuseScript
 from spsdk.image.ahab.ahab_blob import AhabBlob
 from spsdk.image.ahab.ahab_data import AhabChipContainerConfig, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
@@ -23,21 +21,16 @@ from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import SegmentAhab
 from spsdk.image.mem_type import MemoryType
-from spsdk.utils.database import DatabaseManager, get_db
-from spsdk.utils.misc import (
-    get_abs_path,
-    get_printable_path,
-    load_binary,
-    load_configuration,
-    write_file,
-)
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.utils.misc import load_binary
 
 logger = logging.getLogger(__name__)
 
 
 def ahab_update_keyblob(
-    family: str,
+    family: FamilyRevision,
     binary: str,
     keyblob: str,
     container_id: int,
@@ -107,7 +100,7 @@ def ahab_update_keyblob(
 
 
 def ahab_re_sign(
-    family: str,
+    family: FamilyRevision,
     binary: str,
     container_id: int,
     sign_provider_0: SignatureProvider,
@@ -211,38 +204,50 @@ def ahab_re_sign(
             f.write(signature_data)
 
 
-def ahab_sign_image(image_path: str, config_path: str, mem_type: str) -> bytes:
+def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> bytes:
     """Sign AHAB container set.
 
     Parse segments in Bootable image and sign non NXP AHAB containers.
     """
-    config_data = load_configuration(config_path)
-    config_dir = os.path.dirname(config_path)
-    check_config(config_data, AHABImage.get_validation_schemas_family())
-    family = config_data["family"]
-    revision = config_data.get("revision", "latest")
-    schemas = AHABImage.get_signing_validation_schemas(family, revision)
-    check_config(config_data, schemas, search_paths=[config_dir])
+    config.check(AHABImage.get_validation_schemas_basic())
+    family = FamilyRevision.load_from_config(config)
+    schemas = AHABImage.get_signing_validation_schemas(family)
+    config.check(schemas, check_unknown_props=True)
     try:
         memory = MemoryType.from_label(mem_type)
     except KeyError:
         memory = None
-    bimg = BootableImage.parse(
-        load_binary(image_path),
-        family=family,
-        mem_type=memory,
-        revision=revision,
-    )
+    bimg = BootableImage.parse(load_binary(image_path), family=family, mem_type=memory)
     logger.info(f"Parsed Bootable image memory map: {bimg.image_info().draw()}")
 
     for segment in bimg.segments:
         logger.info(f"Segment: {segment}")
         if isinstance(segment, SegmentAhab) and isinstance(segment.ahab, AHABImage):
             for container in segment.ahab.ahab_containers:
-                if container.flag_srk_set == FlagsSrkSet.NXP:
-                    logger.info("Skipping signing of NXP container")
+                if container.flag_srk_set not in [FlagsSrkSet.OEM, FlagsSrkSet.NONE]:
+                    logger.info("Skipping signing of none OEM and non signed container")
                     continue
-                container.load_from_config_generic(config_data)
+                # Check if container contains V2X image
+                v2x_found = False
+                if len(container.image_array) > 0:
+                    for image in container.image_array:
+                        if "v2x" in image.flags_core_id_name:
+                            v2x_found = True
+                            break
+                if v2x_found:
+                    logger.info("Skipping signing of V2X container")
+                    continue
+                # Check if container contains V2X image
+                v2x_found = False
+                if len(container.image_array) > 0:
+                    for image in container.image_array:
+                        if "v2x" in image.flags_core_id_name:
+                            v2x_found = True
+                            break
+                if v2x_found:
+                    logger.info("Skipping signing of V2X container")
+                    continue
+                container.load_from_config_generic(config)
                 if (
                     isinstance(container.signature_block, (SignatureBlock, SignatureBlockV2))
                     and hasattr(container.signature_block, "blob")
@@ -268,47 +273,3 @@ def ahab_sign_image(image_path: str, config_path: str, mem_type: str) -> bytes:
             logger.error("Segment does not contain AHAB data")
 
     return bimg.export()
-
-
-def write_ahab_fuses(
-    ahab: AHABImage,
-    ahab_output_dir: str,
-    ahab_output_file_no_ext: str,
-    print_func: Callable[[str], None],
-) -> None:
-    """Write AHAB fuses."""
-    for cnt_ix, container in enumerate(ahab.ahab_containers):
-        if container.flag_srk_set == FlagsSrkSet.NXP:
-            logger.debug("Skipping generating hashes for NXP container")
-            continue
-        if container.image_array_len > 0 and container.image_array[0].flags_core_id_name == "v2x-1":
-            logger.debug("Skipping generating hashes for v2x-1 container")
-            continue
-        if container.signature_block:
-            for srk_id in range(container.signature_block.SUPPORTED_SIGNATURES_CNT):
-                srk_hash = container.get_srk_hash(srk_id)
-                if srk_hash:
-                    file_name = f"{ahab_output_file_no_ext}_{container.flag_srk_set.label}{cnt_ix}_srk{srk_id}_hash"
-                    srk_hash_file = get_abs_path(f"{file_name}.txt", ahab_output_dir)
-                    write_file(srk_hash.hex().upper(), srk_hash_file)
-                    print_func(
-                        f"Generated file containing SRK hash: {get_printable_path(srk_hash_file)}"
-                    )
-                    try:
-                        fuse_script = FuseScript(
-                            ahab.chip_config.family, ahab.chip_config.revision, DatabaseManager.AHAB
-                        )
-                        logger.info(
-                            f"\nFuses info:\n{fuse_script.generate_script(container, info_only=True)}"
-                        )
-                        output_path = fuse_script.write_script(
-                            file_name, ahab_output_dir, container
-                        )
-                        print_func(
-                            "Generated script for writing fuses for container "
-                            f"{cnt_ix}: {get_printable_path(output_path)}"
-                        )
-                    except SPSDKError:
-                        logger.info(
-                            f"Failed to generate script for writing fuses for container {cnt_ix}"
-                        )

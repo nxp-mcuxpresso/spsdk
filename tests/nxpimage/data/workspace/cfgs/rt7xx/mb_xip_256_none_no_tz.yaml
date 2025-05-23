@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===================  Master Boot Image Configuration template for rt7xx, Plain Signed XIP Image.  ====================
 
 # ======================================================================================================================
@@ -50,7 +51,7 @@ certBlock: .\workspace\cfgs\cert_block\cert_256_none.yaml
 # ======================================================================================================================
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-mainRootCertPrivateKeyFile: .\workspace\keys_certs\ec_pk_secp256r1_cert0.pem
+signer: .\workspace\keys_certs\ec_pk_secp256r1_cert0.pem
 # ======================================================================================================================
 #                                               == Trust Zone Settings ==
 # ======================================================================================================================

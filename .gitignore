@@ -110,6 +110,8 @@ env*
 *env/
 venv*
 *venv/
+.pyenv*
+.pyvenv*
 
 # Spyder project settings
 .spyderproject
@@ -151,3 +153,4 @@ spsdk/__version__.py
 # coverity stuff
 idir
 data-coverity
+sqrtle*

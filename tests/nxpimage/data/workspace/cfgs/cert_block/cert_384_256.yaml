@@ -1,16 +1,17 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Certification block converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                    == ISK Certificate Settings ==
 # ----------------------------------------------------------------------------------------------------
 useIsk: true  # [Conditionally required], Use ISK for signature certification; Enable ISK type of signature certification. Don't use when 'binaryCertificateBlock' is defined
-mainRootCertPrivateKeyFile: .\workspace\keys_certs\ec_pk_secp384r1_cert0.pem # [Conditionally required], Main root Certification Private Key; Path to Main root Certification Private Key. Don't use when 'binaryCertificateBlock' is defined
+signer: .\workspace\keys_certs\ec_pk_secp384r1_cert0.pem # [Conditionally required], Main root Certification Private Key; Path to Main root Certification Private Key. Don't use when 'binaryCertificateBlock' is defined
 signingCertificateFile: .\workspace\keys_certs\ec_secp256r1_sign_cert.pem # [Conditionally required], Signing Certificate; Path to Signing Certificate. Don't use when 'binaryCertificateBlock' is defined
 signingCertificateConstraint: '0x25' # [Optional], Signing certificate constrain number. Don't use when 'binaryCertificateBlock' is defined
 signCertData: '' # [Optional], Signing Certificate data; Path to Signing Certificate data. Don't use when 'binaryCertificateBlock' is defined
-# signingCertificatePrivateKeyFile: .\workspace\keys_certs\ec_pk_secp256r1_sign_cert.pem # [Optional], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+# signingCertificatePrivateKeyFile: .\workspace\keys_certs\ec_pk_secp256r1_sign_cert.pem # [Optional], ISK Certificate private key used to sign certificate.
 # ----------------------------------------------------------------------------------------------------
 #                                       == Root Keys Settings ==
 # ----------------------------------------------------------------------------------------------------

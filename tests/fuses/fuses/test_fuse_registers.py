@@ -8,10 +8,12 @@ import os
 import pytest
 from spsdk.exceptions import SPSDKError, SPSDKKeyError
 from spsdk.fuses.fuse_registers import FuseLock, FuseLockRegister, FuseRegister, FuseRegisters
+from spsdk.utils.config import Config
 from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_configuration
 from spsdk.utils.registers import Access
 
@@ -49,16 +51,16 @@ def get_reg_from_cfg(cfg: dict, group_name: str, fuse_name: str):
                 "read_lock_int": "0x4",
                 "operation_lock_int": "0x2",
             },
-            SPSDKKeyError,
+            SPSDKError,
         ),
     ],
 )
 def test_fuse_lock_register_load_config(config, exception):
     if exception:
         with pytest.raises(exception):
-            FuseLockRegister.load_from_config(config)
+            FuseLockRegister.load_from_config(Config(config))
     else:
-        lock_register = FuseLockRegister.load_from_config(config)
+        lock_register = FuseLockRegister.load_from_config(Config(config))
         assert isinstance(lock_register, FuseLockRegister)
 
 
@@ -78,7 +80,7 @@ def test_fuse_lock_register_load_config(config, exception):
     ],
 )
 def test_fuse_lock_register_create_config(config):
-    lock_register = FuseLockRegister.load_from_config(config)
+    lock_register = FuseLockRegister.load_from_config(Config(config))
     created = lock_register.create_config()
     assert config == created
 
@@ -191,14 +193,14 @@ def test_fuse_register_access(data_dir):
     ],
 )
 def test_grouped_register_invalid_params(mock_test_database, data_dir, group_reg):
-    regs = FuseRegisters(family="dev2")
+    regs = FuseRegisters(family=FamilyRevision("dev2"))
 
     with pytest.raises(SPSDKRegsErrorRegisterGroupMishmash):
         regs._load_spec(data_dir + "/grp_regs.json", grouped_regs=group_reg)
 
 
 def test_grouped_registers_shadow_registers_offset(mock_test_database, data_dir):
-    regs = FuseRegisters(family="dev2")
+    regs = FuseRegisters(family=FamilyRevision("dev2"))
     assert regs.shadow_reg_base_addr == 0x4000_0000
     group = regs.find_reg("REG_BIG")
     assert len(group.sub_regs) == 8
@@ -209,7 +211,7 @@ def test_grouped_registers_shadow_registers_offset(mock_test_database, data_dir)
 
 
 def test_update_locks_via_lock_register(mock_test_database, data_dir):
-    regs = FuseRegisters(family="dev2")
+    regs = FuseRegisters(family=FamilyRevision("dev2"))
     lock_fuses = regs.get_lock_fuses()
     assert len(lock_fuses) == 1
     reg = regs.find_reg("field010")
@@ -230,7 +232,7 @@ def test_update_locks_via_lock_register(mock_test_database, data_dir):
 
 
 def test_get_by_otp_index(mock_test_database, data_dir):
-    regs = FuseRegisters(family="dev2")
+    regs = FuseRegisters(family=FamilyRevision("dev2"))
     reg = regs.get_by_otp_index(0x15)
     assert isinstance(reg, FuseRegister)
     assert reg.uid == "field208"
@@ -252,7 +254,7 @@ def test_get_by_otp_index(mock_test_database, data_dir):
     ],
 )
 def test_get_lock_fuse(mock_test_database, data_dir, fuse_id, lock_fuse_name):
-    regs = FuseRegisters(family="dev2")
+    regs = FuseRegisters(family=FamilyRevision("dev2"))
     fuse = regs.find_reg(fuse_id)
     # by reg itself
     lock = regs.get_lock_fuse(fuse)

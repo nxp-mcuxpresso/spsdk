@@ -341,7 +341,7 @@ class PrivateKey(BaseClass, abc.ABC):
 
     @classmethod
     def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :param password: password to private key; None to store without password
@@ -457,7 +457,7 @@ class PublicKey(BaseClass, abc.ABC):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :returns: Recreated key
@@ -534,6 +534,7 @@ class PublicKey(BaseClass, abc.ABC):
 
         if IS_DILITHIUM_SUPPORTED:
             SUPPORTED_KEYS[PublicKeyDilithium] = DilithiumPublicKey
+            SUPPORTED_KEYS[PublicKeyMLDSA] = MLDSAPublicKey
 
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
@@ -685,7 +686,7 @@ class PrivateKeyRsa(PrivateKey):
 
     @classmethod
     def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :param password: password to private key; None to store without password
@@ -877,7 +878,7 @@ class PublicKeyRsa(PublicKey):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :returns: Recreated key
@@ -1077,7 +1078,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
 
     @classmethod
     def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :param password: password to private key; None to store without password
@@ -1256,7 +1257,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Data to be parsed
         :returns: Recreated key
@@ -1724,6 +1725,9 @@ if IS_DILITHIUM_SUPPORTED:
         def __repr__(self) -> str:
             return f"{self.key.algorithm.value} Private key"
 
+        def __eq__(self, obj: Any) -> bool:
+            return isinstance(obj, self.__class__) and self.key.private_data == obj.key.private_data
+
     class PublicKeyDilithium(PQCPublicKey):
         """Dilithium Public Key."""
 
@@ -1731,7 +1735,7 @@ if IS_DILITHIUM_SUPPORTED:
 
         @classmethod
         def parse(cls, data: bytes) -> Self:
-            """Deserialize object from bytes array.
+            """Parse object from bytes array.
 
             :param data: Data to be parsed
             :returns: Recreated key
@@ -1777,7 +1781,7 @@ if IS_DILITHIUM_SUPPORTED:
 
         @classmethod
         def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-            """Deserialize object from bytes array.
+            """Parse object from bytes array.
 
             :param data: Data to be parsed
             :param password: Password in case of encrypted key
@@ -1795,7 +1799,7 @@ if IS_DILITHIUM_SUPPORTED:
 
         @classmethod
         def parse(cls, data: bytes) -> Self:
-            """Deserialize object from bytes array.
+            """Parse object from bytes array.
 
             :param data: Data to be parsed
             :returns: Recreated key
@@ -1842,7 +1846,7 @@ if IS_DILITHIUM_SUPPORTED:
 
         @classmethod
         def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-            """Deserialize object from bytes array.
+            """Parse object from bytes array.
 
             :param data: Data to be parsed
             :param password: Password in case of encrypted key

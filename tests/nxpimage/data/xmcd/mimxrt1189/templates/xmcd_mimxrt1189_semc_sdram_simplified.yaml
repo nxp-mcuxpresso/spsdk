@@ -1,21 +1,21 @@
-# Copyright 2023-2024 NXP
+# Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# =============================  External Memory Configuration Data template for mimxrt1189.  ==============================
+# =======================  External Memory Configuration Data for mimxrt1189, Revision: latest.  =======================
+
 
 # -------------------------------------------------------- Note --------------------------------------------------------
 # Note for settings:
 # All registers is possible to define also as one value although the bitfields are used. Instead of bitfields: ...
 # field, the value: ... definition works as well.
 # ======================================================================================================================
-#                                                 == General Options ==
+#                                                 == General Options ==                                                 
 # ======================================================================================================================
-# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
-# Description: MCU family name.
-# Possible options: <rt116x, rt117x, mimxrt1189>
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
 family: mimxrt1189
-# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
-# Description: If needed this could be used to specify silicon revision of device.
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
 # Possible options: <a0, b0, latest>
 revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
@@ -26,10 +26,10 @@ mem_type: semc_sdram
 # Description: Specify type of configuration used by XMCD description.
 # Possible options: <simplified, full>
 config_type: simplified
-# --------------------------------------------===== mimxrt1189 [Required] =====---------------------------------------------
+# ------------------------------------------===== mimxrt1189 [Required] =====-------------------------------------------
 xmcd_settings:
   # -------------------------------------------===== header [Optional] =====--------------------------------------------
-  # Description: XMCD Header
+  # Description: Offset: 0x00000000, Width: 32b; XMCD Header
   header:
     # ----------------------------------===== configurationBlockSize [Optional] =====-----------------------------------
     # Description: Offset: 0b, Width: 12b, Configuration block size including XMCD header itself
@@ -56,13 +56,13 @@ xmcd_settings:
     # Description: Offset: 28b, Width: 4b, Tag, fixed value 0xC
     tag: 12
   # -----------------------------------------===== magicNumber [Optional] =====-----------------------------------------
-  # Description: Magic number: Fixed to 0xA1
-  magicNumber: "0x00"
+  # Description: Offset: 0x00000004, Width: 8b; Magic number: Fixed to 0xA1
+  magicNumber: '0xA1'
   # -------------------------------------------===== version [Optional] =====-------------------------------------------
-  # Description: Version: Set to 1 for this implementation
-  version: "0x00"
+  # Description: Offset: 0x00000005, Width: 8b; Version: Set to 1 for this implementation
+  version: '0x01'
   # ----------------------------------------===== configOption [Optional] =====-----------------------------------------
-  # Description: Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
+  # Description: Offset: 0x00000006, Width: 8b; Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
   configOption:
     # ---------------------------------------===== configOption [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 8b, Config option
@@ -70,14 +70,14 @@ xmcd_settings:
     # Possible options: <XMCD_SEMC_SDRAM_CONFIG_SIMPLIFIED>
     configOption: XMCD_SEMC_SDRAM_CONFIG_SIMPLIFIED
   # -------------------------------------------===== clkMhz [Optional] =====--------------------------------------------
-  # Description: Set the working frequency in the unit of MHz
-  clkMhz: "0x00"
+  # Description: Offset: 0x00000007, Width: 8b; Set the working frequency in the unit of MHz
+  clkMhz: '0x00'
   # -----------------------------------------===== sdramSizeKb [Optional] =====-----------------------------------------
-  # Description: Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e.
-  # 4~4*1024*1024 kilobytes.
-  sdramSizeKb: "0x00000000"
+  # Description: Offset: 0x00000008, Width: 32b; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range:
+  # 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  sdramSizeKb: '0x00000000'
   # ------------------------------------------===== portSize [Optional] =====-------------------------------------------
-  # Description: Port size of SDRAM
+  # Description: Offset: 0x0000000C, Width: 8b; Port size of SDRAM
   portSize:
     # -----------------------------------------===== portSize [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 8b, Port size of SDRAM

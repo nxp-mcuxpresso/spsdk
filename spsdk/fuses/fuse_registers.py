@@ -13,11 +13,13 @@ from typing import Any, Optional, Union
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKKeyError, SPSDKValueError
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, value_to_int
 from spsdk.utils.registers import Register, _RegistersBase
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -74,15 +76,12 @@ class FuseLockRegister:
         return output
 
     @classmethod
-    def load_from_config(cls, config: dict[str, Any]) -> Self:
+    def load_from_config(cls, config: Config) -> Self:
         """Create object from given configuration.
 
         :param config: The configuration of fuse lock register.
         """
-        try:
-            register_id = config["register_id"]
-        except KeyError as e:
-            raise SPSDKKeyError("The 'register_id' must be defined") from e
+        register_id = config.get_str("register_id")
         write_lock = config.get("write_lock_int")
         read_lock = config.get("read_lock_int")
         operation_lock = config.get("operation_lock_int")
@@ -190,7 +189,7 @@ class FuseRegister(Register):
             else None
         )
         if "lock" in spec:
-            reg.fuse_lock_register = FuseLockRegister.load_from_config(spec["lock"])
+            reg.fuse_lock_register = FuseLockRegister.load_from_config(Config(spec["lock"]))
         if "individual_write_lock" in spec:
             reg.individual_write_lock = IndividualWriteLock.from_label(
                 spec["individual_write_lock"]
@@ -282,9 +281,8 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
 
     def __init__(
         self,
-        family: str,
+        family: FamilyRevision,
         base_key: Optional[Union[list[str], str]] = None,
-        revision: str = "latest",
         base_endianness: Endianness = Endianness.BIG,
         just_standard_library_data: bool = False,
     ) -> None:
@@ -294,7 +292,6 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
             family,
             DatabaseManager.FUSES,
             base_key,
-            revision,
             base_endianness,
             just_standard_library_data,
         )
@@ -312,15 +309,15 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
                         sub_reg.shadow_register_base_addr = self.shadow_reg_base_addr
         self.update_locks()
 
-    def load_yml_config(self, data: dict[str, Any]) -> None:
+    def load_from_config(self, config: Config) -> None:
         """The function loads the configuration from YML file.
 
         Note: It takes in count the restricted data and different names to standard data
         in embedded database.
 
-        :param data: The data with register values.
+        :param config: The data with register values.
         """
-        super().load_yml_config(data)
+        super().load_from_config(config)
         self.update_locks()
 
     def update_locks(self) -> None:

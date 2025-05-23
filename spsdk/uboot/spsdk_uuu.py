@@ -16,7 +16,8 @@ from libuuu import LibUUU, UUUNotifyCallback, UUUState
 from libuuu.libuuu import UUUNotifyStruct, UUUNotifyType, _default_notify_callback
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager, UsbId
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import load_text
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,8 @@ class SPSDKUUUState(UUUState):
         if step == total_steps:
             del self.progress_bars[task_name]
             click.echo("\r")
+            # Enable cursor again
+            click.echo("\033[?25h", nl=False)
 
     def update(self, struct: UUUNotifyStruct) -> None:
         """Update the state with a notification from uuu.
@@ -198,7 +201,7 @@ class SPSDKUUU:
         return self.uuu.get_last_error()
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families() -> list[FamilyRevision]:
         """Get the list of supported families.
 
         :return: List of family names that support memory configuration.
@@ -213,6 +216,19 @@ class SPSDKUUU:
             .get_dict(DatabaseManager.NXPUUU, "boot_devices")
             .keys()
         )
+
+    @classmethod
+    def get_usb_ids(cls) -> dict[str, list[UsbId]]:
+        """Get list of all supported devices from the database.
+
+        :return: Dictionary containing device names with their usb configurations
+        """
+        devices = {}
+        for device, quick_info in DatabaseManager().quick_info.devices.devices.items():
+            usb_ids = quick_info.info.isp.get_usb_ids("sdps")
+            if usb_ids:
+                devices[device] = usb_ids
+        return devices
 
     @staticmethod
     def replace_arguments(
@@ -260,7 +276,9 @@ class SPSDKUUU:
 
         return input_string
 
-    def get_uuu_script(self, boot_device: str, family: str, args: Optional[list[str]]) -> str:
+    def get_uuu_script(
+        self, boot_device: str, family: FamilyRevision, args: Optional[list[str]]
+    ) -> str:
         """Get the uuu script for the given boot device."""
         script_path = get_db(family).get_file_path(
             DatabaseManager.NXPUUU, ["boot_devices", boot_device, "script"]
@@ -290,7 +308,7 @@ class SPSDKUUU:
             arguments_dict[key] = {"description": description, "optional_key": optional_key}
 
         try:
-            script = self.replace_arguments(script, arguments_dict, args)
+            script = SPSDKUUU.replace_arguments(script, arguments_dict, args)
         except ValueError as e:
             raise SPSDKValueError(
                 f"Invalid arguments passed, you should pass {argument_names}"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,7 +29,7 @@ from spsdk.sdp.sdp import SDP
 from spsdk.utils import misc
 
 
-@click.group(name="sdphost", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="sdphost", cls=CommandsTreeGroup)
 @spsdk_sdp_interface()
 @spsdk_use_json_option
 @spsdk_apps_common_options
@@ -49,7 +49,7 @@ def main(
     return 0
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def error_status(ctx: click.Context) -> None:
     """Reads the error code from the device."""
@@ -63,7 +63,7 @@ def error_status(ctx: click.Context) -> None:
     )
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.pass_context
 def jump_address(ctx: click.Context, address: int) -> None:
@@ -80,7 +80,7 @@ def jump_address(ctx: click.Context, address: int) -> None:
     display_output([], sdp.hab_status)
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("bin_file", metavar="FILE", type=click.File("rb"), required=True)
 @click.argument("count", type=INT(), required=False)
@@ -103,7 +103,7 @@ def write_file(ctx: click.Context, address: int, bin_file: click.File, count: in
     )
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("item_length", type=INT(), required=False, default="32", metavar="[FORMAT]")
 @click.argument("count", type=INT(), required=False, default=None)
@@ -144,7 +144,7 @@ def read_register(
 
 
 @click.argument("baudrate", type=INT(), required=True)
-@main.command()
+@main.command(no_args_is_help=True)
 @click.pass_context
 def set_baudrate(ctx: click.Context, baudrate: int) -> None:
     """Configures UART baudrate.

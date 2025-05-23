@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -101,6 +101,9 @@ class SDP:
 
         logger.info(f"RX-PACKET: {str(response)}")
         if response.hab:
+            if response.value not in [ResponseValue.UNLOCKED.tag, ResponseValue.LOCKED.tag]:
+                return False
+
             self._hab_status = response.value
             if response.value != ResponseValue.UNLOCKED:
                 self._status_code = StatusCode.HAB_IS_LOCKED

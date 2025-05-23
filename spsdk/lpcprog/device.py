@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """LPC device description."""
@@ -9,19 +9,19 @@
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 
 
 class LPCDevice:
     """Class representing LPC device."""
 
-    def __init__(self, family: str = "lpc864", revision: str = "latest") -> None:
+    def __init__(self, family: FamilyRevision) -> None:
         """Constructor.
 
         :param family: family of LPC device, defaults to "lpc864"
-        :param revision: revision of LPC device, defaults to "latest"
         """
-        self.features = get_db(family, revision)
+        self.features = get_db(family)
 
     @classmethod
     def from_part_id(cls, part_id: str) -> Self:

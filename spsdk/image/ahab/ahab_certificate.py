@@ -21,16 +21,11 @@ from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderCon
 from spsdk.image.ahab.ahab_data import RESERVED, UINT8, UINT16, AHABTags, FlagsSrkSet
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2, SRKTableArray
-from spsdk.utils.database import DatabaseManager, get_families
-from spsdk.utils.misc import (
-    bytes_to_print,
-    extend_block,
-    find_file,
-    value_to_bytes,
-    value_to_int,
-    write_file,
-)
-from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.misc import bytes_to_print, extend_block, value_to_bytes, write_file
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -52,8 +47,8 @@ def get_key_by_val(dictionary: dict, val: Any) -> Any:
     )
 
 
-class AhabCertificate(HeaderContainer):
-    """Class representing certificate in the AHAB container as part of the signature block.
+class AhabCertificate(FeatureBaseClass, HeaderContainer):
+    """Represents certificate in the AHAB container as part of the signature block.
 
     The Certificate comes in two forms - with and without UUID.
 
@@ -87,6 +82,9 @@ class AhabCertificate(HeaderContainer):
 
     """
 
+    FEATURE = DatabaseManager.AHAB
+    SUB_FEATURE = "certificate_supported"
+
     TAG = AHABTags.CERTIFICATE.tag
     VERSION = 0x02
     PERM_NXP = {
@@ -110,6 +108,7 @@ class AhabCertificate(HeaderContainer):
 
     def __init__(
         self,
+        family: FamilyRevision,
         permissions: int = 0,
         permissions_data: bytes = b"",
         fuse_version: int = 0,
@@ -121,6 +120,7 @@ class AhabCertificate(HeaderContainer):
     ):
         """Class object initializer.
 
+        :param family: Family of the chip.
         :param permissions: used to indicate what a certificate can be used for.
         :param permissions_data: Complementary information for debug auth feature.
         :param fuse_version: Version of certificate
@@ -133,6 +133,7 @@ class AhabCertificate(HeaderContainer):
             all data from beginning of the certificate up to, but not including the signature.  SET 2.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
+        self.family = family
         self._permissions = permissions
         self.permission_data = permissions_data
         self.fuse_version = fuse_version
@@ -198,6 +199,11 @@ class AhabCertificate(HeaderContainer):
         )
 
     def __len__(self) -> int:
+        """Calculate the total length of the certificate.
+
+        :raises SPSDKValueError: When certificate is not properly initialized.
+        :return: Total length of the certificate in bytes.
+        """
         if not (self.public_key_0 and self.public_key_0.srk_data and self.signature_0):
             raise SPSDKValueError("Certificate is not properly initialized.")
         ret = (
@@ -229,7 +235,10 @@ class AhabCertificate(HeaderContainer):
 
     @property
     def permission_to_sign_container(self) -> bool:
-        """Certificate has permission to sign container."""
+        """Check if certificate has permission to sign container.
+
+        :return: True if certificate has permission to sign container, False otherwise.
+        """
         return bool(self._permissions & self.PERM_OEM["container"])
 
     def create_config_permissions(self, srk_set: FlagsSrkSet) -> list[str]:
@@ -252,14 +261,13 @@ class AhabCertificate(HeaderContainer):
         return ret
 
     def get_signature_data(self) -> bytes:
-        """Returns binary data to be signed.
+        """Return binary data to be signed.
 
         The certificate block must be properly initialized, so the data are valid for
         signing. There is signed whole certificate block without signature part.
 
-
-        :raises SPSDKValueError: if Signature Block or SRK Table is missing.
-        :return: bytes representing data to be signed.
+        :raises SPSDKValueError: If Signature Block or SRK Table is missing.
+        :return: Bytes representing data to be signed.
         """
         assert isinstance(self.public_key_0, SRKRecordV2)
         cert_data_to_sign = pack(
@@ -288,7 +296,7 @@ class AhabCertificate(HeaderContainer):
         return cert_data_to_sign
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields depending on input values."""
         assert isinstance(self.public_key_0, SRKRecordV2)
         assert isinstance(self.public_key_0.srk_data, SRKData)
         self.public_key_0.update_fields()
@@ -309,7 +317,7 @@ class AhabCertificate(HeaderContainer):
     def export(self) -> bytes:
         """Export container certificate object into bytes.
 
-        :return: bytes representing container content.
+        :return: Bytes representing container content.
         """
         cert = self.get_signature_data()
         cert += self.signature_0.export()
@@ -325,6 +333,7 @@ class AhabCertificate(HeaderContainer):
         """Verify container certificate data.
 
         :param srk: SRK table to allow verify also signature of certificate.
+        :return: Verifier object with verification results.
         """
         ret = Verifier("Certificate", description="")
         ret.add_child(self.verify_parsed_header())
@@ -494,14 +503,17 @@ class AhabCertificate(HeaderContainer):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
         """Parse input binary chunk to the container object.
 
         :param data: Binary data with Certificate block to parse.
+        :param family: Family revision of the device.
         :raises SPSDKValueError: Certificate permissions are invalid.
         :raises SPSDKParsingError: Certificate parsing error.
         :return: Object recreated from the binary data.
         """
+        if family is None:
+            raise SPSDKValueError("Missing family parameter")
         AhabCertificate.check_container_head(data).validate()
         certificate_data_offset = AhabCertificate.fixed_length()
         image_format = AhabCertificate.format()
@@ -548,6 +560,7 @@ class AhabCertificate(HeaderContainer):
             )
 
         cert = cls(
+            family=family,
             permissions=permissions,
             permissions_data=permission_data,
             fuse_version=fuse_version,
@@ -562,20 +575,20 @@ class AhabCertificate(HeaderContainer):
         cert._parsed_header = HeaderContainerData.parse(binary=data)
         return cert
 
-    def create_config(
+    def get_config(
         self,
-        index: int,
-        data_path: str,
+        data_path: str = "./",
+        index: int = 0,
         srk_set: FlagsSrkSet = FlagsSrkSet.OEM,
-    ) -> dict[str, Any]:
+    ) -> Config:
         """Create configuration of the AHAB Image Certificate.
 
-        :param index: Container Index.
         :param data_path: Path to store the data files of configuration.
+        :param index: Container Index.
         :param srk_set: SRK set to know how to create certificate permissions.
         :return: Configuration dictionary.
         """
-        ret_cfg: dict[str, Any] = {}
+        ret_cfg = Config()
         assert isinstance(self.public_key_0, SRKRecordV2)
         ret_cfg["permissions"] = self.create_config_permissions(srk_set)
         if self.permission_data:
@@ -593,7 +606,7 @@ class AhabCertificate(HeaderContainer):
             mode="wb",
         )
         ret_cfg["public_key_0"] = filename
-        ret_cfg["signature_provider_0"] = "N/A"
+        ret_cfg["signer_0"] = "N/A"
         if self.public_key_1:
             filename = (
                 f"container{index}_certificate_public_key1_{self.public_key_1.get_key_name()}.pem"
@@ -605,57 +618,46 @@ class AhabCertificate(HeaderContainer):
                 mode="wb",
             )
             ret_cfg["public_key_1"] = filename
-            ret_cfg["signature_provider_1"] = "N/A"
+            ret_cfg["signer_1"] = "N/A"
 
         return ret_cfg
 
     @classmethod
-    def load_from_config(
-        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
-    ) -> Self:
+    def load_from_config(cls, config: Config) -> Self:
         """Converts the configuration option into an AHAB image signature block certificate object.
 
         "config" content of container configurations.
 
         :param config: array of AHAB containers configuration dictionaries.
-        :param search_paths: List of paths where to search for the file, defaults to None
+
         :return: Certificate object.
         """
-        cert_permissions_list = config.get("permissions", [])
+        family = FamilyRevision.load_from_config(config)
+
+        cert_permissions_list = config.get_list("permissions", [])
         cert_uuid_raw = config.get("uuid")
         cert_uuid = value_to_bytes(cert_uuid_raw) if cert_uuid_raw else None
         cert_permission_data_raw = config.get("permission_data")
         cert_permission_data = (
             value_to_bytes(cert_permission_data_raw) if cert_permission_data_raw else None
         )
-        cert_fuse_version = value_to_int(config.get("fuse_version", 0))
-        cert_public_key0_path = config.get("public_key_0")
-        assert isinstance(cert_public_key0_path, str)
-        cert_public_key0_path = find_file(cert_public_key0_path, search_paths=search_paths)
-        cert_public_key0 = SRKRecordV2.create_from_key(extract_public_key(cert_public_key0_path))
-        cert_signature_provider0 = get_signature_provider(
-            config.get("signature_provider_0"),
-            config.get("signing_key_0"),
-            search_paths=search_paths,
-            pss_padding=True,
+        cert_fuse_version = config.get_int("fuse_version", 0)
+        cert_public_key0 = SRKRecordV2.create_from_key(
+            extract_public_key(config.get_input_file_name("public_key_0"))
         )
+        cert_signature_provider0 = get_signature_provider(config, "signer_0", pss_padding=True)
 
-        cert_public_key1_path = config.get("public_key_1")
         cert_public_key1 = None
         cert_signature_provider1 = None
-        if cert_public_key1_path:
-            cert_public_key1_path = find_file(cert_public_key1_path, search_paths=search_paths)
+        if "public_key_1" in config:
+            cert_public_key1_path = config.get_input_file_name("public_key_1")
             cert_public_key1 = SRKRecordV2.create_from_key(
                 extract_public_key(cert_public_key1_path)
             )
-            cert_signature_provider1 = get_signature_provider(
-                config.get("signature_provider_1"),
-                config.get("signing_key_1"),
-                search_paths=search_paths,
-                pss_padding=True,
-            )
+            cert_signature_provider1 = get_signature_provider(config, "signer_1", pss_padding=True)
 
         return cls(
+            family=family,
             permissions=AhabCertificate.create_permissions(cert_permissions_list),
             permissions_data=cert_permission_data or b"",
             fuse_version=cert_fuse_version,
@@ -667,49 +669,15 @@ class AhabCertificate(HeaderContainer):
         )
 
     @classmethod
-    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
-        """Create the validation schema just for supported families.
-
-        :return: List of validation schemas for AHAB certificate supported families.
-        """
-        sch = DatabaseManager().db.get_schema_file("general")["family"]
-        update_validation_schema_family(sch["properties"], cls.get_supported_families())
-        return [sch]
-
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Get all supported families for AHAB certificate.
-
-        :return: List of supported families.
-        """
-        return get_families(DatabaseManager.AHAB, sub_feature="certificate_supported")
-
-    @staticmethod
-    def get_validation_schemas(family: str, revision: str = "latest") -> list[dict[str, Any]]:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get list of validation schemas.
 
         :param family: Family for which the validation schema should be generated.
-        :param revision: Family revision of chip.
         :return: Validation list of schemas.
         """
         sch = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)
         sch_family = DatabaseManager().db.get_schema_file("general")["family"]
         update_validation_schema_family(
-            sch_family["properties"], AhabCertificate.get_supported_families(), family, revision
+            sch_family["properties"], cls.get_supported_families(), family
         )
         return [sch_family, sch["ahab_certificate"]]
-
-    @staticmethod
-    def generate_config_template(family: str, revision: str = "latest") -> str:
-        """Generate AHAB configuration template.
-
-        :param family: Family for which the validation schema should be generated.
-        :param revision: Family revision of chip.
-        :return: Certificate configuration templates.
-        """
-        yaml_data = CommentedConfig(
-            "Advanced High-Assurance Boot Certificate Configuration template.",
-            AhabCertificate.get_validation_schemas(family, revision),
-        ).get_template()
-
-        return yaml_data

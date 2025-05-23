@@ -9,16 +9,15 @@
 
 import json
 import logging
-import os
 import uuid
 from typing import Optional
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.http_client import HTTPClientBase, SPSDKHTTPClientError
-from spsdk.utils.misc import find_file, load_configuration, load_secret
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.misc import find_file
 
 logger = logging.getLogger(__name__)
 
@@ -113,39 +112,33 @@ class EL2GOClient(HTTPClientBase):
         return EL2GOApiResponse(status_code=api_response.status_code, json_body=api_response.json())
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
+    def load_from_config(cls, config_data: Config) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.
 
         :param config_data: Configuration data
-        :param search_paths: Paths where to look for files referenced in config data, defaults to None
         :return: Instance of this class
         """
-        cls.validate_config(config_data=config_data, search_paths=search_paths)
-        api_key = config_data.pop("api_key")
-        api_key = load_secret(api_key, search_paths=search_paths)
+        cls.validate_config(config_data=config_data)
+        api_key = config_data.load_secret("api_key")
+        config_data.pop("api_key")
         prov_fw_path = config_data.pop("prov_fw_path", None)
         if prov_fw_path:
-            prov_fw_path = find_file(file_path=prov_fw_path, search_paths=search_paths)
+            prov_fw_path = find_file(file_path=prov_fw_path, search_paths=config_data.search_paths)
+
+        config_data["family"] = FamilyRevision.load_from_config(config_data)
+        config_data.pop("revision", "")
+
         uboot_path = config_data.pop("uboot_path", None)
         if uboot_path:
-            uboot_path = find_file(file_path=uboot_path, search_paths=search_paths)
+            uboot_path = find_file(file_path=uboot_path, search_paths=config_data.search_paths)
         return cls(api_key=api_key, prov_fw_path=prov_fw_path, uboot_path=uboot_path, **config_data)
 
     @classmethod
-    def from_config_file(cls, config_file: str) -> Self:
-        """Create instance of this class based on configuration file."""
-        config_data = load_configuration(config_file)
-        config_dir = os.path.dirname(config_file)
-        return cls.from_config(config_data, search_paths=[config_dir])
-
-    @classmethod
-    def validate_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> None:
+    def validate_config(cls, config_data: Config) -> None:
         """Customized configuration data validation."""
-        family = config_data.get("family")
-        if not family:
-            raise SPSDKError("Family is not defined in the configuration")
+        family = FamilyRevision.load_from_config(config_data)
         # the upper layer is responsible for family-specific validation schema
-        schema = cls.get_validation_schema(family=family)  # type: ignore   # pylint: disable=unexpected-keyword-arg
-        check_config(config=config_data, schemas=[schema], search_paths=search_paths)
+        schema = cls.get_validation_schemas(family=family)
+        config_data.check(schema, check_unknown_props=True)

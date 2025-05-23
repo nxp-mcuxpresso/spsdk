@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ======================================  Shadow register configuration template  ======================================
@@ -47,9 +47,6 @@ registers:
     # - DISABLE_ISP, (7): Disable ISP fall through when proper image is not found on primary boot device.
     # Possible options: <AUTO_ISP, USB_HID_ISP, UART_ISP, SPI_ISP, I2C_ISP, DISABLE_ISP>
     DEFAULT_ISP_MODE: AUTO_ISP
-    # --------------------------------------===== BOOT_CLK_SPEED [Optional] =====---------------------------------------
-    # Description: Offset: 7b, Width: 1b, Defines clock speeds during boot.
-    BOOT_CLK_SPEED: 0
     # --------------------------------------===== STOP_ON_FAILURE [Optional] =====--------------------------------------
     # Description: Offset: 10b, Width: 1b, If set, then enables GPIO Port and PIN information upon failure.
     STOP_ON_FAILURE: 0

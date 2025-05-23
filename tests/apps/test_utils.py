@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import os
@@ -9,7 +9,7 @@ import os
 import pytest
 
 from spsdk.apps.utils import utils
-from spsdk.apps.utils.utils import catch_spsdk_error, resolve_path_relative_to_config
+from spsdk.apps.utils.utils import catch_spsdk_error, make_table_from_items
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.utils.misc import load_configuration, use_working_directory
@@ -107,14 +107,9 @@ def test_load_configuration_invalid_file(data_dir, file_name):
         with pytest.raises(SPSDKError):
             load_configuration(file_name)
 
-
-@pytest.mark.parametrize("file_name", ["test_relative_config1.yaml"])
-def test_resolve_path_relative_to_config(data_dir, file_name):
-    path_key = "containerOutputFile"
-    with use_working_directory(data_dir):
-        pth = resolve_path_relative_to_config(path_key, file_name)
-        assert os.path.join("tests", "apps", "output.txt") in pth
-
-        assert "override" == resolve_path_relative_to_config(
-            path_key, file_name, override_path="override"
-        )
+def test_make_table_from_items():
+    rows = make_table_from_items(["A", "B", "C", "D", "E"], row_width=10, column_width=5)
+    assert len(rows) == 3
+    assert rows[0] == 'A    B  '
+    assert rows[1] == 'C    D  '
+    assert rows[2] == 'E  '

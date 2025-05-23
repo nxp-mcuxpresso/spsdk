@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Master Boot Image converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -20,13 +21,13 @@ trustZonePresetFile: '' # [Optional], TrustZone Customization file; If not speci
 # ----------------------------------------------------------------------------------------------------
 #                                    == Certificate V2 Settings ==
 # ----------------------------------------------------------------------------------------------------
-mainCertPrivateKeyFile: ../../_data/keys/rsa2048/srk0_rsa2048.pem # [Conditionally required], Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signer: ../../_data/keys/rsa2048/srk0_rsa2048.pem # [Conditionally required], Main Certificate private key used to sign certificate.
 # ----------------------------------------------------------------------------------------------------
 #                                       == Root Keys Settings ==
 # ----------------------------------------------------------------------------------------------------
-rootCertificate0File: ../../_data/keys/rsa2048/srk0_rsa2048.pub # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
-rootCertificate1File: ../../_data/keys/rsa2048/srk1_rsa2048.pub # [Optional], Root Certificate File 1; Root certificate file index 1.
-rootCertificate2File: ../../_data/keys/rsa2048/srk2_rsa2048.pub # [Optional], Root Certificate File 2; Root certificate file index 2.
-rootCertificate3File: ../../_data/keys/rsa2048/srk3_rsa2048.pub # [Optional], Root Certificate File 3; Root certificate file index 3.
+rootCertificate0File: ../../_data/certs/rsa2048/srk0_rsa2048_self_signed.der # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: ../../_data/certs/rsa2048/srk1_rsa2048_self_signed.der # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: ../../_data/certs/rsa2048/srk2_rsa2048_self_signed.der # [Optional], Root Certificate File 1; Root certificate file index 2.
+rootCertificate3File: ../../_data/certs/rsa2048/srk3_rsa2048_self_signed.der # [Optional], Root Certificate File 1; Root certificate file index 3.
 
 mainRootCertId: 0

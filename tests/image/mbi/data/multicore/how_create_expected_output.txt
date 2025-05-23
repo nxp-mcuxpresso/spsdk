@@ -24,7 +24,7 @@ with following configuration in rt5xxMulticoreExample.json:
     "rootCertificate1File": "",
     "rootCertificate2File": "",
     "rootCertificate3File": "",
-    "mainCertChainId": 1,
+    "mainRootCertId": 1,
     "mainCertPrivateKeyFile": "",
     "masterBootOutputFile": "./workspace/output_images/test_output.bin"
 }

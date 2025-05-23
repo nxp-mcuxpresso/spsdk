@@ -7,7 +7,7 @@ alias: mcxw236
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   # Web page of MCU representative
   web: https://www.nxp.com
   memory_map:

@@ -24,7 +24,8 @@ from spsdk.mboot.commands import (
 )
 from spsdk.mboot.error_codes import stringify_status_code
 from spsdk.mboot.properties import PropertyTag
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -95,6 +96,8 @@ PROPERTIES_NAMES = {
     32: "boot-status",
     33: "loadable-fw-version",
     34: "fuse-program-voltage",
+    36: "she-flash-partition",
+    37: "she-boot-mode",
 }
 # TODO move to database
 KW45XX = {
@@ -123,7 +126,7 @@ PROPERTIES_OVERRIDE = {
 }
 
 
-def parse_property_tag(property_tag: str, family: Optional[str] = None) -> int:
+def parse_property_tag(property_tag: str, family: Optional[FamilyRevision] = None) -> int:
     """Convert the property as name or stringified number into integer.
 
     :param property_tag: Name or number of the property tag
@@ -241,7 +244,3 @@ def display_output(
     # We could do that because this function is called as last from each subcommand
     if status_code:
         raise SPSDKAppError()
-
-
-# For backward compatibility
-decode_status_code = stringify_status_code

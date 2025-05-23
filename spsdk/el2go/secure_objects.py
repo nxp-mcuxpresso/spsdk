@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,8 @@ from typing import Union
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 
 
 class ElementTag(int, Enum):
@@ -184,12 +185,12 @@ class SecureObjects(list[SecureObject]):
                 external += obj.export()
         return internal, external
 
-    def validate(self, family: str) -> bool:
+    def validate(self, family: FamilyRevision) -> bool:
         """Validate Secure Objects.
 
         :raises SPSDKError: If validation fails.
         """
-        db = get_db(device=family)
+        db = get_db(family=family)
         validator_string = db.get_str(DatabaseManager.EL2GO_TP, "validation_method", "none")
         # format of the validator_string: "method1=value1[,value2];method2=value3;..."
         validators = self._make_validator(validator_string)

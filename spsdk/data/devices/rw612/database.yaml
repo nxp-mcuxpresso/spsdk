@@ -7,13 +7,12 @@ revisions:
     # ======== DAT section ========
     dat:
       socc: 0x04 # SOCC identification is same as on LPC55S3x in rev 1
-    # Remove the revision A1 from the database in 2025-2026 when it's disappear from the market, and all exceptions from LPC55S3x (rot_could_be_invalid: True)
   a2: {}
 latest: a2
 
 # General MCU information
 info:
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   spsdk_predecessor_name: rw61x
   # Web page of MCU representative
   web: https://www.nxp.com/products/wireless-connectivity/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radio-1x1-wi-fi-6-plus-bluetooth-low-energy-5-4-802-15-4:RW612
@@ -134,7 +133,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinCertBlockV21
-          - Mbi_MixinManifestDigest
+          - Mbi_MixinManifest
           - Mbi_MixinLoadAddress
           - Mbi_MixinFwVersion
           - Mbi_MixinImageVersion
@@ -146,7 +145,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinCertBlockV21
-          - Mbi_MixinManifestDigest
+          - Mbi_MixinManifest
           - Mbi_MixinLoadAddress
           - Mbi_MixinFwVersion
           - Mbi_MixinImageVersion
@@ -212,6 +211,7 @@ features:
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    sub_features: [DevHsmSB31]
     supported_commands:
       - erase
       - load
@@ -223,11 +223,10 @@ features:
     flag: 0x2
     key_blob_offset: 0xF05C
     key_blob_command_position: -1
-    devhsm_class: DevHsmSB31
 
   # ======== TrustZone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== Memory configuration ========
   memcfg:

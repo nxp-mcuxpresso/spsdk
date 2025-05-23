@@ -1,0 +1,17 @@
+{
+    "cookiecutter": {
+        "full_name": "First Last",
+        "email": "me@example.com",
+        "project_name": "My WPC Service Plugin",
+        "project_slug": "my_wpc_service_plugin",
+        "project_short_description": "My WPC Service plugin for SPSDK.",
+        "service_provider_class": "MyWPCService",
+        "service_provider_identifier": "mywpc",
+        "github_username": "me",
+        "pypi_username": "me",
+        "pypi_project": "my_wpc_service_plugin",
+        "version": "0.1.0",
+        "create_author_file": "y",
+        "open_source_license": "MIT"
+    }
+}

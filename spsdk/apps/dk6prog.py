@@ -155,7 +155,7 @@ def get_default_backend() -> Backend:
     return backend
 
 
-@click.group(name="dk6prog", chain=True, no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="dk6prog", chain=True, cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 @click.option(
     "-d",
@@ -223,7 +223,7 @@ def main(
     return 0
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def listdev(ctx: click.Context) -> None:
     """Prints the information about the connected devices.
@@ -236,7 +236,7 @@ def listdev(ctx: click.Context) -> None:
         click.echo(device)
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def isp(ctx: click.Context) -> None:
     """Issues ISP sequence as defined in Driver interface."""
@@ -248,7 +248,7 @@ def isp(ctx: click.Context) -> None:
     click.echo("Device switched to ISP mode")
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("length", type=INT(), required=True)
 @click.argument("memory_id", type=str, default="0", required=False)
@@ -326,7 +326,7 @@ def read(
             click.echo(format_raw_data(data, use_hexdump=use_hexdump))
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("data_source", metavar="FILE[,BYTE_COUNT] | {{HEX-DATA}}", type=str, required=True)
 @click.argument("length", type=INT(), required=False)
@@ -399,7 +399,7 @@ def write(
     dk6.reset()
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("length", type=INT(), required=True)
 @click.argument("memory_id", type=str, default="0", required=False)
@@ -462,7 +462,7 @@ def erase(
         )
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def info(ctx: click.Context) -> None:
     """Prints the information about the connected device.

@@ -1,4 +1,4 @@
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -117,12 +117,6 @@ certificate_v21:
   type: object
   title: ISK (Image signing key) Certificate Settings
   properties:
-    family:
-      type: string
-      title: MCU family name.
-      description: MCU family name.
-      template_value: "lpc55s3x"
-
     useIsk:
       type: boolean
       title: Use ISK for signature certification
@@ -172,27 +166,12 @@ certificate_v21:
       description: Path to user data.
       format: optional_file
       template_value: user_cert_data.bin
-
-    mainRootCertPrivateKeyFile:
+    signer:
       type: string
-      title: Main root Certification Private Key
-      description: Path to Main root Certification Private Key.
-      format: file
-      template_value: main_cert_prv_key.pem
-      skip_in_template: true
-    signPrivateKey:
-      type: string
-      title: Main root Certification Private Key
-      description: Path to Main root Certification Private Key.
-      format: file
-      template_value: main_cert_prv_key.pem
-
-    signProvider:
-      type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
+      title: Signer configuration
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>' or path to a private key.
       template_value: type=file;file_path=root_prv_key.pem
-  required: [family, useIsk]
+  required: [useIsk]
   allOf: # Global all of group - this is main concatenation group for all sub rules
     - if:
         properties:
@@ -203,19 +182,7 @@ certificate_v21:
           - oneOf:
               - required: [signingCertificateFile]
               - required: [iskPublicKey]
-        oneOf:
-          - allOf:
-              - oneOf:
-                  - required: [mainRootCertPrivateKeyFile]
-                  - required: [signPrivateKey]
-              - not:
-                  required: [signProvider]
-          - allOf:
-              - required: [signProvider]
-              - not:
-                  oneOf:
-                    - required: [mainRootCertPrivateKeyFile]
-                    - required: [signPrivateKey]
+        required: [signer]
 
 certificate_vx:
   type: object
@@ -226,7 +193,6 @@ certificate_vx:
       title: True if certificate is self signed, false for NXP Signed certificate
       description: NXP Signed = false, Self signed = true
       template_value: true
-
     signingCertificateFile:
       type: string
       title: ISK public key
@@ -240,25 +206,10 @@ certificate_vx:
       description: Path to ISK public key.
       format: file
       template_value: sign_cert.pub
-
-    mainRootCertPrivateKeyFile:
-      type: string
-      title: Main root Certification Private Key
-      description: Path to Main root Certification Private Key.
-      format: file
-      template_value: main_cert_prv_key.pem
-      skip_in_template: true
-    signPrivateKey:
-      type: string
-      title: Main root Certification Private Key
-      description: Path to Main root Certification Private Key.
-      format: file
-      template_value: main_cert_prv_key.pem
-
-    signProvider:
+    signer:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>' a path to a Main root Certification Private Key.
       template_value: type=file;file_path=root_prv_key.pem
 
   allOf: # Global all of group - this is main concatenation group for all sub rules
@@ -271,19 +222,7 @@ certificate_vx:
           - oneOf:
               - required: [signingCertificateFile]
               - required: [iskPublicKey]
-        oneOf:
-          - allOf:
-              - oneOf:
-                  - required: [mainRootCertPrivateKeyFile]
-                  - required: [signPrivateKey]
-              - not:
-                  required: [signProvider]
-          - allOf:
-              - required: [signProvider]
-              - not:
-                  oneOf:
-                    - required: [mainRootCertPrivateKeyFile]
-                    - required: [signPrivateKey]
+        required: [signer]
 
 cert_block_output:
   type: object
@@ -332,27 +271,12 @@ certificate_root_keys:
       format: number
       template_value: 0
 
-    mainCertChainId:
-      type: [number, string]
-      title: Main Certificate Chain Index
-      description: Caution! This property is kept here for backwards compatibility with old schemas. Use mainRootCertId instead.
-      format: number
-      skip_in_template: true
-
   allOf: # Global all of group - this is main concatenation group for all sub rules
     - oneOf:
         - required: [binaryCertificateBlock]
         - allOf:
             - required: [rootCertificate0File]
             - anyOf:
-                - allOf:
-                    - required: [mainCertPrivateKeyFile]
-                    - not:
-                        required: [signProvider]
-                - allOf:
-                    - required: [signProvider]
-                    - not:
-                        required: [mainCertPrivateKeyFile]
-                - anyOf:
-                    - required: [mainRootCertId]
-                    - required: [mainCertChainId]
+                - required: [signer]
+                - required: [mainRootCertId]
+

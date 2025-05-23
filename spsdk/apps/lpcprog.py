@@ -4,6 +4,7 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Programmer for LPC8xx parts."""
 
 import sys
@@ -17,7 +18,6 @@ from spsdk.apps.utils.common_cli_options import (
     is_click_help,
     spsdk_apps_common_options,
     spsdk_family_option,
-    spsdk_revision_option,
     timeout_option,
 )
 from spsdk.apps.utils.utils import (
@@ -32,14 +32,14 @@ from spsdk.exceptions import SPSDKError
 from spsdk.lpcprog.device import LPCDevice
 from spsdk.lpcprog.interface import LPCProgInterface
 from spsdk.lpcprog.protocol import LPCProgProtocol
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
 from spsdk.utils.misc import load_binary
 
 
-@click.group(name="lpcprog", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="lpcprog", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
-@spsdk_family_option(families=LPCProgProtocol.get_supported_families(), required=False)
-@spsdk_revision_option
+@spsdk_family_option(families=LPCProgProtocol.get_supported_families())
 @click.option("-p", "--port", help="Port/device for serial communication")
 @timeout_option(timeout=1000)
 @click.option(
@@ -56,8 +56,7 @@ def main(
     timeout: int,
     baudrate: str,
     log_level: int,
-    family: str,
-    revision: str = "latest",
+    family: FamilyRevision,
 ) -> int:
     """Utility for communication with the bootloader on target."""
     spsdk_logger.install(level=log_level)
@@ -74,9 +73,7 @@ def main(
 
     device = SerialDevice(port, timeout, int(baudrate))
     interface = LPCProgInterface(device)
-    lpc_device = None
-    if family:
-        lpc_device = LPCDevice(family, revision)
+    lpc_device = LPCDevice(family)
     protocol = LPCProgProtocol(interface, print_func=click.echo, device=lpc_device)
 
     ctx.obj = {"protocol": protocol}
@@ -134,7 +131,7 @@ def erase_page(ctx: click.Context, start: int, end: int) -> None:
     protocol.erase_page(start, end)
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def unlock(ctx: click.Context) -> None:
     """This command is used to unlock Flash Write, Erase, and Go commands."""
@@ -198,7 +195,7 @@ def write_ram(ctx: click.Context, address: int, binary: str) -> None:
 
 @click.option("-f", "--frequency", help="Crystal frequency", default="12000", type=INT())
 @click.option("-r", "--retries", help="Retries for synchronization", default="10", type=INT())
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def sync(ctx: click.Context, frequency: int, retries: int) -> None:
     """Sync connection."""
@@ -206,7 +203,7 @@ def sync(ctx: click.Context, frequency: int, retries: int) -> None:
     protocol.sync_connection(frequency, retries)
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def get_info(ctx: click.Context) -> None:
     """Get information about the chip."""

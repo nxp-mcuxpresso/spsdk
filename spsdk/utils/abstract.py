@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,8 +16,8 @@ from typing_extensions import Self
 ########################################################################################################################
 # Abstract Class for Data Classes
 ########################################################################################################################
-class BaseClass(ABC):
-    """Abstract Class for Data Classes."""
+class RawBaseClass(ABC):
+    """SPSDK raw abstract class for general Classes."""
 
     def __eq__(self, obj: Any) -> bool:
         """Check object equality."""
@@ -34,11 +34,23 @@ class BaseClass(ABC):
     def __str__(self) -> str:
         """Object description in string format."""
 
+
+class BaseClass(RawBaseClass):
+    """SPSDK abstract class for Data Classes."""
+
     @abstractmethod
     def export(self) -> bytes:
-        """Serialize object into bytes array."""
+        """Export object into bytes array."""
 
     @classmethod
     @abstractmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array."""
+        """Parse object from bytes array."""
+
+    def post_export(self, output_path: str) -> list[str]:
+        """Post export method.
+
+        :param output_path: Path to store the data files of configuration.
+        :return: List of created file paths.
+        """
+        return []

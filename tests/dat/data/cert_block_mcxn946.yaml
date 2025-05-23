@@ -1,0 +1,13 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mcxn946
+useIsk: false
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+rootCertificate0File: ../../_data/keys/ecc256/srk0_ecc256.pub
+rootCertificate1File: ../../_data/keys/ecc256/srk1_ecc256.pub
+rootCertificate2File: ../../_data/keys/ecc256/srk2_ecc256.pub
+rootCertificate3File: ../../_data/keys/ecc256/srk3_ecc256.pub
+mainRootCertId: 0
+containerOutputFile: cert_block_test.bin

@@ -10,7 +10,7 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: i.MX 9 Applications Processors
+  purpose: i.MX Application Processors
   spsdk_predecessor_name: mx943
   # Web page of MCU representative
   web: https://www.nxp.com/products/i.MX94
@@ -129,30 +129,63 @@ info:
 
 features:
   # ======== Fuses description section ========
-  # fuses:
-  #   tool: nxpele
-  #   grouped_registers:
-  #     - uid: srkh
-  #       name: SRKH
-  #       width: 256
-  #       reversed: True
-  #       config_as_hexstring: True
-  #       description: "SHA256 hash digest of hash of four SRK keys"
-  #       sub_regs:
-  #         [
-  #           "fuse128",
-  #           "fuse129",
-  #           "fuse130",
-  #           "fuse131",
-  #           "fuse132",
-  #           "fuse133",
-  #           "fuse134",
-  #           "fuse135",
-  #         ]
+  fuses:
+    tool: nxpele
+    grouped_registers:
+      - uid: srkh
+        name: SRKH
+        width: 512
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA512 hash digest of hash of four SRK keys"
+        sub_regs:
+          [
+            "fuse608",
+            "fuse609",
+            "fuse610",
+            "fuse611",
+            "fuse612",
+            "fuse613",
+            "fuse614",
+            "fuse615",
+            "fuse616",
+            "fuse617",
+            "fuse618",
+            "fuse619",
+            "fuse620",
+            "fuse621",
+            "fuse622",
+            "fuse623",
+          ]
+      - uid: pqc_srkh
+        name: PQC_SRKH
+        width: 512
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA512 hash digest of hash of four SRK keys"
+        sub_regs:
+          [
+            "fuse624",
+            "fuse625",
+            "fuse626",
+            "fuse627",
+            "fuse628",
+            "fuse629",
+            "fuse630",
+            "fuse631",
+            "fuse632",
+            "fuse633",
+            "fuse634",
+            "fuse635",
+            "fuse636",
+            "fuse637",
+            "fuse638",
+            "fuse639",
+          ]
 
   # ======== Communication buffer section ========
   comm_buffer:
-    address: 0x204b_0000
+    address: 0x9380_0000
     size: 0x30000
 
   # ======== Certificate block section ========
@@ -176,7 +209,13 @@ features:
 
   # ======== AHAB section ========
   ahab:
-    # sub_features: [certificate_supported]
+    sub_features: [ahab_image, certificate_supported]
+    fuses_0:
+      _name: "AHAB SRKH"
+      srkh: "__srk_hash0" # SRK hash fuse
+    fuses_1:
+      _name: "AHAB SRKH PQC"
+      pqc_srkh: "__srk_hash1" # SRK PQC hash fuse
     containers_max_cnt: 3
     valid_offset_minimal_alignment: 0x400
     container_types: [2] # Supported container types
@@ -208,7 +247,6 @@ features:
       ele:
         ELE_AS_IMAGE: [0x05, ele_as_image, EdgeLock Enclave Image in OEM Image]
         ELE: [0x06, ele, EdgeLock Enclave Image]
-
       v2x:
         V2X_AS_IMAGE: [0x0A, v2x_as_image, V2X image as OEM Image]
         V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
@@ -217,7 +255,7 @@ features:
 
     image_types_mapping:
       ele: [6]
-      v2x: [0xb0, 0xc0, 0xd0]
+      v2x: [9, 10]
 
     # AHAB extra images
     oei_ddr_load_address: 0x1ffc0000

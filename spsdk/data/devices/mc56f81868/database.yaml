@@ -8,7 +8,7 @@ latest: b1
 
 # General MCU information
 info:
-  purpose: Digital Signal Controller
+  purpose: 32-bit DSC Series
   spsdk_predecessor_name: mc56f818xx
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx
@@ -44,9 +44,8 @@ features:
         image_type: SIGNED_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinBcaTable
-          - Mbi_MixinBcaObsolete
-          - Mbi_MixinFcfObsolete
+          - Mbi_MixinBca
+          - Mbi_MixinFcf
           - Mbi_MixinCertBlockVx
           - Mbi_ExportMixinAppBcaFcf
           - Mbi_ExportMixinEccSignVx
@@ -54,9 +53,8 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinBcaTable
-          - Mbi_MixinFcfObsolete
-          - Mbi_ExportMixinAppFcf
+          - Mbi_MixinFcf
+          - Mbi_ExportMixinAppBcaFcf
     images:
       xip:
         signed: signed_xip
@@ -66,6 +64,17 @@ features:
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    sub_features: [DevHsmSBx]
     key_blob_offset: -1
     key_blob_command_position: -1
-    devhsm_class: DevHsmSBx
+
+  # ======== Secure binary vX section ========
+  sbx: {}
+
+  # ======== BCA section ========
+  bca:
+    reg_spec: bca.json
+
+  # ======== FCF section ========
+  fcf:
+    reg_spec: fcf.json

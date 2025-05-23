@@ -9,7 +9,7 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: General Purpose Processor
+  purpose: MCX Series
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES
   memory_map: # Memory map basic info
@@ -36,7 +36,7 @@ info:
 features:
   # ======== Communication buffer section ========
   comm_buffer:
-    address: 0x2000_0000
+    address: 0x2000_2000
     size: 0x1000
 
   # ======== MBI section ========
@@ -105,3 +105,20 @@ features:
       internal:
         segments:
           mbi: 0x00
+
+  # ======== Device Hardware Security Module (HSM) section ========
+  devhsm:
+    sub_features: [DevHsmSBc]
+    supported_commands:
+      - erase
+      - load
+      - loadKeyBlob
+      - execute
+
+  sbc:
+    supported_commands:
+      - erase
+      - load
+      - execute
+      - loadKeyBlob
+    

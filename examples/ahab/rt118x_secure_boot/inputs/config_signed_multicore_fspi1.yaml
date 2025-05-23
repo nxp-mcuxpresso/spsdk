@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =========================  Advanced High-Assurance Boot Configuration template for mimxrt1189.  ==========================
 
 # ======================================================================================================================
@@ -14,10 +15,10 @@ family: mimxrt1189
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: latest
-# ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
+# -----------------------------------------===== Target memory [Optional] =====-----------------------------------------
 # Description: Target memory for AHAB container
-# Possible options: <nor, serial_downloader, nand_2k, nand_4k>
-target_memory: nor
+# Possible options: <serial_downloader, standard, nand_2k, nand_4k>
+target_memory: standard
 # ---------------------------------------===== Output file name [Required] =====----------------------------------------
 # Description: Output AHAB file name
 output: ../workspace/signed_ahab.bin
@@ -52,7 +53,7 @@ containers:
       # ------------------------===== AHAB container signing key [Conditionally required] =====-------------------------
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
-      signing_key: ../_data/keys/ecc256/srk0_ecc256.pem
+      signer: ../_data/keys/ecc256/srk0_ecc256.pem
 
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==
@@ -61,7 +62,7 @@ containers:
       # Description: Array of image entries.
       images:
         -
-          # -------------------------------------===== Image path [Required] =====--------------------------------------
+          # -------------------------------------===== Image path [Optional] =====--------------------------------------
           # Description: Path to image binary (absolute/relative).
           image_path: inputs/fspi1_multicore_img.bin
           # ---------------------------===== Image offset in AHAB container [Required] =====----------------------------

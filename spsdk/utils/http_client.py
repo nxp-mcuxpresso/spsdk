@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,14 +12,16 @@ import json
 import logging
 import sys
 from http import HTTPStatus
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 import requests
 from typing_extensions import Self, TypeAlias
 
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_spsdk_version
-from spsdk.utils.schema_validator import CommentedConfig, check_config
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -174,39 +176,40 @@ class HTTPClientBase(abc.ABC):
                 )
 
     @classmethod
-    def get_validation_schema(cls) -> dict:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get JSON schema for validating configuration data."""
         raise NotImplementedError()
 
     @classmethod
-    def validate_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> None:
+    def validate_config(cls, config: Config) -> None:
         """Validate configuration data using JSON schema specific to this class.
 
-        :param config_data: Configuration data
-        :param search_paths: Paths where to look for files referenced in config data, defaults to None
+        :param config: Configuration data
         """
-        schema = cls.get_validation_schema()
-        check_config(config=config_data, schemas=[schema], search_paths=search_paths)
+        schemas = cls.get_validation_schemas(FamilyRevision.load_from_config(config))
+        config.check(schemas, check_unknown_props=True)
 
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
+    def load_from_config(cls, config: Config) -> Self:
         """Create instance of this class based on configuration data.
 
         __init__ method of this class will be called with data from config_data.
 
-        :param config_data: Configuration data
-        :param search_paths: Paths where to look for files referenced in config data, defaults to None
+        :param config: Configuration data
         :return: Instance of this class
         """
-        cls.validate_config(config_data=config_data, search_paths=search_paths)
-        return cls(**config_data)
+        cls.validate_config(config)
+        return cls(**config)
 
     @classmethod
-    def generate_config_template(
-        cls, schemas: Optional[list[dict]] = None, title: Optional[str] = None
+    def get_config_template(
+        cls,
+        family: FamilyRevision,
+        schemas: Optional[list[dict]] = None,
+        title: Optional[str] = None,
     ) -> str:
         """Generate configuration YAML template."""
-        schemas = schemas or [cls.get_validation_schema()]
+        schemas = schemas or cls.get_validation_schemas(family)
         yaml_data = CommentedConfig(
             main_title=title or f"{cls.__name__} class configuration template",
             schemas=schemas,

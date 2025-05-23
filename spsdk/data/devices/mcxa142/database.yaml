@@ -9,7 +9,7 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: General Purpose Processor
+  purpose: MCX Series
   spsdk_predecessor_name: mcxa1xx
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,14 +22,17 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import WARNING_MSG, catch_spsdk_error
 from spsdk.sdp.protocol.base import SDPProtocolBase
 from spsdk.sdp.sdps import SDPS
+from spsdk.utils.family import FamilyRevision
 
 
-@click.group(name="sdpshost", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="sdpshost", cls=CommandsTreeGroup)
 @spsdk_sdp_interface(identify_by_family=True)
 @spsdk_family_option(families=SDPS.get_supported_families())
 @spsdk_apps_common_options
 @click.pass_context
-def main(ctx: click.Context, interface: SDPProtocolBase, family: str, log_level: int) -> int:
+def main(
+    ctx: click.Context, interface: SDPProtocolBase, family: FamilyRevision, log_level: int
+) -> int:
     """Utility for communication with ROM on i.MX targets using SDPS protocol (i.MX8/9)."""
     spsdk_logger.install(level=log_level)
     click.echo(WARNING_MSG)
@@ -43,7 +46,7 @@ def main(ctx: click.Context, interface: SDPProtocolBase, family: str, log_level:
     return 0
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("bin_file", metavar="FILE", type=click.File("rb"), required=True)
 @click.pass_context
 def write_file(ctx: click.Context, bin_file: click.File) -> None:

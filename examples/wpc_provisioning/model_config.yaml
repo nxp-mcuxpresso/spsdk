@@ -1,11 +1,19 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =====================================  WPC Certificate injection configuration  ======================================
 
 # ======================================================================================================================
 #                                                 == General Options ==
 # ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mwct2d17s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
 # --------------------------------===== Name of the WPC service adapter [Required] =====--------------------------------
 # Description: Name of the WPC service adapter
 service_type: el2go
@@ -33,7 +41,3 @@ target_parameters:
   # ---------------------------------------===== Model directory [Required] =====---------------------------------------
   # Description: Path to directory containing the model (config.yaml)
   model_dir: target_model/dev2
-  # ----------------------------------------===== Target family [Required] =====----------------------------------------
-  # Description: Name of the target family
-  # Possible options: <mwct2d17s>
-  family: mwct2d17s

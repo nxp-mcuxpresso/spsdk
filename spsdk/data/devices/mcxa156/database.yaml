@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,9 +9,9 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: General Purpose Processor
+  purpose: MCX Series
   # Web page of MCU representative
-  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers/mcx-a13x-14x-15x-mcus-with-arm-cortex-m33-scalable-device-options-low-power-and-intelligent-peripherals:MCX-A13X-A14X-A15X
+  web: https://www.nxp.com/products/MCX-A13X-A14X-A15X
   memory_map: # Memory map basic info
     internal-flash:
       start_int: 0x0

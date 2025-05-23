@@ -1,3 +1,7 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # =============================  AHAB recreated configuration from :06/02/2024 13:32:32.  ==============================
 
 # ======================================================================================================================
@@ -41,7 +45,7 @@ containers:
       # Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same
       # Fuse version field.
       sw_version: 0
-      signing_key: ../_data/keys/ecc384/srk0_ecc384.pem # [Conditionally required], AHAB container signing key, Private key used for sign the container header. Header can be signed by SRK or by image key that was signed by SRK. If an image key is used, it must be the same algorithm and key size as the SRK. In both cases, the referenced SRK must not have been revoked.
+      signer: ../_data/keys/ecc384/srk0_ecc384.pem # [Conditionally required], AHAB container signing key, Private key used for sign the container header. Header can be signed by SRK or by image key that was signed by SRK. If an image key is used, it must be the same algorithm and key size as the SRK. In both cases, the referenced SRK must not have been revoked.
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==
       # ================================================================================================================

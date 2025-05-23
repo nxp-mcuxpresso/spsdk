@@ -711,6 +711,7 @@ Mcxa
 MCXA
 mcxc
 MCXC
+mcxe
 mcxn
 Mcxn
 MCXN
@@ -732,6 +733,7 @@ MILISECS
 milli
 mimx
 MIMXRT
+miyaguchi
 mkimage
 MLDSA
 mline
@@ -806,8 +808,6 @@ nunc
 nvic
 NVIC
 nvme
-nxpcertgen
-NXPCERTGEN
 nxpcrypto
 NXPCRYPTO
 nxpdebugmbox
@@ -828,6 +828,7 @@ nxpmemcfg
 NXPMEMCFG
 NXPONLY
 NXPROOTCAG
+nxpshe
 NXPUSB
 NXPUUU
 nxpwpc
@@ -931,6 +932,7 @@ prehashed
 Prehashed
 PREIDLE
 preimaged
+preneel
 preparsed
 presection
 Presso
@@ -1102,6 +1104,7 @@ scandir
 scanlimited
 scanterm
 scard
+scec
 scfw
 SCFW
 sclk
@@ -1274,6 +1277,7 @@ testestestestestestestestestestestestestestestestestestestest
 testfffffff
 testnormal
 textlength
+TIOCGSERIAL
 TKTH
 tlvelement
 tmpdir
@@ -1445,4 +1449,3 @@ Zeroize
 ZEROIZE
 zeroized
 zipp
-TIOCGSERIAL

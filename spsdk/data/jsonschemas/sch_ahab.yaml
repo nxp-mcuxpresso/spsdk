@@ -1,6 +1,7 @@
 # Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 whole_ahab_image:
   type: object
@@ -8,15 +9,6 @@ whole_ahab_image:
     - containers
     - output
   properties:
-    image_type:
-      type: string
-      title: Type of image
-      description: "[Deprecated] The final use of image, this setting is changing the style of offsets in final container."
-      enum: [xip, non_xip, serial_downloader, nand]
-      template_value: xip
-      example: xip
-      skip_in_template: true
-      deprecated: true
     target_memory:
       type: string
       title: Target memory
@@ -146,32 +138,21 @@ whole_ahab_image:
                       multiple images with same Fuse version field.
                     format: number
                     template_value: 0
-                  signing_key:
+                  signer:
                     type: string
-                    title: AHAB container signing key
+                    title: AHAB container signer
                     description:
-                      Private key used for sign the container header. Header can be signed by SRK.
+                      Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+                      private key used for sign the container header. Header can be signed by SRK.
                       The referenced SRK must not have been revoked.
-                    format: file
-                    template_value: my_signing_key.pem
-                  signature_provider:
-                    type: string
-                    title: Signature Provider
-                    description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
                     template_value: type=file;file_path=my_prv_key.pem
-                  signing_key_#2:
+                  signer_#2:
                     type: string
-                    title: AHAB container signing key for second signature (PQC only)
+                    title: AHAB container signer for second signature (PQC only)
                     description:
-                      Private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
+                      Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+                      private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
                       The referenced SRK must not have been revoked.
-                    format: file
-                    template_value: my_signing_key.pem
-                    skip_in_template: True
-                  signature_provider_#2:
-                    type: string
-                    title: Signature Provider for second signature (PQC)
-                    description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
                     template_value: type=file;file_path=my_prv_key.pem
                     skip_in_template: True
                   images:
@@ -402,7 +383,6 @@ whole_ahab_image:
                               template_value: m33_image.bin
                               format: file
 
-
                         - type: object
                           template_title: SPL
                           image_identifier: spl
@@ -467,7 +447,6 @@ whole_ahab_image:
                             - entry_point
                             - image_type
                             - core_id
-                            - is_encrypted
                           properties:
                             image_path:
                               type: string
@@ -528,6 +507,7 @@ whole_ahab_image:
                               title: Image encryption
                               description: Determines, whether image is encrypted or not.
                               template_value: false
+                              default: false
                             boot_flags:
                               type: [number, string]
                               title: Boot flags
@@ -673,10 +653,7 @@ ahab_certificate:
   type: object
   title: Configuration of AHAB Container Certificate
   description: Certificate container definition."
-  required: [public_key_0, permissions]
-  oneOf:
-    - required: [signing_key_0]
-    - required: [signature_provider_0]
+  required: [public_key_0, permissions, signer_0]
   properties:
     permissions:
       type: array
@@ -719,16 +696,10 @@ ahab_certificate:
       description: Path to Public key 0 file.
       format: file
       template_value: my_cert_public_key0.pem
-    signing_key_0:
+    signer_0:
       type: string
-      title: SRK container signing key 0
-      description: Private key 0 used for sign the certificate container.
-      format: file
-      template_value: my_srk_signing_key0.pem
-    signature_provider_0:
-      type: string
-      title: Signature Provider 0
-      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
+      title: Signer 0
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or the private key 0 used for signing the certificate container.
       template_value: type=file;file_path=my_prv_key0.pem
     public_key_1:
       type: string
@@ -736,14 +707,8 @@ ahab_certificate:
       description: Path to Public key 1 file.
       format: file
       template_value: my_cert_public_key1.pem
-    signing_key_1:
+    signer_1:
       type: string
-      title: SRK container signing key 1
-      description: Private key 1 used for sign the certificate container.
-      format: file
-      template_value: my_srk_signing_key1.pem
-    signature_provider_1:
-      type: string
-      title: Signature Provider 1
-      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
-      template_value: type=file;file_path=my_prv_key1.pem
+      title: Signer 1
+      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or the private key 1 used for signing the certificate container.
+      template_value: type=file;file_path=my_prv_key0.pem

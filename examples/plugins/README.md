@@ -53,9 +53,3 @@ The instructions for generating plugin package from cookiecutter template:
 - Follow the instructions in the command prompt
 - A new plugin package is created in current folder
 - Install plugin: `pip install <my_project_path>` (for development use `-e/--editable` flag)
-
-### Plugin as a single Python module
-In some situations the installation into the Python environment is not possible.
-For such scenarios a plugin as a single Python module can be implemented.
-In this case the plugin is not loaded automatically. 
-The plugin will be loaded if the `--plugin <path_to_py_file>` option is used in SPSDK application command.

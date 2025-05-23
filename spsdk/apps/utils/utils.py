@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,8 +19,10 @@ import click
 import hexdump
 
 from spsdk import SPSDK_DEBUG_LOG_FILE, SPSDK_DEBUG_LOGGING_DISABLED
-from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.misc import get_abs_path, load_configuration, write_file
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.config import Config
+from spsdk.utils.misc import get_abs_path, get_printable_path, write_file
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 WARNING_MSG = """
 This is an experimental utility. Use with caution!
@@ -117,7 +119,32 @@ def format_vid_pid(dec_version: str) -> str:
 
 
 def catch_spsdk_error(function: Callable) -> Callable:
-    """Catch the SPSDKError."""
+    """Catch and handle SPSDKError and other exceptions.
+
+    This is a decorator function that wraps the decorated function to catch
+    and handle various exceptions, including SPSDKError, SPSDKAppError,
+    AssertionError, UnicodeEncodeError, and other general exceptions.
+
+    When an SPSDKAppError is raised, it prints the error message and exits
+    with the specified error code (default is 1).
+
+    When an SPSDKError or AssertionError is raised, it prints the error message,
+    logs the exception with debug information, and exits with an error code of 2.
+    If debug logging is enabled, it also prints the path to the debug log file.
+
+    When a UnicodeEncodeError is raised, it prints a warning message about the
+    terminal not rendering UTF-8 symbols correctly and suggests setting the
+    PYTHONIOENCODING environment variable. It also logs the exception with debug
+    information and exits with an error code of 2.
+
+    For other general exceptions (including KeyboardInterrupt), it prints the
+    exception type and message, logs the exception with debug information, and
+    exits with an error code of 3. If debug logging is enabled, it also prints
+    the path to the debug log file.
+
+    :param function: The function to be decorated.
+    :return: The decorated function.
+    """
 
     @wraps(function)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -214,10 +241,9 @@ def store_key(file_name: str, key: bytes, reverse: bool = False) -> None:
 
 
 def filepath_from_config(
-    config: dict,
+    config: Config,
     key: str,
     default_value: str,
-    base_dir: str,
     output_folder: str = "",
     file_extension: str = ".bin",
 ) -> str:
@@ -229,7 +255,6 @@ def filepath_from_config(
     :param config: Configuration dictionary
     :param key: Name of the key
     :param default_value: default value in case key value is not present
-    :param base_dir: base directory for path expansion
     :param output_folder: Output folder, if blank file path from config will be used
     :param file_extension: File extension that will be appended
     :return: filename with appended ".bin" or blank filename ""
@@ -241,7 +266,7 @@ def filepath_from_config(
         filename = os.path.join(output_folder, filename)
     if not filename.endswith(file_extension):
         filename += file_extension
-    return get_abs_path(filename, base_dir)
+    return get_abs_path(filename, config.config_dir)
 
 
 @contextlib.contextmanager
@@ -267,38 +292,50 @@ def progress_bar(
             yield progress
 
 
-def resolve_path_relative_to_config(
-    path_key: str,
-    config: Optional[str] = None,
-    override_path: Optional[str] = None,
-) -> str:
-    """Resolve path relative to config file. If override path is provided use that instead.
+def print_verifier_to_console(v: Verifier, problems: bool = False) -> None:
+    """Print verifier results to console.
 
-    :param path_key: key in configuration
-    :param config: path to YAML/JSON configuration
-    :param override_path: If provided path will be overridden, defaults to None
-    :return: absolute path calculated from the relative path in config file
+    :param v: The Verifier object containing the results to print.
+    :param problems: If True, only print WARNING and ERROR results.
     """
-    out_file = None
-    if override_path:
-        return override_path
+    results = None
+    if problems:
+        results = [VerifierResult.WARNING, VerifierResult.ERROR]
+    click.echo(v.draw(results))
 
-    if config:
-        cfg_dict = load_configuration(config)
-        out_file = cfg_dict.get(path_key)
-
-    if out_file and config:
-        return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(config)), out_file))
-    raise SPSDKAppError(f"Path in {path_key} cannot be resolved")
+    click.echo("Summary table of verifier results:\n" + v.get_summary_table() + "\n")
+    click.echo("Overall  result: " + VerifierResult.draw(v.result))
 
 
-def deprecated_option_warning(
-    option_name: Optional[str], custom_text: Optional[str] = None
-) -> None:
-    """Print deprecated option warning."""
-    if not (option_name or custom_text):
-        raise SPSDKValueError("Either option name or custom text must be provided.")
-    msg = custom_text or (
-        f"The '{option_name}' option has been deprecated and will be removed in the future release"
-    )
-    click.secho(msg, fg="yellow")
+def print_files(files: list[str], title: Optional[str] = None) -> None:
+    """Print list of files to console."""
+    if title:
+        click.echo(title)
+    for file in files:
+        click.echo(get_printable_path(file))
+
+
+def make_table_from_items(
+    items: list[str], row_width: int = 75, column_width: int = 25
+) -> list[str]:
+    """Split long lists of items into table for better readability."""
+    if not items:
+        return []
+    column_padding = 2
+    max_item_width = max(len(item) for item in items)
+    # Ensure column width is at least as wide as the longest item plus padding
+    column_width = max(column_width, max_item_width + column_padding)
+
+    num_columns = max(1, row_width // column_width)
+    num_rows = (len(items) + num_columns - 1) // num_columns
+
+    rows = []
+    for row_idx in range(num_rows):
+        row = []
+        for col_idx in range(num_columns):
+            item_idx = row_idx * num_columns + col_idx
+            if item_idx < len(items):
+                # Format each item to fill column width with right padding
+                row.append(f"{items[item_idx]:<{column_width - column_padding}}")
+        rows.append((column_padding * " ").join(row))
+    return rows

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -159,7 +159,7 @@ class SecureBootHeaderV1(BaseClass):
 
         :param padding8: 8 padding bytes used for in the header, None to use random bytes
                 This value shall be used only for regression testing to generate same results
-        :return: Serialize object into bytes
+        :return: Exported object into bytes
         """
         major_version, minor_version = [int(v) for v in self.version.split(".")]
         product_version_words = [swap16(n) for n in self.product_version.nums]

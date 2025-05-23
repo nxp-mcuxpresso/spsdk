@@ -1,6 +1,19 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+# =======================  cert_block Configuration template for mimxrt595s, Revision: latest.  ========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimxrt595s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, b0, latest>
+revision: latest
 # =========================================  Certification Block V1 template  ==========================================
 
 # ======================================================================================================================

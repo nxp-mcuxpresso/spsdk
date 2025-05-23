@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of AHAB container encryption blob support."""
@@ -10,7 +10,7 @@
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -21,10 +21,11 @@ from spsdk.crypto.symmetric import (
     sm4_cbc_encrypt,
 )
 from spsdk.ele.ele_constants import KeyBlobEncryptionAlgorithm
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_data import UINT8, AHABTags
-from spsdk.utils.misc import load_hex_string, value_to_int, write_file
+from spsdk.utils.config import Config
+from spsdk.utils.misc import write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -33,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 class AhabBlob(HeaderContainer):
     """The Blob object used in Signature Container.
+
+    Represents the encryption blob structure for AHAB (Advanced High Assurance Boot) container.
+    Contains metadata and wrapped key information for secure data encryption/decryption operations.
 
     Blob (DEK) content::
 
@@ -147,7 +151,9 @@ class AhabBlob(HeaderContainer):
     def export(self) -> bytes:
         """Export Signature Block Blob.
 
-        :return: bytes representing Signature Block Blob.
+        Packs the blob data into its binary representation format.
+
+        :return: Binary data representing the Signature Block Blob
         """
         blob = (
             pack(
@@ -166,7 +172,13 @@ class AhabBlob(HeaderContainer):
         return blob
 
     def verify(self) -> Verifier:
-        """Verify container blob data."""
+        """Verify container blob data.
+
+        Checks the integrity and correctness of all blob components including headers,
+        key size, algorithm, DEK key, and wrapped key.
+
+        :return: Verifier object with verification results
+        """
         ret = Verifier("Blob", description="")
         ret.add_child(self.verify_parsed_header())
         ret.add_child(self.verify_header())
@@ -193,10 +205,13 @@ class AhabBlob(HeaderContainer):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse input binary chunk to the container object.
+        """Parse binary data into an AhabBlob object.
 
-        :param data: Binary data with Blob block to parse.
-        :return: Object recreated from the binary data.
+        Extracts blob information from the provided binary data and creates
+        a corresponding AhabBlob instance.
+
+        :param data: Binary data containing the Blob block
+        :return: AhabBlob object recreated from the binary data
         """
         AhabBlob.check_container_head(data).validate()
         (
@@ -222,14 +237,17 @@ class AhabBlob(HeaderContainer):
         blob._parsed_header = HeaderContainerData.parse(binary=data)
         return blob
 
-    def create_config(self, index: int, data_path: str) -> dict[str, Any]:
+    def get_config(self, data_path: str = "./", index: int = 0) -> Config:
         """Create configuration of the AHAB Image Blob.
 
-        :param index: Container Index.
-        :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        Exports the current blob configuration into a Config object and saves
+        related binary data to the specified path.
+
+        :param data_path: Path where to store the data files of configuration
+        :param index: Container index used for filename generation
+        :return: Configuration object with blob settings
         """
-        ret_cfg: dict[str, Any] = {}
+        ret_cfg = Config()
         assert isinstance(self.dek_keyblob, bytes)
         filename = f"container{index}_dek_keyblob.bin"
         write_file(self.export(), os.path.join(data_path, filename), "wb")
@@ -240,34 +258,26 @@ class AhabBlob(HeaderContainer):
 
         return ret_cfg
 
-    @staticmethod
-    def load_from_config(
-        config: dict[str, Any], search_paths: Optional[list[str]] = None
-    ) -> "AhabBlob":
-        """Converts the configuration option into an AHAB image signature block blob object.
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
+        """Convert configuration options into an AHAB image signature block blob object.
 
-        "config" content of container configurations.
+        Processes the given configuration and creates a properly configured AhabBlob instance.
 
-        :param config: Blob configuration
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :raises SPSDKValueError: Invalid configuration - Invalid DEK KeyBlob
-        :return: Blob object.
+        :param config: Blob configuration containing key size, DEK key, and other blob parameters
+        :raises SPSDKValueError: If configuration contains invalid DEK KeyBlob data
+        :return: Initialized AhabBlob object
         """
-        dek_size = value_to_int(config.get("dek_key_size", 128))
-        dek_input = config.get("dek_key")
-        dek_keyblob_input = config.get("dek_keyblob")
-        key_identifier = config.get("key_identifier", 0)
-        if not dek_input:
-            raise SPSDKValueError("Invalid configuration - Missing DEK key")
+        dek_size = config.get_int("dek_key_size", 128)
+        dek = config.load_symmetric_key("dek_key", expected_size=dek_size // 8)
+        key_identifier = config.get_int("key_identifier", 0)
 
-        dek = load_hex_string(dek_input, dek_size // 8, search_paths)
-
-        if dek_keyblob_input is None:
+        if "dek_keyblob" not in config:
             logger.warning(
                 "The keyblob has not been specified. The empty keyblob placeholder has been used in container."
             )
             # Create empty DEK keyblob as a placeholder
-            return AhabBlob(
+            return cls(
                 size=dek_size,
                 flags=AhabBlob.FLAGS_DEK,
                 dek_keyblob=bytes(48 + dek_size // 8),
@@ -277,24 +287,24 @@ class AhabBlob(HeaderContainer):
                 algorithm=KeyBlobEncryptionAlgorithm.AES_CBC,
             )
 
-        dek_keyblob_value = load_hex_string(
-            dek_keyblob_input, AhabBlob.compute_keyblob_size(dek_size) + 8, search_paths
+        dek_keyblob = config.load_symmetric_key(
+            "dek_keyblob", cls.compute_keyblob_size(dek_size) + 8
         )
-        if not dek_keyblob_value:
-            raise SPSDKValueError("Invalid DEK KeyBlob.")
 
-        keyblob = AhabBlob.parse(dek_keyblob_value)
+        keyblob = cls.parse(dek_keyblob)
         keyblob.dek = dek
         keyblob.key_identifier = key_identifier
 
         return keyblob
 
     def encrypt_data(self, iv: bytes, data: bytes) -> bytes:
-        """Encrypt data.
+        """Encrypt data using the DEK.
+
+        Uses the appropriate encryption algorithm based on the blob's algorithm setting.
 
         :param iv: Initial vector 128 bits length
         :param data: Data to encrypt
-        :raises SPSDKError: Missing DEK, unsupported algorithm
+        :raises SPSDKError: Missing DEK or unsupported algorithm
         :return: Encrypted data
         """
         if not self.dek:
@@ -310,12 +320,14 @@ class AhabBlob(HeaderContainer):
         return encryption_methods[self.algorithm](self.dek, data, iv)
 
     def decrypt_data(self, iv: bytes, encrypted_data: bytes) -> bytes:
-        """Encrypt data.
+        """Decrypt data using the DEK.
+
+        Uses the appropriate decryption algorithm based on the blob's algorithm setting.
 
         :param iv: Initial vector 128 bits length
         :param encrypted_data: Data to decrypt
-        :raises SPSDKError: Missing DEK, unsupported algorithm
-        :return: Plain data
+        :raises SPSDKError: Missing DEK or unsupported algorithm
+        :return: Decrypted plain data
         """
         if not self.dek:
             raise SPSDKError("The AHAB keyblob hasn't defined DEK to encrypt data")

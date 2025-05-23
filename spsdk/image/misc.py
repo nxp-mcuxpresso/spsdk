@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,20 +12,8 @@ from io import SEEK_CUR
 from typing import Optional, Union
 
 from spsdk.exceptions import SPSDKError
-from spsdk.image.header import Header
+from spsdk.image.exceptions import SPSDKNotEnoughBytesException, SPSDKStreamReadFailed
 from spsdk.utils.registers import value_to_int
-
-
-class RawDataException(SPSDKError):
-    """Raw data read failed."""
-
-
-class StreamReadFailed(RawDataException):
-    """Read_raw_data could not read stream."""
-
-
-class NotEnoughBytesException(RawDataException):
-    """Read_raw_data could not read enough data."""
 
 
 def hexdump_fmt(data: bytes, tab: int = 4, length: int = 16, sep: str = ":") -> str:
@@ -52,36 +40,27 @@ def read_raw_data(
     """Read raw data."""
     if index is not None:
         if index < 0:
-            raise SPSDKError(f" Index must be non-negative, found {index}")
+            raise SPSDKError(f"Index must be non-negative, found {index}")
         if index != stream.tell():
             stream.seek(index)
 
     if length < 0:
-        raise SPSDKError(f" Length must be non-negative, found {length}")
+        raise SPSDKError(f"Length must be non-negative, found {length}")
 
     try:
         data = stream.read(length)
     except Exception as exc:
-        raise StreamReadFailed(f" stream.read() failed, requested {length} bytes") from exc
+        raise SPSDKStreamReadFailed(f"stream.read() failed, requested {length} bytes") from exc
 
     if len(data) != length:
-        raise NotEnoughBytesException(
-            f" Could not read enough bytes, expected {length}, found {len(data)}"
+        raise SPSDKNotEnoughBytesException(
+            f"Could not read enough bytes, expected {length}, found {len(data)}"
         )
 
     if no_seek:
         stream.seek(-length, SEEK_CUR)
 
     return data
-
-
-def read_raw_segment(
-    buffer: Union[io.BufferedReader, io.BytesIO], segment_tag: int, index: Optional[int] = None
-) -> bytes:
-    """Read raw segment."""
-    hrdata = read_raw_data(buffer, Header.SIZE, index)
-    length = Header.parse(hrdata, segment_tag).length - Header.SIZE
-    return hrdata + read_raw_data(buffer, length)
 
 
 def dict_diff(main: dict, mod: dict) -> dict:

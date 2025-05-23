@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,6 +13,7 @@ from typing import Iterator, Optional
 from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_ctr_decrypt, aes_ctr_encrypt
 from spsdk.exceptions import SPSDKError
+from spsdk.image.cert_block.cert_blocks import CertBlockV1
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.sbfile.sb2.commands import (
     CmdBaseClass,
@@ -22,7 +23,6 @@ from spsdk.sbfile.sb2.commands import (
     parse_command,
 )
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.crypto.cert_blocks import CertBlockV1
 
 ########################################################################################################################
 # Boot Image Sections
@@ -139,12 +139,12 @@ class BootSectionV2(BaseClass):
         mac: bytes = b"",
         counter: Optional[Counter] = None,
     ) -> bytes:
-        """Serialize Boot Section object.
+        """Export Boot Section object.
 
         :param dek: The DEK value in bytes (required)
         :param mac: The MAC value in bytes (required)
         :param counter: The counter object (required)
-        :return: exported bytes
+        :return: Exported bytes
         :raises SPSDKError: raised when dek, mac, counter have invalid format or no commands
         """
         if not isinstance(dek, bytes):
@@ -312,12 +312,12 @@ class CertSectionV2(BaseClass):
     def export(
         self, dek: bytes = b"", mac: bytes = b"", counter: Optional[Counter] = None
     ) -> bytes:
-        """Serialize Certificate Section object.
+        """Export Certificate Section object.
 
         :param dek: The DEK value in bytes (required)
         :param mac: The MAC value in bytes (required)
         :param counter: The counter object (required)
-        :return: exported bytes
+        :return: Exported bytes
         :raises SPSDKError: raised when dek, mac, counter have invalid format
         :raises SPSDKError: Raised size of exported bytes is invalid
         """

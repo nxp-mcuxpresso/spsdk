@@ -1,12 +1,11 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 dc_content:
   allOf:
-    - oneOf:
-        - required: [sign_provider]
-        - required: [rotk]
+    - required: [signer]
     - oneOf:
         - required: [family]
         - required: [socc]
@@ -87,7 +86,6 @@ dc_content:
           - ./rotk1.pub
           - ./rotk2.pub
           - ./rotk3.pub
-
     rot_id:
       type: [string, integer]
       title: RoT Identifier
@@ -99,7 +97,6 @@ dc_content:
       maximum: 100
       format: number
       template_value: 0
-
     dck:
       type: string
       title: Debug Credential Key
@@ -109,19 +106,18 @@ dc_content:
         authentication.
       format: file
       template_value: dck.pub
-
-    rotk:
+    signer:
       type: string
-      title: RoT signature private key
-      description: Private key for the RoT meta chosen by rot_id to sign the image.
-      format: file
-      template_value: rotk0.pem
-
-    sign_provider:
-      type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<identifier>;key_number=<value>'.
+      title: Signer
+      description: Signature provider configuration in format 'type=<identifier>;key_number=<value>' or a private key for the RoT meta chosen by rot_id to sign the image.
       template_value: type=sasp;key_number=0
+    rot_config:
+      type: string
+      format: file
+      title: Rot Config
+      description: Path to a cert block binary/cert block configuration of MBI configuration.
+      template_value: cert_block.yaml
+      skip_in_template: true
 
 dc_srk_ca_flag:
   type: object
@@ -171,8 +167,10 @@ main_note: "\nDebug credential file has following binary structure:\n
   ============================================\n
   There are two ways how sign the final DC data blob.\n
   \n
-  1. In case that you is available private pair for rot_meta with index rot_id just use first simple style\n
-  to use it by rotk key. As a second way to do same is use sign_provider (or signProvider - both are accepted) option with 'type=file'.\n
+ 1. The 'signer' option is available to specify the signature provider configuration or path to a private key.  \n
+    The 'signer' option provides a standardized interface for external signing solutions that works  \n
+    consistently across all SPSDK applications.  \n
+    Previous options like 'rotk' and 'sign_provider'/'signProvider' are no longer supported  \n
   \n
   2. For case that Debug Credential files are generated in untrusted environment (without access to RoT private keys),\n
   there is option to use plugin (example how to create own plugin is in: ./SPSDK/examples/dat/hsm/). The plugin\n
@@ -216,9 +214,7 @@ ele_socu:
 
 dat_classic:
   allOf:
-    - oneOf:
-        - required: [sign_provider]
-        - required: [dck_private_key]
+    - required: [signer]
   required:
     - certificate
     - beacon
@@ -255,18 +251,9 @@ dat_classic:
       enum: [oem, nxp]
       default: oem
       template_value: oem
-
-
-    dck_private_key:
+    signer:
       type: string
-      title: DCK signature private key
-      description: Private key that match the public key in debug credential file, to sign Debug Authentication response.
-      format: file
-      template_value: dck.pem
-
-    sign_provider:
-      type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<identifier>;key_number=<value>'.
+      title: Signer
+      description: Signature provider configuration in format 'type=<identifier>;key_number=<value>' or a Private key that match the public key in debug credential file, to sign Debug Authentication response.
       template_value: type=sasp;key_number=0
 

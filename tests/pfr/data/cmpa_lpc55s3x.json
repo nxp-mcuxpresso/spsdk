@@ -1,5 +1,5 @@
 {
-    "device": "lpc55s3x",
+    "family": "lpc55s3x",
     "type": "cmpa",
     "settings": {
         "BOOT_CFG": {

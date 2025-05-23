@@ -8,9 +8,11 @@ user_cfg: inputs/oem.yaml
 custom_command: "%! nxpdevhsm -v get-template -f mwct20d2 -o workspace/devhsm_template.yaml --force"
 
 comments:
+  oemRandomShare: "Not used"
+  oemEncMasterShare: "Not used"
   image_type: "Set to OEM for in-field provisioning. SB is signed by the OEM keys"
   containerOutputFile: "Add path to the output file for the container"
-  signingCertificatePrivateKeyFile: "Key is not required for OEM_PROVISIONING"
+  signer: "Key is not required for OEM_PROVISIONING"
   erase: "Erase flash before programming"
   load: "Program the image"
   reset: "Reset the device after programming"

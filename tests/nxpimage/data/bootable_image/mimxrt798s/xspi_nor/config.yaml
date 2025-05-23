@@ -1,0 +1,44 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+#   Bootable Image Configuration for mimxrt798s, Revision: latest / XSPI NOR..
+# Created: 15/04/2025 10:08:38.
+# NXP SPSDK version: 3.0.0.dev119+gc3921a529  
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimxrt798s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, b0, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+memory_type: xspi_nor
+# ----------------------------------------===== Initial segment [Optional] =====----------------------------------------
+# Description: The segment name or the index of initial segment in exported image
+init_offset: 0
+# ======================================================================================================================
+#                                           == Bootable Segments definition ==                                          
+# ======================================================================================================================
+# ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
+# Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML
+# configuration file for FCB. In case that YAML configuration file is used, the Bootable image tool build the FCB
+# itself.
+fcb: fcb.bin
+# ----------------------------------------===== XMCD block path [Optional] =====----------------------------------------
+# Description: External Memory Configuration Data Segment Image path. It could be used as pre-prepared binary form of
+# XMCD and also YAML configuration file for XMCD. In case that YAML configuration file is used, the Bootable image tool
+# build the XMCD itself.
+xmcd: ''
+# ======================================================================================================================
+#                                          == Executable Segment definition ==                                          
+# ======================================================================================================================
+# ---------------------------------------===== Master Boot Image [Optional] =====---------------------------------------
+# Description: Master Boot Image path. It could be used as pre-prepared binary form of MBI and also YAML configuration
+# file for MBI. In case that YAML configuration file is used, the Bootable image tool build the MBI itself.
+mbi: mbi.bin

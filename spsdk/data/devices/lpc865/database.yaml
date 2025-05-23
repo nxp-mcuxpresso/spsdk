@@ -8,7 +8,7 @@ latest: a0
 
 # General MCU information
 info:
-  purpose: General Purpose MCU
+  purpose: LPC800 Series
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc860-32-bit-arm-cortex-m0-plus-based-low-cost-mcu-with-i3c-interface:LPC86X
   memory_map: # Memory map basic info

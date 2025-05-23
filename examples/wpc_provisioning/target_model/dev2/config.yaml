@@ -1,0 +1,11 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+uuid: 7430f6f3ba951bd102781a28369bf05f
+prk_key: wpc_prk.pem
+csr_blob: csr_blob.bin
+cert_chain: cert_chain.bin
+manufacturer_cert: manufacturer.crt
+product_unit_cert: product_unit.crt
+ca_root_hash: ca_root_hash.txt

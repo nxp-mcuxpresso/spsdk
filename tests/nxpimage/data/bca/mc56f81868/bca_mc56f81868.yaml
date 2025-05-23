@@ -1,0 +1,50 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========================  bca Configuration template for mc56f81868, Revision: latest.  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mc56f81868
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
+# ------------------------------------------===== mc56f81868 [Required] =====-------------------------------------------
+bca:
+  # -------------------------------------===== ENABLED_PERIPHERALS [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000010, Width: 8b; Bitfield of peripherals to enable. Bootloader will enable the peripheral
+  # if corresponding bit is set to 1
+  ENABLED_PERIPHERALS:
+    # -----------------------------------------===== UART_SCI [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Enable UART/SCI peripheral
+    # - DISABLE, (0): Disable UART/SCI peripheral
+    # - ENABLE, (1): Enable UART/SCI peripheral
+    # Possible options: <DISABLE, ENABLE>
+    UART_SCI: DISABLE
+    # -------------------------------------------===== LPI2C [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Enable LPI2C peripheral
+    # - DISABLE, (0): Disable LPI2C peripheral
+    # - ENABLE, (1): Enable LPI2C peripheral
+    # Possible options: <DISABLE, ENABLE>
+    LPI2C: DISABLE
+  # --------------------------------------===== I2C_SLAVE_ADDRESS [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000011, Width: 8b; If not 0xFF, used as the 7-bit I2C slave address
+  I2C_SLAVE_ADDRESS: '0xFF'
+  # --------------------------------===== PERIPHERAL_DETECTION_TIMEOUT [Optional] =====---------------------------------
+  # Description: Offset: 0x00000012, Width: 16b; Timeout in milliseconds for active peripheral detection
+  PERIPHERAL_DETECTION_TIMEOUT: '0x0000'
+  # -----------------------------------------===== BOOT_FLAGS [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000001E, Width: 8b; One's complement of direct boot flag. 0xFE represents direct boot
+  BOOT_FLAGS: '0xFE'
+  # -----------------------------------------===== IMAGE_SIZE [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; The information about total size of the image
+  IMAGE_SIZE: '0x00000000'
+  # --------------------------------------===== FIRMWARE_VERSION [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; Firmware version, stored in little endian format. Used for anti-
+  # rollback protection. New firmware must have the same or higher FW version
+  FIRMWARE_VERSION: '0x00000000'

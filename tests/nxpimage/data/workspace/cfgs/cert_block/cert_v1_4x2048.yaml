@@ -1,15 +1,16 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =========================================  Certification Block V1 template  ==========================================
 
 # ======================================================================================================================
-#                                             == Certificate V1 Settings ==                                             
+#                                             == Certificate V1 Settings ==
 # ======================================================================================================================
 # --------------------------------------===== Image Build Number [Optional] =====---------------------------------------
 imageBuildNumber: '0x0' # [Optional], Image Build Number; If it's omitted, it will be used 0 as default value.
 
-mainCertPrivateKeyFile: .\sb_sources\keys_and_certs\k1_cert0_2048.pem # [Conditionally required], Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signer: .\sb_sources\keys_and_certs\k1_cert0_2048.pem # [Conditionally required], Main Certificate private key used to sign certificate.
 # ----------------------------------------------------------------------------------------------------
 #                                       == Root Keys Settings ==
 # ----------------------------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Trust Zone converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
@@ -9,7 +10,7 @@ family: rt5xx  # [Required], MCU family name; Possible options:['k32w1xx', 'kw45
 revision: a0 # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device.
 tzpOutputFile: C:/Work/TrustZone/tzFile.bin # [Required], Optional name of output file for TZ binary; The name of output binary file with Trust Zone data.
 trustZonePreset: # [Required], Customization of standard preset values; Trust Zone preset dictionary, with trust zone configuration.
-  MPU Control Register (mpu_ctrl): '0x00000000'  # [Optional], TZ Preset; Preset for MPU Control Register (mpu_ctrl)
+  Secure vector table address (vtor_addr): '0xc000feee'  # [Optional], TZ Preset; Preset for Secure vector table address (vtor_addr)
   SAU Control Register (sau_ctrl): '0x00000000' # [Optional], TZ Preset; Preset for SAU Control Register (sau_ctrl)
   RAM0 Slave Rule Register (ram0_slave_rule): '0x00000000' # [Optional], TZ Preset; Preset for RAM0 Slave Rule Register (ram0_slave_rule)
   (ezh_ram_slave_rule): '0x00000000' # [Optional], TZ Preset; Preset for (ezh_ram_slave_rule)

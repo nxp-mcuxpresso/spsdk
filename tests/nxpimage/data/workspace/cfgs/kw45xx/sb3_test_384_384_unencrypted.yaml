@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Secure Binary v3.1 converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -12,7 +13,7 @@ containerOutputFile: .\workspace\output_images\kw45xx\sb3_test_384_384_unencrypt
 #                                    == ISK Certificate Settings ==
 # ----------------------------------------------------------------------------------------------------
 certBlock: .\workspace\cfgs\cert_block\cert_384_384_data.yaml
-signProvider: type=file;file_path=.\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem # [Optional], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signer: type=file;file_path=.\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem
 # ----------------------------------------------------------------------------------------------------
 #                                  == Secure Binary v3.1 Settings ==
 # ----------------------------------------------------------------------------------------------------
@@ -36,8 +37,7 @@ commands: # [Required], SB3.1 Commands; Secure Binary v3.1 commands block, list 
       values: "0x138498" # [Optional], Binary values delimited by comma to be loaded.
   - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
       address: "0x25" # [Required], Address of memory block to be loaded.
-      # values: 0x138498, 0x25, 0x4856974 # [Optional], Binary values delimited by comma to be loaded.
-      value: 0x988413002500000074698504 # [Optional], Binary value to be loaded.
+      values: 0x138498, 0x25, 0x4856974 # [Optional], Binary values delimited by comma to be loaded.
   - programFuses: # [Required], Program Fuses; Address is OTP index of fuses to be programmed (Check the reference manual for more information). Values is a comma separated list of 32bit values.
       address: "0x1384" # [Required], Address; OTP Index of fuses to be programmed. Depends on the chip ROM.
       values: 0x138498, 0x0, 0x5, 0x1ab, 0x1ab, 0xffffffff, 0xfffffff1 # [Required], Binary values; 32bit binary values delimited by comma to be programmed.

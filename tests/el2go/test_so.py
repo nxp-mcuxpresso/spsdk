@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 import pytest
 
 from spsdk.el2go.secure_objects import ElementTag, SecureObject, SecureObjects, TLVElement
@@ -13,14 +14,14 @@ from spsdk.utils.misc import load_binary
 
 def test_tlvelement_parse_length() -> None:
     assert TLVElement.parse_length(b"\x40\x01") == (1, 2)
-    assert TLVElement.parse_length(b"\x40\x7F") == (0x7F, 2)
-    assert TLVElement.parse_length(b"\x40\x81\xAB") == (0xAB, 3)
+    assert TLVElement.parse_length(b"\x40\x7f") == (0x7F, 2)
+    assert TLVElement.parse_length(b"\x40\x81\xab") == (0xAB, 3)
     assert TLVElement.parse_length(b"\x40\x82\x01\x00") == (0x100, 4)
     assert TLVElement.parse_length(b"\x40\x83\x01\x00\x00") == (0x10000, 5)
 
 
 def test_tlvelement_encode_length() -> None:
-    assert TLVElement.encode_length(0x7F) == b"\x7F"
+    assert TLVElement.encode_length(0x7F) == b"\x7f"
     assert TLVElement.encode_length(0x80) == b"\x81\x80"
     assert TLVElement.encode_length(0x100) == b"\x82\x01\x00"
     assert TLVElement.encode_length(0x10000) == b"\x83\x01\x00\x00"

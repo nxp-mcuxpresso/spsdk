@@ -21,3 +21,4 @@ SPSDK nxpimage tool supports SB 2.1 (2.0) and SB 3.1.
 
     sb2
     sb3
+    sbc

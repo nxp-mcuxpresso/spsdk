@@ -37,7 +37,8 @@ from spsdk.exceptions import SPSDKError, SPSDKLengthError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.uboot.uboot import UbootFastboot, UbootSerial
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import value_to_bytes
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -58,8 +59,7 @@ class EleMessageHandler:
     def __init__(
         self,
         device: Union[McuBoot, UbootSerial, UbootFastboot],
-        family: str,
-        revision: str = "latest",
+        family: FamilyRevision,
         buffer_address: Optional[int] = None,
         buffer_size: Optional[int] = None,
     ) -> None:
@@ -67,14 +67,13 @@ class EleMessageHandler:
 
         :param device: Communication interface.
         :param family: Target family name.
-        :param revision: Target revision, default is use 'latest' revision.
         :param buffer_address: Override default buffer address for ELE.
         :param buffer_size: Override default buffer size for ELE.
         """
         self.device = device
-        self.database = get_db(device=family, revision=revision)
+        self.database = get_db(family=family)
         self.family = family
-        self.revision = revision
+
         self.comm_buff_addr = buffer_address or self.database.get_int(
             DatabaseManager.COMM_BUFFER, "address"
         )
@@ -87,7 +86,7 @@ class EleMessageHandler:
         )
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families() -> list[FamilyRevision]:
         """Get list of supported target families.
 
         :return: List of supported families.
@@ -103,16 +102,13 @@ class EleMessageHandler:
         return EleDevice.labels()
 
     @staticmethod
-    def get_ele_device(device: str, revision: str = "latest") -> EleDevice:
+    def get_ele_device(family: FamilyRevision) -> EleDevice:
         """Get default ELE device from DB.
 
-        :param device: Device name.
-        :param revision: Device revision, defaults to 'latest'.
+        :param family: Device name.
         :return: EleDevice instance.
         """
-        return EleDevice.from_label(
-            get_db(device, revision).get_str(DatabaseManager.ELE, "ele_device")
-        )
+        return EleDevice.from_label(get_db(family).get_str(DatabaseManager.ELE, "ele_device"))
 
     @abstractmethod
     def send_message(self, msg: EleMessage) -> None:
@@ -149,8 +145,7 @@ class EleMessageHandler:
     @classmethod
     def get_message_handler(
         cls,
-        family: str,
-        revision: str = "latest",
+        family: FamilyRevision,
         device: Optional[str] = None,
         fb_addr: Optional[int] = None,
         fb_size: Optional[int] = None,
@@ -163,9 +158,9 @@ class EleMessageHandler:
         timeout: int = 5000,
     ) -> "EleMessageHandler":
         """Get Ele message handler."""
-        default_device = device or EleMessageHandler.get_ele_device(family, revision)
+        default_device = device or EleMessageHandler.get_ele_device(family)
         if default_device == EleDevice.UBOOT_FASTBOOT:
-            db = get_db(device=family, revision=revision)
+            db = get_db(family)
             fb_buff_addr = fb_addr or db.get_int(DatabaseManager.FASTBOOT, "address")
             fb_buff_size = fb_size or db.get_int(DatabaseManager.FASTBOOT, "size")
 
@@ -178,7 +173,6 @@ class EleMessageHandler:
             return EleMessageHandlerUBoot(
                 device=uboot_device,
                 family=family,
-                revision=revision,
                 comm_buffer_address_override=buffer_addr,
                 comm_buffer_size_override=buffer_size,
             )
@@ -187,7 +181,7 @@ class EleMessageHandler:
             if not port:
                 raise SPSDKError("Port must be specified")
             uboot_serial = UbootSerial(port, timeout)
-            return EleMessageHandlerUBoot(uboot_serial, family, revision)
+            return EleMessageHandlerUBoot(uboot_serial, family)
         iface_params = load_interface_config(
             {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
         )
@@ -197,7 +191,6 @@ class EleMessageHandler:
         return EleMessageHandlerMBoot(
             device=mboot,
             family=family,
-            revision=revision,
             comm_buffer_address_override=buffer_addr,
             comm_buffer_size_override=buffer_size,
         )
@@ -212,8 +205,7 @@ class EleMessageHandlerMBoot(EleMessageHandler):
     def __init__(
         self,
         device: McuBoot,
-        family: str,
-        revision: str = "latest",
+        family: FamilyRevision,
         comm_buffer_address_override: Optional[int] = None,
         comm_buffer_size_override: Optional[int] = None,
     ) -> None:
@@ -221,7 +213,6 @@ class EleMessageHandlerMBoot(EleMessageHandler):
 
         :param device: mBoot device.
         :param family: Target family name.
-        :param revision: Target revision, default is use 'latest' revision.
         :param comm_buffer_address_override: Override default buffer address for ELE.
         :param comm_buffer_size_override: Override default buffer size for ELE.
         """
@@ -230,7 +221,6 @@ class EleMessageHandlerMBoot(EleMessageHandler):
         super().__init__(
             device,
             family,
-            revision,
             buffer_address=comm_buffer_address_override,
             buffer_size=comm_buffer_size_override,
         )
@@ -310,8 +300,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
     def __init__(
         self,
         device: Union[UbootSerial, UbootFastboot],
-        family: str,
-        revision: str = "latest",
+        family: FamilyRevision,
         comm_buffer_address_override: Optional[int] = None,
         comm_buffer_size_override: Optional[int] = None,
     ) -> None:
@@ -319,7 +308,6 @@ class EleMessageHandlerUBoot(EleMessageHandler):
 
         :param device: UBoot device.
         :param family: Target family name.
-        :param revision: Target revision, default is use 'latest' revision.
         :param comm_buffer_address_override: Override default buffer address for ELE.
         :param comm_buffer_size_override: Override default buffer size for ELE.
 
@@ -330,7 +318,6 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         super().__init__(
             device,
             family,
-            revision,
             buffer_address=comm_buffer_address_override,
             buffer_size=comm_buffer_size_override,
         )

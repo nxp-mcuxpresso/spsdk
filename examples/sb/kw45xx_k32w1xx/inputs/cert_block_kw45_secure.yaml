@@ -23,10 +23,7 @@ iskCertificateConstraint: 0
 # iskCertData: user_cert_data.bin
 # -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
 # Description: Path to Main root Certification Private Key.
-signPrivateKey: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pem
-# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
-# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-# signProvider: type=file;file_path=root_prv_key.pem
+signer: ../../_data/keys/EVK_keys/RoT_key0_secp384r1_kw45xx.pem
 # ======================================================================================================================
 #                                                == Root Keys Settings ==
 # ======================================================================================================================

@@ -11,10 +11,8 @@ import functools
 import logging
 import os
 import sys
-import textwrap
-from copy import deepcopy
 from gettext import gettext, ngettext
-from typing import Any, Callable, Optional, Sequence, TypeVar, Union, cast
+from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union, cast, overload
 
 import click
 import colorama
@@ -22,14 +20,18 @@ from click_command_tree import _build_command_tree, _CommandWrapper
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.interface_helper import load_interface_config
-from spsdk.apps.utils.utils import INT, SPSDKAppError
+from spsdk.apps.utils.utils import INT, SPSDKAppError, make_table_from_items
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
 from spsdk.sdp.protocol.base import SDPProtocolBase
+from spsdk.utils.abstract_features import ConfigBaseClass
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import load_configuration
 
 FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
 logger = logging.getLogger(__name__)
@@ -47,15 +49,16 @@ class FamilyChoice(click.Choice):
     def __repr__(self) -> str:
         return f"Family Choice({list(self.choices)})"
 
-    def __init__(self, choices: Sequence[str]) -> None:
+    def __init__(self, choices: Sequence[FamilyRevision]) -> None:
         """Constructor of SPSDK Family Choice click type.
 
         :param choices: List of families to choice from.
         """
         self.predecessor_choices = DatabaseManager().quick_info.devices.get_predecessors(
-            list(choices)
+            [x.name for x in choices]
         )
-        super().__init__(choices, False)
+        self.all_families = choices
+        super().__init__(choices=list(set(x.name for x in choices)), case_sensitive=False)
 
     def to_info_dict(self) -> dict[str, Any]:
         """Just prepare the dict with base info."""
@@ -118,8 +121,8 @@ class FamilyChoice(click.Choice):
         if normed_value in normed_choices:
             if normed_value in self.predecessor_choices:
                 new_value = self.predecessor_choices[normed_value]
-                logger.warning(
-                    f"The obsolete device name '{normed_value}' "
+                logger.debug(
+                    f"The abbreviation family name '{normed_value}' "
                     f"has been translated to current one: '{new_value}')"
                 )
                 normed_value = new_value
@@ -136,25 +139,6 @@ class FamilyChoice(click.Choice):
             param,
             ctx,
         )
-
-
-def move_cmd_to_grp(
-    org_grp: click.Group, grp: click.Group, name: str, new_name: Optional[str] = None
-) -> None:
-    """Move the command to new group from the main and make it depreciated.
-
-    :param org_grp: Original group with depreciated place
-    :param grp: TArget group where the command should be moved
-    :param name: Name of original command
-    :param new_name: Optional new name of command, defaults to None
-    """
-    cmd = org_grp.commands[name]
-    moved_cmd = deepcopy(cmd)
-    new_name = new_name or name
-    moved_cmd.name = new_name
-    grp.add_command(moved_cmd, new_name)
-    cmd.hidden = True
-    cmd.deprecated = True
 
 
 def port_option(baud_rate: int = 57600) -> Callable[[FC], FC]:
@@ -482,26 +466,12 @@ def spsdk_apps_common_options(options: FC) -> FC:
     return options
 
 
-def spsdk_plugin_option(options: FC) -> FC:
-    """Plugin click option decorator.
-
-    Provides: `plugin: str` a full path to plugin file.
-
-    :return: Click decorator
-    """
-    return click.option(
-        "--plugin",
-        required=False,
-        type=click.Path(resolve_path=True, dir_okay=False, exists=True),
-        help="External python file/package containing a custom plugin implementation.",
-    )(options)
-
-
 def spsdk_family_option(
-    families: list[str],
+    families: list[FamilyRevision],
     required: bool = True,
-    default: Optional[str] = None,
+    default: Optional[FamilyRevision] = None,
     help: Optional[str] = None,  # pylint: disable=redefined-builtin
+    add_revision: bool = True,
 ) -> Callable:
     """Click decorator handling family selection.
 
@@ -511,11 +481,13 @@ def spsdk_family_option(
     :param required: Family selection is required
     :param default: Default selection, defaults to None (user selection is required)
     :param help: Customized help message, defaults to None
+    :param add_revision: Add revision to the family name, defaults to True
     :return: Click decorator.
     """
     FAMILY_OPTION = "family"
 
     def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
+
         @functools.wraps(func)
         @click.pass_context
         def wrapper(
@@ -528,7 +500,29 @@ def spsdk_family_option(
             if required and ctx.params.get(FAMILY_OPTION) is None:
                 param = next(param for param in ctx.command.params if param.name == FAMILY_OPTION)
                 raise click.MissingParameter(ctx=ctx, param=param, param_type="option")
+
+            if FAMILY_OPTION in kwargs and kwargs[FAMILY_OPTION] is not None:
+                ret_family = FamilyRevision(
+                    name=kwargs.pop(FAMILY_OPTION), revision=kwargs.pop("revision", "latest")
+                )
+            else:
+                kwargs.pop(FAMILY_OPTION, "")
+                kwargs.pop("revision", "")
+                ret_family = None
+
+            kwargs["family"] = ret_family
+
             return func(*args, **kwargs)
+
+        if add_revision:
+            func = click.option(
+                "-r",
+                "--revision",
+                type=str,
+                default="latest",
+                required=False,
+                help="Chip revision; if not specified, most recent one will be used",
+            )(func)
 
         wrapper = click.option(
             "-f",
@@ -536,31 +530,17 @@ def spsdk_family_option(
             type=FamilyChoice(choices=families),
             default=default,
             required=False,  # will be validated in the wrapper method
-            help=help or "Select the chip family.",
+            help=help or f"{'[required] ' if required else ''}Select the chip family.",
         )(wrapper)
+
         return wrapper
 
     return decorator
 
 
-def spsdk_revision_option(options: FC) -> FC:
-    """Click decorator handling revision selection.
-
-    Provides: `revision: str` a name of revision to be used.
-
-    :return: Click decorator
-    """
-    return click.option(
-        "-r",
-        "--revision",
-        type=str,
-        default="latest",
-        help="Chip revision; if not specified, most recent one will be used",
-    )(options)
-
-
 def spsdk_config_option(
     required: bool = True,
+    klass: Optional[Type[ConfigBaseClass]] = None,
     help: Optional[str] = None,  # pylint: disable=redefined-builtin
 ) -> Callable:
     """Click decorator handling config files.
@@ -568,19 +548,70 @@ def spsdk_config_option(
     Provides: `config: str` a full path to config file.
 
     :param required: Config file is required
+    :param klass: The class that will handle the configuration, if it's used, the configuration will be validated
     :param help: Customized help message, defaults to None
     :return: Click decorator.
     """
 
     def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
-        func = click.option(
+
+        @functools.wraps(func)
+        @click.pass_context
+        def wrapper(
+            ctx: click.Context,
+            *args: Any,
+            **kwargs: Any,
+        ) -> Any:
+
+            cfg_path: str = kwargs.pop("config")
+            override_config: list[str] = kwargs.pop("override_config")
+            if not cfg_path and len(override_config) == 0:
+                kwargs["config"] = None
+                return func(*args, **kwargs)
+
+            cfg = Config()
+            cfg_dir = os.getcwd()
+            if cfg_path is not None:
+                cfg_abs_path = os.path.abspath(cfg_path).replace("\\", "/")
+                cfg = Config(load_configuration(cfg_abs_path))
+                cfg_dir = os.path.dirname(cfg_abs_path)
+
+            cfg.search_paths = [cfg_dir]
+            cfg.config_dir = cfg_dir
+            for oc in override_config:
+                pair = oc.split("=")
+                cfg[pair[0]] = pair[1]
+
+            if klass:
+                schemas = klass.get_validation_schemas_from_cfg(cfg)
+                cfg.check(schemas, check_unknown_props=True)
+
+            kwargs["config"] = cfg
+            return func(*args, **kwargs)
+
+        wrapper = click.option(
             "-c",
             "--config",
             type=click.Path(resolve_path=True, exists=True, dir_okay=False),
             required=required,
             help=help or "Path to the YAML/JSON configuration file.",
-        )(func)
-        return func
+        )(wrapper)
+        wrapper = click.option(
+            "-oc",
+            "--override-config",
+            type=str,
+            required=False,
+            multiple=True,
+            metavar="key_path=value",
+            help=(
+                "Allows override the individual configuration settings. The use is simple: 'key_path=value', "
+                f"like 'family=mimxrt595s' or in structural configuration with separating character '{Config.SEP}'"
+                f" like 'containers{Config.SEP}0{Config.SEP}binary_container=my_container.bin'."
+                " It could be used multiple times."
+            ),
+        )(wrapper)
+
+        return wrapper
 
     return decorator
 
@@ -810,7 +841,6 @@ def spsdk_el2go_interface(
     device: bool = True,
     plugin: bool = True,
     timeout: int = 5000,
-    identify_by_family: bool = True,
     use_long_timeout_form: bool = False,
     required: bool = True,
     fb_addr: bool = True,
@@ -840,8 +870,7 @@ def spsdk_el2go_interface(
             lpcusbsio: Optional[str] = None,
             plugin: Optional[str] = None,
             device: Optional[str] = None,
-            family: Optional[str] = None,
-            revision: Optional[str] = None,
+            family: Optional[FamilyRevision] = None,
             fb_addr: Optional[int] = None,
             fb_size: Optional[int] = None,
             usbpath: Optional[str] = None,
@@ -852,12 +881,11 @@ def spsdk_el2go_interface(
             if is_click_help(ctx, sys.argv):
                 return None
 
-            if identify_by_family:
-                usb = (
-                    usb or family
-                    if not (port or buspal or lpcusbsio or sdio or can or plugin)
-                    else usb
-                )
+            usb = (
+                usb or (family.name if family is not None else None)
+                if not (port or buspal or lpcusbsio or sdio or can or plugin)
+                else usb
+            )
 
             cli_params = {
                 "port": port,
@@ -873,7 +901,7 @@ def spsdk_el2go_interface(
             try:
                 interface_params = load_interface_config(cli_params)
                 interface_handler = EL2GOInterfaceHandler.get_el2go_interface_handler(
-                    interface_params, family, revision, device, fb_addr, fb_size, usbpath, usbserial
+                    interface_params, family, device, fb_addr, fb_size, usbpath, usbserial
                 )
                 kwargs["interface"] = interface_handler
             except SPSDKError:
@@ -888,7 +916,7 @@ def spsdk_el2go_interface(
             can_option: (can, {}),
             lpcusbsio_option: (lpcusbsio, {}),
             sdio_option: (sdio, {}),
-            usb_option: (usb, {"identify_by_family": identify_by_family}),
+            usb_option: (usb, {"identify_by_family": True}),
             port_option: (port, {"baud_rate": MbootUARTInterface.default_baudrate}),
             el2go_interface_option: (device, {}),
             fb_buffer_address: (fb_addr, {}),
@@ -901,7 +929,6 @@ def spsdk_el2go_interface(
         wrapper = spsdk_family_option(
             EL2GOInterfaceHandler.get_supported_families(), required=False
         )(wrapper)
-        wrapper = spsdk_revision_option(wrapper)
 
         for option, (_is_used, decorator_args) in interface_options.items():
             if _is_used:
@@ -953,22 +980,40 @@ class GetFamiliesCommand(click.Command):
         def print_families(family_param: click.Parameter) -> None:
             if isinstance(family_param.type, (FamilyChoice, click.Choice)):
                 click.echo(colorama.Fore.GREEN + "Supported families:" + colorama.Fore.RESET)
-                sorted_choices = DatabaseManager().quick_info.sort_devices_to_groups(
+                sorted_choices = DatabaseManager().quick_info.split_devices_to_groups(
                     list(family_param.type.choices)
                 )
                 for purpose, devices in sorted_choices.items():
+                    if isinstance(family_param.type, FamilyChoice):
+                        devices = append_revisions(devices, family_param.type.all_families)
                     click.echo(f"{colorama.Fore.MAGENTA} - {purpose}:{colorama.Fore.RESET}")
-                    for line in textwrap.wrap(", ".join(devices)):
-                        click.echo(f"    {line}")
+                    for row in make_table_from_items(devices):
+                        click.echo(row)
 
                 if isinstance(family_param.type, FamilyChoice):
                     click.echo(
-                        colorama.Fore.YELLOW + "\nObsolete predecessor families names "
-                        "(Warning: Those names will be removed in some following version of SPSDK):"
+                        colorama.Fore.YELLOW
+                        + "\nAbbreviation families names "
                         + colorama.Fore.RESET
                     )
-                    for line in textwrap.wrap(", ".join(family_param.type.predecessor_choices)):
-                        click.echo(f"    {line}")
+                    predecessors = []
+                    for predecessor, family in family_param.type.predecessor_choices.items():
+                        revisions = [
+                            f.revision for f in family_param.type.all_families if f.name == family
+                        ]
+                        predecessors.append(f"{predecessor}[{','.join(revisions)}]")
+
+                    for row in make_table_from_items(predecessors):
+                        click.echo(row)
+
+        def append_revisions(
+            devices: list[str], all_families: Sequence[FamilyRevision]
+        ) -> list[str]:
+            """Append revisions to device names."""
+            for index, device in enumerate(devices):
+                revisions = [family.revision for family in all_families if family.name == device]
+                devices[index] = f"{device}[{','.join(revisions)}]"
+            return devices
 
         if cmd_name:
             click.echo(f"Shown families for command '{cmd_name}':")
@@ -984,16 +1029,116 @@ class GetFamiliesCommand(click.Command):
         )
 
 
+class SpsdkClickCommand(click.Command):
+    """SPSDK Click command, overrides click.Command standard class."""
+
+    def __init__(self, **attrs: Any) -> None:
+        """SPSDK Click command descriptor."""
+        super().__init__(**attrs)
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Customize the help output to provide hierarchical command context.
+
+        Enhances standard Click help by displaying the full command hierarchy. For root commands,
+        maintains standard formatting. For subcommands, shows parent group information along with
+        the current command details. This creates a more comprehensive help experience where users
+        can see the complete context of the command they're using.
+
+        :param ctx: Current Click context containing the command information and hierarchy
+        :param formatter: Click help formatter used to render the formatted help text
+        """
+
+        def delimiter_line(input_text: str) -> None:
+            text = f" {input_text} "
+            padding_length = ((formatter.width - len(text)) // 2) - 1
+            formatter.write(f"\n{'─' * padding_length}{text}{'─' * padding_length}\n")
+
+        root = ctx.find_root()
+        current_cmd = ctx.command
+
+        # For root command - keep standard formatting
+        if root.command == current_cmd:
+            return super().format_help(ctx, formatter)
+
+        # Print root help without commands tree
+        root_ctx = click.Context(root.command, info_name=root.command.name, parent=None)
+        formatter.write(f"\nHelp for nested command: '{ctx.command.name}'")
+        formatter.write(f"\nCommand Hierarchy: {' ▶ '.join(ctx.command_path.split(' '))}\n")
+        delimiter_line(f"Root command ({root.command.name}) help")
+        click.Command.format_options(root.command, root_ctx, formatter)
+        root.command.format_epilog(root_ctx, formatter)
+
+        def print_group_help(group_ctx: click.Context) -> None:
+            """Print group help without commands tree."""
+            group = group_ctx.command
+            delimiter_line(f"Nested group ({group.name}) help")
+            self.format_group_options(group_ctx, formatter)
+
+        # For nested group - print root + current group
+        if isinstance(current_cmd, click.Group):
+            print_group_help(ctx)
+            return
+
+        # For final command - print root + all parent groups + command
+        parent_contexts = []
+        current_ctx = ctx
+        while current_ctx.parent and current_ctx.parent.command != root.command:
+            parent_contexts.append(current_ctx.parent)
+            current_ctx = current_ctx.parent
+
+        # Print parent groups in top-down order
+        for parent_ctx in reversed(parent_contexts):
+            print_group_help(parent_ctx)
+
+        # Print final command help
+        delimiter_line(f"Command ({current_cmd.name}) help")
+        if current_cmd.help:
+            formatter.write_text(current_cmd.help)
+        formatter.write_usage(ctx.command_path, " ".join(self.collect_usage_pieces(ctx)))
+        self.format_options(ctx, formatter)
+
+    def get_group_params(self, ctx: click.Context) -> list[click.Parameter]:
+        """Retrieve all parameters from the command group.
+
+        Collects all defined parameters from the command context and appends the help option
+        if one exists.
+
+        :param ctx: The current click context containing command information
+        :return: List of all parameters including the help option
+        """
+        rv = ctx.command.params
+        help_option = self.get_help_option(ctx)
+
+        if help_option is not None:
+            rv = [*rv, help_option]
+
+        return rv
+
+    def format_group_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Writes all the options into the formatter if they exist."""
+        opts = []
+        for param in self.get_group_params(ctx):
+            rv = param.get_help_record(ctx)
+            if rv is not None:
+                opts.append(rv)
+
+        if opts:
+            with formatter.section(("Options")):
+                formatter.write_dl(opts)
+
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
 class SpsdkClickGroup(click.Group):
-    """SPSDK Click group, overrides click.Group standard class.
-
-    To check and add additional command get-families
-
-    :param click: click.Group
-    """
+    """SPSDK Click group, overrides click.Group standard class."""
 
     def __init__(self, **attrs: Any) -> None:
         """SPSDK Click group descriptor."""
+        # SPSDK group implicitly without arguments call the HELP
+        if "no_args_is_help" not in attrs:
+            attrs["no_args_is_help"] = True
+
         super().__init__(**attrs)
         self.get_families: Optional[GetFamiliesCommand] = None
         if "params" in attrs:
@@ -1015,6 +1160,19 @@ class SpsdkClickGroup(click.Group):
                     self.get_families = GetFamiliesCommand()
                     self.add_command(self.get_families)
                 self.get_families.add_cmd(param, name)
+
+    @overload
+    def command(self, f: F) -> click.Command: ...
+
+    @overload
+    def command(self, name: Optional[str] = None, **attrs: Any) -> Callable[[F], click.Command]: ...
+
+    def command(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[Callable[[Callable[..., Any]], click.Command], click.Command]:
+        """Override command decorator to use SpsdkClickCommand by default."""
+        kwargs.setdefault("cls", SpsdkClickCommand)
+        return super().command(*args, **kwargs)
 
 
 class CommandsTreeGroup(SpsdkClickGroup):
@@ -1117,6 +1275,6 @@ def is_click_help(ctx: click.Context, argv: list[str]) -> bool:
         return True
     if "--help" in argv[1:]:
         return True
-    if ctx.command.name and ctx.command.name not in argv[0]:
+    if ctx.command.name and ctx.command.name not in argv:
         return False
     return check_commands(argv[1:], ctx.command)

@@ -42,6 +42,17 @@ trust_zone:
       template_value: my_tz_custom.yaml
       format: optional_file
 
+trust_zone_mandatory:
+  type: object
+  title: Trust Zone Settings
+  properties:
+    trustZonePresetFile:
+      type: string
+      title: TrustZone Customization file
+      description: If not specified the default values are used.
+      template_value: my_tz_custom.yaml
+      format: optional_file
+
 load_addr:
   type: object
   title: Basic Settings
@@ -107,28 +118,6 @@ image_subtype:
       enum: [main, nbu, recovery]
       template_value: main
 
-digest_hash_algo:
-  type: object
-  title: Image Manifest Settings
-  properties:
-    manifestDigestHashAlgorithm:
-      type: string
-      title: Manifest signing hash algorithm
-      description: Optional Manifest signing hash algorithm name to create Certificate Block v2.1 Manifest.
-      enum: [sha256, sha384, sha512]
-      skip_in_template: true
-      template_value: sha256
-
-add_digest_hash:
-  type: object
-  title: Add Manifest Digest
-  properties:
-    addManifestDigest:
-      type: boolean
-      title: Add Manifest Digest
-      description: Used for concurrent execution of ECDSA verify and hash calculation.
-      template_value: true
-
 cert_block_v1:
   type: object
   title: Certificate Block V1
@@ -171,42 +160,16 @@ cert_block_vX:
 
   required: [certBlock]
 
-signature_provider:
+signer:
   type: object
   title: Image Signing Settings
   properties:
-    mainRootCertPrivateKeyFile:
+    signer:
       type: string
-      title: Main Certificate private key
-      description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-      template_value: main_prv_key.pem
-      format: file
-      skip_in_template: true
-    signPrivateKey:
-      type: string
-      title: Main Certificate private key
-      description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-      template_value: main_prv_key.pem
-      format: file
-
-    signProvider:
-      type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'.
-      template_value: type=file;file_path=my_prv_key.pem
-  oneOf:
-    - allOf:
-        - oneOf:
-            - required: [mainRootCertPrivateKeyFile]
-            - required: [signPrivateKey]
-        - not:
-            required: [signProvider]
-    - allOf:
-        - required: [signProvider]
-        - not:
-            oneOf:
-              - required: [mainRootCertPrivateKeyFile]
-              - required: [signPrivateKey]
+      title: Signer configuration
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>' or path to a private key.
+      template_value: type=file;file_path=root_prv_key.pem
+  required: [signer]
 
 hw_key:
   type: object
@@ -316,6 +279,7 @@ image_type:
           "RAM",
           "ram",
         ]
+      enum_template: ["xip", "load-to-ram"]
       template_value: xip
 
     outputImageAuthenticationType:
@@ -338,6 +302,8 @@ image_type:
           NXP signed,
           encrypted,
         ]
+      enum_template:
+        ["plain", "crc", "signed", "signed-encrypted", "signed-nxp"]
       template_value: plain
 
   required: [outputImageExecutionTarget, outputImageAuthenticationType]
@@ -389,7 +355,6 @@ bca:
       template_value: bca.yaml
       format: file
 
-
 fcf:
   type: object
   title: Flash Configuration Fields
@@ -400,4 +365,3 @@ fcf:
       description: Path to FCF binary or config file.
       template_value: fcf.yaml
       format: file
-

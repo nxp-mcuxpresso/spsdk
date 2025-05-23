@@ -24,7 +24,7 @@ trustZonePreset:
   Start of block (tzm_magic): '0x4d2d5a54'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for TZM info which data are initialized (tzm_control)
-  TZM info which data are initialized (tzm_control): '0x0'
+  TZM info which data are initialized (tzm_control): '0xc000feee'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for CM33 Secure vector table address (cm33_vtor_addr)
   CM33 Secure vector table address (cm33_vtor_addr): '0x0'

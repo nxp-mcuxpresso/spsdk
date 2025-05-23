@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =========================  Advanced High-Assurance Boot Configuration template for mimxrt1189.  ==========================
 
 # ======================================================================================================================
@@ -14,18 +15,17 @@ family: mimxrt1189
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
 revision: latest
-# ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
+# -----------------------------------------===== Target memory [Optional] =====-----------------------------------------
 # Description: Target memory for AHAB container
-# Possible options: <nor, serial_downloader, nand_2k, nand_4k>
-target_memory: nor
+# Possible options: <serial_downloader, standard, nand_2k, nand_4k>
+target_memory: standard
 # ---------------------------------------===== Output file name [Required] =====----------------------------------------
 # Description: Output AHAB file name
 output: ../workspace/signed_ahab.bin
 # ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
 # Description: The order of containers in the list defines the order in AHAB.
 containers:
-  - #  ====================================== [Example of possible configuration #1] ======================================
-    # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
+  - # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
     # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
     # container.
     container:
@@ -51,7 +51,7 @@ containers:
       # ------------------------===== AHAB container signing key [Conditionally required] =====-------------------------
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
-      signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem
 
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==
@@ -59,8 +59,11 @@ containers:
       # ---------------------------------------===== Image array [Required] =====---------------------------------------
       # Description: Array of image entries.
       images:
-        - # -------------------------------------===== Image path [Required] =====--------------------------------------
-          # Description: Path to image binary (absolute/relative).
+        - # -------------------------------------===== Image path [Optional] =====--------------------------------------
+          # Description: Path to image binary (absolute/relative). In case that only Image Array entry without any data
+          # image is needed, Just do not use the image path. In case that the image size in container should be aligned
+          # differently then SPSDK do (4 bytes for ELE images, 1 byte otherwise), there is hidden option
+          # 'image_size_alignment' where could be override image size by any custom value.
           image_path: inputs/fspi1_xip_cm33_img.bin
           # ---------------------------===== Image offset in AHAB container [Required] =====----------------------------
           # Description: Offset in bytes from start of container header to beginning of the image. In case of XiP type

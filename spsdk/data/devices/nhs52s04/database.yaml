@@ -9,7 +9,7 @@ latest: a4
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   spsdk_predecessor_name: nhs52sxx
   # Web page of MCU representative
   web: https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52s04-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52S04
@@ -163,7 +163,7 @@ features:
 
   # ======== TrustZone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== Bootable image section ========
   bootable_image:

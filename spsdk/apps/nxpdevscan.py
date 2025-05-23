@@ -26,7 +26,7 @@ from spsdk.utils.devicedescription import (
 )
 
 
-@click.command(name="nxpdevscan")
+@click.command(name="nxpdevscan", no_args_is_help=False)
 @click.option(
     "-e",
     "--extend-vids",

@@ -16,7 +16,7 @@ used_srk_id: 0 # [Required], Used SRK; Which key from SRK set is being used.
 srk_revoke_mask: 0 # [Required], SRK revoke mask; Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
 fuse_version: 0 # [Required], Fuse version; The value must be equal or greater than the version stored in fuses to allow loading this container.
 sw_version: 0 # [Required], Software version; Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
-signing_key: ../../_data/keys/ecc256/srk0_ecc256.pem # [Required], Signed Message container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem # [Required], Signed Message container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
 # ----------------------------------------------------------------------------------------------------
 #                           == Configuration of Signed Message SRK table ==
 # ----------------------------------------------------------------------------------------------------

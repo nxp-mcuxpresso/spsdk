@@ -100,11 +100,13 @@ features:
 
   # ======== AHAB section ========
   ahab:
+    sub_features: [ahab_image]
     containers_max_cnt: 2
     oem_images_max_cnt: 8
     valid_offset_minimal_alignment: 4
     container_image_size_alignment: 512 # To satisfy SD card blocks
     container_types: [1] # Supported container types
+    iae_has_signed_offsets: False # There is a special cases when the Container is after images
     core_ids: {}
     image_types: {}
     image_types_mapping: {}
@@ -139,10 +141,6 @@ features:
     sub_features: [cmpa, cfpa]
     cmpa:
       erase_method: write_memory
-
-  # ======== IFR section ========
-  ifr:
-    sub_features: [romcfg, cmactable]
 
   # ======== Bootable image section ========
   bootable_image:
@@ -195,9 +193,22 @@ features:
   sb31:
     supported_commands: []
     key_wraps_version: 1
+    variable_block_length: false
+    commands_block_length: 256
+    supports_compression: false
 
   # ======== Secure binary vX section ========
-  sbx: {}
+  sbx:
+    commands_block_length: 256
+    variable_block_length: false
+    supported_commands: []
+
+  # ======== Secure binary c section ========
+  sbc:
+    commands_block_length: 256
+    key_wraps_version: 2
+    variable_block_length: false
+    supported_commands: []
 
   # ======== Shadow registers section ========
   shadow_regs:
@@ -207,6 +218,7 @@ features:
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    sub_features: [DevHsm]
     supported_commands:
       - erase
       - load
@@ -220,24 +232,10 @@ features:
     flag: 0x1
     key_blob_offset: 0x4
     key_blob_command_position: -1
-    devhsm_class: DevHsm
-
-  # ======== Trust provisioning section ========
-  tp:
-    erase_memory: false
-    need_tp_fw: true
-    need_cfpa_update: true
-    need_revoke_update: true
-    version_offset: 0x4
-    revoke_offset: 0x18
-    max_oem_cert_size: 1000
-    use_prov_data: false
-    key_flags_version: 0
-    die_id_cert_version: 0
 
   # ======== Trust Zone section ========
   tz:
-    reg_spec: tz.yaml
+    reg_spec: tz.json
 
   # ======== EdgeLock Enclave section ========
   ele:
@@ -427,3 +425,6 @@ features:
   # ======== FCF section ========
   fcf:
     reg_spec: fcf.json
+
+  # ======== SHE section ========
+  she_scec: {}

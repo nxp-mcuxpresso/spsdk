@@ -158,6 +158,7 @@ features:
   dat:
     socc: 0x5254049C # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    dat_is_using_sha256_always: True
     dmbox_ap_ix: 0
 
   # ======== AHAB section ========

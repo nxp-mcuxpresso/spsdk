@@ -36,6 +36,7 @@ from spsdk.dice.target_model import ModelDICETarget
 from spsdk.dice.utils import HADDiff, HADDifferences, get_supported_devices
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import write_file
 from spsdk.utils.registers import Register, RegsBitField
 
@@ -111,7 +112,7 @@ def get_verification_service(
 def get_dice_target(
     port: str,
     timeout: int = 5000,
-    family: Optional[str] = None,
+    family: Optional[FamilyRevision] = None,
     models_dir: Optional[str] = None,
 ) -> DICETarget:
     """Factory method for retrieving concrete DICE target instance."""
@@ -119,7 +120,7 @@ def get_dice_target(
         raise SPSDKAppError("-p/--port needs to be set.")
     if models_dir:
         return ModelDICETarget(models_dir=models_dir, port=port.split(",")[0])
-    assert isinstance(family, str)
+    assert isinstance(family, FamilyRevision)
     interfaces = MbootUARTInterface.scan(port=port, timeout=timeout)
     if len(interfaces) == 0:
         raise SPSDKAppError(f"Could not found device on '{port}'")
@@ -127,7 +128,7 @@ def get_dice_target(
     return BlhostDICETarget(family=family, interface=interfaces[0])
 
 
-@click.group(name="nxpdice", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="nxpdice", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application designed to cover DICE-related operations."""
@@ -154,7 +155,7 @@ def register_ca_puk(
     database: str,
     port: str,
     timeout: int,
-    family: str,
+    family: FamilyRevision,
     store_artifact: str,
     models_dir: str,
     rkth: str,
@@ -195,7 +196,7 @@ def register_ca_puk(
     help="HEX value of RKTH",
 )
 def get_ca_puk(
-    port: str, timeout: int, family: str, models_dir: str, output: str, rkth: str
+    port: str, timeout: int, family: FamilyRevision, models_dir: str, output: str, rkth: str
 ) -> None:
     """Get NXP_CUST_DICE_CA_PUK from the device."""
     rkth_bytes = bytes.fromhex(rkth)
@@ -241,7 +242,7 @@ def register_version(
     database: str,
     port: str,
     timeout: int,
-    family: str,
+    family: FamilyRevision,
     store_artifact: str,
     models_dir: str,
 ) -> None:
@@ -290,7 +291,7 @@ def verify(
     database: str,
     port: str,
     timeout: int,
-    family: str,
+    family: FamilyRevision,
     store_artifact: str,
     models_dir: str,
 ) -> None:
@@ -328,7 +329,7 @@ def verify(
     help="Optional challenge. If not specified a random challenge will be used.",
 )
 def get_response(
-    port: str, timeout: int, family: str, models_dir: str, response: str, challenge: str
+    port: str, timeout: int, family: FamilyRevision, models_dir: str, response: str, challenge: str
 ) -> None:
     """Get DICE response from the device."""
     if challenge:
@@ -453,7 +454,7 @@ def display_response(response: APIResponse) -> None:
     click.get_current_context().exit(0 if response.success else 1)
 
 
-def display_had_diff(response: APIResponse, family: str) -> None:
+def display_had_diff(response: APIResponse, family: FamilyRevision) -> None:
     """Display detailed breakdown of HAD differences."""
     if not response.status == "HAD_DIFF":
         return

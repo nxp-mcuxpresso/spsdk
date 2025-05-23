@@ -1,46 +1,65 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ==============================  Secure Binary X Configuration template for mwct20d2.  ===============================
+
+# ==========================  devhsm Configuration template for mwct20d2, Revision: latest.  ===========================
 
 # ======================================================================================================================
-#                                                 == General Options ==
+#                                                 == General Options ==                                                 
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
-# Possible options: <mc56f81866, mc56f81868, mwct20d2, mwct20d2a>
 family: mwct20d2
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon. The 'latest' name, means most current revision.
 # Possible options: <b1, latest>
 revision: latest
 # ======================================================================================================================
-#                                                  == Basic Settings ==
+#                                              == Common DevHSM settings ==                                             
 # ======================================================================================================================
-# ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
-# Description: Value compared with Secure_FW_Version monotonic counter value stored in protected memory (MCU specific).
-# If value is lower than value in protected memory, then is image rejected (rollback protection).
-firmwareVersion: 0
-# -----------------------------------------===== SBx filename [Required] =====------------------------------------------
-# Description: Generated SBx container filename.
+# -----------------------------===== OEM Random Share input [Conditionally required] =====------------------------------
+# Description: Path to a file containing 16B of random seed data. If not specified, random seed will be generated. In
+# case that 'oemEncMasterShare' is defined, the 'oemRandomShare' must be defined with the original random seed that has
+# been used to create OEM Encrypted master share.
+# oemRandomShare: oem_seed.bin
+# ----------------------------------===== OEM Encrypted Master Share [Optional] =====-----------------------------------
+# Description: Path to a file containing encrypted OEM Master Share to restore a secure session
+# oemEncMasterShare: oem_enc_master_share.bin
+# -------------------------------------===== Initial device reset [Optional] =====--------------------------------------
+# Description: Reset the device before starting the DevHSM operation
+initialReset: false
+# --------------------------------------===== Final device reset [Optional] =====---------------------------------------
+# Description: Reset the device after the DevHSM operation
+finalReset: true
+# ----------------------------------===== Development/debug workspace [Optional] =====----------------------------------
+# Description: Path to a folder where to store intermediate artifacts for development/debugging purposes
+workspace: wsp
+# ---------------------------------===== Communication buffer address [Optional] =====----------------------------------
+# Description: Address to override default communication buffer address
+bufferAddress: '0x4003000'
+# ---------------------------------------===== Output file path [Required] =====----------------------------------------
+# Description: Path where to store generated DevHSM SB file
 containerOutputFile: workspace/my_new.sbx
 # ======================================================================================================================
-#                                             == Secure Binary X Settings ==
+#                                             == Secure Binary X Settings ==                                            
 # ======================================================================================================================
 # ------------------------------------------===== image type [Optional] =====-------------------------------------------
 # Description: SecureBinaryXType
 # Possible options: <NXP_PROVISIONING, OEM_PROVISIONING, OEM>
-image_type: OEM
-# ------------------------------------------===== Description [Optional] =====------------------------------------------
-# Description: Description up to 16 characters, longer will be truncated. Stored in SBx manifest.
-description: This is description of generated SB file.
-signingCertificatePrivateKeyFile: ec_pk_secp256r1_sign_cert.pem
+image_type: OEM_PROVISIONING
 # ======================================================================================================================
-#                                        == Secure Binary X Commands Settings ==
+#                                               == Certificate Settings ==                                              
+# ======================================================================================================================
+# -------------------------------------===== Signer [Conditionally required] =====--------------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>' or a ISK
+# Certificate private key used to sign certificate. Only valid for OEM and NXP_PROVISIONING image types
+signer: type=file;file_path=my_prv_key.pem
+# ======================================================================================================================
+#                                        == Secure Binary X Commands Settings ==                                        
 # ======================================================================================================================
 # -----------------------------------------===== SBx Commands [Required] =====------------------------------------------
 # Description: Secure Binary X commands block, list of all possible options - Modify it according to your application
-commands: # [Required], SBx.1 Commands, Secure Binary X commands block, list of all possible options - Modify it according to your application
+commands:
   - erase:
       address: 0
       size: 0x800

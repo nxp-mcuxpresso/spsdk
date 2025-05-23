@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,9 @@ import os
 import pytest
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.crypto.otfad import KeyBlob, Otfad
+from spsdk.image.otfad.otfad import KeyBlob, Otfad
 from spsdk.utils.misc import align_block
+from spsdk.utils.family import FamilyRevision
 
 
 def test_otfad_keyblob(data_dir):
@@ -71,11 +72,12 @@ def test_otfad_keyblob(data_dir):
 
 def test_otfad(data_dir):
     """Test OTFAD generator"""
-    otfad = Otfad()
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+    otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
+
     counter = bytes.fromhex("5689fab8b4bfb264")
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
-    otfad.add_key_blob(key_blob)
+    otfad[0] = key_blob
     assert otfad[0] == key_blob
     with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
         image = f.read()
@@ -96,11 +98,11 @@ def test_otfad(data_dir):
 
 def test_oftad_invalid(data_dir):
     """Test OTFAD - image address range does not match to key blob, won't be encrypted"""
-    otfad = Otfad()
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+    otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
     counter = bytes.fromhex("5689fab8b4bfb264")
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
-    otfad.add_key_blob(key_blob)
+    otfad[0] = key_blob
     assert otfad[0] == key_blob
     with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
         image = align_block(f.read(), 512)

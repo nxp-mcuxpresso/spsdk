@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@ import os
 import pytest
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.crypto.iee import (
+from spsdk.image.iee.iee import (
     Iee,
     IeeKeyBlob,
     IeeKeyBlobAttribute,
@@ -19,6 +19,7 @@ from spsdk.utils.crypto.iee import (
     IeeKeyBlobModeAttributes,
 )
 from spsdk.utils.misc import align_block, load_binary
+from spsdk.utils.family import FamilyRevision
 
 
 def test_iee_keyblob(data_dir):
@@ -39,7 +40,12 @@ def test_iee_keyblob(data_dir):
 
     assert str(keyblob)
 
-    iee = Iee()
+    iee = Iee(
+        family=FamilyRevision("mimxrt1176"),
+        keyblob_address=0x30000000,
+        ibkek1=0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
+        ibkek2=0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+    )
     iee.add_key_blob(keyblob)
 
     exported_plain_keyblobs = iee.get_key_blobs()
@@ -90,7 +96,12 @@ def test_iee_unencrypted(data_dir):
         0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
     )
 
-    iee = Iee()
+    iee = Iee(
+        family=FamilyRevision("mimxrt1176"),
+        keyblob_address=0x30001000,
+        ibkek1=0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
+        ibkek2=0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+    )
     iee.add_key_blob(keyblob)
     assert iee[0] == keyblob
 

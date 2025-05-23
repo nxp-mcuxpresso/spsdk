@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -104,10 +104,10 @@ class ImageHeaderV2(BaseClass):
         return nfo
 
     def export(self, padding: Optional[bytes] = None) -> bytes:
-        """Serialize object into bytes.
+        """Export object into bytes.
 
-        :param padding: header padding 8 bytes (for testing purposes); None to use random value
-        :return: binary representation
+        :param padding: Header padding 8 bytes (for testing purposes); None to use random value
+        :return: Exported binary representation
         :raises SPSDKError: Raised when format is incorrect
         :raises SPSDKError: Raised when length of padding is incorrect
         :raises SPSDKError: Raised when length of header is incorrect

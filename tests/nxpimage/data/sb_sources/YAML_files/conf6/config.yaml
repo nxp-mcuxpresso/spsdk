@@ -1,14 +1,15 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ==========================================  SB 2.1 converted configuration  ==========================================
 
 # ======================================================================================================================
 #                                              == Image Signing Settings ==
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
-# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: sb_sources/keys_and_certs/k0_cert0_2048.pem
+# Description: Main Certificate private key used to sign certificate.
+signer: sb_sources/keys_and_certs/k0_cert0_2048.pem
 # ======================================================================================================================
 #                                               == Certificate Block V1 ==
 # ======================================================================================================================

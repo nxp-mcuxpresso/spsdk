@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,22 +27,16 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, format_raw_data
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
+from spsdk.image.cert_block.cert_blocks import get_keys_or_rotkh_from_certblock_config
 from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
 from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea, get_ifr_pfr_class
 from spsdk.pfr.pfrc import Pfrc
-from spsdk.utils.crypto.cert_blocks import get_keys_or_rotkh_from_certblock_config
-from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import (
-    get_printable_path,
-    load_binary,
-    load_configuration,
-    size_fmt,
-    write_file,
-)
-from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import get_printable_path, load_binary, size_fmt, write_file
 
 PFRArea = Union[Type[CMPA], Type[CFPA]]
 logger = logging.getLogger(__name__)
@@ -62,68 +56,68 @@ def _store_output(
         write_file(data, path=path, mode=mode)
 
 
-def pfr_device_type_options(no_type: bool = False) -> Callable:
+def pfr_device_type_options() -> Callable:
     """PFR common device click options.
 
-    :param no_type: If true, the type option is not added, defaults to False
     :return: Click decorator
     """
 
     def decorator(options: Callable[[FC], FC]) -> Callable[[FC], FC]:
-        """Setup PFR options for device, revision and area (PFR page type)."""
-        options = click.option(
-            "-r",
-            "--revision",
-            help="Chip revision; if not specified, most recent one will be used",
-            default="latest",
+        """Setup PFR/IFR area <CMPA, CFPA, ROMCFG, CMAC table>."""
+        return click.option(
+            "-t",
+            "--type",
+            "area",
+            required=True,
+            type=click.Choice(["cmpa", "cfpa", "romcfg", "cmactable"], case_sensitive=False),
+            help="Select PFR/IFR partition",
         )(options)
-        if not no_type:
-            options = click.option(
-                "-t",
-                "--type",
-                "area",
-                required=True,
-                type=click.Choice(["cmpa", "cfpa"], case_sensitive=False),
-                help="Select PFR partition",
-            )(options)
-        return options
 
     return decorator
 
 
-@click.group(name="pfr", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="pfr", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
-    """Utility for generating and parsing Protected Flash Region data (CMPA, CFPA)."""
+    """Protected Flash Region (PFR) Utility.
+
+    This module provides a command-line interface for managing Protected Flash Region and Internal Flash Region data
+    on NXP microcontrollers. It enables generating, parsing, exporting, reading, and writing PFR/IFR configurations.
+
+    Supported areas:
+    - PFR pages: CMPA (Customer Manufacturing Configuration Area), CFPA (Customer Field Programmable Area)
+    - IFR pages: ROMCFG (ROM Configuration), CMACTABLE (CMAC Table)
+
+    Features:
+    - Generate configuration templates
+    - Parse binary PFR/IFR data into human-readable YAML
+    - Export configurations to binary format
+    - Read PFR/IFR data from connected devices
+    - Write configurations to devices
+    - Special operations like CMPA erasure
+
+    Note: IFR ROMCFG region is one-time-programmable only.
+    """
     spsdk_logger.install(level=log_level)
     return 0
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@spsdk_family_option(CMPA.get_supported_families())
+@spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
 @spsdk_output_option(force=True)
-@click.option(
-    "--full", is_flag=True, hidden=True, help="Show full config, including computed values"
-)
-def get_template(family: str, revision: str, area: str, output: str, full: bool) -> None:
+def get_template(family: FamilyRevision, area: str, output: str) -> None:
     """Generate user configuration template file."""
-    if full:
-        logger.warning("The computed values are not part of configuration of PFR anymore.")
     pfr_cls = get_ifr_pfr_class(area, family)
-    schemas = pfr_cls.get_validation_schemas(family=family, revision=revision)
-    yaml_data = CommentedConfig(
-        f"PFR {area.upper()} configuration template", schemas
-    ).get_template()
     _store_output(
-        yaml_data,
+        pfr_cls.get_config_template(family),
         output,
         msg=f"The PFR {area} template for {family} has been saved into {get_printable_path(output)} YAML file",
     )
 
 
-@main.command(name="parse-binary", no_args_is_help=True)
-@spsdk_family_option(CMPA.get_supported_families())
+@main.command(name="parse", no_args_is_help=True)
+@spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
 @spsdk_output_option(required=False)
 @click.option(
@@ -139,69 +133,45 @@ def get_template(family: str, revision: str, area: str, output: str, full: bool)
     is_flag=True,
     help="Show differences comparing to defaults",
 )
-@click.option(
-    "-c",
-    "--show-calc",
-    is_flag=True,
-    hidden=True,
-    help="Show also calculated fields when displaying difference to " "defaults (--show-diff)",
-)
-def parse_binary(
-    family: str,
-    revision: str,
+def pfr_parse(
+    family: FamilyRevision,
     area: str,
     output: str,
     binary: str,
-    show_calc: bool,
     show_diff: bool,
 ) -> None:
     """Parse binary and extract configuration."""
-    if show_calc:
-        logger.warning(
-            "Show calculated fields is obsolete function for configuration YAML files."
-            " In case of debugging those values check the binary data."
-        )
     data = load_binary(binary)
     yaml_data = _parse_binary_data(
         data=data,
         family=family,
-        revision=revision,
         area=area,
         show_diff=show_diff,
     )
     _store_output(
-        yaml_data, output, msg=f"Success. (PFR: {get_printable_path(binary)} has been parsed."
+        yaml_data, output, msg=f"Success. (PFR/IFR: {get_printable_path(binary)} has been parsed."
     )
 
 
 def _parse_binary_data(
     data: bytes,
-    family: str,
+    family: FamilyRevision,
     area: str,
-    revision: str = "latest",
     show_diff: bool = False,
 ) -> str:
     """Parse binary data and extract YAML configuration.
 
     :param data: Data to parse
     :param family: Device to use
-    :param revision: Revision to use, defaults to 'latest'
     :param area: PFR are (CMPA, CFPA)
-    :param show_calc: Also show calculated fields
     :param show_diff: Show only difference to default
     :return: PFR YAML configuration as a string
     """
-    pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
-    pfr_obj.parse(data)
-    parsed = pfr_obj.get_config(diff=show_diff)
-    schemas = pfr_obj.get_validation_schemas(family)
-    yaml_data = CommentedConfig(
-        f"PFR/IFR {area.upper()} configuration from parsed binary", schemas=schemas
-    ).get_config(parsed)
-    return yaml_data
+    pfr_obj = get_ifr_pfr_class(area, family).parse(data, family)
+    return pfr_obj.get_config_yaml(diff=show_diff)
 
 
-@main.command(name="generate-binary", no_args_is_help=True)
+@main.command(name="export", no_args_is_help=True)
 @optgroup.group("Root Of Trust Configuration", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option(
     "-e",
@@ -216,16 +186,9 @@ def _parse_binary_data(
     multiple=True,
     help="Secret file (certificate, public key, private key); can be defined multiple times",
 )
-@spsdk_config_option()
+@spsdk_config_option(klass=BaseConfigArea)
 @spsdk_output_option()
 @click.option("-a", "--add-seal", is_flag=True, help="Add seal mark digest at the end.")
-@click.option(
-    "-i",
-    "--calc-inverse",
-    is_flag=True,
-    hidden=True,
-    help="Calculate the INVERSE values CAUTION!!! It locks the settings",
-)
 @click.option(
     "-p",
     "--password",
@@ -237,43 +200,23 @@ def _parse_binary_data(
     default=False,
     help="Ignore validation failures and generate the binary.",
 )
-def generate_binary(
+def pfr_export(
     output: str,
-    config: str,
+    config: Config,
     add_seal: bool,
-    calc_inverse: bool,
     rot_config: str,
     secret_file: tuple[str],
     password: str,
     ignore: bool,
 ) -> None:
     """Generate binary data."""
-    if calc_inverse:
-        logger.warning(
-            "The calc-inverse option is obsolete option. The current behavior is following:\n"
-            "In case that the family support also values for computed fields like LPC55s6x"
-            "the inverse fields won't be computed when is not used in configuration, otherwise"
-            "it will be updated correctly.\n"
-            "In case that the inverse values are mandatory, like for LPC55S3x, the inverse values"
-            " will be computed always."
-        )
-
-    cfg = load_configuration(config)
-    description = cfg.get("description")
-    area: str = cfg.get("type", description["type"] if description else "Invalid")
-    if description:
-        family = description["device"]
-    else:
-        family = cfg.get("family", cfg.get("device", "Unknown"))
-
-    pfr_obj = BaseConfigArea.load_from_config(cfg)
-    pfrc_devices = Pfrc.get_supported_families()
-    pfrc_devices += list(DatabaseManager().quick_info.devices.get_predecessors(pfrc_devices).keys())
-    if family in pfrc_devices:
+    pfr_obj = BaseConfigArea.load_from_config(config)
+    pfrc_devices = Pfrc.get_supported_families(True)
+    if pfr_obj.family in pfrc_devices:
         try:
             pfrc = Pfrc(
-                cmpa=pfr_obj if area.lower() == "cmpa" else None,  # type: ignore
-                cfpa=pfr_obj if area.lower() == "cfpa" else None,  # type: ignore
+                cmpa=pfr_obj if pfr_obj.SUB_FEATURE == "cmpa" else None,  # type: ignore
+                cfpa=pfr_obj if pfr_obj.SUB_FEATURE == "cfpa" else None,  # type: ignore
             )
             rules = pfrc.validate_brick_conditions()
         except (SPSDKPfrConfigError, SPSDKPfrError) as e:
@@ -288,20 +231,25 @@ def generate_binary(
             else:
                 logger.debug(log_text)
     keys = None
-    root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, family)
+    root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, pfr_obj.family)
     if secret_file:
         root_of_trust = secret_file
-    if area.lower() == "cmpa" and root_of_trust:
+    if pfr_obj.SUB_FEATURE == "cmpa" and root_of_trust:
         keys = extract_public_keys(root_of_trust, password)
 
     data = pfr_obj.export(add_seal=add_seal, keys=keys, rotkh=rotkh)
 
-    _store_output(data, output, "wb", msg="Success. (PFR binary has been generated)")
+    _store_output(
+        data,
+        output,
+        "wb",
+        msg=f"Success. ({pfr_obj.SUB_FEATURE.upper()} binary has been generated)",
+    )
 
 
 @main.command(name="write", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
-@spsdk_family_option(CMPA.get_supported_families())
+@spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
 @click.option(
     "-b",
@@ -309,46 +257,41 @@ def generate_binary(
     type=click.Path(exists=True, dir_okay=False),
     help="Path to the BIN file with PFR data to write.",
 )
-@click.option(
-    "-y",
-    "--yaml",
-    "yaml_config",
-    type=click.Path(dir_okay=False, resolve_path=True),
-    help="Path to the PFR YAML config to write.",
-)
+@spsdk_config_option(required=False, klass=BaseConfigArea)
 def write(
     interface: MbootProtocolBase,
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     area: str,
     binary: str,
-    yaml_config: str,
+    config: Config,
 ) -> None:
-    """Write PFR page to the device."""
-    if not binary and not yaml_config:
-        raise SPSDKPfrError("The path to the PFR data file was not specified!")
+    """Write PFR/IFR page to the device."""
+    if not binary and not config:
+        raise SPSDKPfrError("The path to the PFR/IFR data file was not specified!")
     data = b""
     if binary:
-        pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
+        pfr_obj = get_ifr_pfr_class(area, family)(family=family)
         data = load_binary(binary)
-    elif yaml_config:
-        cfg = load_configuration(yaml_config)
-        description = cfg.get("description")
-        cfg_area: str = cfg.get("type", description["type"] if description else "Invalid")
+    elif config:
+        description = config.get("description")
+        cfg_area: str = config.get("type", description["type"] if description else "Invalid")
         if area != cfg_area.lower():
             raise SPSDKAppError(
                 "Configuration area doesn't match CLI value and configuration value."
             )
         pfr_cls = get_ifr_pfr_class(area, family)
-        pfr_cls.validate_config(cfg)
-        pfr_obj = pfr_cls.load_from_config(cfg)
+        pfr_cls.pre_check_config(config)
+        pfr_obj = pfr_cls.load_from_config(config)
         if family != pfr_obj.family:
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
         data = pfr_obj.export()
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "address"])
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
     pfr_page_length = pfr_obj.BINARY_SIZE
 
-    click.echo(f"{pfr_obj.__class__.__name__} page address on {family} is {pfr_page_address:#x}")
+    click.echo(
+        f"The {pfr_obj.__class__.__name__} page for {family.name} is located at "
+        f"address {pfr_page_address:#x} in the {family.revision} revision."
+    )
 
     if len(data) != pfr_page_length:
         raise SPSDKError(
@@ -364,7 +307,7 @@ def write(
 
 @main.command(name="read", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
-@spsdk_family_option(CMPA.get_supported_families())
+@spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
 @spsdk_output_option(
     required=False,
@@ -381,34 +324,19 @@ def write(
     "-d",
     "--show-diff",
     is_flag=True,
-    help="(applicable for parsing) Show differences comparing to defaults",
-)
-@click.option(
-    "-c",
-    "--show-calc",
-    hidden=True,
-    is_flag=True,
-    help="(applicable for parsing) Show also calculated fields when displaying difference to "
-    "defaults (--show-diff)",
+    help="Show differences comparing to defaults (applicable for parsing)",
 )
 def read(
     interface: MbootProtocolBase,
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     area: str,
     output: str,
     yaml_output: str,
     show_diff: bool,
-    show_calc: bool,
 ) -> None:
     """Read PFR page from the device."""
-    if show_calc:
-        logger.warning(
-            "Show calculated fields is obsolete function for configuration YAML files."
-            " In case of debugging those values check the binary data."
-        )
-    pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "address"])
+    pfr_obj = get_ifr_pfr_class(area, family)(family=family)
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
     pfr_page_length = pfr_obj.BINARY_SIZE
     pfr_page_name = pfr_obj.__class__.__name__
 
@@ -426,7 +354,6 @@ def read(
         yaml_data = _parse_binary_data(
             data=data,
             family=family,
-            revision=revision,
             area=area,
             show_diff=show_diff,
         )
@@ -437,22 +364,15 @@ def read(
 
 
 @main.command(name="erase-cmpa", no_args_is_help=True)
-@spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
 @spsdk_family_option(CMPA.get_supported_families())
-@pfr_device_type_options(no_type=True)
-def erase_cmpa(
-    interface: MbootProtocolBase,
-    family: str,
-    revision: str,
-) -> None:
+@spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
+def erase_cmpa(interface: MbootProtocolBase, family: FamilyRevision) -> None:
     """Erase CMPA PFR page in the device if is not sealed and write the default values into CMPA page."""
-    pfr_obj = get_ifr_pfr_class("cmpa", family)(family=family, revision=revision)
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "address"])
-    erase_method = pfr_obj.db.get_str(
-        pfr_obj.FEATURE_NAME, [pfr_obj.DB_SUB_FEATURE, "erase_method"]
-    )
+    pfr_obj = get_ifr_pfr_class("cmpa", family)(family=family)
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
+    erase_method = pfr_obj.db.get_str(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "erase_method"])
     # Update all possible mandatory fields in PFR block
-    pfr_obj.set_config({})
+    pfr_obj.set_config(Config())
 
     click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")
 

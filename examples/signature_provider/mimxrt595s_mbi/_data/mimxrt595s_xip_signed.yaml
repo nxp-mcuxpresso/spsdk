@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =============  Master Boot Image Configuration template for mimxrt595s:latest, Plain Signed XIP Image.  ==============
 
 # ======================================================================================================================
@@ -60,4 +61,4 @@ certBlock: cert_block.yaml
 # ======================================================================================================================
 # -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
 # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'.
-signProvider: type=sasp;key_number=0;key_type=rsa2048
+signer: type=sasp;key_number=0;key_type=rsa2048

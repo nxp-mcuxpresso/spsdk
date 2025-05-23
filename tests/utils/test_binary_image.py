@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@ import os
 import pytest
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.images import BinaryImage, BinaryPattern
+from spsdk.utils.binary_image import BinaryImage, BinaryPattern
 
 
 def test_binary_image_sort_sub_images():

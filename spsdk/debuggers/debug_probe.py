@@ -17,6 +17,7 @@ import prettytable
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Timeout, value_to_int
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,11 @@ class DebugProbe(ABC):
         """
         self.hardware_id = hardware_id
         self.options = options or {}
+        self.family = None
+        family = self.options.pop("family", None)
+        revision = self.options.pop("revision", None)
+        if family:
+            self.family = FamilyRevision(family, revision)
         self.mem_ap_ix = -1
 
     @classmethod
@@ -741,10 +747,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
             pass
 
 
-# for backward compatibility
-DebugProbeLocal = DebugProbeCoreSightOnly
-
-
 class ProbeDescription:
     """NamedTuple for DAT record of debug probe description."""
 
@@ -778,6 +780,9 @@ class ProbeDescription:
     def __str__(self) -> str:
         """Provide string representation of debug probe."""
         return f"Debug probe: {self.interface}; {self.description}. S/N:{self.hardware_id}"
+
+    def __repr__(self) -> str:
+        return f"Debug probe: {self.interface}"
 
 
 class DebugProbes(list[ProbeDescription]):

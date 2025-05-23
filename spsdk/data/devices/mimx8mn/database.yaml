@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: False # Include this MCU in generated documentation
-  purpose: i.MX 8 Applications Processors
+  purpose: i.MX Application Processors
   spsdk_predecessor_name: mx8mn
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-8-applications-processors/i-mx-8m-nano-family-arm-cortex-a53-cortex-m7:i.MX8MNANO

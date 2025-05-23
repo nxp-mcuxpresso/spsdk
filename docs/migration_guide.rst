@@ -4,14 +4,159 @@ Migration guide
 
 Changes in SPSDK 3.0
 ====================
-(This version is not release yet)
 
-BREAKING CHANGES
-----------------
 
-* Overriding values from configuration file on command line (this will effect API and CLI)
-* Using device family and revision (this will effect API)
+CLI Changes
+-----------
 
+general
+^^^^^^^
+* The ``--plugin`` command line option has been removed from all CLI tools. If you were using the ``--plugin`` option with any SPSDK command line tools, you need to properly install your plugin as a Python package with proper entry points.
+* Obsolete device names have been kept in the code as abbreviation names
+* All applications that support the ``--config`` option now also support the ``-oc/--override-config`` option. This allows you to override specific values from the configuration file via command line without modifying the original file. For example: ``-oc key1=value1 -oc key2=value2``
+
+nxpcrypto
+^^^^^^^^^
+* Removed ``nxpcertgen`` application (all functionality is now available in ``nxpcrypto`` application)
+* The legacy options ``-k/--private-key`` and ``-sp/--signature-provider`` have been consolidated and replaced with a single, unified option ``-s/--signer`` to simplify the signature configuration interface
+
+nxpdebugmbox
+^^^^^^^^^^^^
+* All commands have been moved to separated groups with clearer organization:
+  * ``cmd`` - For basic debug mailbox commands (start, exit, erase, etc.)
+  * ``dat`` - For debug authentication related commands
+  * ``mem-tool`` - For memory operations (read-memory, write-memory, test-connection)
+  * ``tool`` - For utility commands (reset, get-uuid, halt, resume)
+  * ``famode-image`` - For fault analysis mode image operations
+
+* The ``--family`` parameter has been moved from the root command to individual command groups:
+  * Each command group now requires specifying the family parameter at the appropriate level
+  * The family parameter is now handled through the ``FamilyRevision`` class for better device control
+
+* The test address is now automatically derived from the family parameter
+
+nxpimage
+^^^^^^^^
+* In ``nxpimage ahab`` configuration, the deprecated 'image_type' key has been removed and replaced by 'target_memory'
+* The ``nxpimage bee`` now supports multiple input data blobs, removed ``input_binary`` and ``base_address`` parameters
+* The ``merge`` commands in ``nxpimage bootable-image`` and ``nxpimage binary-image`` have been renamed to ``export``
+* In ``nxpimage cert-block`` configuration, the deprecated key 'mainCertChainId' has been removed, replaced by 'mainRootCertId'
+* The ``nxpimage hab export`` command changed its parameter structure: ``-c/--command`` option and ``external`` arguments have been replaced with ``--config`` option using the standard config approach
+* The ``nxpimage hab parse`` command now requires a mandatory ``--family`` parameter to correctly interpret HAB container binary data
+* In ``nxpimage sb31``, the Load command configuration has been simplified. The key authentication has been removed (instead, use already implemented commands: LoadhashLocking and LoadCmac)
+* In ``nxpimage sb31``, the input data values have been simplified from value/values/file into one data parameter (data accepts all previously used ways of data definition)
+
+pfr/ifr
+^^^^^^^
+* In ``ifr`` application, the unused ``--full`` option is removed from the ``get-template`` command
+* The unused options ``--show-calc`` have been removed from Parse/Read command
+* The unused options ``--calc-inverse`` have been removed from Generate binary command
+* The ``generate-binary`` command has been renamed to ``export`` to unify interface with rest of SPSDK
+* The ``parse-binary`` command has been renamed to ``parse`` to unify interface with rest of SPSDK
+* The ``ifr`` application has been moved into ``pfr``
+* In ``pfr`` and ``ifr``, backward compatibility for very old configuration files with 'description:' section has been removed, replaced by simple family/revision/type header keys
+* The BD file for SB2.1 must now contain 'family' and optionally 'revision' in the 'options' block
+
+
+Removed Applications
+--------------------
+
+The following Trust Provisioning applications have been removed in SPSDK 3.0:
+
+* **tphost** - Trust Provisioning host application that was used for secure provisioning of target MCUs
+* **tpconfig** - Trust Provisioning configuration application for configuring trusted devices
+
+These applications previously provided functionality for:
+
+* Provisioning target MCUs
+* Loading provisioning firmware
+* Verifying audit logs and certificates
+* Chain-of-Trust validation
+* Smart card configuration and sealing
+
+If you were using these applications, consult the SPSDK documentation for information about alternative approaches or replacement functionality.
+
+API changes
+-----------
+
+general
+^^^^^^^
+* ``serialize`` and ``de-serialize`` methods have been renamed to ``export`` and ``parse``
+* ``to-bytes`` has been renamed to ``export``
+* Added ``post_export`` method to base class to handle exporting of fuse scripts, keyblobs, and other files (used in AHAB, Bootable Image, IEE, and OTFAD)
+* In ``SignatureProvider``, the ``try_to_verify_public_key`` method has been removed, as the same functionality is available in the ``SignatureProvider`` class
+* Introduction of a single standardized signer key for all signature-related configurations
+
+   +--------------------------+-----------------------------------------------+---------------+
+   | Component                | Legacy Options Removed                        | Replaced With |
+   +==========================+===============================================+===============+
+   | **Certificate Block V1** | ``mainRootCertPrivateKeyFile``                | ``signer``    |
+   |                          | ``signPrivateKey``                            |               |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **Certificate Block V21**| ``signPrivateKey``                            | ``signer``    |
+   |                          | ``mainRootCertPrivateKeyFile``                |               |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **Certificate Block Vx** | ``signPrivateKey``                            | ``signer``    |
+   |                          | ``mainRootCertPrivateKeyFile``                |               |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **Masterboot image**     | ``signPrivateKey``                            | ``signer``    |
+   |                          | ``mainRootCertPrivateKeyFile``                |               |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **DAR packet**           | ``sign_provider``                             | ``signer``    |
+   |                          | ``dck_private_key``                           |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **Debug Credentials**    | ``sign_provider``                             | ``signer``    |
+   |                          | ``rotk``                                      |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **HAB Commands**         | ``AuthenticateCsf_SignProvider``              | ``Signer``    |
+   |                          | ``AuthenticateCsf_PrivateKeyFile``            |               |
+   |                          | ``AuthenticateData_SignProvider``             |               |
+   |                          | ``AuthenticateData_PrivateKeyFile``           |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **AHAB**                 | ``signing_key``                               | ``signer``    |
+   |                          | ``signature_provider``                        |               |
+   |                          | ``signing_key_0``                             | ``signer_0``  |
+   |                          | ``signature_provider_0``                      |               |
+   |                          | ``signing_key_1``                             | ``signer_1``  |
+   |                          | ``signature_provider_1``                      |               |
+   |                          | ``signing_key_#2``                            | ``signer_#2`` |
+   |                          | ``signature_provider_#2``                     |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **SB2 Images**           | ``signPrivateKey``                            | ``signer``    |
+   |                          | ``mainCertPrivateKeyFile``                    |               |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **SB31 Images**          | ``signPrivateKey``                            | ``signer``    |
+   |                          | ``mainRootCertPrivateKeyFile``                |               |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+   | **SBx Images**           | ``signingCertificatePrivateKeyFile``          | ``signer``    |
+   |                          | ``signProvider``                              |               |
+   +--------------------------+-----------------------------------------------+---------------+
+
+blhost
+^^^^^^^^
+* Removed ``decode_status_code`` method, replaced by ``stringify_status_code``
+
+debug probes
+^^^^^^^^^^^^
+* Renamed ``DebugProbeLocal`` class to ``DebugProbeCoreSightOnly``
+
+nxpimage
+^^^^^^^^
+* The `nxpimage.py` file has been split into smaller, more maintainable application files under the `spsdk/apps/nxpimage/` directory. Each image type functionality has been moved to its own dedicated module.
+
+nxpimage hab
+^^^^^^^^^^^^
+* Replaced ``HabContainer`` class with new ``HabImage`` class throughout the codebase
+* Completely changed how segments are processed and exported, no longer uses ``SEGMENTS_MAPPING`` to look up segments by name
+* The new HAB implementation uses a standardized configuration system that requires explicit specification of key locations(or signature providers). The private key path determination based on certificate file paths is not possible anymore.
+* The generic segment implementations previously contained in ``spsdk/image/segments.py`` have been split into dedicated, purpose-specific modules in the ``spsdk/image/hab`` package.
+* The ``spsdk/image/commands.py`` file has been significantly refactored with it's functionality distributed across multiple specialized modules in the ``spsdk/image/hab/commands`` package
 
 
 Changes in SPSDK 2.5

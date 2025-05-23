@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,6 +35,7 @@ def signer(key_type: str, num: int) -> Response:
     :param num: Index of the key to use (rot_id)
     :return: Signature wrapped in json, encoded in base64
     """
+    json_data = request.get_json() or {}
     key_type = escape(key_type)
     if key_type not in SUPPORTED_KEY_TYPES:
         return Response(
@@ -47,10 +48,9 @@ def signer(key_type: str, num: int) -> Response:
             response=f"Key of a type {key_type} with index {num} not found",
             status=HTTPStatus.BAD_REQUEST,
         )
+    data_to_sign = bytes.fromhex(json_data.pop("data", request.args.get("data", "")))
 
-    data_to_sign = base64.b64decode(request.args["data"])
-
-    signature = sign_data(private_key, data_to_sign)
+    signature = sign_data(private_key, data_to_sign, **json_data)
     data = base64.b64encode(signature)
     return jsonify({"signature": data.decode("utf-8")})
 
@@ -63,6 +63,7 @@ def verifier(key_type: str, num: int) -> Response:
     :param num: Index of the key to use (rot_id)
     :return: Verification status(true/false) wrapped in json
     """
+    json_data = request.get_json() or {}
     key_type = escape(key_type)
     if key_type not in SUPPORTED_KEY_TYPES:
         return Response(
@@ -75,7 +76,7 @@ def verifier(key_type: str, num: int) -> Response:
             response=f"Key {key_type} with index {num} not found", status=HTTPStatus.BAD_REQUEST
         )
 
-    public_key_bytes = base64.b64decode(request.args["public_key"])
+    public_key_bytes = bytes.fromhex(json_data.pop("public_key", request.args.get("public_key", "")))
     try:
         request_public_key: PublicKey = PublicKeyEcc.parse(public_key_bytes)
     except SPSDKInvalidKeyType:
@@ -84,14 +85,14 @@ def verifier(key_type: str, num: int) -> Response:
     return jsonify({"is_matching": is_matching})
 
 
-def sign_data(private_key: PrivateKey, data: bytes) -> bytes:
+def sign_data(private_key: PrivateKey, data: bytes, **kwargs) -> bytes:
     """Sign given data with private key.
 
     :param private_key: Private key to be used for signing
     :param data: Data to be signed
     :return: Signature as bytes
     """
-    return private_key.sign(data=data)
+    return private_key.sign(data=data, **kwargs)
 
 
 def _load_private_key(key_type: str, num: int) -> Optional[PrivateKey]:

@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ revisions:
         cmpa:
           reg_spec: pfr_cmpa_a0.json
       tz:
-        reg_spec: tz_a0.yaml
+        reg_spec: tz_a0.json
   a1:
     features:
       pfr:
@@ -22,7 +22,7 @@ revisions:
           override_data_file:
 
       tz:
-        reg_spec: tz_a1.yaml
+        reg_spec: tz_a1.json
       dice:
         reg_spec: dice_had_a1.json
 latest: a1
@@ -60,7 +60,8 @@ info:
       start_int: "0x4000000"
       size_int: "0x4000"
       external: false
-      __comment: Does not work as target `onchip RAM` memory, blhost reports 10200
+      __comment:
+        Does not work as target `onchip RAM` memory, blhost reports 10200
         (0x27d8) Memory Range Invalid.
   isp:
     rom:
@@ -86,7 +87,6 @@ features:
   # ======== DAT section ========
   dat:
     socc: 4 # SOCC identification
-    rot_could_be_invalid: True # The 4 SOCC is used also on some obsolete parts and could be invalid on them
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
 
   # ======== MBI section ========
@@ -137,7 +137,7 @@ features:
           - Mbi_MixinImageVersion
           - Mbi_MixinIvt
           - Mbi_MixinCertBlockV21
-          - Mbi_MixinManifestDigest
+          - Mbi_MixinManifest
           - Mbi_MixinLoadAddress
           - Mbi_MixinFwVersion
           - Mbi_ExportMixinAppCertBlockManifest
@@ -248,11 +248,12 @@ features:
       - fillMemory
       - checkFwVersion
 
+    
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    sub_features: [DevHsmSB31]
     key_blob_offset: 0x4
     key_blob_command_position: -1
-    devhsm_class: DevHsmSB31
     supported_commands:
       - erase
       - load
@@ -266,19 +267,6 @@ features:
       - configureMemory
       - fillMemory
       - checkFwVersion
-
-  # ======== Trust provisioning section ========
-  tp:
-    need_cfpa_update: false
-    use_prov_data: true
-    key_flags_version: 1
-    die_id_cert_version: 1
-    erase_memory: false
-    need_tp_fw: true
-    need_revoke_update: true
-    version_offset: 0x4
-    revoke_offset: 0x18
-    max_oem_cert_size: 1000
 
   # ======== TrustZone section ========
   tz: {}
@@ -297,3 +285,4 @@ features:
     csr_address: 0x2000_0000
     csr_length: 208
     response_length: 324
+

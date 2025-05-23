@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -28,9 +28,9 @@ def test_cmd_header_class():
     assert cmd_header.flags == 0
     assert cmd_header.reserved == 2
     assert cmd_header.params_count == 3
-    assert cmd_header.to_bytes() == b"\x01\x00\x02\x03"
-    assert cmd_header == CmdHeader.from_bytes(b"\x01\x00\x02\x03")
-    assert cmd_header != CmdHeader.from_bytes(b"\x01\x00\x02\x05")
+    assert cmd_header.export() == b"\x01\x00\x02\x03"
+    assert cmd_header == CmdHeader.parse(b"\x01\x00\x02\x03")
+    assert cmd_header != CmdHeader.parse(b"\x01\x00\x02\x05")
     assert str(cmd_header)
     assert repr(cmd_header)
 
@@ -39,9 +39,7 @@ def test_cmd_packet_class():
     cmd = CmdPacket(CommandTag.FLASH_ERASE_ALL, 0, 0, data=b"\x00\x00\x00\x00\x00")
     assert cmd.header == CmdHeader(CommandTag.FLASH_ERASE_ALL.tag, 0, 0, 3)
     assert cmd.params == [0, 0, 0]
-    assert (
-        cmd.to_bytes(False) == b"\x01\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    )
+    assert cmd.export(False) == b"\x01\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     assert cmd != CmdPacket(CommandTag.WRITE_MEMORY, 0, 0)
     assert str(cmd)
     assert repr(cmd)
@@ -52,13 +50,13 @@ def test_cmd_response_class():
     assert isinstance(response, CmdResponse)
     assert response.header == CmdHeader(CommandTag.FLASH_ERASE_ALL.tag, 0, 0, 1)
     assert response.raw_data == b"\x00\x00\x00\x00"
-    assert response != parse_cmd_response(b"\xA0\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
+    assert response != parse_cmd_response(b"\xa0\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
     assert str(response)
     assert repr(response)
 
 
 def test_generic_response_class():
-    response = parse_cmd_response(b"\xA0\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
+    response = parse_cmd_response(b"\xa0\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
     assert isinstance(response, GenericResponse)
     assert response.header == CmdHeader(ResponseTag.GENERIC.tag, 0, 0, 2)
     assert response.status == 0
@@ -67,7 +65,7 @@ def test_generic_response_class():
 
 
 def test_read_memory_response_class():
-    response = parse_cmd_response(b"\xA3\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
+    response = parse_cmd_response(b"\xa3\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
     assert isinstance(response, ReadMemoryResponse)
     assert response.header == CmdHeader(ResponseTag.READ_MEMORY.tag, 0, 0, 2)
     assert response.status == 0
@@ -76,7 +74,7 @@ def test_read_memory_response_class():
 
 
 def test_get_property_response_class():
-    response = parse_cmd_response(b"\xA7\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
+    response = parse_cmd_response(b"\xa7\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x00")
     assert isinstance(response, GetPropertyResponse)
     assert response.header == CmdHeader(ResponseTag.GET_PROPERTY.tag, 0, 0, 2)
     assert response.status == 0
@@ -86,7 +84,7 @@ def test_get_property_response_class():
 
 def test_flash_read_once_response_class():
     response = parse_cmd_response(
-        b"\xAF\x00\x00\x03\x00\x00\x00\x00\x04\x00\x00\x00\x01\x00\x00\x00"
+        b"\xaf\x00\x00\x03\x00\x00\x00\x00\x04\x00\x00\x00\x01\x00\x00\x00"
     )
     assert isinstance(response, FlashReadOnceResponse)
     assert response.header == CmdHeader(ResponseTag.FLASH_READ_ONCE.tag, 0, 0, 3)
@@ -97,7 +95,7 @@ def test_flash_read_once_response_class():
 
 
 def test_flash_read_resource_response_class():
-    response = parse_cmd_response(b"\xB0\x00\x00\x02\x00\x00\x00\x00\x04\x00\x00\x00")
+    response = parse_cmd_response(b"\xb0\x00\x00\x02\x00\x00\x00\x00\x04\x00\x00\x00")
     assert isinstance(response, FlashReadResourceResponse)
     assert response.header == CmdHeader(ResponseTag.FLASH_READ_RESOURCE.tag, 0, 0, 2)
     assert response.status == 0

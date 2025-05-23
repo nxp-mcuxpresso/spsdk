@@ -8,12 +8,12 @@ revisions:
   a0:
     features:
       tz:
-        reg_spec: tz_a0.yaml
+        reg_spec: tz_a0.json
 
   b0:
     features:
       tz:
-        reg_spec: tz_b0.yaml
+        reg_spec: tz_b0.json
 
 # General MCU information
 info:

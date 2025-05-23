@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ==============================  Debug Authentication procedure Configuration for rw612  ==============================
 
 # ======================================================================================================================
@@ -34,4 +35,4 @@ beacon: 0
 srk_set: oem
 # ----------------------------===== DCK signature private key [Conditionally required] =====----------------------------
 # Description: Private key that match the public key in debug credential file, to sign Debug Authentication response.
-dck_private_key: ../../_data/keys/ecc256/dck_ecc256.pem
+signer: ../../_data/keys/ecc256/dck_ecc256.pem

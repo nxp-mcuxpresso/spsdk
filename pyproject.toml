@@ -3,25 +3,25 @@ name = "spsdk"
 dynamic = ["dependencies", "version"]
 description = "Open Source Secure Provisioning SDK for NXP MCU/MPU"
 readme = "README.md"
-authors = [{name = "NXP", email = "michal.starecek@nxp.com"}]
-license = {text = "BSD-3-Clause"}
+authors = [{ name = "NXP", email = "michal.starecek@nxp.com" }]
+license = { text = "BSD-3-Clause" }
 requires-python = ">=3.9"
 classifiers = [
-	"Development Status :: 3 - Alpha",
-	"Programming Language :: Python :: 3 :: Only",
-	"Programming Language :: Python :: 3.9",
-	"Programming Language :: Python :: 3.10",
-	"Programming Language :: Python :: 3.11",
-	"Programming Language :: Python :: 3.12",
-	"Programming Language :: Python :: 3.13",
-	"Operating System :: POSIX :: Linux",
-	"Operating System :: Microsoft :: Windows",
-	"Operating System :: MacOS :: MacOS X",
-	"License :: OSI Approved :: BSD License",
-	"Topic :: Scientific/Engineering",
-	"Topic :: Software Development :: Embedded Systems",
-	"Topic :: System :: Hardware",
-	"Topic :: Utilities",
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS :: MacOS X",
+    "License :: OSI Approved :: BSD License",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: System :: Hardware",
+    "Topic :: Utilities",
 ]
 
 [tool.setuptools]
@@ -36,19 +36,27 @@ dependencies = { file = ["requirements.txt"] }
 "Documentation" = "https://spsdk.readthedocs.io"
 
 [project.optional-dependencies]
-tp = ["pyscard==2.0.2"]
 examples = ["flask", "requests", "ipython", "notebook", "ipywidgets"]
 dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
 oscca = ["gmssl>=3.2,<4"]
 can = ["python-can<4.5,>=4.4"]
-pqc = ["spsdk-pqc<1.0,>=0.5.0"]
+jlink = ["spsdk-jlink<1,>=0.3.1"]
+lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
+pemicro = ["spsdk-pemicro<1,>=0.3.1"]
+# disabled until the support of Python 3.12 is fixed (https://github.com/pyauth/python-pkcs11/issues/165)
+# pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
+pqc = ["spsdk-pqc<1.0,>=0.6.1"]
+pyocd = ["spsdk-pyocd<1,>=0.3.1"]
 all = [
-    "spsdk[tp]",
     "spsdk[examples]",
     "spsdk[dk6]",
     "spsdk[oscca]",
     "spsdk[can]",
+    "spsdk[jlink]",
+    "spsdk[lauterbach]",
+    "spsdk[pemicro]",
     "spsdk[pqc]",
+    "spsdk[pyocd]",
 ]
 
 [project.scripts]
@@ -69,13 +77,10 @@ nxpuuu = "spsdk.apps.nxpuuu:safe_main"
 nxpwpc = "spsdk.apps.nxpwpc:safe_main"
 shadowregs = "spsdk.apps.shadowregs:safe_main"
 nxpfuses = "spsdk.apps.nxpfuses:safe_main"
-ifr = "spsdk.apps.ifr:safe_main"
-tpconfig = "spsdk.apps.tpconfig:safe_main"
-tphost = "spsdk.apps.tphost:safe_main"
 dk6prog = "spsdk.apps.dk6prog:safe_main"
 el2go-host = "spsdk.apps.el2go:safe_main"
 lpcprog = "spsdk.apps.lpcprog:safe_main"
-
+nxpshe = "spsdk.apps.nxpshe:safe_main"
 
 [build-system]
 requires = ["setuptools_scm<8.2", "setuptools>=72.1,<74", "wheel"]
@@ -143,8 +148,8 @@ excluded_files = [
     ".pre-commit-config.yaml",
     ".readthedocs.yml",
     "spsdk/__version__.py",
-	".github/workflows/python-ci.yml",
-	".github/workflows/deploy.yml"
+    ".github/workflows/python-ci.yml",
+    ".github/workflows/deploy.yml",
 ]
 
 
@@ -206,7 +211,7 @@ jupyter_check_paths = ["examples"]
 checkers = [
     { "pytest" = { timeout = 1200 } },
     { "gitcov" = { info_only = true } },
-    {"pylint" = { timeout = 300 } },
+    { "pylint" = { timeout = 300 } },
     { "mypy" = { timeout = 300 } },
     "dependencies",
     { "pydocstyle" = { timeout = 200 } },
@@ -247,17 +252,12 @@ scr_file = "SW_Content_Register_SPSDK.txt"
 [tool.release-tools.testpypi]
 test_cmd = "spsdk --version"
 
-[tool.release-tools.test_artifacts_collector]
-install_hook = [
-    'uv pip install ".[all]"', 
-    'uv pip install -r requirements-develop.txt'
-]
-
 [tool.release-tools.test_artifacts_collector.jenkins_jobs]
 spsdk_full_test_scope_macos = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_ubuntu = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_win10 = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
+
 [tool.release-tools.blackduck.env]
 PROTEX_PROJECT_ID = "c_spsdk_automation_19733"
 PROTEX_TEMPLATE = "t_reportwithobligations_7215"
@@ -265,6 +265,7 @@ PROTEX_TEMPLATE = "t_reportwithobligations_7215"
 [tool.release-tools.blackduck_sca]
 project_name = "spsdk"
 include_detector_types = ["pip"]
+sbom_location = "SBOM-spsdk.spdx.json"
 
 [tool.check-wheel-contents]
 ignore = "W002" # Wheel contains duplicate files

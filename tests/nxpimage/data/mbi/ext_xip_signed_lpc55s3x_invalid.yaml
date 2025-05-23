@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 family: rt5xx
 outputImageExecutionTarget: External flash (XIP)
 outputImageAuthenticationType: Signed
@@ -12,6 +13,5 @@ enableTrustZone: false
 useIsk: false
 mainRootCertId: 0
 rootCertificate0File: ec_secp256r1_cert0.pem
-signProvider: type=file;file_path=ec_pk_secp256r1_cert0.pem
-mainRootCertPrivateKeyFile: ec_pk_secp256r1_cert0.pem
 certBlock: cert_v21_1x256_none.yaml
+# signer key is missing

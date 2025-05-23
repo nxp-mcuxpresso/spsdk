@@ -5,13 +5,26 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""AHAB data storage classes and various constants."""
+"""AHAB data storage classes and various constants.
+
+This module provides data structures, enumerations, and utility functions for working with
+Advanced High Assurance Boot (AHAB) components. It includes definitions for target memories,
+cryptographic algorithms, container tags, and configuration helpers required for secure boot image creation.
+
+The module contains:
+- Basic data constants (endianness, alignment, data types)
+- Enumeration classes for AHAB features (memories, algorithms, tags)
+- Data classes for chip and container configuration
+- Utility functions for loading configurations from databases
+"""
+
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Type
+from typing import Optional, Type, Union
 
 from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.database import DatabaseManager, Features, get_db
+from spsdk.utils.database import DatabaseManager, Features
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkSoftEnum
 
 logger = logging.getLogger(__name__)
@@ -20,6 +33,7 @@ LITTLE_ENDIAN = "<"
 UINT8 = "B"
 UINT16 = "H"
 UINT32 = "L"
+INT32 = "l"
 UINT64 = "Q"
 RESERVED = 0
 CONTAINER_ALIGNMENT = 8
@@ -50,6 +64,10 @@ class AHABTags(SpsdkEnum):
     SRK_TABLE_ARRAY = (0x5A, "SRK table array.")
     SRK_DATA = (0x5D, "SRK Data.")
     BLOB = (0x81, "Blob (Wrapped Data Encryption Key).")
+    CONTAINER_HEADER_V1_WITH_V2 = (
+        0x82,
+        "Container header of container version 1 used with containers V2.",
+    )
     CONTAINER_HEADER = (0x87, "Container header.")
     SIGNATURE_BLOCK = (0x90, "Signature block.")
     CERTIFICATE = (0xAF, "Certificate.")
@@ -313,8 +331,7 @@ class WrappingAlgorithm(SpsdkEnum):
 class AhabChipConfig:
     """Holder class of common AHAB configuration regarding the used chip."""
 
-    family: str = "Unknown"
-    revision: str = "latest"
+    family: FamilyRevision = FamilyRevision("Unknown")
     target_memory: AhabTargetMemory = AhabTargetMemory.TARGET_MEMORY_STANDARD
     core_ids: Type[SpsdkSoftEnum] = DummyEnum
     image_types: dict[str, Type[SpsdkSoftEnum]] = field(default_factory=dict)
@@ -325,8 +342,7 @@ class AhabChipConfig:
     valid_offset_minimal_alignment: int = 4
     container_image_size_alignment: int = CONTAINER_ALIGNMENT
     allow_empty_hash: bool = False
-
-    search_paths: Optional[list[str]] = None
+    iae_has_signed_offsets: bool = False
 
 
 @dataclass
@@ -341,13 +357,26 @@ class AhabChipContainerConfig:
     locked: bool = False
 
 
-def load_images_types(db: Features) -> dict[str, Type[SpsdkSoftEnum]]:
-    """Load images types.
+def load_images_types(
+    db: Features, feature: str = DatabaseManager.AHAB, base_key: Optional[list[str]] = None
+) -> dict[str, Type[SpsdkSoftEnum]]:
+    """Load image types from the database.
 
-    :param db: database to load from.
-    :return: Loaded dictionary with image types.
+    :param db: Database to load from
+    :param feature: The database feature to query
+    :param base_key: List of base keys if applicable
+    :return: Dictionary with loaded image types
     """
-    db_image_types = db.get_dict(DatabaseManager.AHAB, "image_types")
+
+    def make_key(key: str) -> Union[str, list[str]]:
+        if base_key is None:
+            return key
+        ret = []
+        ret.extend(base_key)
+        ret.append(key)
+        return ret
+
+    db_image_types = db.get_dict(feature, make_key("image_types"))
     ret = {}
     for k, v in db_image_types.items():
         ret[k] = SpsdkSoftEnum.create_from_dict(f"AHABImageTypes_{k}", v)
@@ -355,45 +384,56 @@ def load_images_types(db: Features) -> dict[str, Type[SpsdkSoftEnum]]:
 
 
 def create_chip_config(
-    family: str,
-    revision: str = "latest",
+    family: FamilyRevision,
     target_memory: str = AhabTargetMemory.TARGET_MEMORY_STANDARD.label,
-    search_paths: Optional[list[str]] = None,
+    feature: str = DatabaseManager.AHAB,
+    base_key: Optional[list[str]] = None,
 ) -> AhabChipConfig:
     """Create AHAB chip configuration structure.
 
-    :param family: Name of device family.
-    :param revision: Device silicon revision, defaults to "latest"
-    :param target_memory: Target memory for AHAB image [serial_downloader, standard, nand], defaults to "standard"
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :raises SPSDKValueError: Invalid input configuration.
-    :return: AHAB chip configuration structure.
+    :param family: Name of device family
+    :param target_memory: Target memory for AHAB image
+    :param feature: The database feature to query
+    :param base_key: List of base keys if applicable
+    :raises SPSDKValueError: When invalid input configuration is provided
+    :return: AHAB chip configuration structure
     """
+
+    def make_key(key: str) -> Union[str, list[str]]:
+        if base_key is None:
+            return key
+        ret = []
+        ret.extend(base_key)
+        ret.append(key)
+        return ret
+
     if target_memory not in AhabTargetMemory.labels():
         raise SPSDKValueError(
             f"Invalid AHAB target memory [{target_memory}]."
             f" The list of supported images: [{','.join(AhabTargetMemory.labels())}]"
         )
-    db = get_db(family, revision)
-    containers_max_cnt = db.get_int(DatabaseManager.AHAB, "containers_max_cnt")
-    images_max_cnt = db.get_int(DatabaseManager.AHAB, "oem_images_max_cnt")
+    db = get_db(family)
+    containers_max_cnt = db.get_int(feature, make_key("containers_max_cnt"))
+    images_max_cnt = db.get_int(feature, make_key("oem_images_max_cnt"))
     core_ids = SpsdkSoftEnum.create_from_dict(
-        "AHABCoreId", db.get_dict(DatabaseManager.AHAB, "core_ids")
+        "AHABCoreId", db.get_dict(feature, make_key("core_ids"))
     )
-    image_types = load_images_types(db)
-    image_types_mapping = db.get_dict(DatabaseManager.AHAB, "image_types_mapping")
+    image_types = load_images_types(db, feature=feature, base_key=base_key)
+    image_types_mapping = db.get_dict(feature, make_key("image_types_mapping"))
 
     valid_offset_minimal_alignment = db.get_int(
-        DatabaseManager.AHAB, "valid_offset_minimal_alignment", 4
+        feature, make_key("valid_offset_minimal_alignment"), 4
     )
+
     container_image_size_alignment = db.get_int(
-        DatabaseManager.AHAB, "container_image_size_alignment", 1
+        feature, make_key("container_image_size_alignment"), 1
     )
-    container_types = db.get_list(DatabaseManager.AHAB, "container_types")
-    allow_empty_hash = db.get_bool(DatabaseManager.AHAB, "allow_empty_hash")
+
+    container_types = db.get_list(feature, make_key("container_types"))
+    allow_empty_hash = db.get_bool(feature, make_key("allow_empty_hash"))
+    iae_has_signed_offsets = db.get_bool(feature, make_key("iae_has_signed_offsets"), False)
     return AhabChipConfig(
         family=family,
-        revision=db.name,
         target_memory=AhabTargetMemory.from_label(target_memory),
         core_ids=core_ids,
         image_types=image_types,
@@ -404,5 +444,5 @@ def create_chip_config(
         valid_offset_minimal_alignment=valid_offset_minimal_alignment,
         container_image_size_alignment=container_image_size_alignment,
         allow_empty_hash=allow_empty_hash,
-        search_paths=search_paths,
+        iae_has_signed_offsets=iae_has_signed_offsets,
     )

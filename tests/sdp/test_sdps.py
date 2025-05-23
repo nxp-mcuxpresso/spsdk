@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,8 +17,9 @@ from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.sdps import SDPS, RomInfo
 from spsdk.utils.interfaces.commands import CmdResponseBase
 from spsdk.utils.interfaces.device.base import DeviceBase
+from spsdk.utils.family import FamilyRevision
 
-data = b"\xAD" * 100
+data = b"\xad" * 100
 cmd_pack = b"BLTC\x01\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
 
@@ -94,7 +95,7 @@ class VirtualSDPInterface:
         self.device.write(data)
 
     def write_command(self, packet: CmdPacket):
-        data = packet.to_bytes(padding=False)
+        data = packet.export(padding=False)
         if not data:
             raise SPSDKAttributeError("Incorrect packet type")
         self.device.write(data)
@@ -106,7 +107,7 @@ class VirtualSDPInterface:
 
 def test_open_close():
     """Test SDPS is closed by default."""
-    spds = SDPS(VirtualSDPInterface(VirtualDevice()), "mx93")
+    spds = SDPS(VirtualSDPInterface(VirtualDevice()), FamilyRevision("mx93"))
     assert not spds.is_opened
     spds.open()
     assert spds.is_opened
@@ -118,7 +119,7 @@ def test_open_close():
 @patch("spsdk.sdp.sdps.SDPS.rom_info", RomInfo(False, False, 1024))
 def test_sdps_send_data():
     """Test send data"""
-    with SDPS(VirtualSDPInterface(VirtualDevice()), "mx93") as sdps:
+    with SDPS(VirtualSDPInterface(VirtualDevice()), FamilyRevision("mx93")) as sdps:
         assert sdps.is_opened
         sdps.write_file(data)
     assert sdps.is_opened is False
@@ -135,7 +136,7 @@ class VirtualDeviceException(VirtualDevice):
 def test_sdps_exception():
     """Test connection error"""
     try:
-        sdps = SDPS(VirtualSDPInterface(VirtualDeviceException()), "mx8ulp")
+        sdps = SDPS(VirtualSDPInterface(VirtualDeviceException()), FamilyRevision("mx8ulp"))
         sdps.write_file(data)
         assert False
     except SdpConnectionError:

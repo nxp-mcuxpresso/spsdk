@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,7 +18,6 @@ from spsdk.image.bee import (
     BeeProtectRegionBlock,
     BeeRegionHeader,
 )
-from spsdk.image.segments import SegBEE
 from spsdk.utils.misc import load_binary
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -162,43 +161,6 @@ def test_bee_region_header_fuses() -> None:
     assert fuses[3] == 0x11223344
 
 
-def test_seg_bee() -> None:
-    """Test SegBEE class - BEE segment of the bootable image"""
-    # empty segment
-    seg = SegBEE([])
-    assert str(seg)
-    assert seg.export() == b""
-    assert seg.size == 0
-    seg.validate()
-    # single region
-    sw_key = random_bytes(16)
-    hdr = BeeRegionHeader(sw_key=sw_key)
-    hdr.add_fac(BeeFacRegion(0x00000000, 0x00010000, 0))
-    seg.add_region(hdr)
-    assert str(seg)
-    seg.validate()
-    data = seg.export()
-    assert (data is not None) and (len(data) == seg.size)
-    parsed_seg = SegBEE.parse((b"\xFF" + data)[1:], [sw_key])
-    assert seg == parsed_seg
-    # two regions
-    sw_key2 = random_bytes(16)
-    hdr2 = BeeRegionHeader(sw_key=sw_key2)
-    hdr2.add_fac(BeeFacRegion(0x10000000, 0x00010000, 1))
-    hdr2.add_fac(BeeFacRegion(0x20000000, 0x00010000, 2))
-    seg.add_region(hdr2)
-    assert str(seg)
-    seg.validate()
-    data = seg.export()
-    assert (data is not None) and (len(data) == seg.size)
-    parsed_seg = SegBEE.parse((b"\xFF" + data)[1:], [sw_key, sw_key2])
-    assert seg == parsed_seg
-    # total number of FACs exceeded
-    hdr.add_fac(BeeFacRegion(0xF0000000, 0x00010000, 3))
-    with pytest.raises(SPSDKError):
-        seg.validate()
-
-
 def test_invalid_bee_fac_region_parse():
     with pytest.raises(SPSDKError):
         BeeFacRegion.parse(b"1" * 1024)
@@ -219,9 +181,3 @@ def test_invalid_bee_protected_block_parse(data_dir):
     invalid_reserved[78] = 0xFF
     with pytest.raises(SPSDKError):
         BeeProtectRegionBlock.parse(invalid_reserved + bytes(4))
-
-
-def test_seg_bee_invalid_encrypt_data() -> None:
-    seg = SegBEE([])
-    with pytest.raises(SPSDKError, match="Invalid start address"):
-        seg.encrypt_data(start_addr=0xFFFFFFFFFFFFFFFFFFFF, data=bytes(16))

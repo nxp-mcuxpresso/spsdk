@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,9 +11,10 @@ from typing import Optional
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.image.mbi.mbi import CertBlockV21, MasterBootImage
+from spsdk.utils.family import FamilyRevision
 
 
-def calculate_rtf(family: str, mbi_data: bytes) -> Optional[bytes]:
+def calculate_rtf(family: FamilyRevision, mbi_data: bytes) -> Optional[bytes]:
     """Calculate RTF for given MBI."""
     image_type = MasterBootImage.get_image_type(family=family, data=mbi_data)
     if image_type not in [4, 8]:

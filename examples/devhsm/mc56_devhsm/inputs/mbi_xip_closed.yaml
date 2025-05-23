@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 # =================  Master Boot Image Configuration template for mc56f81868, Plain Signed XIP Image.  =================
 
@@ -48,9 +49,6 @@ certBlock: ../workspace/cert_block.bin
 #                                              == Image Signing Settings ==
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
-# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ec_pk_secp256r1_sign_cert.pem
-# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
-# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-# signProvider: type=file;file_path=my_prv_key.pem
+# Description: Main Certificate private key used to sign certificate.
+signer: ec_pk_secp256r1_sign_cert.pem
 appendHash: True

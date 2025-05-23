@@ -13,10 +13,12 @@ import pytest
 import yaml
 
 from spsdk.apps import nxpimage
+from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.exceptions import SPSDKError
 from spsdk.image.xmcd.xmcd import XMCD, MemoryType
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import (
-    Endianness,
     load_binary,
     load_configuration,
     load_file,
@@ -112,9 +114,9 @@ def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
     cmd = f"bootable-image xmcd get-templates -f {family} --output {tmpdir}"
     cli_runner.invoke(nxpimage.main, cmd.split())
 
-    mem_types = XMCD.get_supported_memory_types(family)
+    mem_types = XMCD.get_supported_memory_types(FamilyRevision(family))
     for mem_type in mem_types:
-        config_types = XMCD.get_supported_configuration_types(family, mem_type)
+        config_types = XMCD.get_supported_configuration_types(FamilyRevision(family), mem_type)
         for config_type in config_types:
             template_name = f"xmcd_{family}_{mem_type.label}_{config_type.label}.yaml"
             new_template_path = os.path.join(tmpdir, template_name)
@@ -148,22 +150,22 @@ def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
         config_data = load_configuration(config)
         config_data.pop(mandatory_field)
         with pytest.raises(SPSDKError):
-            XMCD.load_from_config(config_data)
+            XMCD.load_from_config(Config(config_data))
     # Check invalid mem_type
     config_data = load_configuration(config)
     config_data["mem_type"] = "unknown"
     with pytest.raises(SPSDKError):
-        XMCD.load_from_config(config_data)
+        XMCD.load_from_config(Config(config_data))
     # Check invalid config_type
     config_data = load_configuration(config)
     config_data["config_type"] = "unknown"
     with pytest.raises(SPSDKError):
-        XMCD.load_from_config(config_data)
+        XMCD.load_from_config(Config(config_data))
     # Check unsupported family
     config_data = load_configuration(config)
     config_data["family"] = "rt5xx"
     with pytest.raises(SPSDKError):
-        XMCD.load_from_config(config_data)
+        XMCD.load_from_config(Config(config_data))
 
 
 def test_nxpimage_supported_mem_types():
@@ -180,7 +182,7 @@ def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir)
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "xmcd", family, "semc_sdram_simplified.yaml")
         # Test Valid
-        config = load_configuration(config_file)
+        config = Config.create_from_file(config_file)
         xmcd = XMCD.load_from_config(config)
         bin_path = os.path.join(tmpdir, f"xmcd.bin")
         write_file(xmcd.export(), bin_path, mode="wb")
@@ -197,13 +199,13 @@ def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir)
         result = cli_runner.invoke(nxpimage.main, cmd)
         assert "XMCD(Succeeded)" in result.output
         # Test Invalid
-        config = load_configuration(config_file)
+        config = Config.create_from_file(config_file)
         config["xmcd_settings"]["header"]["bitfields"]["tag"] = 14
         xmcd = XMCD.load_from_config(config)
         write_file(xmcd.export(), bin_path, mode="wb")
-        result = cli_runner.invoke(nxpimage.main, cmd)
-        assert "XMCD(Error)" in result.output
-        assert "Tag(Error): Does not match the tag 12" in result.output
+        result = cli_runner.invoke(nxpimage.main, cmd, expected_code=1)
+        assert "XMCD Header(Error)" in result.output
+        assert "Tag(Error): 0xc" in result.output
 
 
 @pytest.mark.parametrize(
@@ -217,8 +219,8 @@ def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir)
     ],
 )
 def test_nxpimage_xmcd_crc(data_dir, mem_type, config_type, expected_crc):
-    family = "mimxrt1176"
-    data_folder = os.path.join(data_dir, "xmcd", family)
+    family = FamilyRevision("mimxrt1176")
+    data_folder = os.path.join(data_dir, "xmcd", family.name)
     bin_path = os.path.join(data_folder, f"{mem_type}_{config_type}.bin")
     xmcd = XMCD.parse(load_binary(bin_path), family=family)
     assert xmcd.crc == bytes.fromhex(expected_crc)
@@ -249,6 +251,6 @@ def test_nxpimage_xmcd_crc_fuses_script(
     assert "Created fuses script" in result.output
     content = load_file(fuses_script, mode="r")
     assert "blhost XMCD CRC fuses programming script" in content
-    assert f"Family: {family} Revision: latest" in content
+    assert f"Family: {family}, Revision: latest" in content
     assert f"WARNING! Partially set register, check all bitfields before writing" in content
     assert f"efuse-program-once {crc_sum_fuse_id} 0xBC333806" in content

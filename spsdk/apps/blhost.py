@@ -44,11 +44,12 @@ from spsdk.apps.utils.utils import (
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.database import DatabaseManager, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_families
 from spsdk.utils.misc import Endianness, load_hex_string
 
 
-@click.group(name="blhost", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="blhost", cls=CommandsTreeGroup)
 @spsdk_mboot_interface()
 @spsdk_use_json_option
 @spsdk_apps_common_options
@@ -127,7 +128,7 @@ def batch(ctx: click.Context, command_file: str) -> None:
             ctx.invoke(cmd_obj, **ctx.params)
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("argument", type=INT(), required=True)
 @click.pass_context
@@ -260,7 +261,7 @@ def flash_erase_region(ctx: click.Context, address: int, byte_count: int, memory
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.argument("memory_id", type=INT(), required=False, default="0")
 @click.pass_context
 def flash_erase_all(ctx: click.Context, memory_id: int) -> None:
@@ -277,7 +278,7 @@ def flash_erase_all(ctx: click.Context, memory_id: int) -> None:
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def flash_erase_all_unsecure(ctx: click.Context) -> None:
     """Erase complete flash memory and recover flash security section."""
@@ -299,7 +300,7 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
     ERASE      - string 'erase' determines if flash is erased before writing
     MEMORY_ID  - id of memory to erase (default: 0)
     """
-    from spsdk.utils.images import BinaryImage
+    from spsdk.utils.binary_image import BinaryImage
 
     ALIGNMENT = 1024
 
@@ -566,7 +567,7 @@ def fuse_read(
     )
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def list_memory(ctx: click.Context) -> None:
     """Lists all memories, supported by the current device."""
@@ -617,7 +618,7 @@ def get_property(
     ctx: click.Context,
     property_tag: str,
     index: int,
-    family: str,
+    family: FamilyRevision,
 ) -> None:
     """Queries various bootloader properties and settings.
 
@@ -663,6 +664,8 @@ def get_property(
     31 or 'fuse-locked-status'          Fuse Locked Status
     32 or 'boot status'                 Value of Boot Status Register
     33 or 'loadable-fw-version'         LoadableFWVersion
+    36 or 'she-flash-partition`         SHE: Flash Partition
+    37 or 'she-boot-mode'               SHE: Boot Mode
 
     \b
     for kw45xx/k32w1xx devices:
@@ -709,7 +712,7 @@ def set_property(
     ctx: click.Context,
     property_tag: str,
     value: int,
-    family: str,
+    family: FamilyRevision,
 ) -> None:
     """Changes properties and options in the bootloader.
 
@@ -727,6 +730,8 @@ def set_property(
     28 or 'irq-notify-pin'              Interrupt notifier pin
     29 or 'pfr-keystore_update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
+    36 or 'she-flash-partition`         SHE: Flash Partition
+    37 or 'she-boot-mode'               SHE: Boot Mode
 
     \b
     for kw45xx/k32w1xx devices:
@@ -853,7 +858,7 @@ def reliable_update(ctx: click.Context, address: int) -> None:
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-@main.command()
+@main.command(no_args_is_help=False)
 @click.pass_context
 def reset(ctx: click.Context) -> None:
     """Resets the device.
@@ -1072,7 +1077,7 @@ def set_key(ctx: click.Context, key_type: str, key_size: int) -> None:
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-@key_provisioning.command(name="write_key_nonvolatile")
+@key_provisioning.command(name="write_key_nonvolatile", no_args_is_help=False)
 @click.argument("memory_id", metavar="memoryID", type=INT(), default="0")
 @click.pass_context
 def write_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
@@ -1086,7 +1091,7 @@ def write_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-@key_provisioning.command(name="read_key_nonvolatile")
+@key_provisioning.command(name="read_key_nonvolatile", no_args_is_help=False)
 @click.argument("memory_id", metavar="memoryID", type=INT(), default="0")
 @click.pass_context
 def read_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
@@ -1742,8 +1747,7 @@ def dsc_hsm_enc_sign(
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
-# @main.command(no_args_is_help=True)
-@trust_provisioning.command(name="oem_get_cust_dice_response")
+@trust_provisioning.command(name="oem_get_cust_dice_response", no_args_is_help=True)
 @click.argument("challenge_addr", type=INT(), required=True)
 @click.argument("challenge_size", type=INT(), required=True)
 @click.argument("response_addr", type=INT(), required=True)
@@ -1779,7 +1783,7 @@ def oem_get_cust_dice_response(
     )
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.argument("life-cycle", metavar="LIFE CYCLE", type=INT(), required=True)
 @click.pass_context
 def update_life_cycle(ctx: click.Context, life_cycle: int) -> None:

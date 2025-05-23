@@ -69,6 +69,7 @@ options
     productVersion = "1.00.00";
     componentVersion = "1.0.0";
     secureBinaryVersion = "2.1";
+    family = "rt5xx";
 }
 
 sources

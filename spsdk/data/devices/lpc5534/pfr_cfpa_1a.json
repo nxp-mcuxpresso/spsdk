@@ -1,5 +1,5 @@
 {
-    "cpu": "LPC5534",
+    "cpu": "lpc5534",
     "groups": [
         {
             "group": {
@@ -174,15 +174,7 @@
                     "offset_int": "0x0050",
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "Reserved 00054-0005C",
-                "description": "Reserved 00054-0005C"
-            },
-            "registers": [
+                },
                 {
                     "id": "Reserved00054",
                     "name": "Reserved 0x00054",

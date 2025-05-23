@@ -9,24 +9,25 @@ import copy
 import json
 import os
 import tempfile
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Type
 
 from pytablewriter import MarkdownTableWriter
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
 from json_schema_for_humans.generate import generate_from_schema
 
 from spsdk.image.ahab.ahab_image import AHABImage
-from spsdk.image.bee import BeeNxp
+from spsdk.image.bee import Bee
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.fcb.fcb import FCB
-from spsdk.image.hab.hab_container import HabContainer
-from spsdk.image.mbi.mbi import get_all_mbi_classes
+from spsdk.image.hab.hab_image import HabImage
+from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType, MemoryType
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 from spsdk.sbfile.sb31.images import SecureBinary31
-from spsdk.utils.crypto.iee import IeeNxp
-from spsdk.utils.crypto.otfad import OtfadNxp
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.image.iee.iee import Iee
+from spsdk.image.otfad.otfad import Otfad
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.schema_validator import CommentedConfig, SPSDKMerger
 
 DOC_PATH = os.path.abspath(".")
@@ -74,9 +75,11 @@ def clean_files() -> None:
 
 def get_docs_families(feature: str) -> List[str]:
     """Get list of families."""
-    families = get_families(feature)
+    families = get_families(feature, single_revision=True)
     families = [
-        family for family in families if DatabaseManager().db.devices.get(family).info.use_in_doc
+        family
+        for family in families
+        if DatabaseManager().db.devices.get(family.name).info.use_in_doc
     ]
     return sorted(families)
 
@@ -88,11 +91,7 @@ def get_schema(schemas: List[Dict[str, Any]]) -> Dict:
     :return: Dictionary with valid schema
     """
 
-    schemas_merger = SPSDKMerger(
-        [(list, ["set"]), (dict, ["merge"]), (set, ["union"])],
-        ["override"],
-        ["override"],
-    )
+    schemas_merger = SPSDKMerger()
 
     schema = {}
     for sch in schemas:
@@ -217,13 +216,34 @@ def get_mbi_note(mbi_cls: Any) -> str:
     return note
 
 
+def get_all_mbi_classes() -> list[tuple[Type["MasterBootImage"], FamilyRevision]]:
+    """Get all Master Boot Image supported classes.
+
+    :return: List with all MBI Classes and their family ambassador.
+    """
+    mbi_families = MasterBootImage.get_supported_families()
+    cls_list = []
+    hash_set = set()
+    for family in mbi_families:
+        db = get_db(family)
+        mbi_classes: dict[str, Any] = db.get_dict(DatabaseManager.MBI, "mbi_classes")
+
+        for mbi_cls_name in mbi_classes:
+            cls = MasterBootImage.create_mbi_class(mbi_cls_name, family)
+            if cls.hash() not in hash_set:
+                hash_set.add(cls.hash())
+                cls_list.append((cls, family))
+
+    return cls_list
+
+
 def get_mbi_doc() -> None:
     """Get doc for MBI classes."""
     if os.path.exists(MBI_SCHEMAS_FILE):
         os.remove(MBI_SCHEMAS_FILE)
     image_classes = get_all_mbi_classes()
-    for cls in image_classes:
-        validation_schemas = cls.get_validation_schemas("lpc55s36")
+    for cls, family_ambassador in image_classes:
+        validation_schemas = cls.get_validation_schemas(family_ambassador)
         schema = get_schema(validation_schemas)
         schema["title"] = cls.hash()
         parsed_schema = parse_schema(schema)
@@ -252,7 +272,7 @@ def get_sb3_table() -> None:
 
     # Iterate over the devices in the devices YAML data
     for device in sb31_devices:
-        supported_commands[device] = get_db(device, "latest").get_list(
+        supported_commands[device] = get_db(device).get_list(
             DatabaseManager.SB31, "supported_commands"
         )
         devices.append(device)
@@ -282,12 +302,12 @@ def get_sb3_doc() -> None:
     if os.path.exists(SB3_SCHEMAS_FILE):
         os.remove(SB3_SCHEMAS_FILE)
     families = get_docs_families(DatabaseManager.SB31)
-    for fam in families:
-        validation_schemas = SecureBinary31.get_validation_schemas(fam)
+    for family in families:
+        validation_schemas = SecureBinary31.get_validation_schemas(family)
         schema = get_schema(validation_schemas)
-        schema["title"] = f"{SecureBinary31.__name__} for {fam}"
+        schema["title"] = f"{SecureBinary31.__name__} for {family}"
         parsed_schema = parse_schema(schema)
-        template = SecureBinary31.generate_config_template(fam)[f"{fam}_sb31"]
+        template = SecureBinary31.get_config_template(family)
         append_schema(parsed_schema, template, SB3_SCHEMAS_FILE, title=schema["title"])
 
 
@@ -311,11 +331,11 @@ def get_hab_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(HAB_SCHEMAS_FILE):
         os.remove(HAB_SCHEMAS_FILE)
-    validation_schemas = HabContainer.get_validation_schemas()
+    validation_schemas = HabImage.get_validation_schemas(FamilyRevision("mimxrt1176"))
     schema = get_schema(validation_schemas)
-    schema["title"] = f"{HabContainer.__name__}"
+    schema["title"] = f"{HabImage.__name__}"
     parsed_schema = parse_schema(schema)
-    template = get_template([schema], f"HAB template {HabContainer.__name__}")
+    template = get_template([schema], f"HAB template {HabImage.__name__}")
     append_schema(parsed_schema, template, HAB_SCHEMAS_FILE, title=schema["title"])
 
 
@@ -326,7 +346,7 @@ def get_otfad_doc() -> None:
         os.remove(OTFAD_SCHEMAS_FILE)
     families = get_docs_families(DatabaseManager.OTFAD)
     for fam in families:
-        validation_schemas = OtfadNxp.get_validation_schemas(fam)
+        validation_schemas = Otfad.get_validation_schemas(fam)
         schema = get_schema(validation_schemas)
         schema["title"] = f"OTFAD for {fam}"
         parsed_schema = parse_schema(schema)
@@ -341,7 +361,7 @@ def get_iee_doc() -> None:
         os.remove(IEE_SCHEMAS_FILE)
     families = get_docs_families(DatabaseManager.IEE)
     for fam in families:
-        validation_schemas = IeeNxp.get_validation_schemas(fam)
+        validation_schemas = Iee.get_validation_schemas(fam)
         schema = get_schema(validation_schemas)
         schema["title"] = f"IEE for {fam}"
         parsed_schema = parse_schema(schema)
@@ -354,12 +374,14 @@ def get_bee_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(BEE_SCHEMAS_FILE):
         os.remove(BEE_SCHEMAS_FILE)
-    validation_schemas = BeeNxp.get_validation_schemas()
-    schema = get_schema(validation_schemas)
-    schema["title"] = f"{BeeNxp.__name__}"
-    parsed_schema = parse_schema(schema)
-    template = get_template([schema], "BEE template")
-    append_schema(parsed_schema, template, BEE_SCHEMAS_FILE, title=schema["title"])
+    families = get_docs_families(DatabaseManager.BEE)
+    for fam in families:
+        validation_schemas = Bee.get_validation_schemas(fam)
+        schema = get_schema(validation_schemas)
+        schema["title"] = f"{Bee.__name__} for {fam}"
+        parsed_schema = parse_schema(schema)
+        template = get_template([schema], "BEE template")
+        append_schema(parsed_schema, template, BEE_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_bootable_image() -> None:

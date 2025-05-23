@@ -1,17 +1,11 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 pfr_base:
   type: object
+  required: [type]
   properties:
-    device:
-      type: string
-      title: MCU family
-      description: MCU family name.
-      template_value: lpc55s3x
-      skip_in_template: True
-
     type:
       type: string
       title: Configuration area type

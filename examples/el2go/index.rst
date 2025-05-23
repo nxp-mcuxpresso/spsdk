@@ -11,6 +11,8 @@ EdgeLock2GO handles multiple types of assets (Secure Objects) like symmetric key
 
 For more details please check `EdgeLock2GO documentation <https://edgelock2go.com/documentation>`_
 
+For all supported products and additional resources please check `Edgelock2GO Product Page <https://www.nxp.com/products/security-and-authentication/secure-service-2go-platform/edgelock-2go:EDGELOCK-2GO?tid=vanedgelock2go>`_
+
 Following Jupyter Notebooks showcase using EdgeLock2GO RTP
 
 To run the Jupyter Notebooks please make sure you have:

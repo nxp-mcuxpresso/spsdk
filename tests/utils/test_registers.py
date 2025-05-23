@@ -4,7 +4,7 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-""" Tests for registers utility."""
+"""Tests for registers utility."""
 
 import os
 from typing import Any
@@ -20,6 +20,7 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import (
     Endianness,
     load_configuration,
@@ -69,7 +70,9 @@ TEST_JSON_FILE = "unit_test.json"
 
 def create_simple_regs():
     """Create simple reg structure with basic cases."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     reg1 = Register(
         TEST_REG_NAME,
@@ -126,9 +129,11 @@ def create_simple_regs():
 
 def test_basic_regs(tmpdir):
     """Basic test of registers class."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
-    assert regs.family == TEST_DEVICE_NAME
+    assert regs.family.name == TEST_DEVICE_NAME
 
     reg1 = Register(
         TEST_REG_NAME,
@@ -224,7 +229,9 @@ def test_register_duplicate():
         TEST_REG_REV,
         TEST_REG_ACCESS,
     )
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
     regs.add_register(reg)
 
     with pytest.raises(SPSDKRegsError):
@@ -615,7 +622,9 @@ def test_bitfield_enums_invalid_name():
 
 def test_registers_json(data_dir, tmpdir):
     """Test registers JSON support."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with use_working_directory(data_dir):
         regs._load_spec("registers.json")
@@ -623,7 +632,9 @@ def test_registers_json(data_dir, tmpdir):
     with use_working_directory(tmpdir):
         regs.write_spec("registers.json")
 
-    regs2 = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs2 = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with use_working_directory(tmpdir):
         regs2._load_spec("registers.json")
@@ -633,7 +644,9 @@ def test_registers_json(data_dir, tmpdir):
 
 def test_registers_json_hidden(data_dir, tmpdir):
     """Test registers JSON support."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with use_working_directory(data_dir):
         regs._load_spec("registers_reserved.json")
@@ -645,7 +658,9 @@ def test_registers_json_hidden(data_dir, tmpdir):
     with use_working_directory(tmpdir):
         regs.write_spec("registers_reserved.json")
 
-    regs2 = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs2 = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with use_working_directory(tmpdir):
         regs2._load_spec("registers_reserved.json")
@@ -655,7 +670,9 @@ def test_registers_json_hidden(data_dir, tmpdir):
 
 def test_registers_json_bad_format(data_dir):
     """Test registers JSON support - BAd JSON format exception."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with pytest.raises(SPSDKError):
         regs._load_spec(data_dir + "/bad_format.json")
@@ -663,7 +680,9 @@ def test_registers_json_bad_format(data_dir):
 
 def test_registers_corrupted_json(data_dir):
     """Test registers JSON support with invalid data."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with pytest.raises(SPSDKError):
         with use_working_directory(data_dir):
@@ -676,7 +695,9 @@ def test_registers_corrupted_json(data_dir):
 
 def test_basic_grouped_register(data_dir):
     """Test basic functionality of register grouping functionality"""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     group = [
         {
@@ -706,7 +727,9 @@ def test_basic_grouped_register(data_dir):
 
 def test_basic_grouped_register_reversed_value(data_dir):
     """Test basic functionality of register grouping functionality with reversed value"""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     group = [
         {
@@ -769,7 +792,9 @@ def test_basic_grouped_register_reversed_value(data_dir):
 )
 def test_grouped_register_invalid_params(data_dir, group_reg):
     """Test of register grouping with invalid width"""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     with pytest.raises(SPSDKRegsErrorRegisterGroupMishmash):
         regs._load_spec(data_dir + "/grp_regs.json", grouped_regs=group_reg)
@@ -777,21 +802,25 @@ def test_grouped_register_invalid_params(data_dir, group_reg):
 
 def test_load_register_value_with_uid(data_dir):
     """Simply test to handle load of individual registers into grouped from YML."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
     regs._load_spec(data_dir + "/registers.json")
     reg = regs.find_reg(TEST_REG_NAME)
     data = {TEST_REG_NAME: 0x12345678}
-    regs.load_yml_config(data)
+    regs.load_from_config(data)
     assert reg.get_value() == 0x12345678
     reg.set_value(0)
     data = {TEST_REG_UID: 0x87654321}
-    regs.load_yml_config(data)
+    regs.load_from_config(data)
     assert reg.get_value() == 0x87654321
 
 
 def test_load_grouped_register_value(data_dir):
     """Simply test to handle load of individual registers into grouped from YML."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     group = [
         {
@@ -802,7 +831,7 @@ def test_load_grouped_register_value(data_dir):
     ]
     regs._load_spec(data_dir + "/grp_regs.json", grouped_regs=group)
     data = load_configuration(data_dir + "/group_reg.yml")
-    regs.load_yml_config(data)
+    regs.load_from_config(data)
     reg = regs.find_reg("TestRegA")
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x31323334"
@@ -813,7 +842,9 @@ def test_load_grouped_register_value(data_dir):
 
 def test_load_grouped_register_value_compatibility(data_dir):
     """Simply test to handle load of individual registers into grouped from YML."""
-    regs = Registers(family=TEST_DEVICE_NAME, feature="test")
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
 
     group = [
         {
@@ -826,7 +857,7 @@ def test_load_grouped_register_value_compatibility(data_dir):
     yaml = YAML()
     with open(data_dir + "/group_none_reg.yml", "r") as yml_file:
         data = yaml.load(yml_file)
-    regs.load_yml_config(data)
+    regs.load_from_config(data)
     reg = regs.find_reg("TestRegA")
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x31323334"
@@ -992,7 +1023,12 @@ def test_regs(
     group: dict[str, Any],
     reg_group_val: int,
 ):
-    regs = Registers(family="Test device", feature="test", base_endianness=Endianness.LITTLE)
+    regs = Registers(
+        family=FamilyRevision("Test device"),
+        feature="test",
+        base_endianness=Endianness.LITTLE,
+        do_not_raise_exception=True,
+    )
     regs._load_spec(os.path.join(data_dir, json), grouped_regs=[group])
 
     grp_reg = regs.find_reg(group["name"], True)
@@ -1025,3 +1061,52 @@ def test_regs(
             assert reg_val == excepted_val
 
     regs.reset_values()
+
+def test_registers_size():
+    """Test the registers size property."""
+    # Create empty registers
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
+    assert regs.size == 0
+
+    # Add a register and check the size
+    reg1 = Register(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_UID,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    regs.add_register(reg1)
+    assert regs.size == TEST_REG_OFFSET + TEST_REG_WIDTH // 8
+
+    # Add another register with higher offset and check the size
+    reg2 = Register(
+        TEST_REG_NAME + "_2",
+        TEST_REG_OFFSET + 100,
+        TEST_REG_WIDTH,
+        TEST_REG_UID2,
+        TEST_REG_DESCR + "_2",
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    regs.add_register(reg2)
+    assert regs.size == (TEST_REG_OFFSET + 100) + TEST_REG_WIDTH // 8
+
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
+    )
+    reg_at_zero = Register(
+        "RegAtZero",
+        0,
+        64,
+        "reg_zero",
+        "Register at offset 0",
+        False,
+        TEST_REG_ACCESS,
+    )
+    regs.add_register(reg_at_zero)
+    assert regs.size == 64 // 8

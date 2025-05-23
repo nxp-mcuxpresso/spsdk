@@ -1,4 +1,4 @@
-# Copyright 2022-2023 NXP
+# Copyright 2022-2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,12 +12,6 @@ bee_output:
       description: Folder name to store generated BEE output
       template_value: bee_output
 
-    input_binary:
-      type: string
-      title: Input binary file
-      description: Path to input binary file
-      template_value: "input_bin.bin"
-
     output_name:
       type: string
       title: Output binary file name
@@ -30,12 +24,34 @@ bee_output:
       description: output_folder/header_name or full path + index will be appended (.bin will be appended)
       template_value: "bee_ehdr"
 
-  required: [output_folder, input_binary]
+    # Add data_blobs configuration similar to OTFAD
+    data_blobs:
+      type: array
+      title: Data blobs list
+      description: List of all data blobs to be encrypted
+      items:
+        type: object
+        required: [data, address]
+        properties:
+          data:
+            type: string
+            title: Plain Text data blob
+            description: Path to binary file with plain text data to be encrypted
+            format: file
+            template_value: my_data.bin
 
+          address:
+            type: [number, string]
+            title: Data blob address
+            description: Data blob address where the data should be loaded
+            format: number
+            template_value: "0x60001000"
+
+  required: [output_folder]
 bee:
   type: object
   title: BEE Settings
-  required: [engine_selection, engine_key_selection, bee_engine, base_address]
+  required: [engine_selection, engine_key_selection, bee_engine]
   properties:
     engine_selection:
       type: string
@@ -50,13 +66,6 @@ bee:
       description: Random Key or Zero key
       enum: ["random", "zero"]
       template_value: "random"
-
-    base_address:
-      type: [string, number]
-      title: Base address of the image
-      description: Base address of the image
-      format: number
-      template_value: "0x60001000"
 
     bee_engine:
       title: Bee engines
@@ -73,7 +82,6 @@ bee:
             properties:
               bee_cfg:
                 type: object
-                # required: [user_key, aes_mode]
                 required: [user_key]
                 properties:
                   user_key:

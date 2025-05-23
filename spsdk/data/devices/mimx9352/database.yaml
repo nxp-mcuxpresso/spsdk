@@ -10,7 +10,7 @@ latest: a1
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: i.MX 9 Applications Processors
+  purpose: i.MX Application Processors
   spsdk_predecessor_name: mx93
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/i-mx-93-applications-processor-family-arm-cortex-a55-ml-acceleration-power-efficient-mpu:i.MX93
@@ -147,6 +147,7 @@ features:
   dat:
     socc: 0x4D58005D # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    dat_is_using_sha256_always: True
     dmbox_ap_ix: 0
     test_address: 0x2048_0000
 

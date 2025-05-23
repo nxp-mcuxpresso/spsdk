@@ -1,16 +1,16 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========================================  HAB converted configuration  ============================================
 
 # ======================================================================================================================
-#                                                    == HAB Input ==                                                    
+#                                                    == HAB Input ==
 # ======================================================================================================================
 # ------------------------------------===== Plain application image [Required] =====------------------------------------
 # Description: The input application image in plain BIN, S-REC or ELF.
 inputImageFile: led_blinky_xip_srec_iar.srec
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # ------------------------------------------===== HAB Options [Required] =====------------------------------------------
 # Description: An options block contains zero or more name/value pairs and the option settings that assign values to
@@ -24,7 +24,7 @@ options:
   startAddress: 1610612736
   # ------------------------------------===== Family [Conditionally required] =====-------------------------------------
   # Description: Processor family. If not specified, the ivtOffset and initialLoadSize must be defined.
-  family: rt105x
+  family: mimxrt1050
   # ----------------------------------===== Boot device [Conditionally required] =====----------------------------------
   # Description: Boot device memory where the image is booted from. If not specified, the ivtOffset and initialLoadSize
   # must be defined.
@@ -32,7 +32,7 @@ options:
   # ---------------------------------===== Timestamp of the signature [Optional] =====----------------------------------
   signatureTimestamp: 04/05/2023 14:41:11
 # ======================================================================================================================
-#                                                   == CSF Sections ==                                                  
+#                                                   == CSF Sections ==
 # ======================================================================================================================
 # -----------------------------------------===== CSF Sections [Optional] =====------------------------------------------
 # Description: CSF Sections.
@@ -105,7 +105,7 @@ sections:
       # ------------------------------------===== Private Key File [Optional] =====-------------------------------------
       # Description: Path to authenticate CSF private key file. If not set, the file will be determined from
       # InstallCSFK_File parameter.
-      AuthenticateCsf_PrivateKeyFile: ../keys/CSF2_1_sha256_2048_65537_v3_usr_key.pem
+      Signer: ../keys/CSF2_1_sha256_2048_65537_v3_usr_key.pem
   -
     # ----------------------------------------===== Install Key [Required] =====----------------------------------------
     # Description: The Install Key command authenticates and installs a public key for use in subsequent Install Key or
@@ -149,7 +149,7 @@ sections:
       # ------------------------------------===== Private Key File [Optional] =====-------------------------------------
       # Description: Path to authenticate IMG private key file. If not set, the file will be determined from
       # InstallCSFK_File parameter.
-      AuthenticateData_PrivateKeyFile: ../keys/IMG2_1_sha256_2048_65537_v3_usr_key.pem
+      Signer: ../keys/IMG2_1_sha256_2048_65537_v3_usr_key.pem
   -
     # ----------------------------------------===== Set Engine [Required] =====-----------------------------------------
     # Description: The Set Engine command selects the default engine and engine configuration for a given algorithm.

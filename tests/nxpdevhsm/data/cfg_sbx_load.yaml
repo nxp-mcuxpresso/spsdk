@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Secure Binary X Configuration template for mc56f818xx.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -16,8 +17,6 @@ description: This is description of generated SB file. # [Optional], Description
 # ----------------------------------------------------------------------------------------------------
 #                                      == Certificate Settings ==
 # ----------------------------------------------------------------------------------------------------
-# signingCertificatePrivateKeyFile: isk_prv_key.pem # [Conditionally required], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key. Only valid for OEM and NXP_PROVISIONING image types
-# signProvider: type=file;file_path=my_prv_key.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
 # ----------------------------------------------------------------------------------------------------
 #                               == Secure Binary X Commands Settings ==
 # ----------------------------------------------------------------------------------------------------

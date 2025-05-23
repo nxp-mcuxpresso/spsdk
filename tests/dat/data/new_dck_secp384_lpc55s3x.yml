@@ -1,8 +1,8 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-socc: 0x0004
+family: lpc55s36
 uuid: "E004090E6BDD2155BBCE9E0665805BE3"
 cc_socu: 0x03FF
 cc_vu: 0x5678
@@ -10,5 +10,5 @@ cc_beacon: 0
 rot_meta:
 - ../../_data/keys/ecc384/srk0_ecc384.pub
 rot_id: 0
-rotk: ../../_data/keys/ecc384/srk0_ecc384.pem
+signer: ../../_data/keys/ecc384/srk0_ecc384.pem
 dck: ../../_data/keys/ecc384/dck_ecc384.pub

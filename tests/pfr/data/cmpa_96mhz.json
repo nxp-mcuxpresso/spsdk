@@ -1,5 +1,5 @@
 {
-    "device": "lpc55s6x",
+    "family": "lpc55s6x",
     "revision": "a1",
     "type": "cmpa",
     "settings": {

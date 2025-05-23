@@ -17,6 +17,7 @@ import abc
 import inspect
 import json
 import logging
+import os
 from types import ModuleType
 from typing import Any, Optional, Type, Union, cast
 
@@ -38,6 +39,7 @@ from spsdk.crypto.keys import (
     prompt_for_passphrase,
 )
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKUnsupportedOperation, SPSDKValueError
+from spsdk.utils.config import Config
 from spsdk.utils.misc import find_file, load_secret
 from spsdk.utils.plugins import PluginsManager, PluginType
 
@@ -49,7 +51,7 @@ class SignatureProvider(abc.ABC):
 
     # Subclasses override the following signature provider type
     identifier = "INVALID"
-    reserved_keys = ["type", "identifier", "search_paths", "pss_padding"]
+    reserved_keys = ["type", "identifier", "search_paths"]
     legacy_identifier_name = "sp_type"
 
     def __init_subclass__(cls) -> None:
@@ -439,38 +441,53 @@ class HttpProxySP(SignatureProvider):
         return response["data"]
 
 
-def get_signature_provider(
-    sp_cfg: Optional[str] = None, local_file_key: Optional[str] = None, **kwargs: Any
-) -> SignatureProvider:
-    """Get the signature provider from configuration.
+def get_signature_provider(config: Config, key: str = "signer", **kwargs: Any) -> SignatureProvider:
+    """Get the signature provider instance from configuration.
 
-    :param sp_cfg: Configuration of signature provider.
-    :param local_file_key: Optional backward compatibility
-        option to specify just path to local private key.
-    :param kwargs: Additional parameters, that could be accepted by Signature providers.
-    :return: Signature Provider instance.
-    :raises SPSDKError: Invalid input configuration.
+    This function creates a signature provider based on provided configuration.
+    If the key parameter refers to a configuration string, it will use that
+    to create the signature provider. If it refers to a file path, it will
+    create an InteractivePlainFileSP with that file.
+
+    :param config: Configuration object that contains signature provider settings.
+    :param key: Config key under which the signature provider configuration is stored.
+                Defaults to "signer".
+    :param kwargs: Additional parameters that will be passed to the signature provider.
+    :return: Instantiated Signature Provider.
+    :raises SPSDKValueError: If signature provider configuration is missing.
+    :raises SPSDKError: If signature provider could not be created from the configuration.
     """
-    if sp_cfg:
-        params: dict[str, Union[str, list[str]]] = {}
-        params.update(SignatureProvider.convert_params(sp_cfg))
+    if key not in config:
+        raise SPSDKValueError(f"Signature provider configuration '{key}' is missing")
+    try:
+        params: dict[str, Union[str, list[str]]] = {"search_paths": config.search_paths}
+        params.update(SignatureProvider.convert_params(config.get_str(key)))
+
         for k, v in kwargs.items():
             if k not in params:
                 params[k] = v
         signature_provider = SignatureProvider.create(params=params)
-    elif local_file_key:
+        if not signature_provider:
+            raise SPSDKError(
+                f"Signature provider could not be created from config {config.get_str(key)}."
+            )
+    except SPSDKValueError:
         signature_provider = InteractivePlainFileSP(
-            file_path=local_file_key,
-            # search_paths=kwargs.get("search_paths"),
+            file_path=config.get_input_file_name(key),
             **kwargs,
         )
-    else:
-        raise SPSDKValueError("No signature provider configuration is provided")
-
-    if not signature_provider:
-        raise SPSDKError(f"Cannot create signature provider from: {sp_cfg or local_file_key}")
-
     return signature_provider
+
+
+def get_signature_provider_from_config_str(config_str: str, **kwargs: Any) -> SignatureProvider:
+    """Create a signature provider from a configuration string.
+
+    :param config_str: Configuration string for signature provider
+    :param kwargs: Additional parameters that will be passed to the signature provider.
+    """
+    config = Config({"signer": config_str})
+    config.search_paths.append(os.getcwd())
+    return get_signature_provider(config, **kwargs)
 
 
 def load_plugins() -> dict[str, ModuleType]:
@@ -478,12 +495,3 @@ def load_plugins() -> dict[str, ModuleType]:
     plugins_manager = PluginsManager()
     plugins_manager.load_from_entrypoints(PluginType.SIGNATURE_PROVIDER.label)
     return plugins_manager.plugins
-
-
-def try_to_verify_public_key(signature_provider: SignatureProvider, public_key_data: bytes) -> None:
-    """Verify public key by signature provider if verify method is implemented."""
-    logger.warning(
-        "Function `try_to_verify_public_key` is deprecated and will be removed. "
-        "Please use `SignatureProvider.try_to_verify_public_key` instead."
-    )
-    signature_provider.try_to_verify_public_key(public_key_data)

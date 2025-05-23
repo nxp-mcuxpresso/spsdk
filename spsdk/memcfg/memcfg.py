@@ -16,18 +16,12 @@ from typing import Any, Optional
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import (
-    DatabaseManager,
-    get_common_data_file_path,
-    get_db,
-    get_device,
-    get_families,
-    get_schema_file,
-)
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_common_data_file_path, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, get_device, update_validation_schema_family
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +94,10 @@ class Memory:
         return False
 
 
-class MemoryConfig(BaseClass):
+class MemoryConfig(FeatureBaseClass):
     """General memory configuration class."""
 
+    FEATURE = DatabaseManager.MEMCFG
     # Supported peripherals and their region numbers
     PERIPHERALS: list[str] = list(
         DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"].keys()
@@ -111,21 +106,18 @@ class MemoryConfig(BaseClass):
 
     def __init__(
         self,
-        family: str,
+        family: FamilyRevision,
         peripheral: str,
-        revision: str = "latest",
         interface: Optional[str] = None,
     ) -> None:
         """Initialize memory configuration class.
 
         :param family: Chip family
         :param peripheral: Peripheral name
-        :param revision: Chip revision
         :param interface: Memory interface
         """
         self.family = family
-        self.db = get_db(family, revision)
-        self.revision = self.db.name
+        self.db = get_db(family)
         if peripheral not in self.get_supported_peripherals(self.family):
             raise SPSDKValueError(f"The {peripheral} is not supported by {self.family}")
         self.peripheral = peripheral
@@ -133,7 +125,6 @@ class MemoryConfig(BaseClass):
             family=self.family,
             feature=DatabaseManager.MEMCFG,
             base_key=["peripherals", peripheral],
-            revision=revision,
             base_endianness=Endianness.LITTLE,
         )
         self.interface = interface or self.supported_interfaces[0]
@@ -185,36 +176,75 @@ class MemoryConfig(BaseClass):
             return 1
         raise SPSDKValueError("Unsupported rule to determine the count of Option words")
 
-    def get_validation_schemas(self) -> list[dict[str, Any]]:
+    def _get_validation_schemas(self) -> list[dict[str, Any]]:
+        """Get validation schema for the object.
+
+        :return: List of validation schema dictionaries.
+        """
+        return self.get_validation_schemas(self.family, self.peripheral, self.interface)
+
+    @classmethod
+    def get_validation_schemas(
+        cls,
+        family: FamilyRevision,
+        peripheral: str = "Unknown",
+        interface: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
         """Create the validation schema for one peripheral.
 
+        :param family: The MCU family name.
+        :param peripheral: Peripheral name
+        :param interface: Memory interface
         :return: List of validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.MEMCFG)
         sch_family = get_schema_file("general")["family"]
 
         update_validation_schema_family(
-            sch_family["properties"], self.get_supported_families(), self.family, self.revision
+            sch_family["properties"], cls.get_supported_families(), family
         )
-        sch_cfg["base"]["properties"]["peripheral"]["template_value"] = self.peripheral
-        sch_cfg["base"]["properties"]["peripheral"]["enum"] = self.get_supported_peripherals(
-            self.family
-        )
-        sch_cfg["base"]["properties"]["interface"]["template_value"] = self.interface
-        sch_cfg["base"]["properties"]["interface"]["enum"] = self.supported_interfaces
+        sch_family["main_title"] = f"Option Words Configuration for {family}, {peripheral}."
+        sch_family["note"] = "Note for settings:\n" + Registers.TEMPLATE_NOTE
 
-        sch_cfg["settings"]["properties"]["settings"][
-            "properties"
-        ] = self.regs.get_validation_schema()["properties"]
+        memcfg = cls(family=family, peripheral=peripheral, interface=interface)
+        sch_cfg["base"]["properties"]["peripheral"]["template_value"] = memcfg.peripheral
+        sch_cfg["base"]["properties"]["peripheral"]["enum"] = memcfg.get_supported_peripherals(
+            family
+        )
+        sch_cfg["base"]["properties"]["interface"]["template_value"] = memcfg.interface
+        sch_cfg["base"]["properties"]["interface"]["enum"] = cls.get_supported_interfaces(
+            family, peripheral
+        )
+
+        sch_cfg["settings"]["properties"]["settings"] = Registers(
+            family, feature=cls.FEATURE, base_key=["peripherals", peripheral]
+        ).get_validation_schema()
+
         return [sch_family, sch_cfg["base"], sch_cfg["settings"]]
+
+    @classmethod
+    def get_config_template(
+        cls,
+        family: FamilyRevision,
+        peripheral: str = "Unknown",
+        interface: Optional[str] = None,
+    ) -> str:
+        """Get feature configuration template.
+
+        :param family: The MCU family name.
+        :param peripheral: Peripheral name
+        :param interface: Memory interface
+        :return: Template file string representation.
+        """
+        schemas = cls.get_validation_schemas(family, peripheral=peripheral, interface=interface)
+        return cls._get_config_template(family, schemas)
 
     @classmethod
     def parse(  # type: ignore# type: ignore # pylint: disable=arguments-differ
         cls,
         data: bytes,
-        family: str,
+        family: FamilyRevision,
         peripheral: str,
-        revision: str = "latest",
         interface: Optional[str] = None,
     ) -> Self:
         """Parse the option words to configuration.
@@ -222,11 +252,10 @@ class MemoryConfig(BaseClass):
         :param data: Option words in bytes
         :param family: Chip family
         :param peripheral: Peripheral name
-        :param revision: Chip revision
         :param interface: Memory interface
         :return: Dictionary with parsed configuration.
         """
-        ret = cls(family=family, peripheral=peripheral, revision=revision, interface=interface)
+        ret = cls(family=family, peripheral=peripheral, interface=interface)
         ret.regs.parse(data)
         return ret
 
@@ -246,14 +275,15 @@ class MemoryConfig(BaseClass):
         """Export option words to bytes."""
         return self.regs.export()
 
-    def get_config(self) -> dict[str, Any]:
-        """Get class configuration.
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the AHAB Image.
 
-        :return: Dictionary with configuration of the class.
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.c
         """
-        ret: dict[str, Any] = {}
-        ret["family"] = self.family
-        ret["revision"] = self.revision
+        ret = Config()
+        ret["family"] = self.family.name
+        ret["revision"] = self.family.revision
         ret["peripheral"] = self.peripheral
         ret["interface"] = self.interface or "Unknown"
         settings_all = self.regs.get_config()
@@ -273,7 +303,7 @@ class MemoryConfig(BaseClass):
         return self.get_supported_interfaces(self.family, self.peripheral)
 
     @staticmethod
-    def get_supported_peripherals(family: str) -> list[str]:
+    def get_supported_peripherals(family: FamilyRevision) -> list[str]:
         """Get list of supported peripherals by the family."""
         ret = []
         for peripheral, settings in (
@@ -284,7 +314,7 @@ class MemoryConfig(BaseClass):
         return ret
 
     @staticmethod
-    def get_supported_interfaces(family: str, peripheral: str) -> list[str]:
+    def get_supported_interfaces(family: FamilyRevision, peripheral: str) -> list[str]:
         """Get list of supported interfaces by the peripheral for the family."""
         peripherals = get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals")
         peripheral_data: dict[str, list[str]] = peripherals.get(peripheral, {})
@@ -292,7 +322,7 @@ class MemoryConfig(BaseClass):
         return peripheral_data.get("interfaces", [])
 
     @staticmethod
-    def get_peripheral_instances(family: str, peripheral: str) -> list[int]:
+    def get_peripheral_instances(family: FamilyRevision, peripheral: str) -> list[int]:
         """Get peripheral instances."""
         return get_db(family).get_list(
             DatabaseManager.MEMCFG,
@@ -301,7 +331,7 @@ class MemoryConfig(BaseClass):
         )
 
     @staticmethod
-    def get_validation_schemas_base() -> list[dict[str, Any]]:
+    def get_validation_schemas_basic() -> list[dict[str, Any]]:
         """Create the validation schema for MemCfg class bases.
 
         :return: List of validation schemas.
@@ -325,33 +355,31 @@ class MemoryConfig(BaseClass):
             option_words_str += f", 0x{ow:08X}"
         return option_words_str
 
-    def get_yaml(self) -> str:
-        """Parse the option words to YAML config file.
+    @classmethod
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
 
-        :return: YAML file content with configuration.
+        :param config: Valid configuration
+        :return: Validation schemas
         """
-        cfg = self.get_config()
-        schemas = self.get_validation_schemas()
-        return CommentedConfig(
-            (
-                f"Configuration created for {self.family}, {self.peripheral} from these \n"
-                f"option words: {self.option_words_to_string(self.option_words)}"
-            ),
-            schemas=schemas,
-        ).get_config(cfg)
+        config.check(cls.get_validation_schemas_basic())
+        memcfg = cls(
+            family=FamilyRevision.load_from_config(config), peripheral=config["peripheral"]
+        )
+        return memcfg._get_validation_schemas()
 
     @classmethod
-    def load_config(cls, config: dict[str, Any]) -> Self:
-        """Load Yaml configuration and decode.
+    def load_from_config(cls, config: Config) -> Self:
+        """Load memory configuration object from configuration.
 
-        :param config: Memory configuration dictionary.
+        :param config: Configuration dictionary.
+        :return: Initialized memory configuration object.
         """
-        family = config["family"]
-        revision = config.get("revision", "latest")
-        peripheral = config["peripheral"]
-        interface = config["interface"]
-        ret = cls(family=family, revision=revision, peripheral=peripheral, interface=interface)
-        ret.regs.load_yml_config(config["settings"])
+        family = FamilyRevision.load_from_config(config)
+        peripheral = config.get_str("peripheral")
+        interface = config.get_str("interface")
+        ret = cls(family=family, peripheral=peripheral, interface=interface)
+        ret.regs.load_from_config(config.get_config("settings"))
         return ret
 
     def create_blhost_batch_config(
@@ -453,7 +481,7 @@ class MemoryConfig(BaseClass):
         return ret
 
     @staticmethod
-    def get_peripheral_cnt(family: str, peripheral: str) -> int:
+    def get_peripheral_cnt(family: FamilyRevision, peripheral: str) -> int:
         """Get count of peripheral instances."""
         return len(
             get_db(family).get_list(
@@ -465,7 +493,7 @@ class MemoryConfig(BaseClass):
 
     @staticmethod
     def get_known_peripheral_memories(
-        family: Optional[str], peripheral: Optional[str] = None
+        family: Optional[FamilyRevision], peripheral: Optional[str] = None
     ) -> list[Memory]:
         """Get all known supported memory configurations.
 
@@ -479,13 +507,13 @@ class MemoryConfig(BaseClass):
         if peripheral:
             peripherals = [peripheral]
         else:
-            assert isinstance(family, str)
+            assert isinstance(family, FamilyRevision)
             peripherals = [
                 p for p in MemoryConfig.PERIPHERALS if MemoryConfig.get_peripheral_cnt(family, p)
             ]
 
         if family:
-            p_db = get_db(family, "latest").get_dict(DatabaseManager.MEMCFG, "peripherals")
+            p_db = get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals")
         else:
             p_db = DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"]
 
@@ -564,11 +592,3 @@ class MemoryConfig(BaseClass):
                 return memory
 
         raise SPSDKValueError(f"Unknown flash memory chip name: {chip_name}")
-
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Get the list of supported families.
-
-        :return: List of family names that support memory configuration.
-        """
-        return get_families(DatabaseManager.MEMCFG)

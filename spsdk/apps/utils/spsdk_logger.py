@@ -113,16 +113,23 @@ def install(
     color = True
     if not level:
         level = logging.WARNING
-    logger = logger or logging.getLogger()
+
+    # Use root logger by default, but allow specifying a different logger
+    root_logger = logging.getLogger()
+    target_logger = logger or root_logger
+
+    # Set root logger to DEBUG to process all messages
+    root_logger.setLevel(logging.DEBUG)
+
     # This env variable tells us that jupyter notebook is executed
     if "JUPYTER_SPSDK" in os.environ:
         stream = sys.stdout
-    handler = logging.StreamHandler(stream)
-    handler.setLevel(level)
+
+    # Determine if colored output should be used
     if "NO_COLOR" in os.environ:
         # For details see https://no-color.org/
         color = False
-    if not handler.stream.isatty():
+    if not hasattr(stream, "isatty") or not stream.isatty():
         # disable color if the stream is not console
         color = False
     if "JUPYTER_SPSDK" in os.environ:
@@ -131,31 +138,46 @@ def install(
     if colored is not None:
         color = colored
         # enforce color if specified in constructor
+
+    # Create and configure console handler
+    handler = logging.StreamHandler(stream)
+    handler.setLevel(level)  # Only show messages at specified level and above in console
     handler.setFormatter(ColoredFormatter(color))
-    # Adjust the level of the logger
-    if logger.getEffectiveLevel() > level:
-        logger.setLevel(level)
-    # Install the stream handler
-    logger.addHandler(handler)
-    logger.propagate = False
 
+    # Add the handler to the target logger
+    target_logger.addHandler(handler)
+    target_logger.propagate = False
+
+    # Create and configure debug file logger if requested
     if create_debug_logger and not SPSDK_DEBUG_LOGGING_DISABLED:
-        debug_handler = logging.handlers.RotatingFileHandler(
-            SPSDK_DEBUG_LOG_FILE, mode="a", maxBytes=1_000_000, backupCount=5
-        )
-        debug_handler.setFormatter(ColoredFormatter(colored=False))
-        debug_handler.setLevel(logging.DEBUG)
+        try:
+            # Create debug log directory if it doesn't exist
+            os.makedirs(os.path.dirname(SPSDK_DEBUG_LOG_FILE), exist_ok=True)
 
-        debug_logger = logging.getLogger("spsdk.debug")
-        debug_logger.setLevel(logging.DEBUG)
-        debug_logger.propagate = False
-        debug_logger.addHandler(debug_handler)
-        starter = f"* SPSDK DEBUG LOGGING STARTED {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} *"
-        padding = len(starter) - 2
-        debug_logger.debug("*" * len(starter))
-        debug_logger.debug(starter)
-        # pylint: disable=logging-not-lazy  # not sure why this is not an issue anywhere else
-        debug_logger.debug(f"* SPSDK version: {__version__}".ljust(padding) + " *")
-        debug_logger.debug(f"* Python version: {sys.version.split()[0]}".ljust(padding) + " *")
-        debug_logger.debug(f"* OS version: {platform.platform()}".ljust(padding) + " *")
-        debug_logger.debug("*" * len(starter))
+            # Create and configure a rotating file handler
+            debug_handler = logging.handlers.RotatingFileHandler(
+                SPSDK_DEBUG_LOG_FILE, mode="a", maxBytes=1_000_000, backupCount=5, encoding="utf-8"
+            )
+            debug_handler.setFormatter(ColoredFormatter(colored=False))
+            debug_handler.setLevel(logging.DEBUG)  # Log all DEBUG and above messages to file
+
+            # Add the debug handler directly to the root logger
+            # This ensures all messages from all loggers will be captured in the debug log
+            root_logger.addHandler(debug_handler)
+
+            # Log debug session header information
+            starter = (
+                f"* SPSDK DEBUG LOGGING STARTED {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} *"
+            )
+            padding = len(starter) - 2
+            root_logger.debug("*" * len(starter))
+            root_logger.debug(starter)
+            # pylint: disable=logging-not-lazy  # not sure why this is not an issue anywhere else
+            root_logger.debug(f"* SPSDK version: {__version__}".ljust(padding) + " *")
+            root_logger.debug(f"* Python version: {sys.version.split()[0]}".ljust(padding) + " *")
+            root_logger.debug(f"* OS version: {platform.platform()}".ljust(padding) + " *")
+            root_logger.debug(f"* Last command: {sys.argv}".ljust(padding) + " *")
+            root_logger.debug("*" * len(starter))
+        except Exception as e:
+            # If debug logging fails, log a warning but don't crash the application
+            root_logger.warning(f"Failed to initialize debug logging: {str(e)}")

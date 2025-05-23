@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """DK6 UART communication interface."""
 import logging
 import struct
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.dk6.commands import CmdPacket, CommandTag, parse_cmd_response
@@ -124,7 +125,7 @@ class Uart:
         :raises AttributeError: frame type is incorrect
         """
         if isinstance(packet, CmdPacket):
-            packet = packet.to_bytes()
+            packet = packet.export()
 
         frame = self.create_frame(packet, frame_type.tag)
         # logger.debug(f"Packet {packet}, frame type; {frame_type}")
@@ -179,7 +180,7 @@ class Uart:
         self._write(frame)
 
     @staticmethod
-    def create_frame(data: Union[bytes, None], frame_type: Union[int, CommandTag]) -> bytes:
+    def create_frame(data: Optional[bytes], frame_type: Union[int, CommandTag]) -> bytes:
         """Encapsulate data into frame.
 
         :param data: payload data
@@ -210,7 +211,7 @@ class Uart:
         return frame
 
     @staticmethod
-    def calc_frame_crc(data: Union[bytes, None], frame_type: Union[int, CommandTag]) -> int:
+    def calc_frame_crc(data: Optional[bytes], frame_type: Union[int, CommandTag]) -> int:
         """Calculate the CRC of a frame.
 
         :param data: frame data

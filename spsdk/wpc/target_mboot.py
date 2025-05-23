@@ -1,20 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Model of a target for injecting WPC certificate chain."""
 
 import logging
+from typing import Any
+
+from typing_extensions import Self
 
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.properties import PropertyTag
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
-from spsdk.wpc.utils import SPSDKEncoding, SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.wpc.wpc import SPSDKEncoding, SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
 
 logger = logging.getLogger(__name__)
 
@@ -32,16 +37,16 @@ class WPCTargetMBoot(WPCTarget):
 
     identifier = "mboot"
 
-    def __init__(self, family: str, **kwargs: str) -> None:
+    def __init__(self, family: FamilyRevision, mboot_interface: dict[str, str]) -> None:
         """Initialize WPC Target adapter.
 
         :param family: Target family name
-        :param kwargs: Dictionary containing interface definition.
+        :param mboot_interface: Dictionary containing interface definition.
             Examples: "port": "com4", "usb":"0x1fc9:0x014f", "plugin": "identifier=my_plugin,param1=value1"
         """
         super().__init__(family)
-        self.interface = _get_interface(params=kwargs)
-        db = get_db(device=family)
+        self.interface = _get_interface(params=mboot_interface)
+        db = get_db(family)
         self.buffer_address = db.get_int(DatabaseManager.COMM_BUFFER, "address")
         self.id_length = db.get_int(DatabaseManager.WPC, "id_length")
         self.need_reset = db.get_bool(DatabaseManager.WPC, "need_reset")
@@ -50,10 +55,24 @@ class WPCTargetMBoot(WPCTarget):
         self.need_address_adjust = db.get_bool(DatabaseManager.WPC, "need_address_adjust")
 
     @classmethod
-    def get_validation_schema(cls) -> dict:
+    def load_from_config(cls, config: Config) -> Self:
+        """Create instance of this class based on configuration data.
+
+        __init__ method of this class will be called with data from config_data.
+        To limit the scope of data, set cls.CONFIG_PARAMS (key in config data).
+
+        :param config: Configuration data
+        :return: Instance of this class
+        """
+        family = FamilyRevision.load_from_config(config)
+        mboot_interface = config.get(cls.CONFIG_PARAMS)
+        return cls(family=family, mboot_interface=mboot_interface)
+
+    @classmethod
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get JSON schema for validating configuration data."""
         schema = get_schema_file(DatabaseManager.WPC)
-        return schema["mboot"]
+        return [schema["mboot"]]
 
     def get_low_level_wpc_id(self) -> bytes:
         """Get the lower-level WPC ID from the target."""

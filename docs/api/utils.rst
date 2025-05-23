@@ -20,46 +20,6 @@ Utils easy enum
    :undoc-members:
    :show-inheritance:
 
-Utils crypto - Certification blocks
--------------------------------------
-
-.. automodule:: spsdk.utils.crypto.cert_blocks
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Utils crypto - Inline Encryption Engine (IEE)
-----------------------------------------------
-
-.. automodule:: spsdk.utils.crypto.iee
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Utils crypto - On-the-Fly AES Decryption (OTFAD)
--------------------------------------------------
-
-.. automodule:: spsdk.utils.crypto.otfad
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Utils crypto - Root Keys Hash Table (RKHT)
-------------------------------------------------
-
-.. automodule:: spsdk.utils.crypto.rkht
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Utils crypto - Root Of Trust (RoT)
-------------------------------------------------
-
-.. automodule:: spsdk.utils.crypto.rot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 General utils
 ---------------
 
@@ -68,10 +28,10 @@ General utils
    :undoc-members:
    :show-inheritance:
 
-Image utils
------------
+Binary Image utils
+------------------
 
-.. automodule:: spsdk.utils.images
+.. automodule:: spsdk.utils.binary_image
    :members:
    :undoc-members:
    :show-inheritance:

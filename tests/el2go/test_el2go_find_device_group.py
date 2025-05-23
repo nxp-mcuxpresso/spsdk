@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-""" Tests for EL2GO find Device Group operation."""
+"""Tests for EL2GO find Device Group operation."""
 
 import os
 import shutil
@@ -15,6 +15,7 @@ import pytest
 from spsdk.el2go.api_utils import EL2GOTPClient
 from spsdk.el2go.client import EL2GOApiResponse
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.config import Config
 from spsdk.utils.misc import load_configuration, use_working_directory
 
 
@@ -29,9 +30,8 @@ def test_00_006_009_extract_device_groups(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
 
         generic_dict = {"content": [{"id": device_group_id}]}
 
@@ -59,9 +59,8 @@ def test_00_007_008_extract_device_groups_fail(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
 
         generic_dict = {"content": [{"id": device_group_id}]}
@@ -87,9 +86,8 @@ def test_00_010_find_wrong_device_group(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
 
         generic_dict = {
@@ -131,9 +129,8 @@ def test_00_011_012_find_device_group_error(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
 
         generic_dict = {"content": [{"id": device_group_id}]}
@@ -165,9 +162,8 @@ def test_00_014_find_device_group_corner_case(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
 
         generic_dict = {
             "content": [{"id": device_group_id}, {"id": device_group_id}, {"id": device_group_id}]

@@ -1,0 +1,13 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt595s
+revision: latest
+imageBuildNumber: 0
+rootCertificate0File: ../../_data/certs/rsa2048/srk0_rsa2048_self_signed.der
+rootCertificate1File: ../../_data/certs/rsa2048/srk1_rsa2048_self_signed.der
+rootCertificate2File: ../../_data/certs/rsa2048/srk2_rsa2048_self_signed.der
+rootCertificate3File: ../../_data/certs/rsa2048/srk3_rsa2048_self_signed.der
+mainRootCertId: 0
+containerOutputFile: cert_block.bin

@@ -40,13 +40,6 @@ Organization
 
 .. include:: _prebuild/table_project_structure.inc
 
-=================
-Supported Devices
-=================
-
-.. include:: _prebuild/devices_table.inc
-    :parser: myst_parser.sphinx_
-
 
 ============
 Supported OS

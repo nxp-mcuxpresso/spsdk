@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =================================  Trust Zone Configuration template for lpc55s3x.  ==================================
 
 # ======================================================================================================================
@@ -24,7 +25,7 @@ trustZonePreset:
   Start of block (tzm_magic): '0x4d2d5a54'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Secure vector table address  (cm33_vtor_addr)
-  Secure vector table address  (cm33_vtor_addr): '0x0'
+  Secure vector table address  (cm33_vtor_addr): '0xc000feee'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Non-secure vector table address  (cm33_vtor_ns_addr)
   Non-secure vector table address  (cm33_vtor_ns_addr): '0x0'

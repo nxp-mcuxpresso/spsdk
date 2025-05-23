@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =========================================  Certification Block V21 template  =========================================
 
 # ======================================================================================================================
@@ -20,7 +21,7 @@ iskPublicKey: ../../_data/keys/ecc256/imgkey_ecc256.pub
 iskCertificateConstraint: 0
 # -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
 # Description: Path to Main root Certification Private Key.
-signPrivateKey: ../../_data/keys/ecc256/srk0_ecc256.pem
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
 # ======================================================================================================================
 #                                                == Root Keys Settings ==
 # ======================================================================================================================

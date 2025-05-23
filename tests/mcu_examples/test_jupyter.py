@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import os
@@ -42,6 +42,5 @@ def test_general_notebooks(notebook_path):
         ),
         # on Windows one extra space is added to the cell output
         # also the the test should ignore different line-endings
-        # TODO: remove the last regex once the bug SPSDK-4302 is closed
     )
     fixture.check(notebook_path)

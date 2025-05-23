@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Module containing helper functions for nxpimage."""
 
 import logging
@@ -12,6 +13,7 @@ from numbers import Number
 from typing import Callable, Optional, Union
 
 from spsdk.exceptions import SPSDKError
+from spsdk.image.otfad.otfad import KeyBlob
 from spsdk.mboot.memories import ExtMemId, MemId
 from spsdk.sbfile.sb2.commands import (
     CmdBaseClass,
@@ -26,7 +28,6 @@ from spsdk.sbfile.sb2.commands import (
     CmdVersionCheck,
     VersionCheckType,
 )
-from spsdk.utils.crypto.otfad import KeyBlob
 from spsdk.utils.misc import (
     align_block,
     get_bytes_cnt_of_int,

@@ -5,12 +5,11 @@
 # the difference between the user configuration and the default configuration.
 template_yaml: workspace/dc_config.yaml
 user_cfg: inputs/dc_config.yaml
-custom_command: "%! nxpdebugmbox -f mcxn946 dat dc get-template -o workspace/dc_config.yaml --force"
+custom_command: "%! nxpdebugmbox dat dc get-template -f mcxn946 -o workspace/dc_config.yaml --force"
 
 comments:
-  rotk: "Add path to private key file for signing used in our example"
+  signer: "Add path to private key file for signing used in our example"
   rot_meta: "Updated Root Of Trust public keys to used in our example"
-  signProvider: "This is removed, because we are using private key in this example"
   dck: "Updated Debug Credential public key to used in our example"
   rot_id: "We keep it same because in our example the private key to sign whole DC file has been chooses with index 0"
   cc_beacon: "We keep the cc beacon on value zero, it's enough for example purposes"

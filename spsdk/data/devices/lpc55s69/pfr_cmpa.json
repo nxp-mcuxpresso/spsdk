@@ -1,5 +1,5 @@
 {
-    "cpu": "LPC55S69",
+    "cpu": "lpc55s69",
     "groups": [
         {
             "group": {
@@ -1169,7 +1169,15 @@
                             "width": 1
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00038-0004C",
+                "description": "Reserved 00038-0004C"
+            },
+            "registers": [
                 {
                     "id": "Reserved00038",
                     "name": "Reserved 0x00038",
@@ -1187,15 +1195,7 @@
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "Reserved 00040-0004C",
-                "description": "Reserved 00040-0004C"
-            },
-            "registers": [
+                },
                 {
                     "id": "Reserved00040",
                     "name": "Reserved 0x00040",

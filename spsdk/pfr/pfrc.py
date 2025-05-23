@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,8 @@ from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigErro
 from spsdk.pfr.pfr import CFPA, CMPA, SPSDKPfrError
 from spsdk.pfr.processor import Processor
 from spsdk.pfr.translator import Translator
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import load_configuration
 
 logger = logging.getLogger(__name__)
@@ -81,28 +82,26 @@ class Pfrc:
         self.cfpa = cfpa
 
         self.chip_family = cmpa.family if cmpa else cfpa.family  # type: ignore
-        pfrc_devices = self.get_supported_families()
-        pfrc_devices += list(
-            DatabaseManager().quick_info.devices.get_predecessors(pfrc_devices).keys()
-        )
-        if not self.chip_family or self.chip_family not in pfrc_devices:
+        pfrc_devices = self.get_supported_families(True)
+        if not self.chip_family or self.chip_family.name not in [x.name for x in pfrc_devices]:
             raise SPSDKPfrConfigError(
                 f"Chip family from configuration is not supported: {self.chip_family} "
                 f"Supported families:{self.get_supported_families()}"
             )
 
-        self.db = get_db(self.chip_family, "latest")
+        self.db = get_db(self.chip_family)
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families(include_predecessors: bool = False) -> list[FamilyRevision]:
         """Return list of supported families.
 
+        :param include_predecessors: The list will contains also predecessors names
         :return: List of supported families.
         """
-        pfr_devices = get_families(DatabaseManager.PFR)
+        pfr_devices = get_families(DatabaseManager.PFR, include_predecessors=include_predecessors)
         ret = []
         for dev in pfr_devices:
-            pfrc_rules = get_db(dev, "latest").get_list(DatabaseManager.PFR, "rules", [])
+            pfrc_rules = get_db(dev).get_list(DatabaseManager.PFR, "rules", [])
             if pfrc_rules:
                 ret.append(dev)
         return ret

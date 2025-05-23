@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -132,7 +132,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         :param packet: Command packet object to be sent
         :raises SPSDKAttributeError: Command packed contains no data to be sent
         """
-        data = packet.to_bytes(padding=False)
+        data = packet.export(padding=False)
         if not data:
             raise SPSDKAttributeError("Incorrect packet type")
         frame = self._create_frame(data, FPType.CMD)

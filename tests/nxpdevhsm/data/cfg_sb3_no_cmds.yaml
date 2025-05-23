@@ -1,0 +1,9 @@
+# Copyright 2023,2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========  Device HSM converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+family: lpc55s3x  # [Required], MCU family name; Possible options:['lpc55s3x', 'mcxn9xx']

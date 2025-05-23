@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ================================  Debug Credential file template for mimxrt1189 family.  =================================
 
 # -------------------------------------------------------- Note --------------------------------------------------------
@@ -43,9 +44,10 @@
 #  ============================================
 #  There are two ways how sign the final DC data blob.
 
-#  1. In case that you is available private pair for rot_meta with index rot_id just use first simple style
-#  to use it by rotk key. As a second way to do same is use sign_provider (or signProvider - both are accepted) option
-# with 'type=file'.
+#  1. The 'signer' option is available to specify the signature provider configuration or path to a private key.
+#     The 'signer' option provides a standardized interface for external signing solutions that works
+#     consistently across all SPSDK applications.
+#     Previous options like 'rotk' and 'sign_provider'/'signProvider' are no longer supported
 
 #  2. For case that Debug Credential files are generated in untrusted environment (without access to RoT private keys),
 #  there is option to use plugin (example how to create own plugin is in: ./SPSDK/examples/dat/hsm/). The plugin
@@ -105,4 +107,4 @@ rot_id: 0
 dck: ../../_data/keys/ecc256/dck_ecc256.pub
 # ----------------------------===== RoT signature private key [Conditionally required] =====----------------------------
 # Description: Private key for the RoT meta chosen by rot_id to sign the image.
-rotk: ../../_data/keys/ecc256/srk0_ecc256.pem
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem

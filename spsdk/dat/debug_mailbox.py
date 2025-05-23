@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for NXP SPSDK DebugMailbox support."""
@@ -13,8 +13,9 @@ from typing import Any, no_type_check
 
 from spsdk.debuggers.debug_probe import DebugProbe
 from spsdk.exceptions import SPSDKError, SPSDKIOError
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.exceptions import SPSDKTimeoutError
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import Timeout
 
 logger = logging.getLogger(__name__)
@@ -30,8 +31,7 @@ class DebugMailbox:
     def __init__(
         self,
         debug_probe: DebugProbe,
-        family: str,
-        revision: str = "latest",
+        family: FamilyRevision,
         reset: bool = True,
         moredelay: float = 0.0,
         op_timeout: int = 1000,
@@ -40,7 +40,6 @@ class DebugMailbox:
 
         :param debug_probe: Debug probe instance.
         :param family: Chip family.
-        :param revision: Chip family revision, defaults to 'latest'
         :param reset: Do reset of debug mailbox during initialization, defaults to True.
         :param moredelay: Time of extra delay after reset sequence, defaults to 0.0.
         :param op_timeout: Atomic operation timeout, defaults to 1000.
@@ -48,11 +47,10 @@ class DebugMailbox:
         """
         # setup debug port / access point
         self.family = family
-        self.revision = revision
         self.dbgmlbx_ap_ix = -1
         self.non_standard_statuses = {}
         if family:
-            db = get_db(family, revision)
+            db = get_db(family)
             self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
             self.non_standard_statuses = db.get_dict(
                 DatabaseManager.DAT, "non_standard_statuses", {}

@@ -5,22 +5,19 @@
 common:
   type: object
   title: Common DevHSM settings
+  if:
+    properties: oemEncMasterShare
+  then:
+    required: [oemRandomShare]
+
+  required: [containerOutputFile]
   properties:
-    description:
-      type: string
-      title: Description
-      description: Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
-      template_value: DevHSM SB file
-    containerKeyBlobEncryptionKey:
-      type: string
-      title: Part Common Key
-      description: Path to PCK/NPK/CUST_MK_SK/SB_KEK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
-      template_value: cust_mk_sk.bin
-      format: file_name
     oemRandomShare:
       type: string
       title: OEM Random Share input
-      description: Path to a file containing 16B of random seed data. If not specified, random seed will be generated.
+      description: >
+        Path to a file containing 16B of random seed data. If not specified, random seed will be generated. In case that 'oemEncMasterShare' is defined, the 'oemRandomShare'
+        must be defined with the original random seed that has been used to create OEM Encrypted master share.
       template_value: oem_seed.bin
       format: optional_file
     oemEncMasterShare:
@@ -56,6 +53,16 @@ common:
       title: Output file path
       description: Path where to store generated DevHSM SB file
       template_value: devhsm.sb
+      format: file_name
+
+cust_mk_sk:
+  type: object
+  properties:
+    containerKeyBlobEncryptionKey:
+      type: string
+      title: Part Common Key
+      description: Path to PCK/NPK/CUST_MK_SK/SB_KEK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
+      template_value: cust_mk_sk.bin
       format: file_name
 
 subTitle: |

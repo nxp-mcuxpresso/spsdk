@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,9 +12,9 @@ from datetime import datetime, timezone
 import pytest
 
 from spsdk.crypto.certificate import Certificate
-from spsdk.crypto.signature_provider import get_signature_provider
+from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.exceptions import SPSDKError
-from spsdk.mboot.memories import ExtMemId, MemIdEnum
+from spsdk.mboot.memories import MemIdEnum
 from spsdk.sbfile.sb2.commands import (
     CmdCall,
     CmdErase,
@@ -33,8 +33,9 @@ from spsdk.sbfile.sb2.images import (
     CertBlockV1,
     SBV2xAdvancedParams,
 )
-from spsdk.utils.crypto.otfad import KeyBlob, Otfad
+from spsdk.image.otfad.otfad import KeyBlob, Otfad
 from spsdk.utils.misc import align_block
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 kek_value = unhexlify("AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204C2DA732")
@@ -71,7 +72,7 @@ def gen_cert_block(data_dir, sign_bits) -> CertBlockV1:
     )
     root_key_hash = cert_obj.public_key_hash()
 
-    cb = CertBlockV1()
+    cb = CertBlockV1(FamilyRevision("Ambassador"))
     cb.set_root_key_hash(0, root_key_hash)
     cb.add_certificate(cert_obj)
     return cb
@@ -102,14 +103,15 @@ def get_boot_sections(
     # OTFAD
     key_blobs_data = list()
     if otfad:
-        otfad = Otfad()
+        key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+        otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
         # key blob 0
         key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
         counter = bytes.fromhex("5689fab8b4bfb264")
         key_blob = KeyBlob(
             0x08001000, 0x0800F3FF, key, counter, zero_fill=bytes(4), crc=bytes(4)
         )  # zero_fill and crc should be used only for testing !
-        otfad.add_key_blob(key_blob)
+        otfad[0] = key_blob
         key_blobs_data = list()
         key_blobs_data.append(
             key_blob.export(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
@@ -236,8 +238,8 @@ def test_sb2x_builder(
         assert signed
 
     # this is hardcoded in the test; if not specified, random values will be used
-    dek_value = b"\xA0" * 32
-    mac_value = b"\x0B" * 32
+    dek_value = b"\xa0" * 32
+    mac_value = b"\x0b" * 32
 
     # this is hardcoded in the test; if not specified, current value will be used
     timestamp = datetime.fromtimestamp(
@@ -274,7 +276,7 @@ def test_sb2x_builder(
         private_key = os.path.join(
             data_dir, "sb2_x", "selfsign_privatekey_rsa" + str(sign_bits) + ".pem"
         )
-        signature_provider = get_signature_provider(local_file_key=private_key)
+        signature_provider = PlainFileSP(private_key)
 
         boot_image.signature_provider = signature_provider
 
@@ -394,7 +396,7 @@ def test_invalid_boot_image_v2():
     with pytest.raises(
         SPSDKError, match="Certificate block cannot be used unless SB file is signed"
     ):
-        bimg.cert_block = CertBlockV1()
+        bimg.cert_block = CertBlockV1(FamilyRevision("Ambassador"))
     bimg = BootImageV20(True, kek=bytes(31))
     bimg.cert_block = None
     with pytest.raises(SPSDKError, match="Certification block not present"):

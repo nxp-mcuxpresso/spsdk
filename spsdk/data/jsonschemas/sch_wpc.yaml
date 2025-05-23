@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -30,10 +30,7 @@ el2go:
       title: "Timeout for EL2GO API"
       description: "Timeout for EL2GO API in seconds. Default is 60 seconds"
       template_value: 60
-    family:
-      type: string
-      skip_in_template: true
-  required: [url, qi_id, api_key, family]
+  required: [url, qi_id, api_key]
 
 mboot:
   type: object
@@ -80,10 +77,7 @@ model:
       title: "Model directory"
       description: "Path to directory containing the model (config.yaml)"
       template_value: <path/to/model_dir>
-    family:
-      type: string
-      skip_in_template: true
-  required: [model_dir, family]
+  required: [model_dir]
 
 full_config:
   type: object
@@ -117,11 +111,6 @@ full_config:
 service_config:
   type: object
   properties:
-    family:
-      type: string
-      title: "Target family"
-      description: "Name of the target family"
-      template_value: mwct2xxxs
     service_type:
       type: string
       title: "Name of the WPC service adapter"
@@ -131,16 +120,11 @@ service_config:
       title: "Parameters for the WPC service adapter"
       description: "Parameters for the WPC service adapter"
       properties: {}
-  required: [service_type, service_parameters, family]
+  required: [service_type, service_parameters]
 
 target_config:
   type: object
   properties:
-    family:
-      type: string
-      title: "Target family"
-      description: "Name of the target family"
-      template_value: mwct2xxxs
     target_type:
       type: string
       title: "Name of the target adapter"
@@ -150,4 +134,4 @@ target_config:
       title: "Parameters for the target adapter"
       description: "Parameters for the target adapter"
       properties: {}
-  required: [target_type, target_parameters, family]
+  required: [target_type, target_parameters]

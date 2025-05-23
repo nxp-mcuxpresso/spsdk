@@ -14,6 +14,7 @@ import pytest
 
 from spsdk.apps import nxpimage
 from spsdk.image.bca.bca import BCA
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -22,16 +23,17 @@ from tests.cli_runner import CliRunner
     "family",
     BCA.get_supported_families(),
 )
-def test_nxpimage_bca_template_cli(cli_runner: CliRunner, tmpdir, family):
-    cmd = f"bca get-template -f {family} --output {tmpdir}/bca_{family}.yml"
+def test_nxpimage_bca_template_cli(cli_runner: CliRunner, tmpdir, family: FamilyRevision):
+    cmd = f"bca get-template -f {family.name} --output {tmpdir}/bca_{family.name}.yml"
     cli_runner.invoke(nxpimage.main, cmd.split())
-    assert os.path.isfile(f"{tmpdir}/bca_{family}.yml")
+    assert os.path.isfile(f"{tmpdir}/bca_{family.name}.yml")
+
 
 @pytest.mark.parametrize(
     "family",
-    BCA.get_supported_families(),
+    ["mcxc041", "mcxc141", "mc56f81768", "mc56f81868"],
 )
-def test_nxpimage_bca_export_cli(cli_runner: CliRunner, tmpdir, data_dir, family):
+def test_nxpimage_bca_export_cli(cli_runner: CliRunner, tmpdir, data_dir, family: str):
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "bca", family, f"bca_{family}.yaml")
         out_file = os.path.join(tmpdir, f"bca_{family}_exported.bin")
@@ -44,20 +46,16 @@ def test_nxpimage_bca_export_cli(cli_runner: CliRunner, tmpdir, data_dir, family
             shallow=False,
         )
 
+
 @pytest.mark.parametrize(
     "family, binary",
     [
         ("mcxc041", "bca.bin"),
         ("mcxc141", "bca.bin"),
-        ("mcxc142", "bca.bin"),
-        ("mcxc143", "bca.bin"),
-        ("mcxc242", "bca.bin"),
-        ("mcxc243", "bca.bin"),
-        ("mcxc244", "bca.bin"),
-        ("mcxc443", "bca.bin"),
-        ("mcxc444", "bca.bin"),
-    ]
-    )
+        ("mc56f81768", "bca.bin"),
+        ("mc56f81868", "bca.bin"),
+    ],
+)
 def test_nxpimage_bca_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family, binary):
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "bca", family)

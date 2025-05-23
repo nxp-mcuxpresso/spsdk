@@ -1,0 +1,51 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========================  fcf Configuration template for mc56f81868, Revision: latest.  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mc56f81868
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
+# ------------------------------------------===== mc56f81868 [Required] =====-------------------------------------------
+fcf:
+  # ----------------------------------------===== BACKDOOR_KEY [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000000, Width: 64b; Backdoor key bytes
+  BACKDOOR_KEY: '0xFFFFFFFFFFFFFFFF'
+  # --------------------------------------===== FLASH_PROTECTION [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Flash protection bytes
+  FLASH_PROTECTION: '0xFFFFFFFF'
+  # ------------------------------------------===== LIFECYCLE [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b; DSA Secure Lifecycle state
+  LIFECYCLE:
+    # --------------------------------------===== LIFECYCLE_STATE [Optional] =====--------------------------------------
+    # Description: Offset: 0b, Width: 8b, DSA Secure Lifecycle state
+    # - OEM_OPEN_ROP0, (254): Most permissive state - full ISP command set available in all conditions
+    # - OEM_CLOSED_ROP1, (144): Moderate security - partial ISP commands on normal boot, full commands via ROM_API
+    # - OEM_CLOSED_ROP2, (149): Higher security - no ISP commands on normal boot, partial commands via ROM_API or
+    # invalid image
+    # - OEM_CLOSED_ROP3, (155): Very high security - no ISP commands except ReceiveSBFile via ROM_API for secure devices
+    # only
+    # - OEM_CLOSED_NO_RETURN, (107): Maximum security - no ISP commands available in any condition, device cannot be
+    # reprogrammed
+    # Possible options: <OEM_OPEN_ROP0, OEM_CLOSED_ROP1, OEM_CLOSED_ROP2, OEM_CLOSED_ROP3, OEM_CLOSED_NO_RETURN>
+    LIFECYCLE_STATE: OEM_OPEN_ROP0
+  # -----------------------------------------===== OPTION_BYTE [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000000D, Width: 8b; Flash configuration options
+  OPTION_BYTE:
+    # ----------------------------------------===== POWER_MODE [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 1b, Controls which power mode register takes effect
+    # - SIM_PWRMODE, (1): Writing SIM_PWRMODE register takes effect, writing SIM_PWR register doesn't take effect
+    # - SIM_PWR, (0): Writing SIM_PWRMODE register doesn't take effect, writing SIM_PWR register takes effect
+    # Possible options: <SIM_PWRMODE, SIM_PWR>
+    POWER_MODE: SIM_PWRMODE
+    # ---------------------------------------===== RESERVED_BITS [Optional] =====---------------------------------------
+    # Description: Offset: 1b, Width: 7b, N/A
+    RESERVED_BITS: 127

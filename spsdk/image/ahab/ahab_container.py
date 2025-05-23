@@ -6,20 +6,28 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of raw AHAB container support.
 
-This module represents a generic AHAB container implementation. You can set the
-containers values at will. From this perspective, consult with your reference
-manual of your device for allowed values.
-"""
+This module represents a generic AHAB container implementation for NXP's Advanced
+High-Assurance Boot architecture. It provides classes to create, parse, and manipulate
+AHAB containers with customizable parameters.
 
+The implementation supports various container versions and configurations, including:
+- Basic AHAB containers with signature verification
+- Encrypted firmware images
+- Multiple image entries within a container
+- SRK (Super Root Key) management for secure boot chain
+
+Consult with your device reference manual for allowed values and specific requirements
+for your target hardware.
+"""
 
 import logging
 from struct import pack, unpack
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueError
 from spsdk.fuses.fuses import FuseScript
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
@@ -37,9 +45,10 @@ from spsdk.image.ahab.ahab_data import (
 from spsdk.image.ahab.ahab_iae import ImageArrayEntry, ImageArrayEntryTemplates, ImageArrayEntryV2
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
 from spsdk.image.ahab.ahab_srk import SRKTableArray
+from spsdk.utils.binary_image import BinaryImage
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import align, value_to_int
+from spsdk.utils.misc import align, get_abs_path, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -47,9 +56,9 @@ logger = logging.getLogger(__name__)
 
 
 class AHABContainerBase(HeaderContainer):
-    """Class representing AHAB container base class (common for Signed messages and AHAB Image).
+    """Base class representing AHAB container (common for Signed messages and AHAB Image).
 
-    Container header::
+    Container header structure::
 
         +---------------+----------------+----------------+----------------+
         |    Byte 3     |     Byte 2     |      Byte 1    |     Byte 0     |
@@ -67,6 +76,8 @@ class AHABContainerBase(HeaderContainer):
         |                      Signature block                             |
         +------------------------------------------------------------------+
 
+    This class provides the foundation for all AHAB container implementations,
+    handling the common header format, signature verification, and configuration.
     """
 
     SIGNATURE_BLOCK = SignatureBlock
@@ -191,7 +202,11 @@ class AHABContainerBase(HeaderContainer):
         :param srk_id: ID of SRK table in case of using multiple Signatures, default is 0.
         :return: SHA256 hash of SRK table.
         """
-        if self.signature_block and self.signature_block.srk_assets:
+        if (
+            self.signature_block
+            and self.signature_block.srk_assets
+            and 0 <= srk_id < self.srk_count
+        ):
             return self.signature_block.srk_assets.compute_srk_hash(srk_id)
         return b""
 
@@ -407,19 +422,19 @@ class AHABContainerBase(HeaderContainer):
             signature_block_offset,
         )
 
-    def _create_flags_config(self) -> dict[str, Any]:
+    def _create_flags_config(self) -> Config:
         """Create configuration of the AHAB container flags.
 
         :return: Configuration dictionary.
         """
-        cfg: dict[str, Any] = {}
+        cfg = Config()
 
         cfg["srk_set"] = self.flag_srk_set.label
         cfg["used_srk_id"] = self.flag_used_srk_id
         cfg["srk_revoke_mask"] = self.flag_srk_revoke_mask
         return cfg
 
-    def _create_config(self, index: int, data_path: str) -> dict[str, Any]:
+    def _create_config(self, index: int, data_path: str) -> Config:
         """Create configuration of the AHAB Image.
 
         :param index: Container index.
@@ -432,11 +447,11 @@ class AHABContainerBase(HeaderContainer):
         cfg["sw_version"] = self.sw_version
 
         if self.signature_block:
-            cfg.update(self.signature_block.create_config(index=index, data_path=data_path))
+            cfg.update(self.signature_block.get_config(data_path=data_path, index=index))
 
         return cfg
 
-    def _load_from_config_flags(self, config: dict[str, Any]) -> None:
+    def _load_from_config_flags(self, config: Config) -> None:
         """Loads from config AHAB container flags.
 
         "config" content of container configurations.
@@ -444,12 +459,12 @@ class AHABContainerBase(HeaderContainer):
         :param config: array of AHAB containers configuration dictionaries.
         """
         self.set_flags(
-            srk_set=config.get("srk_set", "none"),
-            used_srk_id=value_to_int(config.get("used_srk_id", 0)),
-            srk_revoke_mask=value_to_int(config.get("srk_revoke_mask", 0)),
+            srk_set=config.get_str("srk_set", "none"),
+            used_srk_id=config.get_int("used_srk_id", 0),
+            srk_revoke_mask=config.get_int("srk_revoke_mask", 0),
         )
 
-    def load_from_config_generic(self, config: dict[str, Any]) -> None:
+    def load_from_config_generic(self, config: Config) -> None:
         """Converts the configuration option into an AHAB image object.
 
         "config" content of container configurations.
@@ -457,12 +472,21 @@ class AHABContainerBase(HeaderContainer):
         :param config: array of AHAB containers configuration dictionaries.
         """
         self._load_from_config_flags(config)
-        self.fuse_version = value_to_int(config.get("fuse_version", 0))
-        self.sw_version = value_to_int(config.get("sw_version", 0))
-        self.chip_config.used_srk_id = value_to_int(config.get("used_srk_id", 0))
-        self.signature_block = self.SIGNATURE_BLOCK.load_from_config(
-            config, self.chip_config, search_paths=self.chip_config.base.search_paths
-        )
+        self.fuse_version = config.get_int("fuse_version", 0)
+        self.sw_version = config.get_int("sw_version", 0)
+        self.chip_config.used_srk_id = self.flag_used_srk_id
+        self.chip_config.srk_set = self.flag_srk_set
+        self.chip_config.srk_revoke_keys = self.flag_srk_revoke_keys
+
+        self.signature_block = self.SIGNATURE_BLOCK.load_from_config(config, self.chip_config)
+
+    def post_export(self, data_path: str, cnt_ix: Optional[int] = None) -> list[str]:
+        """Post export actions for AHAB container.
+
+        :param data_path: Path to store exported data files.
+        :param cnt_ix: Container index.
+        """
+        raise SPSDKNotImplementedError("Post export action is not implemented")
 
 
 class AHABContainer(AHABContainerBase):
@@ -703,12 +727,56 @@ class AHABContainer(AHABContainerBase):
         container_header[: self._signature_block_offset] = container_header_only
         # Add Signature Block
         if self.signature_block:
+            signature_block = self.signature_block.export()
             container_header[
                 self._signature_block_offset : self._signature_block_offset
-                + align(len(self.signature_block), CONTAINER_ALIGNMENT)
-            ] = self.signature_block.export()
+                + align(len(signature_block), CONTAINER_ALIGNMENT)
+            ] = signature_block
 
         return container_header
+
+    def post_export(self, output_path: str, cnt_ix: Optional[int] = None) -> list[str]:
+        """Post-export processing and optional file writing.
+
+        :param output_path: Base path for output files
+        :param cnt_ix: Container index
+        :return: List of generated file paths
+        """
+        generated_files: list[str] = []
+        if self.flag_srk_set == FlagsSrkSet.NXP:
+            logger.debug("Skipping generating hashes for NXP container")
+            return generated_files
+        if self.image_array_len > 0 and self.image_array[0].flags_core_id_name == "v2x-1":
+            logger.debug("Skipping generating hashes for v2x-1 container")
+            return generated_files
+
+        if self.signature_block:
+            for srk_id in range(self.signature_block.SUPPORTED_SIGNATURES_CNT):
+                srk_hash = self.get_srk_hash(srk_id)
+                if srk_hash:
+                    file_name = f"ahab_{self.flag_srk_set.label}{cnt_ix if cnt_ix is not None else ''}_srk{srk_id}_hash"
+                    srk_hash_file = get_abs_path(f"{file_name}.txt", output_path)
+                    write_file(srk_hash.hex().upper(), srk_hash_file, overwrite=False)
+                    logger.info(f"Generated file containing SRK hash: {srk_hash_file}")
+                    generated_files.append(srk_hash_file)
+                    try:
+                        fuse_script = FuseScript(self.chip_config.base.family, DatabaseManager.AHAB)
+                        logger.info(
+                            f"\nFuses info:\n{fuse_script.generate_script(self, info_only=True)}"
+                        )
+                        output_path = fuse_script.write_script(
+                            file_name, output_path, self, overwrite=False
+                        )
+                        generated_files.append(output_path)
+                        logger.info(
+                            "Generated script for writing fuses for container "
+                            f"{cnt_ix}: {output_path}"
+                        )
+                    except SPSDKError:
+                        logger.info(
+                            f"Failed to generate script for writing fuses for container {cnt_ix}"
+                        )
+        return generated_files
 
     def verify(self) -> Verifier:
         """Verify container data."""
@@ -800,7 +868,8 @@ class AHABContainer(AHABContainerBase):
             description += "\n\nThis is signed container, check that the SRK hash fuses has following values:\n"
             description += self.create_srk_hash_fuses_script()
         ret = self._verify(
-            name=f"Container {self.chip_config.container_offset // 0x400}", description=description
+            name=f"Container {self.chip_config.container_offset // self.CONTAINER_SIZE}",
+            description=description,
         )
         ret.add_record_enum(
             "Glitch detector runtime behavior",
@@ -813,12 +882,12 @@ class AHABContainer(AHABContainerBase):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes, chip_config: AhabChipConfig, container_id: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
+    def parse(cls, data: bytes, chip_config: AhabChipConfig, offset: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
         """Parse input binary chunk to the container object.
 
         :param data: Binary data with Container block to parse.
         :param chip_config: Ahab image chip configuration.
-        :param container_id: AHAB container ID.
+        :param offset: AHAB container offset.
         :return: Object recreated from the binary data.
         """
         (
@@ -828,29 +897,31 @@ class AHABContainer(AHABContainerBase):
             fuse_version,
             number_of_images,
             signature_block_offset,
-        ) = cls._parse(data)
+        ) = cls._parse(data[offset:])
 
         parsed_container = cls(
             chip_config=chip_config,
             flags=flags,
             fuse_version=fuse_version,
             sw_version=sw_version,
-            container_offset=cls.CONTAINER_SIZE * container_id,
+            container_offset=offset,
         )
         # Lock the parsed container to any updates of offsets
         parsed_container.length = container_length
         parsed_container.chip_config.locked = True
 
         parsed_container.signature_block = cls.SIGNATURE_BLOCK.parse(
-            data[signature_block_offset:], parsed_container.chip_config
+            data[offset + signature_block_offset :], parsed_container.chip_config
         )
 
         for i in range(number_of_images):
-            image_array_entry_binary_start = cls.fixed_length() + i * cls.IAE_TYPE.fixed_length()
+            image_array_entry_binary_start = (
+                offset + cls.fixed_length() + i * cls.IAE_TYPE.fixed_length()
+            )
             image_array_entry = cls.IAE_TYPE.parse(
                 data[image_array_entry_binary_start:], parsed_container.chip_config
             )
-            binary_image_start = image_array_entry._image_offset
+            binary_image_start = offset + image_array_entry._image_offset
 
             image_size = int.from_bytes(
                 data[image_array_entry_binary_start + 4 : image_array_entry_binary_start + 8],
@@ -860,7 +931,7 @@ class AHABContainer(AHABContainerBase):
             image_array_entry.image = data[binary_image_start:binary_image_end]
 
             parsed_container.image_array.append(image_array_entry)  # type: ignore
-        parsed_container._parsed_header = HeaderContainerData.parse(binary=data)
+        parsed_container._parsed_header = HeaderContainerData.parse(binary=data[offset:])
         return parsed_container
 
     @property
@@ -871,7 +942,7 @@ class AHABContainer(AHABContainerBase):
         )
         return self.FlagsGdetBehavior.from_tag(gdet_enable)
 
-    def _create_flags_config(self) -> dict[str, Any]:
+    def _create_flags_config(self) -> Config:
         """Create configuration of the AHAB container flags.
 
         :return: Configuration dictionary.
@@ -881,26 +952,26 @@ class AHABContainer(AHABContainerBase):
 
         return cfg
 
-    def create_config(self, index: int, data_path: str) -> dict[str, Any]:
+    def get_config(self, data_path: str = "./", index: int = 0) -> Config:
         """Create configuration of the AHAB Image.
 
         :param index: Container index.
         :param data_path: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        ret_cfg = {}
+        ret_cfg = Config()
         cfg = self._create_config(index, data_path)
         cfg["gdet_runtime_behavior"] = self.flag_gdet_runtime_behavior.label
         images_cfg = []
 
         for img_ix, image in enumerate(self.image_array):
-            images_cfg.append(image.create_config(index, img_ix, data_path))
+            images_cfg.append(image.get_config(index, img_ix, data_path))
         cfg["images"] = images_cfg
 
         ret_cfg["container"] = cfg
         return ret_cfg
 
-    def _load_from_config_flags(self, config: dict[str, Any]) -> None:
+    def _load_from_config_flags(self, config: Config) -> None:
         """Loads from config AHAB container flags.
 
         "config" content of container configurations.
@@ -915,7 +986,7 @@ class AHABContainer(AHABContainerBase):
 
     @classmethod
     def load_from_config(
-        cls, chip_config: AhabChipConfig, config: dict[str, Any], container_ix: int
+        cls, chip_config: AhabChipConfig, config: Config, container_ix: int
     ) -> Self:
         """Converts the configuration option into an AHAB image object.
 
@@ -930,7 +1001,7 @@ class AHABContainer(AHABContainerBase):
         ahab_container.chip_config.container_offset = cls.CONTAINER_SIZE * container_ix
         ahab_container.load_from_config_generic(config)
 
-        images: list[dict[str, Any]] = config.get("images", [])
+        images = config.get_list_of_configs("images", [])
         ahab_container.image_array = ImageArrayEntryTemplates.create_image_array_entries(
             iae_cls=cls.IAE_TYPE, chip_config=ahab_container.chip_config, config=images
         )
@@ -959,9 +1030,7 @@ class AHABContainer(AHABContainerBase):
         :return: Text description of SRK hash.
         """
         try:
-            fuse_script = FuseScript(
-                self.chip_config.base.family, self.chip_config.base.revision, DatabaseManager.AHAB
-            )
+            fuse_script = FuseScript(self.chip_config.base.family, DatabaseManager.AHAB)
         except SPSDKError as exc:
             return f"The Super Root Keys Hash fuses are not available, yet: {exc.description}"
         return fuse_script.generate_script(self, True)
@@ -983,6 +1052,13 @@ class AHABContainer(AHABContainerBase):
     def start_of_images(self) -> int:
         """Get real start of container images."""
         return min(x.image_offset for x in self.image_array)
+
+
+class AHABContainerV1forV2(AHABContainer):
+    """Class representing AHAB container version 1 which is used in AHAB image with V2 containers."""
+
+    CONTAINER_SIZE = 0x4000
+    TAG = AHABTags.CONTAINER_HEADER_V1_WITH_V2.tag
 
 
 class AHABContainerV2(AHABContainer):
@@ -1058,7 +1134,7 @@ class AHABContainerV2(AHABContainer):
         )
         return self.FlagsCheckAllSignatures.from_tag(check_all)
 
-    def _create_flags_config(self) -> dict[str, Any]:
+    def _create_flags_config(self) -> Config:
         """Create configuration of the AHAB container flags.
 
         :return: Configuration dictionary.
@@ -1068,7 +1144,7 @@ class AHABContainerV2(AHABContainer):
 
         return cfg
 
-    def _load_from_config_flags(self, config: dict[str, Any]) -> None:
+    def _load_from_config_flags(self, config: Config) -> None:
         """Loads from config AHAB container flags.
 
         "config" content of container configurations.
@@ -1080,7 +1156,7 @@ class AHABContainerV2(AHABContainer):
             self.FlagsCheckAllSignatures.from_attr(
                 config.get("check_all_signatures", "default")
             ).tag
-            << self.FLAGS_GDET_ENABLE_OFFSET
+            << self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET
         )
 
     def create_srk_hash_fuses_script(self) -> str:
@@ -1095,7 +1171,6 @@ class AHABContainerV2(AHABContainer):
                 try:
                     fuse_script = FuseScript(
                         self.chip_config.base.family,
-                        self.chip_config.base.revision,
                         DatabaseManager.AHAB,
                         index=ix,
                     )
@@ -1105,6 +1180,53 @@ class AHABContainerV2(AHABContainer):
                     )
                 ret += fuse_script.generate_script(self, True) + "\n"
         return ret
+
+    def post_export(self, output_path: str, cnt_ix: Optional[int] = None) -> list[str]:
+        """Post-export processing and optional file writing.
+
+        :param output_path: Base path for output files
+        :param cnt_ix: Container index
+        :return: List of generated file paths
+        """
+        generated_files: list[str] = []
+        if self.flag_srk_set == FlagsSrkSet.NXP:
+            logger.debug("Skipping generating hashes for NXP container")
+            return generated_files
+        if self.image_array_len > 0 and self.image_array[0].flags_core_id_name == "v2x-1":
+            logger.debug("Skipping generating hashes for v2x-1 container")
+            return generated_files
+
+        if self.signature_block:
+            if not isinstance(self.signature_block.srk_assets, SRKTableArray):
+                return generated_files
+            for srk_id in range(len(self.signature_block.srk_assets._srk_tables)):
+                srk_hash = self.get_srk_hash(srk_id)
+                if srk_hash:
+                    file_name = f"ahab_{self.flag_srk_set.label}{cnt_ix if cnt_ix is not None else ''}_srk{srk_id}_hash"
+                    srk_hash_file = get_abs_path(f"{file_name}.txt", output_path)
+                    write_file(srk_hash.hex().upper(), srk_hash_file, overwrite=False)
+                    logger.info(f"Generated file containing SRK hash: {srk_hash_file}")
+                    generated_files.append(srk_hash_file)
+                    try:
+                        fuse_script = FuseScript(
+                            self.chip_config.base.family, DatabaseManager.AHAB, srk_id
+                        )
+                        logger.info(
+                            f"\nFuses info:\n{fuse_script.generate_script(self, info_only=True)}"
+                        )
+                        fuse_script_path = fuse_script.write_script(
+                            file_name, output_path, self, overwrite=False
+                        )
+                        generated_files.append(fuse_script_path)
+                        logger.info(
+                            "Generated script for writing fuses for container "
+                            f"{cnt_ix}: {fuse_script_path}"
+                        )
+                    except SPSDKError:
+                        logger.info(
+                            f"Failed to generate script for writing fuses for container {cnt_ix}"
+                        )
+        return generated_files
 
     @property
     def srk_hash0(self) -> bytes:

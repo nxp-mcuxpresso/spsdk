@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -6,7 +6,7 @@ revisions:
   a0:
     features:
       tz:
-        reg_spec: tz_a0.yaml
+        reg_spec: tz_a0.json
   a1: {}
 latest: a1
 
@@ -169,12 +169,9 @@ features:
     supported_commands: [erase, load, enable, fill, jump, version_check]
     keyblobs: false
 
-  # ======== Trust provisioning section ========
-  tp: {}
-
   # ======== TrustZone section ========
   tz:
-    reg_spec: tz_a1.yaml
+    reg_spec: tz_a1.json
 
   # ======== Memory configuration ========
   memcfg:

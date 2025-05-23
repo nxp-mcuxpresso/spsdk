@@ -1,5 +1,5 @@
 {
-    "cpu": "NHS52S04",
+    "cpu": "nhs52s04",
     "groups": [
         {
             "group": {
@@ -3406,7 +3406,15 @@
                             ]
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00030-0004C",
+                "description": "Reserved 00030-0004C"
+            },
+            "registers": [
                 {
                     "id": "Reserved00030",
                     "name": "Reserved 0x00030",
@@ -3442,15 +3450,7 @@
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "Reserved 00040-0004C",
-                "description": "Reserved 00040-0004C"
-            },
-            "registers": [
+                },
                 {
                     "id": "Reserved00040",
                     "name": "Reserved 0x00040",
@@ -3486,7 +3486,15 @@
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "BLE",
+                "description": "BLE unique adddressing"
+            },
+            "registers": [
                 {
                     "id": "field050",
                     "name": "BLE_UNIQUE_ADDRESS0",
@@ -3518,7 +3526,15 @@
                             "description": "Use 48-bit value from BLE_UNIQUE_ADDRESS field as BLE address when this field is equal to 0xC3A5. If this field is different from 0xC3A5, check BLE_DEFAULT_ADDRESS_VALID field in NMPA to know which address to use."
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "FLASH_REMAP",
+                "description": "Flash image address remapping"
+            },
+            "registers": [
                 {
                     "id": "field058",
                     "name": "FLASH_REMAP_SIZE",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,6 +18,7 @@ from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.trustzone import TrustZone
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, align_block
 
 logger = logging.getLogger(__name__)
@@ -47,12 +48,15 @@ class MasterBootImageManifest:
 
     def _calculate_length(self) -> int:
         length = struct.calcsize(self.FORMAT)
-        if self.trust_zone:
-            length += len(self.trust_zone.export())
+        if self.trust_zone and self.trust_zone.is_customized:
+            length += len(self.trust_zone)
         return length
 
     def export(self) -> bytes:
-        """Serialize MBI Manifest."""
+        """Export MBI Manifest.
+
+        :return: Exported MBI Manifest with CRC
+        """
         data = struct.pack(
             self.FORMAT,
             self.MAGIC,
@@ -61,26 +65,23 @@ class MasterBootImageManifest:
             self.total_length,
             self.flags,
         )
-        if self.trust_zone:
+        if self.trust_zone and self.trust_zone.is_customized:
             data += self.trust_zone.export()
         return data
 
     @classmethod
-    def parse(cls, family: str, data: bytes, revision: str = "latest") -> Self:
+    def parse(cls, family: FamilyRevision, data: bytes) -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
-        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Invalid header is detected.
         :return: MBI Manifest object
         """
         fw_version, _, extra_data = cls._parse_manifest(data)
         trust_zone = None
         if len(extra_data) > 0:
-            trust_zone = TrustZone.from_binary(
-                family=family, raw_data=extra_data, revision=revision
-            )
+            trust_zone = TrustZone.parse(data=extra_data, family=family)
         return cls(firmware_version=fw_version, trust_zone=trust_zone)
 
     @classmethod
@@ -171,21 +172,18 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         }.get(algorithm, 0)
 
     @classmethod
-    def parse(cls, family: str, data: bytes, revision: str = "latest") -> Self:
+    def parse(cls, family: FamilyRevision, data: bytes) -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
-        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Invalid header is detected.
         :return: MBI Manifest object
         """
         fw_version, hash_algo, extra_data = cls._parse_manifest(data)
         trust_zone = None
         if len(extra_data) > 0:
-            trust_zone = TrustZone.from_binary(
-                family=family, raw_data=extra_data, revision=revision
-            )
+            trust_zone = TrustZone.parse(data=extra_data, family=family)
         return cls(firmware_version=fw_version, trust_zone=trust_zone, digest_hash_algo=hash_algo)
 
     @classmethod
@@ -231,18 +229,20 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
         self.crc = 0
 
     def export(self) -> bytes:
-        """Serialize MBI Manifest."""
+        """Export MBI Manifest.
+
+        :return: Exported binary data of MBI Manifest with CRC
+        """
         data = super().export()
         data += struct.pack("<L", self.crc)
         return data
 
     @classmethod
-    def parse(cls, family: str, data: bytes, revision: str = "latest") -> Self:
+    def parse(cls, family: FamilyRevision, data: bytes) -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
-        :param revision: Optional chip family revision.
         :raises SPSDKParsingError: Invalid header is detected.
         :return: MBI Manifest object
         """
@@ -253,9 +253,7 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
         crc = int.from_bytes(extra_data[-4:], Endianness.LITTLE.value)
         trust_zone = None
         if extra_data[:-4]:
-            trust_zone = TrustZone.from_binary(
-                family=family, raw_data=extra_data[:-4], revision=revision
-            )
+            trust_zone = TrustZone.parse(data=extra_data[:-4], family=family)
         mcx_manifest = cls(firmware_version=fw_version, trust_zone=trust_zone)
         mcx_manifest.crc = crc
         return mcx_manifest

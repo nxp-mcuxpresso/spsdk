@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Secure Binary v3.1 converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -12,7 +13,7 @@ containerOutputFile: .\workspace\output_images\kw45xx\sb3_384_384.sb3 # [Require
 #                                    == ISK Certificate Settings ==
 # ----------------------------------------------------------------------------------------------------
 certBlock: .\workspace\cfgs\cert_block\cert_384_384.yaml
-signPrivateKey: .\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem # [Conditionally required], Main root Certification Private Key; Path to Main root Certification Private Key. Don't use when 'binaryCertificateBlock' is defined
+signer: .\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem # [Conditionally required], Main root Certification Private Key; Path to Main root Certification Private Key. Don't use when 'binaryCertificateBlock' is defined
 # ----------------------------------------------------------------------------------------------------
 #                                  == Secure Binary v3.1 Settings ==
 # ----------------------------------------------------------------------------------------------------

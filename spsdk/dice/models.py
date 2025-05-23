@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Data structures used throughout the DICE module."""
 
 import struct
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Union
+
+from typing_extensions import Self
 
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
 from spsdk.dice.exceptions import SPSDKDICEError
@@ -170,7 +173,10 @@ class DICEResponse:
         return ca_puk.verify_signature(signature=self.ca_signature, data=data)
 
     def export(self) -> bytes:
-        """Serialize DICE Response object into bytes."""
+        """Export the DICE Response as a bytes.
+
+        :return: Exported DICE Response bytes including signature
+        """
         if not self.ca_signature or not self.die_signature:
             raise SPSDKDICEError("DICE Response must be signed before export")
         return self._export_data_to_sign() + self.die_signature
@@ -190,12 +196,17 @@ class DICEResponse:
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DICEResponse":
-        """De-serialize data into DICE Response object."""
+    def parse(cls, data: bytes, offset: int = 0) -> Self:
+        """Parse DICE Response from bytes.
+
+        :param data: DICE Response in bytes
+        :param offset: Optional starting offset in the data buffer, defaults to 0
+        :return: Parsed DICEResponse instance
+        """
         (rtf, had, die_puk, ca_sign, uuid, version, challenge, die_sign) = struct.unpack_from(
             cls.FORMAT, buffer=data, offset=offset
         )
-        return DICEResponse(
+        return cls(
             die_puk=die_puk,
             ca_signature=ca_sign,
             rtf=rtf,

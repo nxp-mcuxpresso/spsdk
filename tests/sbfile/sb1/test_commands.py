@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2021,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,7 +21,7 @@ def test_parse_command():
 def test_parse_invalid_command_tag():
     # invalid tag
     with pytest.raises(SPSDKError):
-        parse_v1_command(b"\xEE" * 16)
+        parse_v1_command(b"\xee" * 16)
     # unsupported command
     with pytest.raises(SPSDKError):
-        parse_v1_command(b"\x0D" * 16)
+        parse_v1_command(b"\x0d" * 16)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,27 +9,25 @@
 
 import copy
 import logging
-import os
 from typing import Any, Callable, Optional
+
+from typing_extensions import Self
 
 from spsdk.apps.utils.utils import format_raw_data
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.rng import random_bytes
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
+from spsdk.image.cert_block.cert_blocks import CertificateBlockHeader
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.devhsm.devhsm import DevHsm
-from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
+from spsdk.sbfile.sb31.commands import BaseCmd, CmdLoadKeyBlob
 from spsdk.sbfile.sb31.constants import EnumDevHSMType
 from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
-from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
-from spsdk.utils.misc import load_configuration, value_to_int
-from spsdk.utils.schema_validator import (
-    CommentedConfig,
-    check_config,
-    update_validation_schema_family,
-)
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +35,16 @@ logger = logging.getLogger(__name__)
 class DevHsmSB31(DevHsm):
     """Class to handle device HSM provisioning procedure for SB3.1."""
 
+    SUB_FEATURE = "DevHsmSB31"
+
     def __init__(
         self,
         mboot: McuBoot,
-        family: str,
+        family: FamilyRevision,
         oem_share_input: Optional[bytes] = None,
         oem_enc_master_share_input: Optional[bytes] = None,
         cust_mk_sk: Optional[bytes] = None,
-        container_conf: Optional[str] = None,
+        additional_commands: Optional[list[BaseCmd]] = None,
         workspace: Optional[str] = None,
         initial_reset: Optional[bool] = False,
         final_reset: Optional[bool] = True,
@@ -58,7 +58,7 @@ class DevHsmSB31(DevHsm):
         :param oem_share_input: OEM share input data (if None a random input will be generated).
         :param oem_enc_master_share_input: Used for setting the OEM share (recreating security session)
         :param cust_mk_sk: Customer Master Key Symmetric Key.
-        :param container_conf: Optional configuration file (to specify user list of SB commands).
+        :param additional_commands: Optional user list of SB commands.
         :param workspace: Optional folder to store middle results.
         :param initial_reset: Reset device before DevHSM creation of SB3 file.
         :param final_reset: Reset device after DevHSM creation of SB3 file.
@@ -66,6 +66,7 @@ class DevHsmSB31(DevHsm):
         :param info_print: Method for printing out info messages. Default: print
         :raises SPSDKError: In case of any problem.
         """
+        super().__init__(family, workspace)
         self.mboot = mboot
         self.cust_mk_sk = cust_mk_sk
         self.oem_share_input = oem_share_input or random_bytes(16)
@@ -73,43 +74,15 @@ class DevHsmSB31(DevHsm):
         self.info_print = info_print or print
         self.initial_reset = initial_reset
         self.final_reset = final_reset
-        self.container_conf_dir = os.path.dirname(container_conf) if container_conf else None
-        self.family = DatabaseManager().quick_info.devices.get_correct_name(family)
         # Check the configuration file and options to update by user config
-        self.config_data = None
-        self.timestamp = None
         self.sb3_fw_ver = 0
         self.sb3_descr = "SB 3.1"
+        self.additional_commands = additional_commands
+        self.timestamp: Optional[int] = None
 
-        if container_conf:
-            config_data = load_configuration(container_conf)
-            # validate input configuration
-            check_config(
-                config_data,
-                DevHsmSB31.get_validation_schemas(family, include_test_configuration=True),
-                search_paths=[os.path.dirname(container_conf)],
-            )
-            self.config_data = config_data
-            self.sb3_fw_ver = value_to_int(config_data.get("firmwareVersion", 0))
-            self.sb3_descr = config_data.get("description", "SB 3.1")
-            if "timestamp" in config_data:
-                self.timestamp = value_to_int(str(config_data.get("timestamp")))
-            if "bufferAddress" in config_data:
-                self.devbuff_base = value_to_int(str(config_data.get("bufferAddress")))
-            family_from_cfg = config_data.get("family")
-            if family_from_cfg:
-                family_from_cfg = DatabaseManager().quick_info.devices.get_correct_name(
-                    family_from_cfg
-                )
-            if self.family and self.family != family_from_cfg:
-                raise SPSDKError(
-                    f"Family from json configuration file: {family_from_cfg} "
-                    f"differs from the family parameter {self.family}"
-                )
-        super().__init__(self.family, workspace)
         # Override the default buffer address
         if buffer_address is not None:
-            self.devbuff_base = value_to_int(buffer_address)
+            self.devbuff_base = buffer_address
 
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         if self.oem_share_input:
@@ -124,24 +97,9 @@ class DevHsmSB31(DevHsm):
     def __str__(self) -> str:
         return f"SB 3.1 DevHSM for {self.family}"
 
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Get the list of supported families by Device HSM.
-
-        :return: List of supported families.
-        """
-        families = get_families(DatabaseManager.DEVHSM)
-        families = [
-            family
-            for family in families
-            if get_db(family, "latest").get_str(DatabaseManager.DEVHSM, "devhsm_class")
-            == "DevHsmSB31"
-        ]
-        return families
-
     @classmethod
     def get_validation_schemas(
-        cls, family: str, include_test_configuration: bool = False
+        cls, family: FamilyRevision, include_test_configuration: bool = False
     ) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
@@ -150,7 +108,7 @@ class DevHsmSB31(DevHsm):
         :return: List of validation schemas.
         """
         schemas: list[dict[str, Any]] = []
-        common_schema = cls.get_common_schema(family=family)
+        common_schema = cls.get_validation_schemas_common(family=family)
         schemas.extend(common_schema)
 
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
@@ -162,7 +120,7 @@ class DevHsmSB31(DevHsm):
         return schemas
 
     @classmethod
-    def get_common_schema(cls, family: str) -> list[dict[str, Any]]:
+    def get_validation_schemas_common(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get validation with common DevHSM settings (without commands)."""
         devhsm_sch_cfg = get_schema_file(DatabaseManager.DEVHSM)
         family_sch = get_schema_file("general")["family"]
@@ -173,24 +131,18 @@ class DevHsmSB31(DevHsm):
         devhsm_sch_cfg["common"]["properties"]["bufferAddress"]["template_value"] = hex(
             comm_address
         )
-        return [family_sch, devhsm_sch_cfg["common"]]
+        return [family_sch, devhsm_sch_cfg["common"], devhsm_sch_cfg["cust_mk_sk"]]
 
     @classmethod
-    def generate_config_template(cls, family: str) -> str:
-        """Generate configuration for selected family.
+    def get_config_template(cls, family: FamilyRevision) -> str:
+        """Get feature configuration template.
 
-        :param family: Family description.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        :param family: Family for which the template should be generated.
+        :return: Template file string representation.
         """
-        family = DatabaseManager().quick_info.devices.get_correct_name(family)
-        if family not in cls.get_supported_families():
-            raise SPSDKError(f"Unsupported family {family}")
-
         try:
-            recommended_flow = get_db(family).get_list(
-                DatabaseManager.DEVHSM, "recommended_flow", default=None
-            )
-            schemas = cls.get_common_schema(family=family)
+            recommended_flow = get_db(family).get_list(DatabaseManager.DEVHSM, "recommended_flow")
+            schemas = cls.get_validation_schemas_common(family=family)
         except SPSDKError:
             recommended_flow = None
             schemas = cls.get_validation_schemas(family)
@@ -221,7 +173,7 @@ class DevHsmSB31(DevHsm):
         return result
 
     @classmethod
-    def render_available_commands(cls, family: str) -> str:
+    def render_available_commands(cls, family: FamilyRevision) -> str:
         """Textual rendering of available commands."""
         # sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         sb31_schemas = SecureBinary31.get_devhsm_commands_validation_schemas(family)
@@ -275,7 +227,6 @@ class DevHsmSB31(DevHsm):
             firmware_version=self.sb3_fw_ver,
             hash_type=EnumHashAlgorithm.SHA256,
             description=self.sb3_descr,
-            timestamp=self.timestamp,
             flags=0x01,  # Bit0: PROV_MFW: when set, the SB3 file encrypts provisioning firmware
         )
         self.timestamp = sb3_header.timestamp
@@ -287,16 +238,12 @@ class DevHsmSB31(DevHsm):
         # 5.2: Create SB3 file un-encrypted data part
         self.info_print(" 5.2: Creating un-encrypted SB3 data.")
         sb3_data = SecureBinary31Commands(
-            family=self.family,
-            hash_type=EnumHashAlgorithm.SHA256,
-            is_encrypted=False,
-            timestamp=self.timestamp,
+            family=self.family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
         )
+        if self.additional_commands:
+            for cmd in self.additional_commands:
+                sb3_data.add_command(cmd)
 
-        if self.container_conf_dir is not None:
-            sb3_data.load_from_config(
-                self.get_cmd_from_config(), search_paths=[self.container_conf_dir]
-            )
         key_blob_command_position = self.database.get_int(
             self.F_DEVHSM, "key_blob_command_position"
         )
@@ -655,17 +602,6 @@ class DevHsmSB31(DevHsm):
 
         return signature
 
-    def get_cmd_from_config(self) -> list[dict[str, Any]]:
-        """Process command description into a command object.
-
-        :return: Modified list of commands
-        """
-        cfg_commands: list[dict[str, Any]] = []
-        if self.config_data and self.config_data.get("commands"):
-            cfg_commands = self.config_data["commands"]
-
-        return cfg_commands
-
     def encrypt_data_blocks(
         self, cust_fw_enc_key: bytes, sb3_header: bytes, data_cmd_blocks: list[bytes]
     ) -> list[bytes]:
@@ -728,3 +664,68 @@ class DevHsmSB31(DevHsm):
             encrypted_blocks.append(encrypted_block)
 
         return encrypted_blocks
+
+    @classmethod
+    def load_from_config(
+        cls, config: Config, mboot: Optional[McuBoot] = None, info_print: Optional[Callable] = None
+    ) -> Self:
+        """Load the class from configuration.
+
+        :param config: DEVHSM configuration file
+        :param mboot: mBoot object
+        :param info_print: Optional info print method
+        :return: DEVHSM SB3.1 class
+        """
+        if not mboot:
+            raise SPSDKError("Mboot must be defined to load DEVHSM SB3.1 class.")
+
+        family = FamilyRevision.load_from_config(config)
+
+        oem_share_in = (
+            config.load_symmetric_key(
+                key="oemRandomShare", expected_size=16, name="OEM SHARE INPUT"
+            )
+            if "oemRandomShare" in config
+            else None
+        )
+        enc_oem_master_share_in = (
+            config.load_symmetric_key(
+                key="oemEncMasterShare", expected_size=64, name="OEM ENC MASTER SHARE"
+            )
+            if "oemEncMasterShare" in config
+            else None
+        )
+        cust_mk_sk = (
+            config.load_symmetric_key(
+                key="containerKeyBlobEncryptionKey", expected_size=32, name="CUST_MK_SK INPUT"
+            )
+            if "containerKeyBlobEncryptionKey" in config
+            else None
+        )
+
+        buffer_address = config.get_int(
+            "bufferAddress", get_db(family).get_int(DatabaseManager.COMM_BUFFER, "address")
+        )
+
+        sb3_data = SecureBinary31Commands.load_from_config(
+            config, hash_type=EnumHashAlgorithm.SHA256, load_just_commands=True
+        )
+        sb3_data.is_encrypted = False
+
+        return cls(
+            mboot=mboot,
+            family=family,
+            oem_share_input=oem_share_in,
+            oem_enc_master_share_input=enc_oem_master_share_in,
+            cust_mk_sk=cust_mk_sk,
+            additional_commands=sb3_data.commands,
+            workspace=config.get_output_file_name("workspace") if "workspace" in config else None,
+            initial_reset=config.get("initialReset", False),
+            final_reset=config.get("finalReset", True),
+            buffer_address=buffer_address,
+            info_print=info_print,
+        )
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature."""
+        raise SPSDKNotImplementedError()

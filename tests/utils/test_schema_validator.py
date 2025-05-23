@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+from unittest import mock
+import warnings
 import os
-from typing import Any, Optional
 
 import pytest
 import yaml
@@ -307,3 +309,194 @@ def test_load_schema_file() -> None:
 
     with pytest.raises(SPSDKError):
         get_schema_file("total_invalid_name")
+
+
+@pytest.mark.parametrize(
+    "schema,config,expected_warnings",
+    [
+        # Basic unknown property detection
+        (
+            {"type": "object", "properties": {"known": {"type": "string"}}},
+            {"known": "value", "unknown": "should trigger warning"},
+            ["unknown"],
+        ),
+        # Nested properties
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "level1": {"type": "object", "properties": {"known": {"type": "string"}}}
+                },
+            },
+            {"level1": {"known": "value", "unknown_nested": "should trigger warning"}},
+            ["level1.unknown_nested"],
+        ),
+        # Arrays with objects
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {"id": {"type": "number"}, "name": {"type": "string"}},
+                        },
+                    }
+                },
+            },
+            {
+                "items": [
+                    {"id": 1, "name": "Item 1"},
+                    {"id": 2, "name": "Item 2", "extra": "unknown field"},
+                    {"id": 3, "unknown_prop": "should trigger warning", "name": "Item 3"},
+                ]
+            },
+            ["items[1].extra", "items[2].unknown_prop"],
+        ),
+        # Multiple unknown at root level
+        (
+            {
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
+            },
+            {"name": "John", "age": 30, "address": "123 Main St", "phone": "555-1234"},
+            ["address", "phone"],
+        ),
+        # Empty configuration (no warnings)
+        (
+            {"type": "object", "properties": {"name": {"type": "string"}}},
+            {},
+            [],
+        ),
+        # Configuration with only valid properties (no warnings)
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "data": {"type": "object", "properties": {"value": {"type": "number"}}},
+                },
+            },
+            {"name": "test", "data": {"value": 42}},
+            [],
+        ),
+        # oneOf with unknown properties
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "type": {"type": "string", "enum": ["type1"]},
+                                    "value1": {"type": "string"},
+                                },
+                            },
+                            {
+                                "properties": {
+                                    "type": {"type": "string", "enum": ["type2"]},
+                                    "value2": {"type": "number"},
+                                },
+                            },
+                        ],
+                    }
+                },
+            },
+            {
+                "data": {
+                    "type": "type1",
+                    "value1": "test",
+                    "unknown_field": "this should trigger a warning",
+                }
+            },
+            ["data.unknown_field"],
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "required": ["a_option"],
+                                    "properties": {
+                                        "a_option": {"type": "string", "enum": ["A"]},
+                                        "a_value": {"type": "string"},
+                                        "a_extra_value": {"type": "string"},
+                                    },
+                                },
+                                {
+                                    "type": "object",
+                                    "required": ["b_option"],
+                                    "properties": {
+                                        "b_option": {"type": "string", "enum": ["B"]},
+                                        "b_value": {"type": "number"},
+                                    },
+                                },
+                            ]
+                        },
+                    }
+                },
+            },
+            {
+                "options": [
+                    {"a_option": "A", "a_value": "test"},
+                    {"a_option": "A", "a_value": "test2", "a_extra_value": "extra_a_value"},
+                    {"b_option": "B", "b_value": 42, "b_extra_value": "unknown"},
+                ]
+            },
+            ["options[2].b_extra_value"],
+        ),
+    ],
+)
+def test_unknown_properties_warning(caplog, schema, config, expected_warnings) -> None:
+    """Test that warnings are generated for unknown properties in configuration.
+
+    :param schema: JSON schema to test against
+    :param config: Configuration to check
+    :param expected_warnings: Strings that should appear in warnings
+    """
+    caplog.set_level(logging.WARNING)
+    caplog.clear()
+
+    # Run the validation with unknown property checking enabled
+    check_config(config, [schema], check_unknown_props=True)
+
+    warning_messages = [
+        record.message for record in caplog.records if record.levelname == "WARNING"
+    ]
+
+    if not expected_warnings:
+        assert len(warning_messages) == 0
+
+        # Check for expected warnings
+    for expected in expected_warnings:
+        assert any(
+            msg
+            for msg in warning_messages
+            if msg == f"Unknown property found in configuration: '{expected}'"
+        ), f"Expected warning containing '{expected}' not found in: {warning_messages}"
+    # when checking the unknown properties is disabled, no warnings should be generated
+    caplog.clear()
+    check_config(config, [schema], check_unknown_props=False)
+    warning_messages = [
+        record.message for record in caplog.records if record.levelname == "WARNING"
+    ]
+    assert len(warning_messages) == 0
+
+
+@mock.patch("spsdk.utils.schema_validator.SPSDK_SCHEMA_STRICT", True)
+def test_check_unknown_properties_strict_mode():
+    schema = {"type": "object", "properties": {"known": {"type": "string"}}}
+    config = {"known": "value", "unknown": "should trigger warning"}
+    with pytest.raises(SPSDKError) as exc:
+        check_config(config, [schema], check_unknown_props=True)
+    assert "Unknown property found in configuration" in str(exc.value)
+
+

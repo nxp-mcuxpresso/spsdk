@@ -1,0 +1,51 @@
+# Copyright 2024-2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  Certification Block V21 template  =========================================
+
+# ======================================================================================================================
+#                                   == ISK (Image signing key) Certificate Settings ==
+# ======================================================================================================================
+# ---------------------------------------===== MCU family name. [Required] =====----------------------------------------
+# Description: MCU family name.
+family: kw45b41z8
+# ------------------------------===== Use ISK for signature certification [Required] =====------------------------------
+# Description: Enable ISK type of signature certification.
+useIsk: False
+# ---------------------------------===== ISK public key [Conditionally required] =====----------------------------------
+# Description: Path to ISK public key.
+# iskPublicKey: ../_data/keys/ecc384/imgkey_ecc384.pub
+# ----------------------------------===== ISK certificate constraint [Optional] =====-----------------------------------
+# Description: Constraint is certificate version, compared with monotonic counter in fuses.
+iskCertificateConstraint: 0
+# -----------------------------------===== ISK certificate user data [Optional] =====-----------------------------------
+# Description: Path to user data.
+# iskCertData: user_cert_data.bin
+# -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
+# Description: Path to Main root Certification Private Key.
+signer: ../EVK_keys/RoT_key0_secp384r1_kw45xx.pem
+# ======================================================================================================================
+#                                                == Root Keys Settings ==
+# ======================================================================================================================
+# -----------------------------===== Root Certificate File 0 [Conditionally required] =====-----------------------------
+# Description: Root certificate file index 0.
+rootCertificate0File: ../EVK_keys/RoT_key0_secp384r1_kw45xx.pub
+# ------------------------------------===== Root Certificate File 1 [Optional] =====------------------------------------
+# Description: Root certificate file index 1.
+rootCertificate1File: ../EVK_keys/RoT_key1_secp384r1_kw45xx.pub
+# ------------------------------------===== Root Certificate File 2 [Optional] =====------------------------------------
+# Description: Root certificate file index 2.
+rootCertificate2File: ../EVK_keys/RoT_key2_secp384r1_kw45xx.pub
+# ------------------------------------===== Root Certificate File 3 [Optional] =====------------------------------------
+# Description: Root certificate file index 3.
+rootCertificate3File: ../EVK_keys/RoT_key3_secp384r1_kw45xx.pub
+# -----------------------------===== Main Certificate Index [Conditionally required] =====------------------------------
+# Description: Index of certificate that is used as a main. If not defined, the certificate matching private key will be
+# selected.
+mainRootCertId: 0
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== cert block filename [Required] =====--------------------------------------
+# Description: Generated cert block filename.
+containerOutputFile: ../workspace/cert_block.bin

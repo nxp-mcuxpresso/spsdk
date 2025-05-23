@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -122,10 +122,10 @@ def test_version_value():
     [
         (
             [0x5C000102, 0x45000222, 0x4B000333],
-            "02 01 00 5C 22 02 00 45 33 03 00 4B",
+            "0201005c220200453303004b",
             620180645013280992354566219,
         ),
-        ([0, 0x426B0], "00 00 00 00 B0 26 04 00", 2955281408),
+        ([0, 0x426B0], "00000000b0260400", 2955281408),
     ],
 )
 def test_device_uid_value(input_numbers, out_string, out_int):

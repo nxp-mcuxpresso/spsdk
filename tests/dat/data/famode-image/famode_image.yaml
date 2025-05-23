@@ -1,0 +1,42 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========================  dat Configuration template for kw45b41z5, Revision: latest.  ============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: kw45b41z5
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, a2, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, signed-nxp, crc, signed>
+outputImageAuthenticationType: signed
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: famode.bin
+# ======================================================================================================================
+#                                              == Certificate Block V2.1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: cert_256_none.yaml
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+signer: ec_pk_secp256r1_cert0.pem
+# ======================================================================================================================
+#                                               == Add Manifest Digest ==
+# ======================================================================================================================
+# --------------------------------------===== Add Manifest Digest [Optional] =====--------------------------------------
+# Description: Used for concurrent execution of ECDSA verify and hash calculation.
+addManifestDigest: true

@@ -11,7 +11,7 @@ latest: a2
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: i.MX 8 Applications Processors
+  purpose: i.MX Application Processors
   spsdk_predecessor_name: mx8ulp
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-8-applications-processors/i-mx-8ulp-applications-processor-family:i.MX8ULP
@@ -131,6 +131,7 @@ features:
   dat:
     socc: 0x4D580008 # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    dat_is_using_sha256_always: True
     test_address: 0x22020000
     dmbox_ap_ix: 0
 

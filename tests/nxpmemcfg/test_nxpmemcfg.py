@@ -13,6 +13,7 @@ import pytest
 
 from spsdk.apps import nxpmemcfg
 from spsdk.memcfg.memcfg import MemoryConfig, SPSDKUnsupportedInterface
+from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
 
 
@@ -112,7 +113,7 @@ def test_app_parse_export_all(
             assert f"0x{ow:08X}" in ret.output
 
 
-@pytest.mark.parametrize("family", MemoryConfig.get_supported_families())
+@pytest.mark.parametrize("family", [x.name for x in MemoryConfig.get_supported_families()])
 def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
     """Simple test that application works at least with help."""
     output = f"{tmpdir}".replace("\\", "/")
@@ -216,7 +217,7 @@ def test_blhost_script(
 
 
 @pytest.mark.parametrize("family", MemoryConfig.get_supported_families())
-def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: str, tmpdir):
+def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: FamilyRevision, tmpdir):
     """Test of blhost script generation for all chips command."""
     if MemoryConfig.get_peripheral_cnt(family, "flexspi_nor") > 0:
         output = f"{tmpdir}".replace("\\", "/")
@@ -224,7 +225,7 @@ def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: str, tmpdi
         output_fcb = output + "/fcb.bin"
         ret = cli_runner.invoke(
             nxpmemcfg.main,
-            f"parse -f {family} -p flexspi_nor -m W25QxxxJV -i quad_spi -o {output_cfg}",
+            f"parse -f {family.name} -p flexspi_nor -m W25QxxxJV -i quad_spi -o {output_cfg}",
         )
         assert ret.exit_code == 0
         instances = MemoryConfig.get_peripheral_instances(family, "flexspi_nor")
@@ -238,9 +239,9 @@ def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: str, tmpdi
 @pytest.mark.parametrize(
     "family,peripheral,interface,supported",
     [
-        ("mimxrt798s", "xspi_nor", "hyper_flash", False),
-        ("mimxrt798s", "xspi_nor", "quad_spi", True),
-        ("mimxrt798s", "xspi_nor", "octal_spi", True),
+        (FamilyRevision("mimxrt798s"), "xspi_nor", "hyper_flash", False),
+        (FamilyRevision("mimxrt798s"), "xspi_nor", "quad_spi", True),
+        (FamilyRevision("mimxrt798s"), "xspi_nor", "octal_spi", True),
     ],
 )
 def test_non_supported_interface(family, peripheral, interface, supported):

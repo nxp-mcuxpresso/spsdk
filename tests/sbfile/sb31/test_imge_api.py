@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 import pytest
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31 import commands
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+lpc_family = FamilyRevision("lpc55s3x")
 
 
 def test_sb31_header_error():
@@ -54,16 +58,16 @@ def test_sb31_header_description():
 
 
 def test_sb31_commands_errors():
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(SPSDKError):
         SecureBinary31Commands.parse(bytes(100))
 
     with pytest.raises(SPSDKError):
-        SecureBinary31Commands(family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA384)
+        SecureBinary31Commands(family=lpc_family, hash_type=EnumHashAlgorithm.SHA384)
 
 
 def test_sb31_commands_add():
     sc = SecureBinary31Commands(
-        family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
+        family=lpc_family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
     )
     sc.add_command(commands.CmdCall(0x100))
     assert len(sc.commands) == 1
@@ -73,7 +77,7 @@ def test_sb31_commands_add():
 
 def test_sb31_commands_insert():
     sc = SecureBinary31Commands(
-        family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
+        family=lpc_family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
     )
     sc.insert_command(0, commands.CmdCall(0x100))
     sc.insert_command(-1, commands.CmdExecute(0x100))
@@ -84,7 +88,7 @@ def test_sb31_commands_insert():
 
 def test_sb31_commands_no_key_derivator():
     sc = SecureBinary31Commands(
-        family="lpc55s3x",
+        family=lpc_family,
         hash_type=EnumHashAlgorithm.SHA256,
         is_encrypted=True,
         pck=bytes(16),

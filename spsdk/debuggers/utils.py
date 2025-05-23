@@ -22,7 +22,8 @@ from spsdk.debuggers.debug_probe import (
     SPSDKProbeNotFoundError,
 )
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.plugins import PluginsManager, PluginType
 
 logger = logging.getLogger(__name__)
@@ -99,21 +100,19 @@ def select_probe(
     return probes[i_selected]
 
 
-def get_test_address(family: str, revision: str = "latest") -> int:
+def get_test_address(family: FamilyRevision) -> int:
     """Get AHB access test address for the device.
 
     The address is stored in SPSDK database. I worst case that address is not found, exception is raised.
     :raises SPSDKError: The address is not stored in database.
     """
-    db = get_db(device=family, revision=revision)
+    db = get_db(family)
     try:
         return db.get_int(
             DatabaseManager.DAT, "test_address", db.get_int(DatabaseManager.COMM_BUFFER, "address")
         )
     except SPSDKError as exc:
-        raise SPSDKError(
-            f"Can't get test AHB access address for {family}, revision: {revision}"
-        ) from exc
+        raise SPSDKError(f"Can't get test AHB access address for {family}") from exc
 
 
 def test_ahb_access(

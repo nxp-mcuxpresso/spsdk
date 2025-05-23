@@ -1,7 +1,7 @@
 # fetch project dependencies
 -r ../requirements.txt
 # docs
-sphinx<7.3.8
+sphinx<8.1.4
 sphinx-book-theme
 sphinx-autodoc-annotation
 sphinx_autodoc_typehints
@@ -17,3 +17,5 @@ pyscard
 nbsphinx
 ipykernel
 myst-nb
+# Redirection for non-existing files
+sphinxext-rediraffe

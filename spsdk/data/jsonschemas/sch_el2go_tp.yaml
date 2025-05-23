@@ -1,22 +1,9 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
 el2go_tp:
   type: object
   properties:
-    family:
-      type: string
-      title: MCU family
-      description:
-        Family identifier including the chip revision. If revision is not
-        present, latest revision is used as default.
-      template_value: rw6xx
-    revision:
-      type: string
-      title: MCU revision
-      description: Revision of silicon
-      template_value: latest
     url:
       type: string
       title: EdgeLock 2GO API URL
@@ -67,7 +54,7 @@ el2go_tp:
       description: Timeout for overall download process including waiting for Secure Objects creation
       template_value: 300
 
-  required: [api_key, device_group_id, nc12, family]
+  required: [api_key, device_group_id, nc12]
 
 prov_fw_path:
   properties:

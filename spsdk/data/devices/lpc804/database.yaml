@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,7 +8,7 @@ latest: a0
 
 # General MCU information
 info:
-  purpose: General Purpose MCU
+  purpose: LPC800 Series
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc800-arm-cortex-m0-plus-/lpc800-32-bit-arm-cortex-m0-plus-based-low-cost-mcu:LPC80X
   memory_map: # Memory map basic info

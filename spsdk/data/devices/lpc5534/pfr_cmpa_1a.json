@@ -1,5 +1,5 @@
 {
-    "cpu": "LPC5534",
+    "cpu": "lpc5534",
     "groups": [
         {
             "group": {
@@ -966,7 +966,15 @@
                     "is_reserved": true,
                     "reset_value_int": "0",
                     "individual_write_lock": "none"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "FLEXSPI_BOOT_CFG",
+                "description": "FLEXSPI_BOOT_CFG"
+            },
+            "registers": [
                 {
                     "id": "field080",
                     "name": "FLEXSPI_BOOT_CFG0",

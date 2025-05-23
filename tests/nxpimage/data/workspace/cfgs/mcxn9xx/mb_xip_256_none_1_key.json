@@ -10,7 +10,7 @@
 	"rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp256r1_cert0.pem",
 	"mainRootCertId": 0,
 	"useIsk": false,
-	"mainRootCertPrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp256r1_cert0.pem",
+	"signer": ".\\workspace\\keys_certs\\ec_pk_secp256r1_cert0.pem",
 	"rootCertificateEllipticCurve": "secp256r1",
 	"masterBootOutputFile": ".\\workspace\\output_images\\mcxn9xx\\mb_xip_256_none_1_key.bin",
 }

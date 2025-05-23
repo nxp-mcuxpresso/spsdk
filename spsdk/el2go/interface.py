@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2025 NXP
 #
@@ -19,7 +19,8 @@ from spsdk.mboot.mcuboot import McuBoot, StatusCode, stringify_status_code
 from spsdk.mboot.properties import PropertyTag
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.uboot.uboot import UbootFastboot, UbootSerial
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
@@ -48,28 +49,24 @@ class EL2GOInterfaceHandler:
     def __init__(
         self,
         device: Union[McuBoot, UbootSerial, UbootFastboot],
-        family: Optional[str] = None,
-        revision: str = "latest",
+        family: Optional[FamilyRevision] = None,
         print_func: Callable[[str], None] = click.echo,
     ) -> None:
         """Class object initialized.
 
         :param device: Communication interface.
         :param family: Target family name.
-        :param revision: Target revision, default is use 'latest' revision.
         :param print_func: Custom function to print data, defaults to print
         """
         self.device = device
         self.family = family
-        self.revision = revision
         self.print_func = print_func
 
     @classmethod
     def get_el2go_interface_handler(
         cls,
         interface_params: InterfaceConfig,
-        family: Optional[str] = None,
-        revision: Optional[str] = "latest",
+        family: Optional[FamilyRevision] = None,
         interface: Optional[str] = "mboot",
         fb_addr: Optional[int] = None,
         fb_size: Optional[int] = None,
@@ -80,7 +77,6 @@ class EL2GOInterfaceHandler:
 
         :param interface_params: Interface params
         :param family: Family, defaults to None
-        :param revision: Revision, defaults to "latest"
         :param interface: Interface, defaults to "mboot"
         :param fb_addr: Address of FB buffer for override, defaults to None
         :param fb_size: Size of FB buffer for override, defaults to None
@@ -89,7 +85,6 @@ class EL2GOInterfaceHandler:
         :raises SPSDKError: If family or port is not provided where required
         :return: Respective class
         """
-        revision = revision or "latest"
         port = interface_params.get_scan_args().get("port")
         timeout = interface_params.get_scan_args().get("timeout", 1)
 
@@ -101,17 +96,17 @@ class EL2GOInterfaceHandler:
         if isinstance(interface, str):
             # If the interface is provided as string
             default_interface = El2GoInterface.from_label(interface)
-        elif isinstance(family, str):
+        elif isinstance(family, FamilyRevision):
             # Get the default interface from DB if family is provided
-            default_interface = EL2GOInterfaceHandler.get_el2go_interface(family, revision)
+            default_interface = EL2GOInterfaceHandler.get_el2go_interface(family)
 
         if default_interface is None:
             raise SPSDKError("Unable to determine default interface")
 
         if default_interface == El2GoInterface.UBOOT_FASTBOOT:
-            if not isinstance(family, str):
+            if not isinstance(family, FamilyRevision):
                 raise SPSDKError("Family must be provided for U-Boot Fastboot connection")
-            db = get_db(device=family, revision=revision)
+            db = get_db(family=family)
             fb_buff_addr = fb_addr or db.get_int(DatabaseManager.FASTBOOT, "address")
             fb_buff_size = fb_size or db.get_int(DatabaseManager.FASTBOOT, "size")
 
@@ -123,32 +118,24 @@ class EL2GOInterfaceHandler:
                 usb_path_filter=usb_path,
                 usb_serial_no_filter=usb_serial,
             )
-            return El2GoInterfaceHandlerUboot(
-                device=uboot_device,
-                family=family,
-                revision=revision,
-            )
+            return El2GoInterfaceHandlerUboot(device=uboot_device, family=family)
 
         if default_interface == El2GoInterface.UBOOT_SERIAL:
-            if not isinstance(family, str):
+            if not isinstance(family, FamilyRevision):
                 raise SPSDKError("Family must be provided for U-Boot Serial connection")
             if not port:
                 raise SPSDKError("Port must be specified")
             uboot_serial = UbootSerial(port, timeout)
-            return El2GoInterfaceHandlerUboot(uboot_serial, family, revision)
+            return El2GoInterfaceHandlerUboot(uboot_serial, family)
 
         interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
         mboot_interface = interface_cls.scan_single(**interface_params.get_scan_args())
         mboot = McuBoot(mboot_interface, cmd_exception=True)
 
-        return El2GoInterfaceHandlerMboot(
-            device=mboot,
-            family=family,
-            revision=revision,
-        )
+        return El2GoInterfaceHandlerMboot(device=mboot, family=family)
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families() -> list[FamilyRevision]:
         """Get list of supported target families.
 
         :return: List of supported families.
@@ -164,16 +151,14 @@ class EL2GOInterfaceHandler:
         return El2GoInterface.labels()
 
     @staticmethod
-    def get_el2go_interface(family: str, revision: Optional[str] = "latest") -> El2GoInterface:
+    def get_el2go_interface(family: FamilyRevision) -> El2GoInterface:
         """Get default ELE device from DB.
 
         :param family: family name.
-        :param revision: Device revision, defaults to 'latest'.
         :return: EleDevice instance.
         """
-        revision = revision or "latest"
         return El2GoInterface.from_label(
-            get_db(family, revision).get_str(DatabaseManager.EL2GO_TP, "el2go_interface")
+            get_db(family).get_str(DatabaseManager.EL2GO_TP, "el2go_interface")
         )
 
     @abstractmethod
@@ -245,23 +230,13 @@ class EL2GOInterfaceHandler:
 class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
     """El2Go Handler over MCUBoot."""
 
-    def __init__(
-        self,
-        device: McuBoot,
-        family: Optional[str] = None,
-        revision: str = "latest",
-    ) -> None:
+    def __init__(self, device: McuBoot, family: Optional[FamilyRevision] = None) -> None:
         """Class object initialized.
 
         :param device: mBoot device.
         :param family: Target family name.
-        :param revision: Target revision, default is use 'latest' revision.
         """
-        super().__init__(
-            device,
-            family,
-            revision,
-        )
+        super().__init__(device, family)
         if not isinstance(self.device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
 
@@ -357,10 +332,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
     UUID_FUSE_READ_RESPONSE_START = "Word 0x00000000: "
 
     def __init__(
-        self,
-        device: Union[UbootSerial, UbootFastboot],
-        family: Optional[str] = None,
-        revision: str = "latest",
+        self, device: Union[UbootSerial, UbootFastboot], family: Optional[FamilyRevision] = None
     ) -> None:
         """Class object initialized.
 
@@ -368,11 +340,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         :param family: Target family name.
         :param revision: Target revision, default is use 'latest' revision.
         """
-        super().__init__(
-            device,
-            family,
-            revision,
-        )
+        super().__init__(device, family)
         if not isinstance(self.device, (UbootFastboot, UbootSerial)):
             raise SPSDKError("Wrong instance of device, must be Uboot")
         self.uboot_started = False
@@ -400,7 +368,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
             raise SPSDKError("Wrong instance of device, must be Uboot")
         if not self.family:
             raise SPSDKError("Family must be specified to get UUID")
-        db = get_db(self.family, self.revision)
+        db = get_db(self.family)
         fuse_index = db.get_str(DatabaseManager.EL2GO_TP, "uuid_fuse_index", default="6 0 4")
         self.device.write(f"{self.UUID_FUSE_READ_COMMAND} {fuse_index}")
         uuid_raw_output = self.device.read_output()

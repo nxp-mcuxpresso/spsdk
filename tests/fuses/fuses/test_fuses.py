@@ -16,6 +16,8 @@ from spsdk.fuses.fuses import (
     NxpeleFuseOperator,
     SPSDKFuseOperationFailure,
 )
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_configuration
 from tests.fuses.fuses.fuses_test_operator import TestFuseOperator
 from tests.fuses.fuses.test_fuse_registers import get_reg_from_cfg
@@ -43,29 +45,31 @@ def test_get_fuse_script(data_dir):
 
 def test_get_supported_families(mock_test_database, data_dir):
     families = Fuses.get_supported_families()
-    assert len(families) == 1
-    assert families[0] == "dev2"
+    assert len(families) == 3
+    assert families[0] == FamilyRevision("dev2", "rev1")
+    assert families[1] == FamilyRevision("dev2", "rev_test_invalid_computed")
+    assert families[2] == FamilyRevision("dev2", "rev_test_invalid_flush_func")
 
 
 def test_initialize_unsupported_family(mock_test_database, data_dir):
     with pytest.raises(SPSDKError):
-        Fuses(family="dev1")
+        Fuses(family=FamilyRevision("dev1"))
 
 
 def test_fuses_operator(mock_test_database, data_dir):
-    fuses = Fuses(family="dev2")
+    fuses = Fuses(family=FamilyRevision("dev2"))
     with pytest.raises(SPSDKError):
         fuses.fuse_operator
     with pytest.raises(SPSDKError):
         fuses.fuse_operator = BlhostFuseOperator(None)
     fuses.fuse_operator = TestFuseOperator()
     assert fuses.fuse_operator_type == TestFuseOperator
-    assert Fuses.get_fuse_operator_type("dev2") == TestFuseOperator
+    assert Fuses.get_fuse_operator_type(FamilyRevision("dev2")) == TestFuseOperator
 
 
 def test_fuses_try_read_write_only_fuse(mock_test_database, data_dir):
     operator = TestFuseOperator()
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     with pytest.raises(SPSDKFuseOperationFailure):
         fuses.read_single("field200")
     assert operator.actions == []
@@ -73,7 +77,7 @@ def test_fuses_try_read_write_only_fuse(mock_test_database, data_dir):
 
 def test_fuses_try_write_read_only_fuse(mock_test_database, data_dir):
     operator = TestFuseOperator()
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     with pytest.raises(SPSDKFuseOperationFailure):
         fuses.write_single("field204")
     assert operator.actions == []
@@ -81,7 +85,7 @@ def test_fuses_try_write_read_only_fuse(mock_test_database, data_dir):
 
 def test_fuses_read_single(mock_test_database, data_dir):
     operator = TestFuseOperator(return_values={0x14: 3})
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     register = fuses.fuse_regs.get_reg("field204")
     assert register.get_value() == 0
     assert fuses.read_single("field204") == 3
@@ -90,7 +94,7 @@ def test_fuses_read_single(mock_test_database, data_dir):
 
 def test_fuses_read_single_grouped(mock_test_database, data_dir):
     operator = TestFuseOperator(return_values={0x3: 1, 0x4: 1})
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     register = fuses.fuse_regs.find_reg("REG_BIG")
     assert register.get_value() == 0
     assert fuses.read_single("REG_BIG") == 0x100000001
@@ -98,7 +102,7 @@ def test_fuses_read_single_grouped(mock_test_database, data_dir):
 
 def test_fuses_read_all(mock_test_database, data_dir):
     operator = TestFuseOperator(return_values={0x14: 0x30, 0x400: 3})
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     fuses.read_all()
     assert fuses.fuse_regs.find_reg("lock0").get_value() == 3
     assert fuses.fuse_regs.find_reg("READ_ONLY_REG").get_value() == 0x30
@@ -109,7 +113,7 @@ def test_fuses_read_all(mock_test_database, data_dir):
 
 def test_fuses_try_read_locked_fuse(mock_test_database, data_dir):
     operator = TestFuseOperator(return_values={0x15: 5, 0x400: 2})
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     register = fuses.fuse_regs.get_reg("field208")
     assert register.fuse_lock_register.register_id == "lock0"
     assert register.fuse_lock_register.read_lock_mask == 0x2
@@ -129,7 +133,7 @@ def test_fuses_try_read_locked_fuse(mock_test_database, data_dir):
 
 def test_fuses_try_write_locked_fuse(mock_test_database, data_dir):
     operator = TestFuseOperator(return_values={0x15: 5, 0x400: 1})
-    fuses = Fuses(family="dev2", fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
     register = fuses.fuse_regs.get_reg("field208")
     assert register.fuse_lock_register.register_id == "lock0"
     assert register.fuse_lock_register.read_lock_mask == 0x2
@@ -151,8 +155,8 @@ def test_fuses_try_write_locked_fuse(mock_test_database, data_dir):
 
 
 def test_fuses_template(mock_test_database, data_dir):
-    fuses = Fuses(family="dev2")
-    template = fuses.generate_config_template("dev2")
+    fuses = Fuses(family=FamilyRevision("dev2"))
+    template = fuses.get_config_template(FamilyRevision("dev2"))
     template_dict = safe_load(template)
     assert template_dict["family"] == "dev2"
     assert template_dict["revision"] == "latest"
@@ -160,7 +164,7 @@ def test_fuses_template(mock_test_database, data_dir):
 
 
 def test_fuses_load_config(mock_test_database, data_dir):
-    cfg = load_configuration(os.path.join(data_dir, "test_config_1.yaml"))
+    cfg = Config.create_from_file(os.path.join(data_dir, "test_config_1.yaml"))
     fuses = Fuses.load_from_config(cfg)
     assert isinstance(fuses, Fuses)
     reg = fuses.fuse_regs.find_reg("REG1")

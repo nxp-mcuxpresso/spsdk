@@ -28,7 +28,7 @@ signed_message:
     - fuse_version
     - sw_version
     - srk_table
-    - signing_key
+    - signer
     - used_srk_id
     - srk_revoke_mask
     - message
@@ -99,33 +99,21 @@ signed_message:
       template_value: default
       skip_in_template: True
 
-    signing_key:
+    signer:
       type: string
-      title: Signed Message container signing key
+      title: Signed Message container signer
       description:
-        Private key used for sign the container header. Header can be signed by SRK.
+        Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+        private key used for sign the container header. Header can be signed by SRK.
         The referenced SRK must not have been revoked.
-      format: file
-      template_value: my_signing_key.pem
-    signature_provider:
-      type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
       template_value: type=file;file_path=my_prv_key.pem
-
-    signing_key_#2:
+    signer_#2:
       type: string
-      title: Signed Message container signing key for second signature (PQC only)
+      title: Signed Message container signer for second signature (PQC only)
       description:
-        Private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
+        Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+        private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
         The referenced SRK must not have been revoked.
-      format: file
-      template_value: my_signing_key.pem
-      skip_in_template: True
-    signature_provider_#2:
-      type: string
-      title: Signature Provider for second signature (PQC)
-      description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
       template_value: type=file;file_path=my_prv_key.pem
       skip_in_template: True
 

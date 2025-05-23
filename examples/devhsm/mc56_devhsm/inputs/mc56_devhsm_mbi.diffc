@@ -8,8 +8,8 @@ user_cfg: inputs/mbi_xip.yaml
 custom_command: "%! nxpimage -v mbi get-templates -f mwct20d2 -o workspace/templates --force"
 
 comments:
-  signPrivateKey: "Add path to your private key file for signing"
+  signer: "Add path to your private key file for signing"
   certBlock: "Add path to binary certificate block"
-  lifeCycle: "NOT_SET means that the lifecycle is taken from the application, in our case it is OEM_OPEN"
-  signProvider: "This is removed, because we are using private key in this example"
+  bca: "Not used"
+  fcf: "Not used"
   addCertHash: "We have to add hash of the certificate to the MBI, because it is not yet programmed to IFR"

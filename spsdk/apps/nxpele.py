@@ -8,7 +8,6 @@
 """SPSDK NXPELE application."""
 
 import logging
-import os
 import shlex
 import sys
 from struct import pack
@@ -29,7 +28,6 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
-    spsdk_revision_option,
     timeout_option,
     usb_option,
 )
@@ -43,19 +41,14 @@ from spsdk.ele.ele_constants import (
     LifeCycleToSwitch,
 )
 from spsdk.exceptions import SPSDKError
+from spsdk.image.iee.iee import Iee, IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes
+from spsdk.image.otfad.otfad import KeyBlob, Otfad
 from spsdk.mboot.exceptions import McuBootCommandError
-from spsdk.utils.crypto.iee import IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes, IeeNxp
-from spsdk.utils.crypto.otfad import KeyBlob, OtfadNxp
+from spsdk.utils.binary_image import BinaryImage
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import (
-    BinaryPattern,
-    load_binary,
-    load_configuration,
-    load_hex_string,
-    write_file,
-)
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import BinaryPattern, load_binary, load_hex_string, write_file
 
 logger = logging.getLogger(__name__)
 
@@ -112,11 +105,10 @@ def nxpele_options(options: FC) -> Callable:
     return options
 
 
-@click.group(name="nxpele", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="nxpele", cls=CommandsTreeGroup)
 @nxpele_options
 @spsdk_apps_common_options
 @spsdk_family_option(families=EleMessageHandler.get_supported_families(), required=True)
-@spsdk_revision_option
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -126,8 +118,7 @@ def main(
     buspal: Optional[str],
     log_level: int,
     timeout: int,
-    family: str,
-    revision: str,
+    family: FamilyRevision,
     device: Optional[str],
     buffer_addr: Optional[int],
     buffer_size: Optional[int],
@@ -145,7 +136,6 @@ def main(
 
     ctx.obj = EleMessageHandler.get_message_handler(
         family=family,
-        revision=revision,
         device=device,
         fb_addr=fb_addr,
         fb_size=fb_size,
@@ -768,9 +758,7 @@ def ele_signed_message(ele_handler: EleMessageHandler, signed_msg_path: str) -> 
     :param signed_msg_path: Path to signed message binary file
     """
     signed_msg = ele_message.EleMessageSigned(
-        signed_msg=load_binary(signed_msg_path),
-        family=ele_handler.family,
-        revision=ele_handler.revision,
+        signed_msg=load_binary(signed_msg_path), family=ele_handler.family
     )
     with ele_handler:
         ele_handler.send_message(signed_msg)
@@ -858,7 +846,7 @@ def ele_load_keyblob(ele_handler: EleMessageHandler, key_id: int, binary: bytes)
     click.echo("ELE load keyblob ends successfully.")
 
 
-@main.group(name="generate-keyblob", no_args_is_help=True, cls=SpsdkClickGroup)
+@main.group(name="generate-keyblob", cls=SpsdkClickGroup)
 def gen_keyblob_group() -> None:
     """Group of sub-commands related to generate Keyblob."""
 
@@ -1106,7 +1094,8 @@ def ele_gen_keyblob_otfad(
     help="Index of used FlexSPI peripheral. Typically 1 or 2.",
 )
 @spsdk_config_option(
-    help="Configuration file from NXPIMAGE OTFAD tool. From the config, all needed values has been loaded."
+    klass=Otfad,
+    help="Configuration file from NXPIMAGE OTFAD tool. From the config, all needed values has been loaded.",
 )
 @spsdk_output_option(
     required=False,
@@ -1114,14 +1103,14 @@ def ele_gen_keyblob_otfad(
 )
 @click.pass_obj
 def cmd_gen_keyblob_otfad_full(
-    handler: EleMessageHandler, flexspi_index: int, config: str, output: str
+    handler: EleMessageHandler, flexspi_index: int, config: Config, output: str
 ) -> None:
     """Generate OTFAD keyblob on EdgeLock Enclave."""
     ele_gen_keyblob_otfad_whole_keyblob(handler, flexspi_index, config, output)
 
 
 def ele_gen_keyblob_otfad_whole_keyblob(
-    ele_handler: EleMessageHandler, flexspi_index: int, config: str, output: str
+    ele_handler: EleMessageHandler, flexspi_index: int, config: Config, output: str
 ) -> None:
     """Generate OTFAD keyblob on EdgeLock Enclave.
 
@@ -1130,17 +1119,10 @@ def ele_gen_keyblob_otfad_whole_keyblob(
     :param config: Configuration of OTFAD from NXPIMAGE OTFAD tool
     :param output: Output keyblob file name
     """
-    config_data = load_configuration(config)
-    config_dir = os.path.dirname(config)
-    check_config(config_data, OtfadNxp.get_validation_schemas_family(), search_paths=[config_dir])
-    family = config_data["family"]
-    schemas = OtfadNxp.get_validation_schemas(family)
-    check_config(config_data, schemas, search_paths=[config_dir])
-    # Input configuration is OK
-    otfad = OtfadNxp.load_from_config(config_data, config_dir, search_paths=[config_dir])
+    otfad = Otfad.load_from_config(config)
     otfad_keyblobs = BinaryImage(
         name="OTFAD Keyblobs",
-        description=ele_handler.family,
+        description=str(ele_handler.family),
         size=256,
         pattern=BinaryPattern("zeros"),
     )
@@ -1370,7 +1352,8 @@ def ele_gen_keyblob_iee(
     help="Region number",
 )
 @spsdk_config_option(
-    help="Configuration file from NXPIMAGE IEE tool. From the config, all needed values has been loaded."
+    klass=Iee,
+    help="Configuration file from NXPIMAGE IEE tool. From the config, all needed values has been loaded.",
 )
 @spsdk_output_option(
     required=False,
@@ -1378,14 +1361,14 @@ def ele_gen_keyblob_iee(
 )
 @click.pass_obj
 def cmd_gen_keyblob_iee_full(
-    handler: EleMessageHandler, region_number: int, config: str, output: str
+    handler: EleMessageHandler, region_number: int, config: Config, output: str
 ) -> None:
     """Generate IEE keyblob on EdgeLock Enclave."""
     ele_gen_keyblob_iee_whole_keyblob(handler, region_number, config, output)
 
 
 def ele_gen_keyblob_iee_whole_keyblob(
-    ele_handler: EleMessageHandler, region_number: int, config: str, output: str
+    ele_handler: EleMessageHandler, region_number: int, config: Config, output: str
 ) -> None:
     """Generate OTFAD keyblob on EdgeLock Enclave.
 
@@ -1395,13 +1378,7 @@ def ele_gen_keyblob_iee_whole_keyblob(
     :param output: Output keyblob file name
     """
     IEE_KEYBLOB_ID = 0x49454542
-    config_data = load_configuration(config)
-    config_dir = os.path.dirname(config)
-    check_config(config_data, IeeNxp.get_validation_schemas_family(), search_paths=[config_dir])
-    family = config_data["family"]
-    schemas = IeeNxp.get_validation_schemas(family)
-    check_config(config_data, schemas, search_paths=[config_dir])
-    iee = IeeNxp.load_from_config(config_data, config_dir, search_paths=[config_dir])
+    iee = Iee.load_from_config(config)
 
     bypass = bool(iee[0].attributes.aes_mode == IeeKeyBlobModeAttributes.Bypass)
     encryption_algorithm = (
@@ -1448,7 +1425,7 @@ def ele_gen_keyblob_iee_whole_keyblob(
 
     iee_keyblobs = BinaryImage(
         name="IEE Keyblobs",
-        description=ele_handler.family,
+        description=str(ele_handler.family),
         size=0,
         pattern=BinaryPattern("zeros"),
     )

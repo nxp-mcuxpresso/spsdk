@@ -22,20 +22,12 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CMap
 from ruamel.yaml.comments import CommentedSeq as CSeq
 
-from spsdk import SPSDK_YML_INDENT
+from spsdk import SPSDK_DEBUG, SPSDK_SCHEMA_STRICT, SPSDK_YML_INDENT
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import DatabaseManager, get_db
-from spsdk.utils.misc import (
-    find_dir,
-    find_file,
-    load_configuration,
-    value_to_int,
-    wrap_text,
-    write_file,
-)
+from spsdk.utils.misc import find_dir, find_file, value_to_int, wrap_text, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-ENABLE_DEBUG = False
+ENABLE_DEBUG = SPSDK_DEBUG
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +80,21 @@ class SPSDKMerger(Merger):
         dict: DictStrategies,
         set: SetStrategies,
     }
+
+    def __init__(  # pylint: disable=dangerous-default-value
+        self,
+        type_strategies: list = [(list, ["set"]), (dict, ["merge"]), (set, ["union"])],
+        fallback_strategies: list = ["override"],
+        type_conflict_strategies: list = ["override"],
+    ):
+        """SPSDK Merger constructor.
+
+        :param type_strategies: Type of merge strategies, defaults to
+            [(list, ["set"]), (dict, ["merge"]), (set, ["union"])]
+        :param fallback_strategies: Fallback strategies, defaults to ["override"]
+        :param type_conflict_strategies: Conflict strategies, defaults to ["override"]
+        """
+        super().__init__(type_strategies, fallback_strategies, type_conflict_strategies)
 
 
 def _is_number(param: Any) -> bool:
@@ -188,11 +195,78 @@ def _print_validation_fail_reason(
     return message
 
 
+def check_unknown_properties(config_dict: dict, schema_dict: dict, path: str = "") -> None:
+    """Recursively check for unknown properties in config."""
+
+    def process_nested_schemas(schemas: dict) -> dict:
+        """Process and merge nested schema structures.
+
+        This function handles structures that contain nested schemas
+        under keywords like 'oneOf', 'allOf', or 'anyOf'. It merges all nested
+        schemas into a single schema that can be used for property checking.
+
+        :param schemas: Original schema dictionary that may contain nested schemas
+        :return: Merged schema if nested schemas were found, otherwise the original schema
+        """
+        nested_ch_keywords = ["oneOf", "allOf", "anyOf"]
+        if not any(key in schemas for key in nested_ch_keywords):
+            return schemas
+        merger = SPSDKMerger()
+        merged_sch: dict[str, Any] = {}
+        for keyword in nested_ch_keywords:
+            if keyword in schemas:
+                for schema in schemas[keyword]:
+                    merger.merge(merged_sch, copy.deepcopy(schema))
+        # Return the original schema if no nested schemas were merged
+        return merged_sch
+
+    schema_dict = process_nested_schemas(schema_dict)
+    if "properties" not in schema_dict and "patternProperties" not in schema_dict:
+        return
+
+    schema_props = set(schema_dict.get("properties", {}).keys())
+    pattern_props = schema_dict.get("patternProperties", {})
+
+    for key, value in config_dict.items():
+        current_path = f"{path}.{key}" if path else key
+
+        # Skip if it's a known property
+        if key in schema_props:
+            # If it's an object, recurse into it
+            if isinstance(value, dict) and isinstance(schema_dict["properties"].get(key, {}), dict):
+                check_unknown_properties(value, schema_dict["properties"][key], current_path)
+            # If it's an array with object items, check each item
+            elif isinstance(value, list) and "items" in schema_dict["properties"].get(key, {}):
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        check_unknown_properties(
+                            item, schema_dict["properties"][key]["items"], f"{current_path}[{i}]"
+                        )
+            continue
+
+        # Check if key matches any pattern in patternProperties
+        matched_pattern = False
+        for pattern in pattern_props:
+            import re
+
+            if re.match(pattern, key):
+                matched_pattern = True
+                break
+
+        if not matched_pattern:
+            # This property is unknown to the schema
+            error_msg = f"Unknown property found in configuration: '{current_path}'"
+            if SPSDK_SCHEMA_STRICT:
+                raise SPSDKError(error_msg)
+            logger.warning(error_msg)
+
+
 def check_config(
-    config: Union[str, dict[str, Any]],
+    config: dict[str, Any],
     schemas: list[dict[str, Any]],
     extra_formatters: Optional[dict[str, Callable[[str], bool]]] = None,
     search_paths: Optional[list[str]] = None,
+    check_unknown_props: bool = False,
 ) -> None:
     """Check the configuration by provided list of validation schemas.
 
@@ -200,6 +274,7 @@ def check_config(
     :param schemas: List of validation schemas
     :param extra_formatters: Additional custom formatters
     :param search_paths: List of paths where to search for the file, defaults to None
+    :param check_unknown_props: If True, check for unknown properties in config and print warnings
     :raises SPSDKError: Invalid validation schema or configuration
     """
     custom_formatters: dict[str, Callable[[str], bool]] = {
@@ -212,25 +287,28 @@ def check_config(
         "number": _is_number,
         "hex_value": _is_hex_number,
     }
-    if isinstance(config, str):
-        config_to_check = load_configuration(config)
-        config_dir = os.path.dirname(config)
-        if search_paths:
-            search_paths.append(config_dir)
-        else:
-            search_paths = [config_dir]
-    else:
-        config_to_check = copy.deepcopy(config)
+
+    config_to_check = copy.deepcopy(config)
 
     schema: dict[str, Any] = {}
     for sch in schemas:
         always_merger.merge(schema, copy.deepcopy(sch))
     validator = None
     formats = always_merger.merge(custom_formatters, extra_formatters or {})
+    # Check for unknown properties before validation
+    if check_unknown_props and "properties" in schema:
+        check_unknown_properties(config_to_check, schema)
+
     try:
         if ENABLE_DEBUG:
             validator_code = fastjsonschema.compile_to_code(schema, formats=formats)
             write_file(validator_code, "validator_file.py")
+            import json
+
+            for i, part_schema in enumerate(schemas):
+                write_file(json.dumps(part_schema, indent=2), f"part_schema_{i}.json")
+            write_file(json.dumps(config_to_check, indent=2), "config.json")
+            write_file(json.dumps(schema, indent=2), "merged_schema.json")
         else:
             validator = fastjsonschema.compile(schema, formats=formats)
     except (TypeError, fastjsonschema.JsonSchemaDefinitionException) as exc:
@@ -238,6 +316,9 @@ def check_config(
     try:
         if ENABLE_DEBUG:
             # pylint: disable=import-error,import-outside-toplevel
+            import sys
+
+            sys.path.insert(0, os.path.abspath(os.curdir))
             import validator_file
 
             validator_file.validate(config_to_check, formats)
@@ -497,7 +578,9 @@ class CommentedConfig:
                 if not self._check_matching_oneof_option(one_option, custom_value):
                     continue
                 return self._get_schema_value(one_option, custom_value)
-            raise SPSDKError("Any allowed option matching the configuration data")
+            raise SPSDKError(
+                f"Any allowed option matching the configuration data for {custom_value}"
+            )
 
         # Check the restriction into templates in oneOf block
         one_of_mod = []
@@ -706,11 +789,7 @@ class CommentedConfig:
                 block_list[title]["description"] = schema.get("description", "")
 
         # 2. Merge all schemas together to get whole single schema
-        schemas_merger = SPSDKMerger(
-            [(list, ["set"]), (dict, ["merge"]), (set, ["union"])],
-            ["override"],
-            ["override"],
-        )
+        schemas_merger = SPSDKMerger()
 
         merged: dict[str, Any] = {}
         for schema in loc_schemas:
@@ -792,32 +871,3 @@ class CommentedConfig:
         yaml_data = stream.getvalue()
 
         return yaml_data
-
-
-def update_validation_schema_family(
-    sch: dict[str, Any],
-    devices: list[str],
-    family: Optional[str] = None,
-    revision: Optional[str] = None,
-) -> None:
-    """Update validation family schema to proper validate and show the families.
-
-    :param sch: The validation schema 'properties' where is as family as revision.
-    :param devices: List of supported devices.
-    :param family: Optional family name, if used the the template value will be
-        updated and the correct list of revisions will be used.
-    :param revision: Family revision.
-    """
-    family_sch = sch["family"]
-
-    family_sch["enum"] = devices + list(
-        DatabaseManager().quick_info.devices.get_predecessors(devices).keys()
-    )
-    family_sch["enum_template"] = devices
-    if family:
-        family_sch["template_value"] = family
-        if "revision" in sch:
-            revision_sch = sch["revision"]
-            device = get_db(family).device
-            revision_sch["enum"] = device.revisions.revision_names(append_latest=True)
-            revision_sch["template_value"] = revision or "latest"

@@ -6,7 +6,7 @@ alias: kw47b42zb7
 
 # General MCU information
 info:
-  purpose: Wireless Connectivity
+  purpose: Wireless Connectivity MCUs
   # Web page of MCU representative
   web: https://www.nxp.com/products/MCX-W72X
   use_in_doc: True # Include this MCU in generated documentation

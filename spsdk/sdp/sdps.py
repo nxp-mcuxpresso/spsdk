@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
-#
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,6 +16,7 @@ from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
 from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces import SDPDeviceTypes
 from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.interfaces.commands import CmdPacketBase
 from spsdk.utils.misc import swap32
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -56,31 +56,36 @@ class RomInfo:
 class SDPS:
     """Secure Serial Downloader Protocol."""
 
-    def __init__(self, interface: SDPDeviceTypes, family: str) -> None:
+    def __init__(self, interface: SDPDeviceTypes, family: FamilyRevision) -> None:
         """Initialize SDPS object.
 
         :param device: USB device
         :param device_name: target platform name used to determine ROM settings
         """
         self._interface = interface
-        self.family: str = family
+        self.family = family
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families(include_predecessors: bool = False) -> list[FamilyRevision]:
         """Get supported devices.
 
+        :param include_predecessors: The list will contains also predecessors names
         :return: List of supported devices
         """
-        return [
+        ret = [
             dev
             for dev, quick_info in DatabaseManager().quick_info.devices.devices.items()
             if quick_info.info.isp.is_protocol_supported("sdps")
         ]
+        if include_predecessors:
+            ret.extend(list(DatabaseManager().quick_info.devices.get_predecessors(ret).keys()))
+
+        return [FamilyRevision(x) for x in ret]
 
     @property
     def rom_info(self) -> RomInfo:
         """Rom information property."""
-        device = DatabaseManager().db.devices.get(self.family)
+        device = DatabaseManager().db.devices.get(self.family.name)
         return RomInfo(
             no_cmd=device.info.isp.rom.protocol_params.get("no_cmd", True),
             hid_ep1=device.info.isp.rom.protocol_params.get("hid_ep1", True),
@@ -88,16 +93,14 @@ class SDPS:
         )
 
     @property
-    def family(self) -> str:
+    def family(self) -> FamilyRevision:
         """Device name."""
         return self._family
 
     @family.setter
-    def family(self, value: str) -> None:
+    def family(self, value: FamilyRevision) -> None:
         """Device name setter."""
-        devices = self.get_supported_families()
-        devices += list(DatabaseManager().quick_info.devices.get_predecessors(devices).keys())
-        if value not in devices:
+        if value not in self.get_supported_families(True):
             raise SPSDKValueError(f"Device family is not supported {value}")
         self._family = value
 
@@ -191,7 +194,7 @@ class CmdPacket(CmdPacketBase):
             f" Length={self.length}, Flags={self.flags}, CdbCommand=0x{self.cdb_command}"
         )
 
-    def to_bytes(self, padding: bool = True) -> bytes:
+    def export(self, padding: bool = True) -> bytes:
         """Return command packet as bytes."""
         return pack(
             self.FORMAT,

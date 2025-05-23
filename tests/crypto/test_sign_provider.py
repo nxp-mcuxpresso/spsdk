@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Tests for Signature Provider interface."""
 import json
 import os
@@ -15,7 +16,6 @@ import pytest
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import (
     IS_OSCCA_SUPPORTED,
-    EccCurve,
     ECDSASignature,
     PrivateKeyEcc,
     PrivateKeyRsa,
@@ -27,10 +27,10 @@ from spsdk.crypto.keys import (
 from spsdk.crypto.signature_provider import (
     HttpProxySP,
     SignatureProvider,
-    get_signature_provider,
+    get_signature_provider_from_config_str,
     requests,
 )
-from spsdk.exceptions import SPSDKError, SPSDKKeyError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.utils.misc import write_file
 
 
@@ -141,9 +141,9 @@ def test_sm2_verify_public(data_dir, signing_key_file, verification_key_file):
 def test_get_signature_provider(sp_cfg, sp_type, parsed_args, exception):
     if exception:
         with pytest.raises(SPSDKKeyError):
-            sp = get_signature_provider(sp_cfg)
+            sp = get_signature_provider_from_config_str(sp_cfg)
     else:
-        sp = get_signature_provider(sp_cfg)
+        sp = get_signature_provider_from_config_str(sp_cfg)
         assert sp.identifier == sp_type
         assert sp.kwargs == parsed_args
 
@@ -252,3 +252,39 @@ def test_proxy_sp_signature_length_metadata():
     with pytest.raises(AttributeError):
         with patch("spsdk.crypto.signature_provider.requests.sessions.Session.send", my_thing):
             sp.signature_length
+
+
+def test_convert_params_valid():
+    """Test valid parameter conversion."""
+    params = "type=file;file_path=/path/to/file;password=secret"
+    result = SignatureProvider.convert_params(params)
+    assert result == {"type": "file", "file_path": "/path/to/file", "password": "secret"}
+
+
+def test_convert_params_duplicate_key():
+    """Test convert_params with duplicate keys."""
+    params = "type=file;file_path=/path;file_path=/another/path"
+    with pytest.raises(SPSDKKeyError):
+        SignatureProvider.convert_params(params)
+
+
+def test_convert_params_invalid_format():
+    """Test convert_params with invalid format."""
+    params = "type:file;file_path=/path"
+    with pytest.raises(SPSDKValueError):
+        SignatureProvider.convert_params(params)
+
+
+def test_filter_params():
+    """Test filter_params method of SignatureProvider."""
+
+    class TestClass:
+        def __init__(self, param1, param2):
+            self.param1 = param1
+            self.param2 = param2
+
+    params = {"param1": "value1", "param2": "value2", "type": "file", "extra": "extra_value"}
+    filtered = SignatureProvider.filter_params(TestClass, params)
+
+    assert "type" not in filtered
+    assert "extra" in filtered

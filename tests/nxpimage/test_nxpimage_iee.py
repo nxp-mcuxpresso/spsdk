@@ -12,7 +12,8 @@ import pytest
 import yaml
 
 from spsdk.apps import nxpimage
-from spsdk.utils.crypto.iee import IeeNxp
+from spsdk.utils.config import Config
+from spsdk.image.iee.iee import Iee
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -66,7 +67,7 @@ def test_nxpimage_iee(cli_runner: CliRunner, tmpdir, data_dir, case, config, ref
     shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
 
     with use_working_directory(work_dir):
-        config_dict = load_configuration(config)
+        config_dict = Config.create_from_file(config)
         out_dir = os.path.join(work_dir, config_dict["output_folder"])
         output_name = config_dict["output_name"]
         keyblob_name = config_dict["keyblob_name"]
@@ -163,8 +164,9 @@ def test_iee_custom_output(cli_runner: CliRunner, tmpdir, data_dir, case, config
 def test_nxpimage_iee_export_bcf(data_dir, case, config, blhost_bcf_res):
     config_dir = os.path.join(data_dir, "iee", case)
     config1_dir = os.path.join(data_dir, "iee")
-    config_data = load_configuration(os.path.join(config_dir, config))
-    iee = IeeNxp.load_from_config(config_data, config_dir, search_paths=[config_dir, config1_dir])
+    config_data = Config.create_from_file(os.path.join(config_dir, config))
+    config_data.search_paths.append(config1_dir)
+    iee = Iee.load_from_config(config_data)
     bcf = iee.get_blhost_script_otp_kek()
     for result in blhost_bcf_res:
         assert result in bcf

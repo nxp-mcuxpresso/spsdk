@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
 
 from spsdk.image.bootable_image.segments import SegmentImageVersionAntiPole
+from spsdk.utils.family import FamilyRevision
 
 
 @pytest.mark.parametrize(
@@ -35,6 +36,8 @@ def test_segment_image_version_antipole_load_from_config(config, binary):
     ],
 )
 def test_segment_image_version_antipole_parse(binary, config):
-    segment = SegmentImageVersionAntiPole(0, family="lpc55s3x", mem_type="flexspi_nor")
+    segment = SegmentImageVersionAntiPole(
+        0, family=FamilyRevision("lpc55s3x"), mem_type="flexspi_nor"
+    )
     segment.parse_binary(bytes.fromhex(binary))
     assert segment.create_config("") == config

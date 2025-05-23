@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import filecmp
+import glob
 import hashlib
 import logging
 import os
@@ -471,7 +472,7 @@ def run_signature(
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     output_file = os.path.join(tmpdir, f"signature_{key_type}_{algorithm}.bin")
 
-    cmd = f"signature create -k {priv_key} -i {input_file} -o {output_file}"
+    cmd = f"signature create -s {priv_key} -i {input_file} -o {output_file}"
     if algorithm:
         cmd += f" --algorithm {algorithm.label}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
@@ -535,7 +536,7 @@ def test_nxpcrypto_create_signature_algorithm_oscca(cli_runner: CliRunner, data_
     output_file = os.path.join(tmpdir, "signature.bin")
     priv_key, pub_key = get_key_path(data_dir, "sm2")
 
-    cmd = f"signature create -k {priv_key} -i {input_file} -o {output_file} -a sm3"
+    cmd = f"signature create -s {priv_key} -i {input_file} -o {output_file} -a sm3"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert os.path.isfile(output_file)
 
@@ -556,7 +557,7 @@ def test_nxpcrypto_create_signature_algorithm_dilithium(
     output_file = os.path.join(tmpdir, "signature.bin")
     priv_key, pub_key = get_key_path(data_dir, f"dil{level}")
 
-    cmd = f"signature create -k {priv_key} -i {input_file} -o {output_file}"
+    cmd = f"signature create -s {priv_key} -i {input_file} -o {output_file}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert os.path.isfile(output_file)
 
@@ -621,7 +622,7 @@ def test_nxpcrypto_signature_create_signature_encoding(
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     output_file = os.path.join(tmpdir, "signature.bin")
     cmd = f"signature create -i {input_file} -o {output_file} -e {encoding.value} "
-    cmd += f"-sp type=file;file_path={priv_key}" if signature_provider else f"-k {priv_key}"
+    cmd += f"-s type=file;file_path={priv_key}" if signature_provider else f"-s {priv_key}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert os.path.isfile(output_file)
 
@@ -655,13 +656,13 @@ def test_nxpcrypto_create_signature_password(
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     # Password as cmd input
     out = os.path.join(tmpdir, "signature_1.bin")
-    cmd = f"signature create -k {priv_key_path} -i {input_file} -o {out} --password {password}"
+    cmd = f"signature create -s {priv_key_path} -i {input_file} -o {out} --password {password}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert os.path.isfile(out)
 
     # Password as interactive prompt
     out = os.path.join(tmpdir, "signature_2.bin")
-    cmd = f"signature create -k {priv_key_path} -i {input_file} -o {out}"
+    cmd = f"signature create -s {priv_key_path} -i {input_file} -o {out}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert os.path.isfile(out)
 
@@ -698,7 +699,7 @@ def test_nxpcrypto_create_signature_regions_rsa(
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     out = os.path.join(tmpdir, "signature.bin")
-    cmd = f"signature create -k {priv_key} -i {input_file} -o {out}"
+    cmd = f"signature create -s {priv_key} -i {input_file} -o {out}"
     for region in regions:
         cmd += f" -r {region}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
@@ -734,7 +735,7 @@ def test_nxpcrypto_create_signature_regions_rsa_invalid(
     out = os.path.join(tmpdir, "signature.bin")
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
-    cmd = f"signature create -k {priv_key} -i {input_file} -o {out}"
+    cmd = f"signature create -s {priv_key} -i {input_file} -o {out}"
     for region in regions:
         cmd += f" -r {region}"
     expected_code = 1 if exception else 0
@@ -788,7 +789,7 @@ def test_nxpcrypto_verify_signature(
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     output_file = os.path.join(tmpdir, "signature.bin")
-    cmd = f"signature create -k {priv_key} -i {input_file} -o {output_file} -e {encoding.value}"
+    cmd = f"signature create -s {priv_key} -i {input_file} -o {output_file} -e {encoding.value}"
     run_nxpcrypto(cli_runner, cmd, tmpdir)
 
     cmd = f"signature verify -k {pub_key} -i {input_file} -s {output_file}"
@@ -851,18 +852,83 @@ def test_nxpcrypto_digest(cli_runner: CliRunner, data_dir: str, tmpdir: str):
         "rsa4096",
     ],
 )
+@pytest.mark.parametrize(
+    "key_number",
+    [4],
+)
+@pytest.mark.parametrize(
+    "ca",
+    [True, False],
+)
 def test_nxpcrypto_pki_tree(
-    cli_runner: CliRunner, pki_type: str, tmpdir: str, key_type: str, encoding: str
+    cli_runner: CliRunner,
+    pki_type: str,
+    tmpdir: str,
+    key_type: str,
+    encoding: str,
+    key_number: int,
+    ca: bool,
 ):
-    cmd = f"pki-tree {pki_type} -k {key_type} -o {tmpdir}/ahab_tree_{key_type}_{encoding} -e {encoding} -ca"
+    ca_flag = "-ca" if ca else ""
+    cmd = f"pki-tree {pki_type} -k {key_type} -o {tmpdir}/tree_{key_type}_{encoding} -e {encoding} {ca_flag} -n {key_number}"
     result = run_nxpcrypto(cli_runner, cmd, tmpdir)
     assert result.exit_code == 0, "PKI Tree command failed"
     assert os.path.isfile(
-        f"{tmpdir}/ahab_tree_{key_type}_{encoding}/crts/CA0_{key_type}_ca_cert.{encoding}"
+        f"{tmpdir}/tree_{key_type}_{encoding}/crts/CA0_{key_type}_ca_cert.{encoding}"
     )
-    assert os.path.isfile(
-        f"{tmpdir}/ahab_tree_{key_type}_{encoding}/keys/SRK0_{key_type}_ca_key.{encoding}"
-    )
+
+    # Count the number of SRK keys in keys directory using glob
+    srk_keys = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/keys/SRK*.pem")
+    assert len(srk_keys) == key_number
+    srk_certs = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/crts/SRK*.pem")
+    assert len(srk_certs) == key_number
+
+    if ca:
+        assert os.path.isfile(
+            f"{tmpdir}/tree_{key_type}_{encoding}/keys/SRK0_{key_type}_ca_key.{encoding}"
+        )
+        if pki_type == "ahab":
+            # Check if the SGK is generated
+            assert os.path.isfile(
+                f"{tmpdir}/tree_{key_type}_{encoding}/keys/SGK0_{key_type}_key.{encoding}"
+            )
+        else:
+            assert os.path.isfile(
+                f"{tmpdir}/tree_{key_type}_{encoding}/keys/CSF0_0_{key_type}_key.{encoding}"
+            )
+    else:
+        assert os.path.isfile(
+            f"{tmpdir}/tree_{key_type}_{encoding}/keys/SRK0_{key_type}_key.{encoding}"
+        )
+
+    if pki_type == "ahab":
+        # Extend the tree
+        cmd = f"pki-tree ahab-extend -i {tmpdir}/tree_{key_type}_{encoding} -n {key_number}"
+        result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+        assert result.exit_code == 0, "PKI Tree command failed"
+
+        # Count the number of SRK keys in keys directory using glob
+        srk_keys = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/keys/SRK*.pem")
+        assert len(srk_keys) == key_number * 2
+        srk_certs = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/crts/SRK*.pem")
+        assert len(srk_certs) == key_number * 2
+
+        if ca:
+            # count the number of SGK keys in keys directory using glob
+            sgk_keys = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/keys/SGK*.pem")
+            assert len(sgk_keys) == key_number * 2
+
+    elif pki_type == "hab":
+        # Extend the tree
+        cmd = f"pki-tree hab-extend -i {tmpdir}/tree_{key_type}_{encoding} -n {key_number}"
+        result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+        assert result.exit_code == 0, "PKI Tree command failed"
+
+        # Count the number of SRK keys in keys directory using glob
+        srk_keys = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/keys/SRK*.pem")
+        assert len(srk_keys) == key_number * 2
+        srk_certs = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/crts/SRK*.pem")
+        assert len(srk_certs) == key_number * 2
 
 
 CRC_TEST_VECTORS = [
@@ -911,3 +977,41 @@ def test_nxpcrypto_crc_from_alg(alg, exception):
     else:
         crc_obj = from_crc_algorithm(alg)
         assert isinstance(crc_obj, Crc)
+
+
+@pytest.mark.parametrize(
+    "verification_key", ["issuer_private_secp256.pem", "issuer_public_secp256.pem"]
+)
+def test_signature(cli_runner: CliRunner, data_dir: str, verification_key: str):
+    cmd = f"cert verify -c cert/cert_secp256.crt --sign cert/{verification_key}"
+    run_nxpcrypto(cli_runner, cmd, data_dir)
+
+
+@pytest.mark.parametrize(
+    "verification_key", ["subject_public_secp256.pem", "subject_private_secp256.pem"]
+)
+def test_puk(cli_runner: CliRunner, data_dir: str, verification_key: str):
+    cmd = f"cert verify -c cert/cert_secp256.crt --puk cert/{verification_key}"
+    run_nxpcrypto(cli_runner, cmd, data_dir)
+
+
+@pytest.mark.parametrize(
+    "verification_key", ["subject_public_secp256.pem", "subject_private_secp256.pem"]
+)
+def test_signature_incorrect_key(cli_runner: CliRunner, data_dir: str, verification_key: str):
+    cmd = f"cert verify -c cert_secp256.crt --sign {verification_key}"
+    run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
+
+
+@pytest.mark.parametrize(
+    "verification_key", ["issuer_private_secp256.pem", "issuer_public_secp256.pem"]
+)
+def test_puk_incorrect_key(cli_runner: CliRunner, data_dir: str, verification_key: str):
+    cmd = f"cert verify -c cert_secp256.crt --puk {verification_key}"
+    result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
+
+
+def test_incorrect_cert_format(cli_runner: CliRunner, data_dir: str):
+    cmd = "cert verify -c cert/satyr.crt --sign cert/subject_public_secp256.pem"
+    result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
+    assert "ECDSA" in str(result.exception)

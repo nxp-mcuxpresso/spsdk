@@ -1,28 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Module used for generation SecureBinary V3.1."""
 import logging
+import os
 from datetime import datetime
-from struct import calcsize, pack, unpack_from
-from typing import Any, Optional
+from struct import calcsize, pack, unpack, unpack_from
+from typing import Any, Optional, Union
 
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
-from spsdk.crypto.symmetric import aes_cbc_encrypt
+from spsdk.crypto.symmetric import aes_cbc_decrypt, aes_cbc_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
+from spsdk.image.cert_block.cert_blocks import CertBlockV21
+from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, BaseCmd, CmdSectionHeader
 from spsdk.sbfile.sb31.functions import KeyDerivator
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.crypto.cert_blocks import CertBlockV21
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
-from spsdk.utils.misc import align_block, load_hex_string, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
+from spsdk.utils.misc import align_block, load_hex_string, write_file
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Secure Boot Image Class (Version 3.1)
 ########################################################################################################################
 class SecureBinary31Header(BaseClass):
-    """Header of the SecureBinary V3.1."""
+    """Header of the SecureBinary V3.1 (Block 0)."""
 
     HEADER_FORMAT = "<4s2H3LQ4L16s"
     HEADER_SIZE = calcsize(HEADER_FORMAT)
@@ -43,6 +47,7 @@ class SecureBinary31Header(BaseClass):
         self,
         firmware_version: int,
         hash_type: EnumHashAlgorithm,
+        cert_block: Optional[CertBlockV21] = None,
         description: Optional[str] = None,
         timestamp: Optional[int] = None,
         is_nxp_container: bool = False,
@@ -52,6 +57,7 @@ class SecureBinary31Header(BaseClass):
 
         :param hash_type: Hash type used in commands binary block
         :param firmware_version: Firmware version (must be bigger than current CMPA record)
+        :param cert_block: Certificate block v2.1 for the Block 0, defaults to None
         :param description: Custom description up to 16 characters long, defaults to None
         :param timestamp: Timestamp (number of seconds since Jan 1st, 200), if None use current time
         :param is_nxp_container: NXP provisioning SB file, defaults to False
@@ -64,9 +70,13 @@ class SecureBinary31Header(BaseClass):
         self.block_count = 0
         self.image_type = 7 if is_nxp_container else 6
         self.firmware_version = firmware_version
-        self.timestamp = timestamp or int(datetime.now().timestamp())
+        self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
         self.image_total_length = self.HEADER_SIZE
         self.description = self._adjust_description(description)
+
+        # Add fields for the complete Block 0 representation
+        self.next_block_hash: bytes = bytes(get_hash_length(self.hash_type))
+        self.cert_block: Optional[CertBlockV21] = cert_block
 
     def _adjust_description(self, description: Optional[str] = None) -> bytes:
         """Format the description."""
@@ -104,21 +114,36 @@ class SecureBinary31Header(BaseClass):
         info += f" Total length of Block#0:     {self.image_total_length}\n"
         info += f" Certificate block offset:    {self.cert_block_offset}\n"
         info += f" Description:                 {self.description.decode('ascii')}\n"
+        if self.next_block_hash:
+            info += f" Hash of next block:         {self.next_block_hash.hex()}\n"
+        if self.cert_block:
+            info += " Certificate block:          Present\n"
+        else:
+            info += " Certificate block:          Not present\n"
         return info
 
-    def update(self, commands: "SecureBinary31Commands", cert_block: CertBlockV21) -> None:
+    def update(self, commands: "SecureBinary31Commands") -> None:
         """Updates the volatile fields in header by real commands and certification block data.
 
         :param commands: SB3.1 Commands block
-        :param cert_block: SB3.1 Certification block.
         """
         hash_size = get_hash_length(self.hash_type)
         self.block_count = commands.block_count
-        self.image_total_length += hash_size + cert_block.expected_size
-        self.image_total_length += 2 * hash_size
+
+        # Calculate total length, accounting for optional cert_block
+        self.image_total_length = self.HEADER_SIZE + hash_size
+        if self.cert_block:
+            self.image_total_length += self.cert_block.expected_size
+
+        # Add space for signature
+        signature_size = 64 if self.hash_type == EnumHashAlgorithm.SHA256 else 96
+        self.image_total_length += signature_size
 
     def export(self) -> bytes:
-        """Serialize the SB file to bytes."""
+        """Export the SB file to bytes.
+
+        :return: Packed binary representation of the SB 3.1 header
+        """
         major_format_version, minor_format_version = [
             int(v) for v in self.FORMAT_VERSION.split(".")
         ]
@@ -137,6 +162,36 @@ class SecureBinary31Header(BaseClass):
             self.cert_block_offset,
             self.description,
         )
+
+    def export_full_block0(self) -> bytes:
+        """Export the complete Block 0 data (header + hash + cert block).
+
+        This data is used for signature calculation.
+
+        :return: Binary data of Block 0 (without signature)
+        :raises SPSDKError: If cert_block is required but not set
+        """
+        data = self.export()  # Export header
+        data += self.next_block_hash  # Add hash of next block
+
+        # Add certificate block if available
+        if self.cert_block:
+            data += self.cert_block.export()
+
+        return data
+
+    def set_next_block_hash(self, hash_value: bytes) -> None:
+        """Set the hash of the next block.
+
+        :param hash_value: Hash value of the next block
+        :raises SPSDKError: If hash length doesn't match the configured hash type
+        """
+        expected_length = get_hash_length(self.hash_type)
+        if len(hash_value) != expected_length:
+            raise SPSDKError(
+                f"Hash length mismatch: expected {expected_length}, got {len(hash_value)}"
+            )
+        self.next_block_hash = hash_value
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -185,6 +240,12 @@ class SecureBinary31Header(BaseClass):
                 f"Invalid SB3.1 parsed certificate block offset: {obj.cert_block_offset} != {cert_block_offset}"
             )
         obj.image_total_length = image_total_length
+        # Extract the hash of the next block
+        hash_length = get_hash_length(hash_type)
+        next_block_hash_offset = cls.HEADER_SIZE
+        if next_block_hash_offset + hash_length <= len(data):
+            next_block_hash = data[next_block_hash_offset : next_block_hash_offset + hash_length]
+            obj.next_block_hash = next_block_hash
         return obj
 
     def validate(self) -> None:
@@ -216,15 +277,26 @@ class SecureBinary31Header(BaseClass):
         if self.description is None or len(self.description) != 16:
             raise SPSDKError("Invalid SB3.1 header image description.")
 
+        # Validate next_block_hash
+        if not self.next_block_hash or len(self.next_block_hash) != get_hash_length(self.hash_type):
+            raise SPSDKError("Invalid SB3.1 header next block hash.")
+
+        # Certificate block validation is optional
+        if self.cert_block:
+            self.cert_block.validate()
+
 
 class SecureBinary31Commands(BaseClass):
     """Blob containing SB3.1 commands."""
 
-    DATA_CHUNK_LENGTH = 256
+    FEATURE = DatabaseManager.SB31
+    SB_COMMANDS_NAME = "SB3.1"
+    SUPPORTED_HASHES = [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]
+    PCK_SIZES = [256, 128]
 
     def __init__(
         self,
-        family: str,
+        family: FamilyRevision,
         hash_type: EnumHashAlgorithm,
         is_encrypted: bool = True,
         pck: Optional[bytes] = None,
@@ -244,83 +316,203 @@ class SecureBinary31Commands(BaseClass):
         """
         super().__init__()
         self.family = family
-        if hash_type not in [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]:
+        if hash_type.label.lower() not in [x.label.lower() for x in self.SUPPORTED_HASHES]:
             raise SPSDKValueError(f"Invalid hash type: {hash_type}")
         self.hash_type = hash_type
         self.is_encrypted = is_encrypted
         self.block_count = 0
         self.final_hash = bytes(get_hash_length(hash_type))
-        self.commands: list[MainCmd] = []
+        self.block1_size = 0
+        self.commands: list[BaseCmd] = []
         self.key_derivator = None
+        self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
         if is_encrypted:
-            if pck is None or timestamp is None or kdk_access_rights is None:
-                raise SPSDKError("PCK, timestamp or kdk_access_rights are not defined.")
+            if pck is None is None or kdk_access_rights is None:
+                raise SPSDKError("PCK or kdk_access_rights are not defined.")
             self.key_derivator = KeyDerivator(
                 pck=pck,
-                timestamp=timestamp,
+                timestamp=self.timestamp,
                 key_length=self._get_key_length(self.hash_type),
                 kdk_access_rights=kdk_access_rights,
             )
+            logger.info(f"SB3KDK: {pck.hex()}")
+        db = get_db(family=family)
+        self.data_chunk_length = db.get_int(self.FEATURE, "commands_block_length")
+        self.variable_block_length = db.get_bool(self.FEATURE, "variable_block_length")
 
     @staticmethod
     def _get_key_length(hash_type: EnumHashAlgorithm) -> int:
-        return {EnumHashAlgorithm.SHA256: 128, EnumHashAlgorithm.SHA384: 256}[hash_type]
+        return {
+            EnumHashAlgorithm.SHA256.label.lower(): 128,
+            EnumHashAlgorithm.SHA384.label.lower(): 256,
+            EnumHashAlgorithm.SHA512.label.lower(): 256,
+        }[hash_type.label.lower()]
 
-    def add_command(self, command: MainCmd) -> None:
-        """Add SB3.1 command."""
-        self.commands.append(command)
+    def add_command(self, command: Union[BaseCmd, list[BaseCmd]]) -> None:
+        """Add Secure Binary command."""
+        if isinstance(command, list):
+            logger.info(f"Adding list ({len(command)}): {command}")
+            self.commands.extend(command)
+        else:
+            self.commands.append(command)
 
-    def insert_command(self, index: int, command: MainCmd) -> None:
-        """Insert SB3.1 command."""
+    def insert_command(self, index: int, command: BaseCmd) -> None:
+        """Insert Secure Binary command."""
         if index == -1:
             self.commands.append(command)
         else:
             self.commands.insert(index, command)
 
-    def set_commands(self, commands: list[MainCmd]) -> None:
-        """Set all SB3.1 commands at once."""
+    def set_commands(self, commands: list[BaseCmd]) -> None:
+        """Set all Secure Binary commands at once."""
         self.commands = commands.copy()
 
-    def load_from_config(
-        self, config: list[dict[str, Any]], search_paths: Optional[list[str]] = None
-    ) -> None:
-        """Load configuration from dictionary.
+    @classmethod
+    def load_pck(cls, pck_src: str, search_paths: Optional[list[str]] = None) -> bytes:
+        """Load Part Common Key from source.
 
-        :param config: Dictionary with configuration fields.
-        :param search_paths: List of paths where to search for the file, defaults to None
+        :param pck_src: Path or string containing PCK
+        :param search_paths: Optional list of additional search paths
+        :return: Parsed PCK bytes
+        :raises SPSDKError: If PCK cannot be loaded
         """
-        for cfg_cmd in config:
-            cfg_cmd_key = list(cfg_cmd.keys())[0]
-            cfg_cmd_value = cfg_cmd[cfg_cmd_key]
-            cfg_cmd_value["family"] = self.family
-            self.add_command(
-                CFG_NAME_TO_CLASS[cfg_cmd_key].load_from_config(
-                    cfg_cmd_value, search_paths=search_paths
+        pck = None
+        for size in cls.PCK_SIZES:
+            try:
+                pck = load_hex_string(pck_src, size // 8, search_paths=search_paths, name="PCK")
+            except SPSDKError:
+                logger.debug(f"Failed loading PCK as key with {size}")
+        if not pck:
+            raise SPSDKError("Cannot load PCK from source")
+        return pck
+
+    @classmethod
+    def load_from_config(
+        cls,
+        config: Config,
+        hash_type: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        timestamp: Optional[int] = None,
+        load_just_commands: bool = False,
+    ) -> Self:
+        """Load SecureBinary commands from configuration.
+
+        :param config: Config object with configuration fields.
+        :param hash_type: Hash algorithm to use for command block hashing, defaults to SHA256.
+        :param timestamp: Timestamp value to use in commands, defaults to None (automatic).
+        :param load_just_commands: Flag to control whether to load only commands or full configuration,
+            defaults to False.
+        :return: Instance of the SecureBinary commands class.
+        """
+        family = FamilyRevision.load_from_config(config)
+        cfg_timestamp = timestamp
+        if "timestamp" in config:
+            cfg_timestamp = config.get_int("timestamp")
+
+        if load_just_commands:
+            kdk_access_rights = 0
+            is_encrypted = False
+            pck = None
+
+        else:
+            kdk_access_rights = config.get_int("kdkAccessRights", 0)
+            is_encrypted = config.get("isEncrypted", True)
+            pck = None
+            if is_encrypted:
+                pck = cls.load_pck(
+                    config.get_str("containerKeyBlobEncryptionKey"),
+                    search_paths=config.search_paths,
                 )
-            )
+
+        ret = cls(
+            family=family,
+            hash_type=hash_type,
+            is_encrypted=is_encrypted,
+            pck=pck,
+            timestamp=cfg_timestamp,
+            kdk_access_rights=kdk_access_rights,
+        )
+
+        for cfg_cmd in config.get_list_of_configs("commands", []):
+            cfg_cmd_key = list(cfg_cmd.keys())[0]
+            cfg_cmd_value = cfg_cmd.get_config(cfg_cmd_key)
+            cfg_cmd_value["family"] = family.name
+            cfg_cmd_value["revision"] = family.revision
+            ret.add_command(CFG_NAME_TO_CLASS[cfg_cmd_key].load_from_config(cfg_cmd_value))
+        return ret
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the SecureBinary4 feature.
+
+        Generates a configuration object representing the current state of the SecureBinary4 instance.
+
+        :param data_path: Path to store the data files of configuration.
+        """
+        ret = Config()
+        ret["isEncrypted"] = self.is_encrypted
+        ret["timestamp"] = self.timestamp
+
+        if self.is_encrypted:
+            assert self.key_derivator is not None, "Key derivator must be set for encrypted binary"
+            pck_filename = "pck.txt"
+            write_file(self.key_derivator.pck.hex(), os.path.join(data_path, pck_filename))
+            ret["containerKeyBlobEncryptionKey"] = pck_filename
+            ret["kdkAccessRights"] = self.key_derivator.kdk_access_rights
+
+        if len(self.commands):
+            cfg_commands = []
+            for cmd in self.commands:
+                cfg_commands.append(cmd.get_config(data_path))
+
+            ret["commands"] = cfg_commands
+
+        return ret
 
     def get_cmd_blocks_to_export(self) -> list[bytes]:
         """Export commands as bytes."""
         commands_bytes = b"".join([command.export() for command in self.commands])
         section_header = CmdSectionHeader(length=len(commands_bytes))
         total = section_header.export() + commands_bytes
-
         data_blocks = [
-            total[i : i + self.DATA_CHUNK_LENGTH]
-            for i in range(0, len(total), self.DATA_CHUNK_LENGTH)
+            total[i : i + self.data_chunk_length]
+            for i in range(0, len(total), self.data_chunk_length)
         ]
-        data_blocks[-1] = align_block(data_blocks[-1], alignment=self.DATA_CHUNK_LENGTH)
+        if not self.variable_block_length:
+            data_blocks[-1] = align_block(data_blocks[-1], alignment=self.data_chunk_length)
 
+        self.block_count = len(data_blocks)
         return data_blocks
+
+    def _process_block(self, block_number: int, block_data: bytes) -> bytes:
+        """Process single block."""
+        if self.is_encrypted:
+            if not self.key_derivator:
+                raise SPSDKError("No key derivator")
+            block_key = self.key_derivator.get_block_key(block_number)
+            return aes_cbc_encrypt(block_key, block_data)
+
+        return block_data
 
     def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
         """Process given data blocks for export."""
         self.block_count = len(data_blocks)
+        next_block_hash = bytes(get_hash_length(self.hash_type))
 
-        processed_blocks = [
-            self._process_block(block_number, block_data)
-            for block_number, block_data in reversed(list(enumerate(data_blocks, start=1)))
-        ]
+        processed_blocks = []
+        for block_number, block_data in reversed(list(enumerate(data_blocks, start=1))):
+            encrypted_block = self._process_block(block_number, block_data)
+
+            full_block = pack(
+                f"<L{len(next_block_hash)}s{len(encrypted_block)}s",
+                block_number,
+                next_block_hash,
+                encrypted_block,
+            )
+
+            next_block_hash = get_hash(full_block, self.hash_type)
+            processed_blocks.append(full_block)
+
+        self.final_hash = next_block_hash
+        self.block1_size = len(processed_blocks[0]) if processed_blocks else 0
         final_data = b"".join(reversed(processed_blocks))
         return final_data
 
@@ -329,28 +521,8 @@ class SecureBinary31Commands(BaseClass):
         data_blocks = self.get_cmd_blocks_to_export()
         return self.process_cmd_blocks_to_export(data_blocks)
 
-    def _process_block(self, block_number: int, block_data: bytes) -> bytes:
-        """Process single block."""
-        if self.is_encrypted:
-            if not self.key_derivator:
-                raise SPSDKError("No key derivator")
-            block_key = self.key_derivator.get_block_key(block_number)
-            encrypted_block = aes_cbc_encrypt(block_key, block_data)
-        else:
-            encrypted_block = block_data
-
-        full_block = pack(
-            f"<L{len(self.final_hash)}s{len(encrypted_block)}s",
-            block_number,
-            self.final_hash,
-            encrypted_block,
-        )
-        block_hash = get_hash(full_block, self.hash_type)
-        self.final_hash = block_hash
-        return full_block
-
     def __repr__(self) -> str:
-        return f"SB3.1 Commands[#{len(self.commands)}]"
+        return f"{self.SB_COMMANDS_NAME} Commands[#{len(self.commands)}]"
 
     def __str__(self) -> str:
         """Get string information for commands in the container."""
@@ -362,12 +534,177 @@ class SecureBinary31Commands(BaseClass):
         return info
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse_block_header(
+        cls,
+        block_data: bytes,
+        offset: int,
+        block_size: int,
+        block_hash: bytes,
+        hash_type: EnumHashAlgorithm,
+    ) -> tuple[int, int, bytes, bytes]:
+        """Parse the block header from the input data and verify its integrity.
+
+        :param block_data: Binary data of the block
+        :param offset: Offset in the data where the header begins
+        :param block_size: Size of the block in bytes
+        :param block_hash: Expected hash of the block for verification
+        :param hash_type: Hash algorithm used for block hashing
+        :return: Tuple containing block number, block size, next block hash, and encrypted block data
+        :raises SPSDKError: When the block hash verification fails
+        """
+        hash_length = get_hash_length(hash_type)
+
+        # Extract block header information
+        block_number, next_block_hash, encrypted_block = unpack(
+            f"<L{hash_length}s{block_size - hash_length - 4}s",
+            block_data[offset : offset + block_size],
+        )
+
+        # Verify block integrity by checking hash
+        full_block = block_data[offset : offset + block_size]
+
+        calculated_hash = get_hash(full_block, hash_type)
+        if calculated_hash != block_hash:
+            raise SPSDKError(
+                f"Block hash verification failed for block {block_number}. "
+                f"Expected: {block_hash.hex()}, Got: {calculated_hash.hex()}"
+            )
+
+        return block_number, block_size, next_block_hash, encrypted_block
+
+    @classmethod
+    def parse(
+        cls,
+        data: bytes,
+        family: Optional[FamilyRevision] = None,
+        block_size: int = 256,
+        pck: Optional[bytes] = None,
+        block1_hash: Optional[bytes] = None,
+        hash_type: Optional[EnumHashAlgorithm] = None,
+        kdk_access_rights: int = 0,
+        timestamp: Optional[int] = None,
+    ) -> Self:
         """Parse binary data into SecureBinary31Commands.
 
-        :raises NotImplementedError: Not yet implemented
+        :param data: Binary data containing SB31 commands.
+        :param family: FamilyRevision instance with device family information.
+        :param block_size: Size of each command block in bytes.
+        :param pck: Part Common Key (bytes) required for decryption.
+        :param block1_hash: Hash of the first block (bytes).
+        :param hash_type: EnumHashAlgorithm specifying the hash algorithm used in the binary data.
+        :param kdk_access_rights: Key Derivation Key access rights, defaults to 0.
+        :param timestamp: Optional timestamp used for decryption (required for encrypted commands).
+        :return: Initialized SecureBinary31Commands object.
+        :raises SPSDKError: When parsing fails or data is invalid.
+        :raises SPSDKValueError: When an invalid hash type is provided.
         """
-        raise NotImplementedError("Not yet implemented.")
+        if not (family and block1_hash and hash_type and timestamp):
+            raise SPSDKError("Missing required parameters for parsing encrypted commands")
+
+        # Validate hash type
+        if hash_type not in cls.SUPPORTED_HASHES:
+            raise SPSDKValueError(f"Invalid hash type: {hash_type}")
+
+        # Get hash size for the specified hash algorithm
+        hash_size = get_hash_length(hash_type)
+
+        # Extract first block number to check format
+        if len(data) < 4 + hash_size:  # Minimum size needed for basic header
+            raise SPSDKError(f"Invalid {cls.SB_COMMANDS_NAME} commands data: too small")
+
+        block_number = unpack_from("<L", data)[0]
+
+        # Create commands object
+        obj = cls(
+            family=family,
+            hash_type=hash_type,
+            is_encrypted=bool(pck),  # Determine encryption based on PCK presence
+            pck=pck,
+            timestamp=timestamp,
+            kdk_access_rights=kdk_access_rights,
+        )
+
+        # Process blocks in reverse order (last to first)
+        offset = 0
+        next_block_size = block_size
+        next_block_hash = block1_hash
+        blocks = []
+        block_hashes = {}
+
+        while offset < len(data):
+            next_offset = offset + next_block_size
+            # Extract block number and next block hash
+            block_number, next_block_size, next_block_hash, encrypted_block = (
+                cls.parse_block_header(
+                    block_data=data,
+                    offset=offset,
+                    block_size=next_block_size,
+                    block_hash=next_block_hash,
+                    hash_type=hash_type,
+                )
+            )
+
+            # Decrypt the block if needed
+            if obj.is_encrypted:
+                assert (
+                    obj.key_derivator is not None
+                ), "Key derivator must be set for encrypted blocks"
+                block_key = obj.key_derivator.get_block_key(block_number)
+                decrypted_block = aes_cbc_decrypt(block_key, encrypted_block)
+            else:
+                decrypted_block = encrypted_block
+
+            # Store block data and hash for later processing
+            blocks.append((block_number, decrypted_block))
+            block_hashes[block_number] = next_block_hash
+
+            # Move to next block
+            offset = next_offset
+
+        # Sort blocks by number
+        blocks.sort(key=lambda x: x[0])
+
+        # Combine all decrypted blocks
+        commands_data = b"".join([block[1] for block in blocks])
+
+        # Parse section header and commands
+        section_header = CmdSectionHeader.parse(commands_data)
+        commands_data = commands_data[section_header.SIZE :]
+
+        # Now parse the individual commands
+        obj.commands = []
+        cmd_offset = 0
+
+        while cmd_offset < section_header.length:
+            # Each command starts with a tag and length
+            _, _, cmd_tag = BaseCmd.header_parse_raw(
+                commands_data[cmd_offset : cmd_offset + BaseCmd.SIZE]
+            )
+
+            # Find appropriate command class based on tag
+            cmd_class = None
+            for cmd_cls in CFG_NAME_TO_CLASS.values():
+                if hasattr(cmd_cls, "TAG") and cmd_cls.CMD_TAG == cmd_tag:
+                    cmd_class = cmd_cls
+                    break
+
+            if cmd_class is None:
+                raise SPSDKError(f"Unknown command tag: {cmd_tag}")
+
+            # Parse command
+            cmd_data = commands_data[cmd_offset:]  # Include header
+            cmd = cmd_class.parse(cmd_data)
+            obj.add_command(cmd)
+
+            # Move to next command
+            cmd_offset += cmd.export_length
+
+        # Set block count and hash
+        obj.block_count = len(blocks)
+        if blocks:
+            obj.final_hash = get_hash(blocks[0][1], hash_type)
+
+        return obj
 
     def validate(self) -> None:
         """Validate the settings of class members.
@@ -378,92 +715,97 @@ class SecureBinary31Commands(BaseClass):
             raise SPSDKError("Invalid key derivator")
 
 
-class SecureBinary31(BaseClass):
+class SecureBinary31(FeatureBaseClass):
     """Secure Binary SB3.1 class."""
 
-    PCK_SIZES = [256, 128]
+    FEATURE = DatabaseManager.SB31
 
     def __init__(
         self,
-        family: str,
+        family: FamilyRevision,
         cert_block: CertBlockV21,
         firmware_version: int,
-        signature_provider: SignatureProvider,
-        pck: Optional[bytes] = None,
-        kdk_access_rights: Optional[int] = None,
+        sb_commands: SecureBinary31Commands,
         description: Optional[str] = None,
         is_nxp_container: bool = False,
         flags: int = 0,
-        timestamp: Optional[int] = None,
-        is_encrypted: bool = True,
+        signature_provider: Optional[SignatureProvider] = None,
+        signature: Optional[bytes] = None,
     ) -> None:
         """Constructor for Secure Binary v3.1 data container.
 
+        :param family: Device family
         :param cert_block: Certification block.
         :param firmware_version: Firmware version (must be bigger than current CMPA record).
-        :param signature_provider: Signature provider for final sign of SB3.1 image.
-        :param pck: Part Common Key (needed if `is_encrypted` is True), defaults to None
-        :param kdk_access_rights: Key Derivation Key access rights (needed if `is_encrypted` is True), defaults to None
+        :param sb_commands: SecureBinary31Commands object containing commands
         :param description: Custom description up to 16 characters long, defaults to None
         :param is_nxp_container: NXP provisioning SB file, defaults to False
         :param flags: Flags for SB file, defaults to 0
-        :param timestamp: Timestamp used for encryption (needed if `is_encrypted` is True), defaults to None
-        :param is_encrypted: Indicate whether commands should be encrypted or not, defaults to True
+        :param signature_provider: Signature provider for final sign of SB3.1 image, defaults to None
+        :param signature: Raw signature bytes (if signature_provider is not provided), defaults to None
+        :raises SPSDKError: If neither signature_provider nor signature is provided
         """
-        # in our case, timestamp is the number of seconds since "Jan 1, 2000"
         self.family = family
-        self.timestamp = timestamp or int((datetime.now() - datetime(2000, 1, 1)).total_seconds())
-        self.pck = pck
-        self.cert_block: CertBlockV21 = cert_block
-        self.is_encrypted = is_encrypted
-        self.kdk_access_rights = kdk_access_rights
-        self.firmware_version = firmware_version
-        self.description = description
-        self.is_nxp_container = is_nxp_container
-        self.flags = flags
         self.signature_provider = signature_provider
-        hash_type = {64: EnumHashAlgorithm.SHA256, 96: EnumHashAlgorithm.SHA384}[
-            signature_provider.signature_length
-        ]
+        self.signature = signature
+        self.sb_commands = sb_commands
 
+        if signature_provider is None and signature is None:
+            raise SPSDKError("Either signature_provider or signature must be provided")
+
+        # Determine hash type from signature provider or signature length
+        if signature_provider:
+            hash_type = {64: EnumHashAlgorithm.SHA256, 96: EnumHashAlgorithm.SHA384}[
+                signature_provider.signature_length
+            ]
+        else:
+            assert (
+                signature is not None
+            ), "Signature must be provided, when signature_provider is not set"
+            hash_type = {64: EnumHashAlgorithm.SHA256, 96: EnumHashAlgorithm.SHA384}.get(
+                len(signature), EnumHashAlgorithm.SHA256
+            )
+
+        self.sb_commands.hash_type = hash_type
+
+        # Create header with all the necessary information
         self.sb_header = SecureBinary31Header(
             hash_type=hash_type,
-            firmware_version=self.firmware_version,
-            description=self.description,
-            timestamp=self.timestamp,
-            is_nxp_container=self.is_nxp_container,
-            flags=self.flags,
+            firmware_version=firmware_version,
+            cert_block=cert_block,
+            description=description,
+            timestamp=sb_commands.timestamp,
+            is_nxp_container=is_nxp_container,
+            flags=flags,
         )
-        self.sb_commands = SecureBinary31Commands(
-            family=self.family,
-            hash_type=hash_type,
-            is_encrypted=self.is_encrypted,
-            pck=pck,
-            timestamp=self.timestamp,
-            kdk_access_rights=self.kdk_access_rights,
-        )
-        if self.pck:
-            logger.info(f"SB3KDK: {self.pck.hex()}")
 
-    @classmethod
-    def get_validation_schemas_family(cls) -> list[dict[str, Any]]:
-        """Create the validation schema just for supported families.
+    @staticmethod
+    def get_current_timestamp() -> int:
+        """Get current timestamp as seconds since January 1, 2000.
 
-        :return: List of validation schemas for SB31 supported families.
+        :return: Integer representing seconds elapsed since January 1, 2000.
         """
-        sch_cfg = get_schema_file("general")["family"]
-        update_validation_schema_family(sch_cfg["properties"], cls.get_supported_families())
-        return [sch_cfg]
+        return int((datetime.now() - datetime(2000, 1, 1)).total_seconds())
+
+    def get_rkth(self) -> bytes:
+        """Get the Root Key Table Hash (RKTH) from the certificate block.
+
+        :return: RKTH as bytes if available, None otherwise
+        """
+        if not self.sb_header.cert_block:
+            return b""
+
+        return self.sb_header.cert_block.rkth
 
     @classmethod
-    def get_commands_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
+    def get_commands_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
         :return: List of validation schemas.
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
-        db = get_db(family, "latest")
+        db = get_db(family)
         schemas: list[dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
         # remove unused command for current family
         supported_commands = db.get_list(DatabaseManager.SB31, "supported_commands")
@@ -473,18 +815,23 @@ class SecureBinary31(BaseClass):
             for command in list_of_commands
             if list(command["properties"].keys())[0] in supported_commands
         ]
+        supports_compression = db.get_bool(DatabaseManager.SB31, "supports_compression")
+        if not supports_compression:
+            load_cmd = schemas[0]["properties"]["commands"]["items"]["oneOf"][1]
+            load_cmd["properties"]["load"]["properties"]["compress"]["skip_in_template"] = True
+            load_cmd["properties"]["load"]["properties"]["sectorSize"]["skip_in_template"] = True
 
         return schemas
 
     @classmethod
-    def get_devhsm_commands_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
+    def get_devhsm_commands_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
         :return: List of validation schemas.
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
-        db = get_db(family, "latest")
+        db = get_db(family)
         schemas: list[dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
         # remove unused command for current family
         supported_commands = db.get_list(DatabaseManager.DEVHSM, "supported_commands")
@@ -500,7 +847,7 @@ class SecureBinary31(BaseClass):
         return schemas
 
     @classmethod
-    def get_validation_schemas(cls, family: str) -> list[dict[str, Any]]:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
         :param family: Family description.
@@ -512,149 +859,153 @@ class SecureBinary31(BaseClass):
         update_validation_schema_family(sch_cfg["properties"], cls.get_supported_families(), family)
 
         schemas: list[dict[str, Any]] = [sch_cfg]
-        schemas.extend(
-            [mbi_sch_cfg[x] for x in ["firmware_version", "signature_provider", "cert_block_v21"]]
-        )
+        schemas.extend([mbi_sch_cfg[x] for x in ["firmware_version", "signer", "cert_block_v21"]])
         schemas.extend(
             [sb3_sch_cfg[x] for x in ["sb3", "sb3_description", "sb3_test", "sb3_output"]]
         )
         schemas.extend(cls.get_commands_validation_schemas(family))
 
-        # find family
-        for schema in schemas:
-            if "properties" in schema and "family" in schema["properties"]:
-                update_validation_schema_family(
-                    schema["properties"], cls.get_supported_families(), family
-                )
-                break
         return schemas
 
     @classmethod
-    def load_from_config(
-        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
-    ) -> "SecureBinary31":
+    def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of SecureBinary31 from configuration.
 
         :param config: Input standard configuration.
-        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Instance of Secure Binary V3.1 class
         """
-        family = config["family"]
-        container_keyblob_enc_key = config.get("containerKeyBlobEncryptionKey")
+        family = FamilyRevision.load_from_config(config)
         is_nxp_container = config.get("isNxpContainer", False)
-        description = config.get("description")
-        kdk_access_rights = value_to_int(config.get("kdkAccessRights", 0))
-        container_configuration_word = value_to_int(config.get("containerConfigurationWord", 0))
-        firmware_version = value_to_int(config.get("firmwareVersion", 1))
+        description = config.get_str("description") if "description" in config else None
 
-        commands = config["commands"]
-        is_encrypted = config.get("isEncrypted", True)
-        timestamp = config.get("timestamp")
-        if timestamp:  # re-format it
-            timestamp = value_to_int(timestamp)
+        container_configuration_word = config.get_int("containerConfigurationWord", 0)
+        firmware_version = config.get_int("firmwareVersion", 1)
 
-        cert_block = CertBlockV21.from_config(config, search_paths=search_paths)
+        cert_block = CertBlockV21.load_from_config(config)
 
-        # if use_isk is set, we use for signing the ISK certificate instead of root
-        # signing_key_path = (
-        #     config.get("signingCertificatePrivateKeyFile")
-        #     if cert_block.isk_certificate
-        #     else config.get("mainRootCertPrivateKeyFile")
-        # )
-        signing_key_path = config.get("signPrivateKey", config.get("mainRootCertPrivateKeyFile"))
+        signature_provider = get_signature_provider(config)
 
-        signature_provider = get_signature_provider(
-            sp_cfg=config.get("signProvider"),
-            local_file_key=signing_key_path,
-            search_paths=search_paths,
-        )
         assert isinstance(signature_provider, SignatureProvider)
+        hash_type = {64: EnumHashAlgorithm.SHA256, 96: EnumHashAlgorithm.SHA384}[
+            signature_provider.signature_length
+        ]
+        sb_commands = SecureBinary31Commands.load_from_config(config, hash_type=hash_type)
 
-        pck = None
-        if is_encrypted:
-            if not isinstance(container_keyblob_enc_key, str):
-                raise SPSDKError("Invalid value for containerKeyBlobEncryptionKey")
-            for size in cls.PCK_SIZES:
-                try:
-                    pck = load_hex_string(container_keyblob_enc_key, size // 8, search_paths)
-                except SPSDKError:
-                    logger.debug(
-                        f"Failed loading PCK {container_keyblob_enc_key} as key with {size}"
-                    )
-            if not pck:
-                raise SPSDKError(f"Cannot load PCK from {container_keyblob_enc_key}")
         # Create SB3 object
-        sb3 = SecureBinary31(
+        sb3 = cls(
             family=family,
-            pck=pck,
             cert_block=cert_block,
-            kdk_access_rights=kdk_access_rights,
+            sb_commands=sb_commands,
             firmware_version=firmware_version,
             description=description,
             is_nxp_container=is_nxp_container,
             flags=container_configuration_word,
             signature_provider=signature_provider,
-            timestamp=timestamp,
-            is_encrypted=is_encrypted,
         )
 
-        # Add commands into the SB3 object
-        sb3.sb_commands.load_from_config(commands, search_paths=search_paths)
-
         return sb3
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.
+        """
+        # Create a base configuration object
+        ret = Config()
+
+        # Add family and revision information
+        ret["family"] = self.family.name
+        ret["revision"] = self.family.revision
+
+        # Add SB3.1 specific configuration
+        ret["description"] = self.sb_header.description.decode("ascii").rstrip("\x00")
+        ret["isNxpContainer"] = self.sb_header.image_type == 7
+        ret["containerConfigurationWord"] = self.sb_header.flags
+        ret["firmwareVersion"] = self.sb_header.firmware_version
+        ret["timestamp"] = self.sb_commands.timestamp
+
+        # Add output file configuration
+        ret["containerOutputFile"] = "sb3.bin"
+
+        # Add certificate block configuration if available
+        if self.sb_header.cert_block:
+            cert_block_config = self.sb_header.cert_block.get_config(data_path)
+            ret.update(cert_block_config)
+
+        # Add SB commands configuration
+        sb_commands_config = self.sb_commands.get_config(data_path)
+        ret.update(sb_commands_config)
+
+        return ret
 
     def validate(self) -> None:
         """Validate the settings of class members.
 
         :raises SPSDKError: Invalid configuration of SB3.1 class members.
         """
-        if self.signature_provider is None or not isinstance(
-            self.signature_provider, SignatureProvider
-        ):
-            raise SPSDKError(f"SB3.1 signature provider is invalid: {self.signature_provider}")
-        public_key = (
-            self.cert_block.isk_certificate.isk_cert.export()
-            if self.cert_block.isk_certificate and self.cert_block.isk_certificate.isk_cert
-            else self.cert_block.root_key_record.root_public_key
-        )
-        self.signature_provider.try_to_verify_public_key(public_key)
+        # If we have a signature provider, validate it
+        if self.signature_provider is not None:
+            if not isinstance(self.signature_provider, SignatureProvider):
+                raise SPSDKError(f"SB3.1 signature provider is invalid: {self.signature_provider}")
 
-        self.cert_block.validate()
+            if self.sb_header.cert_block:
+                public_key = (
+                    self.sb_header.cert_block.isk_certificate.isk_cert.export()
+                    if self.sb_header.cert_block.isk_certificate
+                    and self.sb_header.cert_block.isk_certificate.isk_cert
+                    else self.sb_header.cert_block.root_key_record.root_public_key
+                )
+                self.signature_provider.try_to_verify_public_key(public_key)
+            else:
+                raise SPSDKError("Unable to verify public key for signature provider")
+        # If we have a raw signature, validate its length
+        elif self.signature is not None:
+            if len(self.signature) not in [64, 96]:
+                raise SPSDKError(f"Invalid signature length: {len(self.signature)}")
+        else:
+            raise SPSDKError("Either signature_provider or signature must be provided")
+
         self.sb_header.validate()
         self.sb_commands.validate()
 
-    def export(self, cert_block: Optional[bytes] = None) -> bytes:
+    def export(self) -> bytes:
         """Generate binary output of SB3.1 file.
 
         :return: Content of SB3.1 file in bytes.
         """
         self.validate()
 
-        if cert_block:
-            cert_block_data = cert_block
+        # Generate commands as first to get hash
+        sb_commands = self.sb_commands.export()
+
+        # Update header with block count and total length
+        self.sb_header.update(self.sb_commands)
+
+        # Set the hash of next block
+        self.sb_header.set_next_block_hash(self.sb_commands.final_hash)
+
+        # Get the Block 0 data for signature calculation (header + hash + cert block)
+        block0_data = self.sb_header.export_full_block0()
+
+        # Use either signature provider or raw signature
+        if self.signature_provider:
+            signature = self.signature_provider.get_signature(block0_data)
         else:
-            cert_block_data = self.cert_block.export()
-        sb3_commands_data = self.sb_commands.export()
+            assert (
+                self.signature is not None
+            ), "Signature must be provided, when signature provider is not used"
+            signature = self.signature
 
-        final_data = bytes()
-        # HEADER OF SB 3.1 FILE
-        self.sb_header.update(self.sb_commands, self.cert_block)
-        final_data += self.sb_header.export()
-
-        # HASH OF PREVIOUS BLOCK
-        final_data += self.sb_commands.final_hash
-        final_data += cert_block_data
-
-        # SIGNATURE
-        final_data += self.signature_provider.get_signature(final_data)
-
-        # COMMANDS BLOBS DATA
-        final_data += sb3_commands_data
+        # Assemble the final data
+        final_data = block0_data  # Header + hash + cert block
+        final_data += signature  # Add signature
+        final_data += sb_commands  # Add command blocks
 
         return final_data
 
     def __repr__(self) -> str:
-        return f"SB3.1, TimeStamp: {self.timestamp}"
+        return f"SB3.1, TimeStamp: {self.sb_commands.timestamp}"
 
     def __str__(self) -> str:
         """Create string information about SB3.1 loaded file.
@@ -672,42 +1023,73 @@ class SecureBinary31(BaseClass):
 
         return ret
 
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Return list of supported families.
-
-        :return: List of supported families.
-        """
-        return get_families(DatabaseManager.SB31)
-
     @classmethod
-    def generate_config_template(cls, family: str) -> dict[str, str]:
-        """Generate configuration for selected family.
+    def parse(
+        cls,
+        data: bytes,
+        family: Optional[FamilyRevision] = None,
+        pck: Optional[bytes] = None,
+        kdk_access_rights: int = 0,
+    ) -> Self:
+        """Parse object from bytes array.
 
-        :param family: Device family.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        :param data: Binary data to parse
+        :param family: Family revision information, defaults to None
+        :param pck: Part Common Key needed for decryption, defaults to None
+        :param kdk_access_rights: Key Derivation Key access rights, defaults to 0
+        :return: Constructed SecureBinary31 object
+        :raises SPSDKError: When parsing fails or data is invalid
         """
-        ret: dict[str, str] = {}
+        if not family:
+            raise SPSDKError("Family information must be provided for parsing SB3.1")
 
-        if family in cls.get_supported_families():
-            schemas = cls.get_validation_schemas(family)
-            schemas.append(get_schema_file(DatabaseManager.SB31)["sb3_output"])
+        # Parse SB3.1 header first
+        sb_header = SecureBinary31Header.parse(data)
 
-            yaml_data = CommentedConfig(
-                f"Secure Binary v3.1 Configuration template for {family}.", schemas
-            ).get_template()
+        # Determine the hash type from the header
+        hash_type = sb_header.hash_type
 
-            ret[f"{family}_sb31"] = yaml_data
+        # Calculate signature size based on hash type
+        signature_size = 64 if hash_type == EnumHashAlgorithm.SHA256 else 96
 
-        return ret
+        # Extract certificate block
+        cert_block_offset = sb_header.cert_block_offset
+        cert_block_end = sb_header.image_total_length - signature_size
+        cert_block_data = data[cert_block_offset:cert_block_end]
+        cert_block = CertBlockV21.parse(cert_block_data)
 
-    @classmethod
-    def parse(cls, data: bytes) -> Self:
-        """Deserialize object from bytes array.
+        # Extract signature
+        signature_offset = sb_header.image_total_length - signature_size
+        signature = data[signature_offset : sb_header.image_total_length]
 
-        :raises NotImplementedError: Not yet implemented
-        """
-        raise NotImplementedError("Not yet implemented.")
+        # Extract commands data - starts after Block 0
+        commands_offset = sb_header.image_total_length
+        commands_data = data[commands_offset:]
+
+        # Parse the commands section
+        sb_commands = SecureBinary31Commands.parse(
+            data=commands_data,
+            family=family,
+            block_size=sb_header.block_size,
+            pck=pck,
+            block1_hash=sb_header.next_block_hash,
+            hash_type=hash_type,
+            kdk_access_rights=kdk_access_rights,
+            timestamp=sb_header.timestamp,
+        )
+
+        # Create and return the SecureBinary31 object
+        return cls(
+            family=family,
+            cert_block=cert_block,
+            firmware_version=sb_header.firmware_version,
+            signature_provider=None,
+            sb_commands=sb_commands,
+            description=sb_header.description.decode("ascii").rstrip("\x00"),
+            is_nxp_container=(sb_header.image_type == 7),
+            flags=sb_header.flags,
+            signature=signature,
+        )
 
     @staticmethod
     def validate_header(binary: bytes) -> None:

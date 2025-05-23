@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 import os
 
 import pytest
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.utils.crypto.rkht import RKHTv1, RKHTv21
+from spsdk.image.cert_block.rkht import RKHTv1, RKHTv21
 
 
 @pytest.fixture(scope="module")

@@ -4,7 +4,7 @@
         {
             "group": {
                 "name": "Configuration",
-                "description": "CMPA Configuration"
+                "description": "Configuration"
             },
             "registers": [
                 {
@@ -36,12 +36,12 @@
                                     "description": "UART ISP"
                                 },
                                 {
-                                    "name": "RESERVED_0b010",
+                                    "name": "Reserved_0b010",
                                     "value": 2,
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "RESERVED_0b011",
+                                    "name": "Reserved_0b011",
                                     "value": 3,
                                     "description": "Reserved"
                                 },
@@ -51,17 +51,17 @@
                                     "description": "USB0_HID"
                                 },
                                 {
-                                    "name": "RESERVED_0b101",
+                                    "name": "Reserved_0b101",
                                     "value": 5,
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "RESERVED_0b110",
+                                    "name": "Reserved_0b110",
                                     "value": 6,
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "RESERVED_0b111",
+                                    "name": "Reserved_0b111",
                                     "value": 7,
                                     "description": "Reserved"
                                 }
@@ -88,12 +88,12 @@
                                     "description": "96MHz FRO @1v1"
                                 },
                                 {
-                                    "name": "RESERVED_0b10",
+                                    "name": "Reserved_0b10",
                                     "value": 2,
                                     "description": "Reserved"
                                 },
                                 {
-                                    "name": "RESERVED_0b11",
+                                    "name": "Reserved_0b11",
                                     "value": 3,
                                     "description": "Reserved"
                                 }
@@ -131,7 +131,7 @@
                         {
                             "width": 16,
                             "reset_value_int": "0x5963",
-                            "access": "RO",
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "HEADER",
                             "description": "CMPA Header marker should be set to 0x5963"
@@ -556,7 +556,7 @@
                                     "description": "Customer defined GPIO for USB0_VBUS detect."
                                 },
                                 {
-                                    "name": "RESERVED",
+                                    "name": "Reserved",
                                     "value": 2,
                                     "description": "Reserved"
                                 },

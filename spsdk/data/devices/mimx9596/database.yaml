@@ -8,19 +8,82 @@ revisions:
   b0:
     features:
       ahab:
-        sub_features: [certificate_supported]
+        sub_features: [ahab_image, certificate_supported]
         container_types: [2, 1] # Supported container types (keep order 2, 1 - this defines default 2)
+        fuses_0:
+          _name: "AHAB SRKH"
+          srkh: "__srk_hash0" # SRK hash fuse
+        fuses_1:
+          _name: "AHAB SRKH PQC"
+          pqc_srkh: "__srk_hash1" # SRK PQC hash fuse
       # ======== Certificate block section ========
       cert_block:
         rot_type: "srk_table_ahab_v2"
       dat:
         ele_cnt_version: 2 # DAT container is based on New AHAB container version 2
+
+      # ======== Fuses description section ========
+      fuses:
+        tool: nxpele
+        grouped_registers:
+          - uid: srkh
+            name: SRKH
+            width: 512
+            reversed: True
+            config_as_hexstring: True
+            description: "SHA512 hash digest of hash of four SRK keys"
+            sub_regs:
+              [
+                "fuse128",
+                "fuse129",
+                "fuse130",
+                "fuse131",
+                "fuse132",
+                "fuse133",
+                "fuse134",
+                "fuse135",
+                "fuse136",
+                "fuse137",
+                "fuse138",
+                "fuse139",
+                "fuse140",
+                "fuse141",
+                "fuse142",
+                "fuse143",
+              ]
+
+          - uid: pqc_srkh
+            name: PQC_SRKH
+            width: 512
+            reversed: True
+            config_as_hexstring: True
+            description: "SHA512 hash digest of hash of four SRK keys"
+            sub_regs:
+              [
+                "fuse448",
+                "fuse449",
+                "fuse450",
+                "fuse451",
+                "fuse452",
+                "fuse453",
+                "fuse454",
+                "fuse455",
+                "fuse456",
+                "fuse457",
+                "fuse458",
+                "fuse459",
+                "fuse460",
+                "fuse461",
+                "fuse462",
+                "fuse463",
+              ]
+
 latest: b0
 
 # General MCU information
 info:
   use_in_doc: True # Include this MCU in generated documentation
-  purpose: i.MX 9 Applications Processors
+  purpose: i.MX Application Processors
   spsdk_predecessor_name: mx95
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/i-mx-95-applications-processor-family-high-performance-safety-enabled-platform-with-eiq-neutron-npu:iMX95
@@ -174,6 +237,7 @@ features:
   dat:
     socc: 0x4D58005F # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+    dat_is_using_sha256_always: True
     ele_cnt_version: 1
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]
@@ -186,6 +250,7 @@ features:
 
   # ======== AHAB section ========
   ahab:
+
     containers_max_cnt: 3
     valid_offset_minimal_alignment: 0x400
     container_types: [1] # Supported container types

@@ -21,8 +21,8 @@ pipeline {
         stage('Update') {
             steps {
                 withVenv(
-        			'uv pip install requests click packaging',
-        			'python tools/req_update.py batch'
+                    'uv pip install requests click packaging',
+                    'python tools/req_update.py batch --use-version major'
     			)
             }
         }

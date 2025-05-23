@@ -6,8 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from dataclasses import dataclass
 from typing import Optional
-from spsdk.fuses.fuse_registers import FuseRegister
+from spsdk.fuses.fuse_registers import FuseRegister, FuseRegisters
 from spsdk.fuses.fuses import FuseOperator
+from spsdk.utils.family import FamilyRevision
 
 
 @dataclass
@@ -20,28 +21,30 @@ class FuseAction:
 class TestFuseOperator(FuseOperator):
     """Test fuse operator."""
 
+    __test__ = False
+
     NAME = "test_operator"
 
     def __init__(self, return_values: Optional[dict] = None):
         self.actions: list[FuseAction] = []
         self.return_values = return_values or {}
 
-    def read_fuse(self, index: int) -> int:
+    def read_fuse(self, index: int, length: int) -> int:
         """Read a single fuse value.
 
         :param index: Index of a fuse
+        :param length: Length of fuse in bits
         :return: Fuse value
         """
         self.actions.append(FuseAction(action_type="read", fuse_index=index))
         return self.return_values.get(index, 0)
 
-    def write_fuse(self, index: int, value: int, lock: bool = False) -> None:
+    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
         self.return_values[index] = value
         self.actions.append(FuseAction(action_type="write", fuse_index=index, value=value))
 
-    def get_fuse_script(
-        cls, family: str, fuses: list[FuseRegister], revision: str = "latest"
-    ) -> str:
+    @classmethod
+    def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
         """Get fuses script."""
         ret = ""
         for fuse in fuses:
@@ -61,22 +64,26 @@ class TestBlhostFuseOperator(FuseOperator):
     ACTIONS: list[FuseAction] = []
     RETURN_VALUES: dict = {}
 
-    def read_fuse(self, index: int) -> int:
+    def __init__(self, family: FamilyRevision):
+        self.family = family
+        self.registers = FuseRegisters(self.family)
+
+    def read_fuse(self, index: int, length: int) -> int:
         """Read a single fuse value.
 
         :param index: Index of a fuse
+        :param length: Length of fuse in bits
         :return: Fuse value
         """
         self.ACTIONS.append(FuseAction(action_type="read", fuse_index=index))
-        return self.RETURN_VALUES.get(index, 0)
+        return self.RETURN_VALUES.get(index) or self.registers.get_by_otp_index(index).get_reset_value()
 
-    def write_fuse(self, index: int, value: int, lock: bool = False) -> None:
+    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
         self.RETURN_VALUES[index] = value
         self.ACTIONS.append(FuseAction(action_type="write", fuse_index=index, value=value))
 
-    def get_fuse_script(
-        cls, family: str, fuses: list[FuseRegister], revision: str = "latest"
-    ) -> str:
+    @classmethod
+    def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
         """Get fuses script."""
         ret = ""
         for fuse in fuses:

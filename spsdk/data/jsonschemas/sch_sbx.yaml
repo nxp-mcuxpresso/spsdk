@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -50,25 +50,14 @@ sbx_test:
       format: number
       template_value: 1234567890
 
-signing_cert_prv_key:
+signer:
   type: object
   title: Certificate Settings
   properties:
-    signingCertificatePrivateKeyFile:
-      id: "#signingCertificatePrivateKeyFile"
+    signer:
       type: string
-      title: ISK Certificate private key
-      description: ISK Certificate private key used to sign certificate. It can be replaced by signProvider key. Only valid for OEM and NXP_PROVISIONING image types
-      template_value: isk_prv_key.pem
-
-signature_provider:
-  type: object
-  title: Certificate Settings
-  properties:
-    signProvider:
-      type: string
-      title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
+      title: Signer
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>' or a ISK Certificate private key used to sign certificate. Only valid for OEM and NXP_PROVISIONING image types
       template_value: type=file;file_path=my_prv_key.pem
 
   if:
@@ -76,15 +65,7 @@ signature_provider:
       image_type:
         enum: ["NXP_PROVISIONING", "OEM"]
   then:
-    oneOf:
-      - allOf:
-          - required: [signingCertificatePrivateKeyFile]
-          - not:
-              required: [signProvider]
-      - allOf:
-          - required: [signProvider]
-          - not:
-              required: [signingCertificatePrivateKeyFile]
+    required: [signer]
 
 sbx_commands:
   type: object

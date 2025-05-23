@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -418,7 +418,7 @@ def test_keystore_restore():
 
 def test_parse_invalid_command_tag():
     with pytest.raises(SPSDKError):
-        parse_command(b"\xEE" * 16)
+        parse_command(b"\xee" * 16)
 
 
 def test_invalid_crc():

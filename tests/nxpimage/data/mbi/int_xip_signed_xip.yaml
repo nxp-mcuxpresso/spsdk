@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Master Boot Image converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -14,5 +15,5 @@ inputImageFile: test_application.bin # [Required], Plain application image; The 
 #                                       == Root Keys Settings ==
 # ----------------------------------------------------------------------------------------------------
 mainRootCertId: 0 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
-signProvider: type=file;file_path=k0_cert0_2048.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". It can be replaced by mainCertPrivateKeyFile key.
+signer: type=file;file_path=k0_cert0_2048.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
 certBlock: cert_v1_1x2048.yaml

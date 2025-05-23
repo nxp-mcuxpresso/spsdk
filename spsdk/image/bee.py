@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Contains support for BEE encryption."""
@@ -22,18 +22,19 @@ from spsdk.crypto.symmetric import (
     aes_ecb_decrypt,
     aes_ecb_encrypt,
 )
-from spsdk.exceptions import SPSDKError, SPSDKOverlapError
-from spsdk.utils.database import DatabaseManager, get_families, get_schema_file
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKOverlapError
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, update_validation_schema_family
 from spsdk.utils.misc import (
     Endianness,
     align_block_fill_random,
     extend_block,
     load_binary,
-    load_hex_string,
     split_data,
     value_to_int,
 )
-from spsdk.utils.schema_validator import CommentedConfig
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
@@ -585,41 +586,93 @@ class BeeRegionHeader(BeeBaseClass):
         return self._prdb.encrypt_block(self._sw_key, start_addr, data)
 
 
-class BeeNxp:
-    """BeeNxp class."""
+class Bee(FeatureBaseClass):
+    """Bee class."""
+
+    FEATURE = DatabaseManager.BEE
 
     def __init__(
         self,
+        family: FamilyRevision,
         headers: list[Optional[BeeRegionHeader]],
-        input_image: bytes,
-        base_address: int,
+        input_images: list[tuple[bytes, int]],
     ):
         """Constructor.
 
+        :param family: The CPU family
         :param headers: list of BEE Region Headers
-        :param input_image: Input image to be encrypted
-        :param base_address: Base address of the image
+        :param input_images: List of (image_data, base_address) tuples
         """
+        self.family = family
         self.headers = headers
-        self.input_image = input_image
-        self.base_address = base_address
+        self.input_images = input_images
 
-    def export_image(self) -> bytes:
+    def __repr__(self) -> str:
+        """Object representation in string format."""
+        return f"BEE class for {self.family}"
+
+    def __str__(self) -> str:
+        """Object description in string format."""
+        ret = repr(self)
+        ret += f"\nHeaders: {str(self.headers)}\n"
+
+        return ret
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse object from bytes array.
+
+        :param data: Input binary data
+        """
+        raise SPSDKNotImplementedError()
+
+    def export(self) -> bytes:
         """Export encrypted binary image.
 
         :return: encrypted image
         """
-        encrypted_data = bytearray()
-        image_data = bytearray(self.input_image)
-        base_address = self.base_address
+        if not self.input_images:
+            return bytes()
 
-        for block in split_data(image_data, BEE_ENCR_BLOCK_SIZE):
-            logger.debug(f"Reading {hex(base_address)}, size={hex(len(block))}")
+        # For backward compatibility, if there's only one image, just return it encrypted
+        if len(self.input_images) == 1 and self.input_images[0][0]:
+            image_data, base_address = self.input_images[0]
+            return self._encrypt_single_image(image_data, base_address)
+
+        # For multiple images, we need to compute the overall size and create a combined image
+        min_address = min(addr for _, addr in self.input_images)
+        max_address = max(addr + len(img) for img, addr in self.input_images)
+        total_size = max_address - min_address
+
+        # Create a bytearray filled with 0xFF (typical flash erase value)
+        combined_image = bytearray([0xFF] * total_size)
+
+        # Place each image at its correct offset
+        for image_data, addr in self.input_images:
+            offset = addr - min_address
+            combined_image[offset : offset + len(image_data)] = image_data
+
+        # Encrypt the combined image
+        return self._encrypt_single_image(bytes(combined_image), min_address)
+
+    def _encrypt_single_image(self, image_data: bytes, base_address: int) -> bytes:
+        """Encrypt a single image.
+
+        :param image_data: Image data to encrypt
+        :param base_address: Base address of the image
+        :return: Encrypted image
+        """
+        encrypted_data = bytearray()
+        image_bytes = bytearray(image_data)
+        addr = base_address
+
+        for block in split_data(image_bytes, BEE_ENCR_BLOCK_SIZE):
+            logger.debug(f"Reading {hex(addr)}, size={hex(len(block))}")
             for header in self.headers:
                 if header:
-                    block = header.encrypt_block(base_address, block)
+                    block = header.encrypt_block(addr, block)
             encrypted_data.extend(block)
-            base_address += len(block)
+            addr += len(block)
 
         return bytes(encrypted_data)
 
@@ -634,31 +687,42 @@ class BeeNxp:
 
         return headers
 
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Get all supported families for BEE.
-
-        :return: List of supported families.
-        """
-        return get_families(DatabaseManager.BEE)
-
-    @staticmethod
-    def get_validation_schemas() -> list[dict[str, Any]]:
+    @classmethod
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get list of validation schemas.
 
+        :param family: The CPU family
         :return: Validation list of schemas.
         """
         schemas = get_schema_file(DatabaseManager.BEE)
-        return [schemas["bee_output"], schemas["bee"]]
+        family_schemas = get_schema_file("general")["family"]
+        update_validation_schema_family(
+            family_schemas["properties"], cls.get_supported_families(), family
+        )
+        return [family_schemas, schemas["bee_output"], schemas["bee"]]
 
     @staticmethod
-    def generate_config_template() -> str:
-        """Generate BEE configuration template.
+    def check_image_overlaps(images: list[tuple[bytes, int]]) -> None:
+        """Check for overlaps in input images.
 
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        :param images: List of tuples (image_data, base_address)
+        :raises SPSDKOverlapError: if any two images overlap
         """
-        val_schemas = BeeNxp.get_validation_schemas()
-        return CommentedConfig("BEE configuration template", val_schemas).get_template()
+        # Sort images by start address for easier overlap checking
+        sorted_images = sorted(images, key=lambda x: x[1])
+
+        for i in range(len(sorted_images) - 1):
+            img1, addr1 = sorted_images[i]
+            _, addr2 = sorted_images[i + 1]
+
+            end_addr1 = addr1 + len(img1)
+
+            # Check if image1 overlaps with image2
+            if end_addr1 > addr2:
+                raise SPSDKOverlapError(
+                    f"Image at address {hex(addr1)} (size: {hex(len(img1))}) "
+                    f"overlaps with image at address {hex(addr2)}"
+                )
 
     @staticmethod
     def check_overlaps(bee_headers: list[Optional[BeeRegionHeader]], start_addr: int) -> None:
@@ -676,24 +740,33 @@ class BeeNxp:
                             f"Region start address {hex(start_addr)} is overlapping with {str(region)}"
                         )
 
-    @staticmethod
-    def load_from_config(
-        config: dict[str, Any], search_paths: Optional[list[str]] = None
-    ) -> "BeeNxp":
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature."""
+        raise SPSDKNotImplementedError()
+
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
         """Converts the configuration into an BEE image object.
 
-        "config" contains dictionary of configurations.
-
-        :raises SPSDKError: if the count of BEE engines is invalid.
         :param config: Configuration dictionary.
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :return: initialized BeeNxp object.
+        :return: Initialized Bee object.
         """
-        input_binary = load_binary(config["input_binary"], search_paths)
+        family = FamilyRevision.load_from_config(config)
 
-        engine_selection = config["engine_selection"]
-        bee_engines: list[dict[str, Any]] = config["bee_engine"]
-        base_address = value_to_int(config["base_address"])
+        # Handle new multi-image mode
+        input_images = []
+        if "data_blobs" in config:
+            data_blobs = config.get_list_of_configs("data_blobs")
+            for data_blob in data_blobs:
+                data = load_binary(data_blob.get_input_file_name("data"))
+                address = data_blob.get_int("address")
+                input_images.append((data, address))
+
+                # Check for overlapping images
+                cls.check_image_overlaps(input_images)
+
+        engine_selection = config.get_str("engine_selection")
+        bee_engines = config.get_list_of_configs("bee_engine")
 
         bee_headers: list[Optional[BeeRegionHeader]] = [None, None]
 
@@ -708,9 +781,10 @@ class BeeNxp:
             elif engine_idx >= len(bee_engines):
                 raise SPSDKError("The count of BEE engines is invalid")
             # BEE Configuration
-            bee_cfg: Optional[dict[str, Any]] = bee_engines[engine_idx].get("bee_cfg")
-            if bee_cfg:
-                key = load_hex_string(bee_cfg["user_key"], expected_size=16)
+
+            if "bee_cfg" in bee_engines[engine_idx]:
+                bee_cfg = bee_engines[engine_idx].get_config("bee_cfg")
+                key = bee_cfg.load_symmetric_key("user_key", expected_size=16)
                 bee_headers[header_idx] = BeeRegionHeader(prdb, key, kib)
                 protected_regions = bee_cfg.get("protected_region", [])
                 for protected_region in protected_regions:
@@ -719,18 +793,18 @@ class BeeNxp:
                         value_to_int(protected_region["length"]),
                         value_to_int(protected_region["protected_level"]),
                     )
-                    BeeNxp.check_overlaps(bee_headers, fac.start_addr)
+                    Bee.check_overlaps(bee_headers, fac.start_addr)
                     hdr = bee_headers[header_idx]
                     if hdr:
                         hdr.add_fac(fac)
                 continue
 
             # BEE Binary configuration
-            bee_bin_cfg: Optional[dict[str, Any]] = bee_engines[engine_idx].get("bee_binary_cfg")
-            if bee_bin_cfg:
-                key = load_hex_string(bee_bin_cfg["user_key"], expected_size=16)
-                bin_ehdr = load_binary(bee_bin_cfg["header_path"], search_paths)
+            if "bee_binary_cfg" in bee_engines[engine_idx]:
+                bee_bin_cfg = bee_engines[engine_idx].get_config("bee_binary_cfg")
+                key = bee_bin_cfg.load_symmetric_key("user_key", expected_size=16)
+                bin_ehdr = load_binary(bee_bin_cfg.get_input_file_name("header_path"))
                 bee_headers[header_idx] = BeeRegionHeader.parse(bin_ehdr, sw_key=key)
                 continue
 
-        return BeeNxp(bee_headers, input_binary, base_address)
+        return cls(family, bee_headers, input_images=input_images)

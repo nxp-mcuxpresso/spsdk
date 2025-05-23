@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -26,9 +26,9 @@ class CmdPacketBase(ABC):
     """COmmand protocol base."""
 
     @abstractmethod
-    def to_bytes(self, padding: bool = True) -> bytes:
-        """Serialize CmdPacket into bytes.
+    def export(self, padding: bool = True) -> bytes:
+        """Export CmdPacket into bytes.
 
         :param padding: If True, add padding to specific size
-        :return: Serialized object into bytes
+        :return: Exported object into bytes
         """

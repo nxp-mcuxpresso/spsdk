@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -77,6 +77,7 @@ extensions = [
     "nbsphinx",
     # "nbsphinx_link",
     "myst_nb",
+    "sphinxext.rediraffe",
 ]
 
 
@@ -121,3 +122,5 @@ html_extra_path = ["html_schemas"]
 
 # Myst extensions
 myst_enable_extensions = ["html_image"]
+
+rediraffe_redirects = {"usage/installation": "examples/_knowledge_base/installation_guide"}

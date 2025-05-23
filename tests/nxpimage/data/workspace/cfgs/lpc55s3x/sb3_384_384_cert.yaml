@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Secure Binary v3.1 converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
@@ -12,7 +13,7 @@ containerOutputFile: .\workspace\output_images\lpc55s3x\sb3_384_384_nxp.sb3 # [R
 #                                    == ISK Certificate Settings ==
 # ----------------------------------------------------------------------------------------------------
 certBlock: .\workspace\output_images\lpc55s3x\cert_384_384.bin # [Conditionally required], Binary Certificate; Optionally the certificate could be defined as a pre-generated binary block. In case that is defined, all other configuration for certification block must be deleted ('useIsk', 'mainRootCertPrivateKeyFile', 'signingCertificateFile', 'signingCertificateConstraint', 'signCertData') In case that ISK is defined, certificate block must be deleted
-signPrivateKey: .\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem # [Optional], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signer: .\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem
 # ----------------------------------------------------------------------------------------------------
 #                                  == Secure Binary v3.1 Settings ==
 # ----------------------------------------------------------------------------------------------------

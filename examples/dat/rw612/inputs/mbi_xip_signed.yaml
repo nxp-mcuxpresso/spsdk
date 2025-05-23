@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ====================================  Master Boot Image Configuration for rw612  =====================================
 
 # ======================================================================================================================
@@ -53,8 +54,7 @@ certBlock: cert_block_cfg.yaml
 #                                              == Image Signing Settings ==
 # ======================================================================================================================
 # --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
-# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
-signPrivateKey: ../../_data/keys/ecc256/imgkey_ecc256.pem
+signer: ../../_data/keys/ecc256/imgkey_ecc256.pem
 # ======================================================================================================================
 #                                               == Trust Zone Settings ==
 # ======================================================================================================================

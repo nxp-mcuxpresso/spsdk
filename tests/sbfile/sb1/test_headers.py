@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -50,7 +50,7 @@ def test_secure_boot_header_v1():
     data = header.export()
     assert len(data) == header.size
 
-    header_parsed = SecureBootHeaderV1.parse((b"\xFF" + data)[1:])
+    header_parsed = SecureBootHeaderV1.parse((b"\xff" + data)[1:])
     s1 = str(header).split("\n")
     s2 = str(header_parsed).split("\n")
     assert len(s1) == len(s2)
@@ -70,7 +70,7 @@ def test_section_header_item():
     data = header.export()
     assert len(data) == header.size
 
-    header_parsed = SectionHeaderItemV1.parse((b"\xFF" + data)[1:])
+    header_parsed = SectionHeaderItemV1.parse((b"\xff" + data)[1:])
     assert header == header_parsed
 
     assert str(header)

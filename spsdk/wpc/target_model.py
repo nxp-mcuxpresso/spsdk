@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,14 +9,15 @@
 
 import logging
 import os
-from typing import Optional
+from typing import Any
 
 from typing_extensions import Self
 
 from spsdk.crypto.keys import PrivateKeyEcc
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import find_dir, load_configuration
-from spsdk.wpc.utils import SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
+from spsdk.utils.family import FamilyRevision
+from spsdk.wpc.wpc import SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class WPCTargetModel(WPCTarget):
 
     identifier = "model"
 
-    def __init__(self, family: str, model_dir: str) -> None:
+    def __init__(self, family: FamilyRevision, model_dir: str) -> None:
         """Initialize SW Model for WPC target.
 
         :param family: Target family name
@@ -34,33 +35,27 @@ class WPCTargetModel(WPCTarget):
         """
         super().__init__(family=family)
         self.model_dir = model_dir
-        self.config = load_configuration(os.path.join(self.model_dir, "config.yaml"))
-        self.private_key = PrivateKeyEcc.load(os.path.join(self.model_dir, self.config["prk_key"]))
+        self.config = Config.create_from_file(os.path.join(self.model_dir, "config.yaml"))
+        self.private_key = PrivateKeyEcc.load(self.config.get_input_file_name("prk_key"))
 
-    # This is just a workaround for relative paths in config data
-    # TODO: if config validator would replace relative paths for full path, this can be deleted
     @classmethod
-    def from_config(cls, config_data: dict, search_paths: Optional[list[str]] = None) -> Self:
+    def load_from_config(cls, config: Config) -> Self:
         """Create instance of this class based on configuration data.
 
-        __init__ method of this class will be called with data from config_data.
+        __init__ method of this class will be called with data from config.
         To limit the scope of data, set cls.CONFIG_PARAMS (key in config data).
 
-        :param config_data: Configuration data
-        :param search_paths: Paths where to look for files referenced in config data, defaults to None
+        :param config: Configuration data
         :return: Instance of this class
         """
-        if cls.CONFIG_PARAMS in config_data:
-            config_data = config_data[cls.CONFIG_PARAMS]
-        cls.validate_config(config_data=config_data, search_paths=search_paths)
-        model_dir = find_dir(config_data["model_dir"], search_paths=search_paths)
-        return cls(family=config_data["family"], model_dir=model_dir)
+        model_dir = config.get_output_file_name(f"{cls.CONFIG_PARAMS}/model_dir")
+        return cls(family=FamilyRevision.load_from_config(config), model_dir=model_dir)
 
     @classmethod
-    def get_validation_schema(cls) -> dict:
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get JSON schema for validating configuration data."""
         schema = get_schema_file(DatabaseManager.WPC)
-        return schema["model"]
+        return [schema["model"]]
 
     def get_low_level_wpc_id(self) -> bytes:
         """Get the lower-level WPC ID from the target."""

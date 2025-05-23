@@ -1,0 +1,19 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt595s
+revision: latest
+uuid: '00000000000000000000000000000000'
+cc_socu: 0x7FF
+cc_vu: 0
+cc_beacon: 0
+rot_meta:
+  - ../../_data/keys/rsa2048/srk0_rsa2048.pub
+  - ../../_data/keys/rsa2048/srk1_rsa2048.pub
+  - ../../_data/keys/rsa2048/srk2_rsa2048.pub
+  - ../../_data/keys/rsa2048/srk3_rsa2048.pub
+rot_id: 0
+dck: ../../_data/keys/rsa2048/dck_rsa2048.pub
+signer: ../../_data/keys/rsa2048/srk0_rsa2048.pem
+

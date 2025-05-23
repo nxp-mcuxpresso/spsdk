@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -30,6 +30,8 @@ from spsdk.sbfile.sb31.commands import (
     parse_command,
 )
 from spsdk.sbfile.sb31.constants import EnumCmdTag
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
 
 
 def test_cmd_erase():
@@ -50,7 +52,7 @@ def test_cmd_erase():
 def test_parse_invalid_cmd_erase_cmd_tag():
     """CmdErase tag validity test."""
     cmd = CmdErase(address=0, length=0, memory_id=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdErase.parse(data=data)
@@ -81,7 +83,7 @@ def test_cmd_load():
 def test_parse_invalid_cmd_load_cmd_tag():
     """CmdLoad tag validity test."""
     cmd = CmdLoad(address=0, data=bytes(4), memory_id=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdLoad.parse(data=data)
@@ -103,7 +105,7 @@ def test_cmd_execute():
 def test_parse_invalid_cmd_execute_cmd_tag():
     """CmdExecute tag validity test."""
     cmd = CmdExecute(address=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdExecute.parse(data)
@@ -125,7 +127,7 @@ def test_cmd_call():
 def test_parse_invalid_cmd_call_cmd_tag():
     """CmdCall tag validity test."""
     cmd = CmdCall(address=0)
-    cmd.cmd_tag = EnumCmdTag.ERASE
+    cmd.CMD_TAG = EnumCmdTag.ERASE
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdCall.parse(data=data)
@@ -177,7 +179,7 @@ def test_cmd_loadcmac():
 def test_parse_invalid_cmd_loadcmac_cmd_tag():
     """CmdLoadCmac tag validity test."""
     cmd = CmdLoadCmac(address=0, data=bytes(10), memory_id=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdLoadCmac.parse(data=data)
@@ -206,7 +208,7 @@ def test_cmd_copy():
 def test_parse_invalid_cmd_copy_cmd_tag():
     """CmdCopy tag validity test."""
     cmd = CmdCopy(address=100, length=0, destination_address=0, memory_id_from=0, memory_id_to=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdLoadCmac.parse(data=data)
@@ -230,7 +232,7 @@ def test_cmd_loadhashlocking():
 def test_parse_invalid_cmd_loadhashlocking_cmd_tag():
     """CmdLoadCmac tag validity test."""
     cmd = CmdLoadHashLocking(address=0, data=bytes(10), memory_id=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdLoadHashLocking.parse(data=data)
@@ -241,7 +243,7 @@ def test_cmd_loadkeyblob():
     cmd = CmdLoadKeyBlob(
         offset=100,
         key_wrap_id=CmdLoadKeyBlob.get_key_id(
-            "lpc55s3x", CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
+            FamilyRevision("lpc55s3x"), CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
         ),
         data=10 * b"x",
     )
@@ -281,7 +283,7 @@ def test_parse_invalid_cmd_loadkeyblob_cmd_tag():
     cmd = CmdLoadKeyBlob(
         offset=100, key_wrap_id=CmdLoadKeyBlob._KeyWraps.NXP_CUST_KEK_EXT_SK.value, data=bytes(10)
     )
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdErase.parse(data=data)
@@ -304,7 +306,7 @@ def test_cmd_configurememory():
 def test_parse_invalid_cmd_configurememory_cmd_tag():
     """CmdConfigureMemory tag validity test."""
     cmd = CmdConfigureMemory(address=0, memory_id=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdConfigureMemory.parse(data=data)
@@ -328,7 +330,7 @@ def test_cmd_fillmemory():
 def test_parse_invalid_cmd_fillmemory_cmd_tag():
     """CmdFillMemory tag validity test."""
     cmd = CmdFillMemory(address=0, length=0, pattern=0)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdFillMemory.parse(data=data)
@@ -351,7 +353,7 @@ def test_cmd_fwversioncheck():
 def test_parse_invalid_cmd_fwversioncheck_cmd_tag():
     """CmdFwVersionCheck tag validity test."""
     cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.CounterID.SECURE)
-    cmd.cmd_tag = EnumCmdTag.CALL
+    cmd.CMD_TAG = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):
         CmdFwVersionCheck.parse(data=data)
@@ -517,14 +519,6 @@ def test_invalid_base_cmd():
         cmd.length = 0xFFFFFFFFA
 
 
-def test_invalid_base_load_cmd():
-    cmd = CmdLoadBase(cmd_tag=1437248085, address=0x1, data=bytes(5))
-    with pytest.raises(SPSDKError, match="Invalid padding"):
-        cmd._extract_data(
-            data=b"U\xaa\xaaU\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x01\x00\x00"
-        )
-
-
 @pytest.mark.parametrize(
     "config,value,raise_error",
     [
@@ -535,7 +529,7 @@ def test_invalid_base_load_cmd():
             False,
         ),
         (
-            {"address": 0, "unknown": "option"},
+            {"address": 0, "data": "option"},
             None,
             True,
         ),
@@ -544,7 +538,7 @@ def test_invalid_base_load_cmd():
 def test_load_program_ifr_cmd(config, value, raise_error):
     if raise_error:
         with pytest.raises(SPSDKError):
-            CmdProgIfr.load_from_config(config)
+            CmdProgIfr.load_from_config(Config(config))
     else:
-        cmd = CmdProgIfr.load_from_config(config)
-        assert cmd.data == value
+        cmd = CmdProgIfr.load_from_config(Config(config))
+        assert cmd[0].data == value

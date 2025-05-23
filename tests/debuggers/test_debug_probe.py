@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-""" Tests for Debug Probe interface."""
+
+"""Tests for Debug Probe interface."""
 import pytest
 
 import spsdk.debuggers.debug_probe as DP

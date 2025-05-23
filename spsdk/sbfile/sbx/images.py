@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module used for generation SecureBinary X."""
 import logging
-from datetime import datetime
 from enum import Enum
 from struct import calcsize, pack, unpack_from
 from typing import Any, Optional, Union
 
-from spsdk.crypto.hash import get_hash
+from typing_extensions import Self
+
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.spsdk_hmac import hmac
-from spsdk.exceptions import SPSDKError, SPSDKParsingError
-from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKParsingError
+from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
-from spsdk.utils.misc import align_block, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig, update_validation_schema_family
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.family import FamilyRevision, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class TpHsmBlobHeader(BaseClass):
 
     @classmethod
     def parse(cls, header_data: bytes, offset: int = 0) -> "TpHsmBlobHeader":
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param header_data: Input data as bytes
         :param offset: The offset of input data (default: 0)
@@ -135,7 +136,7 @@ class TpHsmBlob(BaseClass):
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "TpHsmBlob":
-        """Deserialize object from bytes array.
+        """Parse object from bytes array.
 
         :param data: Input data as bytes
         :param offset: The offset of input data (default: 0)
@@ -194,7 +195,7 @@ class SecureBinaryXHeader(BaseClass):
         self.block_count = 1
         self.image_type = image_type
         self.firmware_version = firmware_version
-        self.timestamp = timestamp or int(datetime.now().timestamp())
+        self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
         manifest_size = self.HEADER_SIZE
         manifest_size += 32 if image_type == SecureBinaryXType.OEM_PROVISIONING else 64
         self.sbx_block0_total_length = manifest_size
@@ -236,7 +237,10 @@ class SecureBinaryXHeader(BaseClass):
         self.block_count = commands.block_count
 
     def export(self) -> bytes:
-        """Serialize the SB file to bytes."""
+        """Export the SB file to bytes.
+
+        :return: Exported header bytes
+        """
         major_format_version, minor_format_version = [
             int(v) for v in self.FORMAT_VERSION.split(".")
         ]
@@ -256,10 +260,10 @@ class SecureBinaryXHeader(BaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SecureBinaryXHeader":
-        """Parse binary data into SecureBinary31Header.
+    def parse(cls, data: bytes, offset: int = 0) -> Self:
+        """Parse binary data into SecureBinaryXHeader.
 
-        :raises SPSDKError: Unable to parse SB31 Header.
+        :raises SPSDKError: Unable to parse SBX Header.
         """
         (
             magic,
@@ -281,7 +285,7 @@ class SecureBinaryXHeader(BaseClass):
         if block_size not in [292, 308]:
             raise SPSDKError(f"Wrong block size: {block_size}")
 
-        obj = SecureBinaryXHeader(
+        obj = cls(
             firmware_version=firmware_version,
             description=description.decode("utf-8"),
             timestamp=timestamp,
@@ -316,133 +320,32 @@ class SecureBinaryXHeader(BaseClass):
             raise SPSDKError("Invalid SBx header image description.")
 
 
-class SecureBinaryXCommands(BaseClass):
+class SecureBinaryXCommands(SecureBinary31Commands):
     """Blob containing SBX commands."""
 
-    DATA_CHUNK_LENGTH = 256
-
-    def __init__(
-        self,
-    ) -> None:
-        """Initialize container for SBx commands.
-
-        :raises SPSDKError: Key derivation arguments are not provided if `is_encrypted` is True
-        """
-        super().__init__()
-        self.block_count = 0
-        self.final_hash = bytes(32)
-        self.commands: list[MainCmd] = []
-
-    def add_command(self, command: MainCmd) -> None:
-        """Add SBx command."""
-        self.commands.append(command)
-
-    def insert_command(self, index: int, command: MainCmd) -> None:
-        """Insert SBx command."""
-        if index == -1:
-            self.commands.append(command)
-        else:
-            self.commands.insert(index, command)
-
-    def set_commands(self, commands: list[MainCmd]) -> None:
-        """Set all SBx commands at once."""
-        self.commands = commands.copy()
-
-    def load_from_config(
-        self, config: list[dict[str, Any]], search_paths: Optional[list[str]] = None
-    ) -> None:
-        """Load configuration from dictionary.
-
-        :param config: Dictionary with configuration fields.
-        :param search_paths: List of paths where to search for the file, defaults to None
-        """
-        for cfg_cmd in config:
-            cfg_cmd_key = list(cfg_cmd.keys())[0]
-            cfg_cmd_value = cfg_cmd[cfg_cmd_key]
-            self.add_command(
-                CFG_NAME_TO_CLASS[cfg_cmd_key].load_from_config(
-                    cfg_cmd_value, search_paths=search_paths
-                )
-            )
-
-    def get_cmd_blocks_to_export(self) -> list[bytes]:
-        """Export commands as bytes."""
-        commands_bytes = b"".join([command.export() for command in self.commands])
-        section_header = CmdSectionHeader(length=len(commands_bytes))
-        total = section_header.export() + commands_bytes
-
-        data_blocks = [
-            total[i : i + self.DATA_CHUNK_LENGTH]
-            for i in range(0, len(total), self.DATA_CHUNK_LENGTH)
-        ]
-        data_blocks[-1] = align_block(data_blocks[-1], alignment=self.DATA_CHUNK_LENGTH)
-
-        return data_blocks
-
-    def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
-        """Process given data blocks for export."""
-        self.block_count = len(data_blocks)
-
-        processed_blocks = [
-            self._process_block(block_number, block_data)
-            for block_number, block_data in reversed(list(enumerate(data_blocks, start=1)))
-        ]
-        final_data = b"".join(reversed(processed_blocks))
-        return final_data
-
-    def export(self) -> bytes:
-        """Export commands as bytes."""
-        data_blocks = self.get_cmd_blocks_to_export()
-        return self.process_cmd_blocks_to_export(data_blocks)
-
-    def _process_block(self, block_number: int, block_data: bytes) -> bytes:
-        """Process single block."""
-        full_block = pack(
-            f"<L{len(self.final_hash)}s{len(block_data)}s",
-            block_number,
-            self.final_hash,
-            block_data,
-        )
-        block_hash = get_hash(full_block)
-        self.final_hash = block_hash
-        return full_block
-
-    def __repr__(self) -> str:
-        return f"SBx Commands count {len(self.commands)}"
-
-    def __str__(self) -> str:
-        """Get string information for commands in the container."""
-        info = str()
-        info += "COMMANDS:\n"
-        info += f"Number of commands: {len(self.commands)}\n"
-        for command in self.commands:
-            info += f"  {str(command)}\n"
-        return info
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SecureBinaryXCommands":
-        """Parse binary data into SecureBinary31Commands.
-
-        :raises NotImplementedError: Not yet implemented
-        """
-        raise NotImplementedError("Not yet implemented.")
+    FEATURE = DatabaseManager.SBX
+    SB_COMMANDS_NAME = "SBX"
 
 
-class SecureBinaryX(BaseClass):
+class SecureBinaryX(FeatureBaseClass):
     """Secure Binary SBX class."""
 
+    FEATURE = DatabaseManager.SBX
+
     def __init__(
         self,
+        family: FamilyRevision,
         firmware_version: int,
         tphsm_blob: Optional[TpHsmBlob],
+        commands: SecureBinaryXCommands,
         description: Optional[str] = None,
         image_type: SecureBinaryXType = SecureBinaryXType.OEM_PROVISIONING,
         signature_provider: Optional[SignatureProvider] = None,
         flags: int = 0,
-        timestamp: Optional[int] = None,
     ) -> None:
         """Constructor for Secure Binary vX data container.
 
+        :param family: The CPU family
         :param tphsm_blob: TP HSM blob
         :param firmware_version: Firmware version.
         :param description: Custom description up to 16 characters long, defaults to None
@@ -450,10 +353,9 @@ class SecureBinaryX(BaseClass):
         :param signature_provider: signature provider to final sign of SBX image
             in case of OEM and NXP_PROVISIONING types
         :param flags: Flags for SB file, defaults to 0
-        :param timestamp: Timestamp used for encryption (needed if `is_encrypted` is True), defaults to None
         """
         # in our case, timestamp is the number of seconds since "Jan 1, 2000"
-        self.timestamp = timestamp or int((datetime.now() - datetime(2000, 1, 1)).total_seconds())
+        self.family = family
         self.tphsm_blob = tphsm_blob
         self.firmware_version = firmware_version
         self.image_type = image_type
@@ -469,12 +371,12 @@ class SecureBinaryX(BaseClass):
         self.sb_header = SecureBinaryXHeader(
             firmware_version=self.firmware_version,
             description=self.description,
-            timestamp=self.timestamp,
+            timestamp=commands.timestamp,
             image_type=image_type,
             flags=self.flags,
         )
 
-        self.sb_commands = SecureBinaryXCommands()
+        self.sb_commands = commands
 
     @property
     def isk_signed(self) -> bool:
@@ -483,7 +385,7 @@ class SecureBinaryX(BaseClass):
 
     @classmethod
     def get_validation_schemas(
-        cls, family: str, include_test_configuration: bool = False
+        cls, family: FamilyRevision, include_test_configuration: bool = False
     ) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
@@ -513,8 +415,7 @@ class SecureBinaryX(BaseClass):
                     "sbx_output",
                     "sbx",
                     "sbx_description",
-                    "signing_cert_prv_key",
-                    "signature_provider",
+                    "signer",
                     "sbx_commands",
                 ]
             ]
@@ -525,46 +426,39 @@ class SecureBinaryX(BaseClass):
         return ret
 
     @classmethod
-    def load_from_config(
-        cls, config: dict[str, Any], search_paths: Optional[list[str]] = None
-    ) -> "SecureBinaryX":
+    def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of SecureBinaryX from configuration.
 
         :param config: Input standard configuration.
-        :param search_paths: List of paths where to search for the file, defaults to None
         :return: Instance of Secure Binary X class
         """
-        description = config.get("description")
-        firmware_version = value_to_int(config.get("firmwareVersion", 1))
+        description = config.get_str("description", "SBX file")
+        firmware_version = config.get_int("firmwareVersion", 1)
+        family = FamilyRevision.load_from_config(config)
         image_type = SecureBinaryXType[config["image_type"]]
-        commands = config["commands"]
-        timestamp = config.get("timestamp")
-        if timestamp:  # re-format it
-            timestamp = value_to_int(timestamp)
+
         # signature provider only necessary for OEM and NXP provisioning types
         if image_type in [SecureBinaryXType.OEM, SecureBinaryXType.NXP_PROVISIONING]:
-            signature_provider = get_signature_provider(
-                sp_cfg=config.get("signProvider"),
-                local_file_key=config.get("signingCertificatePrivateKeyFile"),
-                search_paths=search_paths,
-            )
+            signature_provider = get_signature_provider(config)
         else:
             signature_provider = None
 
+        sb_commands = SecureBinaryXCommands.load_from_config(config, load_just_commands=True)
+
         # Create SBX object
-        sbx = SecureBinaryX(
+        return cls(
+            family=family,
             tphsm_blob=None,
+            commands=sb_commands,
             firmware_version=firmware_version,
             description=description,
             image_type=image_type,
-            timestamp=timestamp,
             signature_provider=signature_provider,
         )
 
-        # Add commands into the SBX object
-        sbx.sb_commands.load_from_config(commands, search_paths=search_paths)
-
-        return sbx
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature."""
+        raise SPSDKNotImplementedError()
 
     def validate(self) -> None:
         """Validate the settings of class members.
@@ -649,42 +543,9 @@ class SecureBinaryX(BaseClass):
 
         return ret
 
-    @staticmethod
-    def get_supported_families() -> list[str]:
-        """Get the list of supported families by Device HSM.
-
-        :return: List of supported families.
-        """
-        families = get_families(DatabaseManager.DEVHSM)
-        families = [
-            family
-            for family in families
-            if get_db(family, "latest").get_str(DatabaseManager.DEVHSM, "devhsm_class")
-            == "DevHsmSBx"
-        ]
-        return families
-
     @classmethod
-    def generate_config_template(cls, family: str) -> str:
-        """Generate configuration for selected family.
-
-        :param family: Family description.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
-        """
-        if family not in cls.get_supported_families():
-            raise SPSDKError(f"SBx does not support family {family}")
-        schemas = cls.get_validation_schemas(family)
-        schemas.append(get_schema_file(DatabaseManager.SBX)["sbx_output"])
-
-        yaml_data = CommentedConfig(
-            f"Secure Binary X Configuration template for {family}.", schemas
-        ).get_template()
-
-        return yaml_data
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SecureBinaryX":
-        """Deserialize object from bytes array.
+    def parse(cls, data: bytes, offset: int = 0) -> Self:
+        """Parse object from bytes array.
 
         :raises NotImplementedError: Not yet implemented
         """

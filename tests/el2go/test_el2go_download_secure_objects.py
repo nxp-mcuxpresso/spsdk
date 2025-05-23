@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-""" Tests for EL2GO download Secure Objects operation."""
+"""Tests for EL2GO download Secure Objects operation."""
 
 import os
 import shutil
@@ -14,6 +14,7 @@ import pytest
 from unittest.mock import patch
 
 from spsdk.el2go.api_utils import EL2GOTPClient, GenStatus, BAD_STATES, SPSDKError, NO_DATA_STATES
+from spsdk.utils.config import Config
 from spsdk.utils.misc import load_configuration, use_working_directory
 
 from utils import mock_time_sleep
@@ -38,10 +39,9 @@ def test_00_019_download_secure_objects(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
+        config_data = Config.create_from_file(config)
         expected_output = base64.b64decode(provisionings)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
 
         download_prov_dict = [
             {
@@ -83,10 +83,9 @@ def test_00_020_download_secure_objects_gen_trig(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
+        config_data = Config.create_from_file(config)
         expected_output = base64.b64decode(provisionings)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
 
         download_prov_dict = [
             {
@@ -151,9 +150,8 @@ def test_00_021_download_secure_objects_diff_gen_status(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
 
         download_prov_dict = [
             {
@@ -201,9 +199,8 @@ def test_00_022_download_secure_objects_timeout_reached(
     shutil.copytree(os.path.join(data_dir), work_dir, dirs_exist_ok=True)
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
-        config_data = load_configuration(path=config)
-        search_path = os.path.dirname(config)
-        client = EL2GOTPClient.from_config(config_data=config_data, search_paths=[search_path])
+        config_data = Config.create_from_file(config)
+        client = EL2GOTPClient.load_from_config(config_data=config_data)
 
         with patch(
             "spsdk.el2go.api_utils.EL2GOTPClient.get_generation_status", return_value=gen_status

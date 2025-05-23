@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of AHAB container signature support."""
@@ -9,7 +9,7 @@
 
 import logging
 from struct import pack, unpack
-from typing import Any, Optional
+from typing import Optional
 
 from typing_extensions import Self
 
@@ -19,6 +19,7 @@ from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_data import RESERVED, UINT32, AHABTags
 from spsdk.image.ahab.ahab_srk import SRKTable
+from spsdk.utils.config import Config
 from spsdk.utils.misc import BinaryPattern, bytes_to_print
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -50,10 +51,10 @@ class ContainerSignature(HeaderContainer):
         signature_data: Optional[bytes] = None,
         signature_provider: Optional[SignatureProvider] = None,
     ) -> None:
-        """Class object initializer.
+        """Initialize ContainerSignature object.
 
-        :param signature_data: signature.
-        :param signature_provider: Signature provider use to sign the image.
+        :param signature_data: Signature data.
+        :param signature_provider: Signature provider used to sign the image.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self._signature_data = signature_data or b""
@@ -91,7 +92,7 @@ class ContainerSignature(HeaderContainer):
     def signature_data(self) -> bytes:
         """Get the signature data.
 
-        :return: signature data.
+        :return: Signature data.
         """
         return self._signature_data
 
@@ -99,20 +100,23 @@ class ContainerSignature(HeaderContainer):
     def signature_data(self, value: bytes) -> None:
         """Set the signature data.
 
-        :param value: signature data.
+        :param value: Signature data.
         """
         self._signature_data = value
         self.length = len(self)
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get format of binary representation.
+
+        :return: Format string for struct operations.
+        """
         return super().format() + UINT32  # reserved
 
     def sign(self, data_to_sign: bytes) -> None:
-        """Sign the data_to_sign and store signature into class.
+        """Sign the data and store signature into class.
 
-        :param data_to_sign: Data to be signed by store private key
+        :param data_to_sign: Data to be signed by stored private key.
         :raises SPSDKError: Missing private key or raw signature data.
         """
         if not self.signature_provider and len(self._signature_data) == 0:
@@ -126,7 +130,7 @@ class ContainerSignature(HeaderContainer):
     def export(self) -> bytes:
         """Export signature data that is part of Signature Block.
 
-        :return: bytes representing container signature content.
+        :return: Bytes representing container signature content.
         """
         if len(self) == 0:
             return b""
@@ -145,7 +149,10 @@ class ContainerSignature(HeaderContainer):
         return data
 
     def verify(self) -> Verifier:
-        """Verify container signature data."""
+        """Verify container signature data.
+
+        :return: Verifier object with verification results.
+        """
 
         def verify_data() -> None:
             if self._signature_data is None:
@@ -201,24 +208,20 @@ class ContainerSignature(HeaderContainer):
         """
         return BinaryPattern("inc").get_block(size)
 
-    @staticmethod
+    @classmethod
     def load_from_config(
-        config: dict[str, Any],
-        search_paths: Optional[list[str]] = None,
+        cls,
+        config: Config,
         srk_table: Optional[SRKTable] = None,
-    ) -> "ContainerSignature":
-        """Converts the configuration option into an AHAB image object.
+    ) -> Self:
+        """Convert the configuration options into a ContainerSignature object.
 
-        "config" content of container configurations.
-
-        :param config: array of AHAB containers configuration dictionaries.
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :param srk_table: SRK table, it is used to determine length of
-            the signature if the signature_provider or private key is not used.
+        :param config: Array of AHAB containers configuration dictionaries.
+        :param srk_table: SRK table, used to determine length of the signature if the
+            signature_provider or private key is not used.
         :return: Container signature object.
+        :raises SPSDKValueError: When srk_table is not defined but needed.
         """
-        sp_cfg = config.get("signature_provider")
-        pk_cfg = config.get("signing_key")
         signature_provider = None
         signature_data = None
         hash_alg = (
@@ -226,29 +229,19 @@ class ContainerSignature(HeaderContainer):
             if srk_table
             else None
         )
-        if sp_cfg or pk_cfg:
-            signature_provider = get_signature_provider(
-                sp_cfg=sp_cfg,
-                local_file_key=pk_cfg,
-                search_paths=search_paths,
-                pss_padding=True,
-                hash_alg=hash_alg,
-            )
+        if "signer" in config:
+            signature_provider = get_signature_provider(config, pss_padding=True, hash_alg=hash_alg)
         else:
             if not srk_table:
                 raise SPSDKValueError(
                     "In case that private key neither signature provider is used, "
                     "the srk table must be defined to recognize the length of signature."
                 )
-            signature_data = ContainerSignature.get_dummy_signature(
-                srk_table.get_source_keys()[0].signature_size
-            )
+            signature_data = cls.get_dummy_signature(srk_table.get_source_keys()[0].signature_size)
             logger.warning(
                 "The AHAB configuration has not defined signing resources. "
                 "Instead of signature, the place holder will be used. "
                 "The AHAB has to be signed later by re-sign command."
             )
 
-        return ContainerSignature(
-            signature_data=signature_data, signature_provider=signature_provider
-        )
+        return cls(signature_data=signature_data, signature_provider=signature_provider)

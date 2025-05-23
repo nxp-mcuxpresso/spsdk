@@ -1,12 +1,13 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 rootCertificate0File: ..\keys_and_certs\root_k0_signed_cert0_noca.der.cert # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
 rootCertificate1File: ..\keys_and_certs\root_k1_signed_cert0_noca.der.cert # [Optional], Root Certificate File 1; Root certificate file index 1.
 rootCertificate2File: ..\keys_and_certs\root_k2_signed_cert0_noca.der.cert # [Optional], Root Certificate File 2; Root certificate file index 2.
 rootCertificate3File: ..\keys_and_certs\root_k3_signed_cert0_noca.der.cert # [Optional], Root Certificate File 3; Root certificate file index 3.
-signProvider: "type=file;file_path=../keys_and_certs/k0_cert0_2048.pem" # [Conditionally required], Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signer: "type=file;file_path=../keys_and_certs/k0_cert0_2048.pem" # [Conditionally required], Main Certificate private key used to sign certificate.
 mainRootCertId: 0 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
 containerOutputFile: output.sb
 containerKeyBlobEncryptionKey: ..\keys\SBkek_PUF.txt

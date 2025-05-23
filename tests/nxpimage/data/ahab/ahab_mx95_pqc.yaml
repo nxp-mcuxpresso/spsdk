@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ==========================  Advanced High-Assurance Boot Configuration template for mx95.  ===========================
 
 # ======================================================================================================================
@@ -75,11 +76,11 @@ containers:
       # -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
-      signing_key: ../../_data/keys/ecc256/srk2_ecc256.pem
+      signer: ../../_data/keys/ecc256/srk2_ecc256.pem
       # ---------------===== AHAB container signing key for second signature (PQC only) [Optional] =====----------------
       # Description: Private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
       # The referenced SRK must not have been revoked.
-      signing_key_#2: ../../_data/keys/dil3/srk2_dil3.pem
+      signer_#2: ../../_data/keys/dil3/srk2_dil3.pem
 
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==

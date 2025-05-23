@@ -83,7 +83,7 @@ containers:
       # -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
-      signing_key: ../../../_data/keys/ecc384/srk0_ecc384.pem
+      signer: ../../../_data/keys/ecc384/srk0_ecc384.pem
 
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==
@@ -171,7 +171,7 @@ containers:
         - v2x_dummy: true
 
       # ================================================================================================================
-      #                                      == Configuration of AHAB SRK table ==                                      
+      #                                      == Configuration of AHAB SRK table ==
       # ================================================================================================================
       # ---------------------------------===== SRK Table [Conditionally required] =====---------------------------------
       # Description: SRK (Super Root key) table definition.

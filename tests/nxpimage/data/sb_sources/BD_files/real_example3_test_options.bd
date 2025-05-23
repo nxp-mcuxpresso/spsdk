@@ -9,6 +9,7 @@ options {
     mac = "0000000000000000000000000000000000000000000000000000000000000000";
     nonce = "00000000000000000000000000000000";
     timestamp = 1234567890;
+    family = "rt5xx";
 }
 sources {
      myImage = "sb_sources/output_images/application_signed.bin";          // Put location of Signed or UnSigned image input

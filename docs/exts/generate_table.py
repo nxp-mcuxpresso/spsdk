@@ -13,12 +13,13 @@ import nbformat
 import requests
 from pytablewriter import MarkdownTableWriter, RstGridTableWriter
 
-from spsdk.apps.nxpimage import main as nxpimage_main
 from spsdk.apps.nxpele import main as nxpele_main
+from spsdk.apps.nxpimage import main as nxpimage_main
 from spsdk.exceptions import SPSDKValueError
-from spsdk.image.mbi.mbi import MAP_AUTHENTICATIONS, MAP_IMAGE_TARGETS, create_mbi_class
+from spsdk.image.mbi.mbi import MAP_AUTHENTICATIONS, MAP_IMAGE_TARGETS, MasterBootImage
 from spsdk.mboot.error_codes import StatusCode
-from spsdk.utils.database import DatabaseManager, Device, get_db, get_families
+from spsdk.utils.database import DatabaseManager, Device
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import get_key_by_val
 
 TARGET = 0
@@ -59,22 +60,23 @@ NXPIMAGE_FEATURES_MAPPING = {
     "xmcd": "External Memory Configuration Data (XMCD)",
     "sb21": "Secure Binary 2.1",
     "sb31": "Secure Binary 3.1",
+    "sbc": "Secure Binary C",
 }
 OTHER_FEATURES_MAPPING = {
     "dat": "nxpdebugmbox",
     "shadow_regs": "shadowregs",
     "devhsm": "nxpdevhsm",
-    "tp": "tphost",
     "ele": "nxpele",
     "memcfg": "nxpmemcfg",
     "wpc": "nxpwpc",
     "el2go_tp": "el2go-host",
     "dice": "nxpdice",
     "fuse_tool": "nxpfuses",
+    "she_scec": "nxpshe",
 }
 ALL_FEATURES_MAPPING = {**NXPIMAGE_FEATURES_MAPPING, **OTHER_FEATURES_MAPPING}
 SUPPORTED_CHAR = "\u2705"
-UNSUPPORTED_CHAR = "\u274C"
+UNSUPPORTED_CHAR = "\u274c"
 
 
 def get_link(name: str, url: str, use_markdown: bool = False) -> str:
@@ -230,7 +232,7 @@ def generate_mbi_table():
         [
             family
             for family in get_families(DatabaseManager.MBI)
-            if DatabaseManager().db.devices.get(family).info.use_in_doc
+            if DatabaseManager().db.devices.get(family.name).info.use_in_doc
         ]
     )
     print("Processing MBI table")
@@ -245,10 +247,10 @@ def generate_mbi_table():
                 authentication = get_key_by_val(c[AUTHENTICATION], MAP_AUTHENTICATIONS)
                 cls_name = (
                     DatabaseManager()
-                    .db.get_device_features(family)
+                    .db.get_device_features(family.name, family.revision)
                     .get_value(DatabaseManager().MBI, ["images", target, authentication])
                 )
-                cls = create_mbi_class(cls_name, family)
+                cls = MasterBootImage.create_mbi_class(cls_name, family)
                 reference = f":ref:`{SUPPORTED_CHAR}<{cls.hash()}>`"
                 submatrix.append(reference)
             except (KeyError, SPSDKValueError):
@@ -296,9 +298,9 @@ def generate_feature_table(
             reference_name=features_mapping.get(feature, feature),
             use_markdown=use_markdown,
         )
-        if feature in device.features_list:
+        if feature in device.get_features():
             if feature == DatabaseManager.CERT_BLOCK:
-                db = get_db(device.name)
+                db = get_db(FamilyRevision(device.name))
                 rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
                 value_matrix.append(
                     [
@@ -350,9 +352,9 @@ def generate_features_table(
         submatrix = []
         submatrix.append(device)
         for feature in feature_list:
-            if feature in DatabaseManager().quick_info.devices.devices.get(device).features_list:
+            if feature in DatabaseManager().quick_info.devices.devices.get(device).get_features():
                 if feature == DatabaseManager.CERT_BLOCK:
-                    db = get_db(device)
+                    db = get_db(FamilyRevision(device))
                     rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
                     submatrix.append(ROT_TYPE_MAPPING.get(rot_type, rot_type))
                 else:
@@ -554,7 +556,7 @@ def generate_devices_list(
                 lines.append("\n")
 
             # Jupyters for features
-            for feature in device_full.features_list:
+            for feature in device_full.get_features():
                 jupyters = get_jupyters_for_feature(feature)
 
                 if jupyters:

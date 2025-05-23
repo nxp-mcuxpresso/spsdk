@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -426,7 +426,7 @@ class VirtualMbootInterface:
 
         :param packet: Command packet object to be sent
         """
-        data = packet.to_bytes(padding=False)
+        data = packet.export(padding=False)
         if not data:
             raise SPSDKAttributeError("Incorrect packet type")
         self.device._cmd_tag = packet.header.tag

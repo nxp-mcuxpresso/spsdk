@@ -16,7 +16,8 @@ from spsdk.exceptions import SPSDKAlignmentError, SPSDKError, SPSDKValueError
 from spsdk.lpcprog.device import LPCDevice
 from spsdk.lpcprog.error_codes import StatusCode
 from spsdk.lpcprog.interface import LPCProgInterface
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import align_block, value_to_int, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -90,7 +91,7 @@ class LPCProgProtocol:
             self.interface.close()
 
     @staticmethod
-    def get_supported_families() -> list[str]:
+    def get_supported_families() -> list[FamilyRevision]:
         """Get the list of supported families by LPCProg.
 
         :return: List of supported families.
