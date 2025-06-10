@@ -13,14 +13,14 @@
                     "reg_width": "32",
                     "name": "BOOT_CFG",
                     "description": "Boot Configuration",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field000-bits0-3",
                             "offset": "0x0",
                             "width": "4",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -29,7 +29,7 @@
                             "width": "3",
                             "name": "DEFAULT_ISP_MODE",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Default ISP mode:",
                             "values": [
                                 {
@@ -70,7 +70,7 @@
                             "width": "2",
                             "name": "BOOT_SPEED",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Core clock:",
                             "values": [
                                 {
@@ -96,7 +96,7 @@
                             "width": "2",
                             "name": "USB_SPEED",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Defines which USB module is used for ISP:",
                             "values": [
                                 {
@@ -126,7 +126,7 @@
                             "offset": "0xb",
                             "width": "13",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -135,7 +135,7 @@
                             "width": "8",
                             "name": "BOOT_FAILURE_PIN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin"
                         }
                     ]
@@ -146,7 +146,7 @@
                     "reg_width": "32",
                     "name": "SPI_FLASH_CFG",
                     "description": "SPI Flash Configuration",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field004-bits0-4",
@@ -154,7 +154,7 @@
                             "width": "5",
                             "name": "SPI_RECOVERY_BOOT_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "SPI flash recovery boot is enabled, if non-zero value is written to this field."
                         },
                         {
@@ -162,7 +162,7 @@
                             "offset": "0x5",
                             "width": "27",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         }
                     ]
@@ -173,7 +173,7 @@
                     "reg_width": "32",
                     "name": "USB_ID",
                     "description": "USB Identifiers",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field008-bits0-15",
@@ -181,7 +181,7 @@
                             "width": "16",
                             "name": "USB_VENDOR_ID",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "USB Vendor ID"
                         },
                         {
@@ -190,7 +190,7 @@
                             "width": "16",
                             "name": "USB_PRODUCT_ID",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "USB Product ID"
                         }
                     ]
@@ -201,7 +201,7 @@
                     "reg_width": "32",
                     "name": "SDIO_CFG",
                     "description": "SDIO Configuration",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field010",
@@ -209,7 +209,7 @@
                     "reg_width": "32",
                     "name": "DCFG_CC_SOCU_PIN",
                     "description": "Device Configuration Credential Constraints for SoC specific Use Pinned",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field010-bit0",
@@ -217,7 +217,7 @@
                             "width": "1",
                             "name": "NIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Non Secure non-invasive debug enable",
                             "values": [
                                 {
@@ -238,7 +238,7 @@
                             "width": "1",
                             "name": "DBGEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Non Secure debug enable",
                             "values": [
                                 {
@@ -259,7 +259,7 @@
                             "width": "1",
                             "name": "SPNIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Secure non-invasive debug enable",
                             "values": [
                                 {
@@ -280,7 +280,7 @@
                             "width": "1",
                             "name": "SPIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Secure invasive debug enable",
                             "values": [
                                 {
@@ -301,7 +301,7 @@
                             "width": "1",
                             "name": "TAPEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "JTAG TAP enable",
                             "values": [
                                 {
@@ -322,7 +322,7 @@
                             "width": "1",
                             "name": "CPU1_DBGEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "CPU1 (Micro cortex M33) invasive debug enable",
                             "values": [
                                 {
@@ -343,7 +343,7 @@
                             "width": "1",
                             "name": "ISP_CMD_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "ISP Boot Command enable",
                             "values": [
                                 {
@@ -364,7 +364,7 @@
                             "width": "1",
                             "name": "FA_ME_CMD_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Fault Analysis/Mass Erase Command enable",
                             "values": [
                                 {
@@ -384,7 +384,7 @@
                             "offset": "0x8",
                             "width": "1",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -393,7 +393,7 @@
                             "width": "1",
                             "name": "CPU1_NIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "CPU1 (Micro cortex M33) non-invasive debug enable",
                             "values": [
                                 {
@@ -413,7 +413,7 @@
                             "offset": "0xa",
                             "width": "5",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -422,7 +422,7 @@
                             "width": "1",
                             "name": "UUID_CHECK",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Enforce UUID match during Debug authentication.",
                             "values": [
                                 {
@@ -442,7 +442,7 @@
                             "offset": "0x10",
                             "width": "16",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "inverse value of bits [15:0]"
                         }
                     ]
@@ -453,7 +453,7 @@
                     "reg_width": "32",
                     "name": "DCFG_CC_SOCU_DFLT",
                     "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field014-bit0",
@@ -461,7 +461,7 @@
                             "width": "1",
                             "name": "NIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Non Secure non-invasive debug fixed state",
                             "values": [
                                 {
@@ -482,7 +482,7 @@
                             "width": "1",
                             "name": "DBGEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Non Secure debug fixed state",
                             "values": [
                                 {
@@ -503,7 +503,7 @@
                             "width": "1",
                             "name": "SPNIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Secure non-invasive debug fixed state",
                             "values": [
                                 {
@@ -524,7 +524,7 @@
                             "width": "1",
                             "name": "SPIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Secure invasive debug fixed state",
                             "values": [
                                 {
@@ -545,7 +545,7 @@
                             "width": "1",
                             "name": "TAPEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "JTAG TAP fixed state",
                             "values": [
                                 {
@@ -566,7 +566,7 @@
                             "width": "1",
                             "name": "CPU1_DBGEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "CPU1 (Micro cortex M33) invasive debug fixed state",
                             "values": [
                                 {
@@ -587,7 +587,7 @@
                             "width": "1",
                             "name": "ISP_CMD_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "ISP Boot Command fixed state",
                             "values": [
                                 {
@@ -608,7 +608,7 @@
                             "width": "1",
                             "name": "FA_ME_CMD_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Fault Analysis/Mass Erase Command fixed state",
                             "values": [
                                 {
@@ -628,7 +628,7 @@
                             "offset": "0x8",
                             "width": "1",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -637,7 +637,7 @@
                             "width": "1",
                             "name": "CPU1_NIDEN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "CPU1 (Micro cortex M33) non-invasive debug fixed state",
                             "values": [
                                 {
@@ -657,7 +657,7 @@
                             "offset": "0xa",
                             "width": "6",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -665,7 +665,7 @@
                             "offset": "0x10",
                             "width": "16",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "inverse value of bits [15:0]"
                         }
                     ]
@@ -676,14 +676,14 @@
                     "reg_width": "32",
                     "name": "VENDOR_USAGE",
                     "description": "Vendor Usage",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field018-bits0-15",
                             "offset": "0x0",
                             "width": "16",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -692,7 +692,7 @@
                             "width": "16",
                             "name": "VENDOR_USAGE",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from customer field area."
                         }
                     ]
@@ -703,7 +703,7 @@
                     "reg_width": "32",
                     "name": "SECURE_BOOT_CFG",
                     "description": "Secure boot configuration",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field01C-bits0-1",
@@ -711,28 +711,28 @@
                             "width": "2",
                             "name": "RSA4K",
                             "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "Use RSA4096 keys only.",
+                            "default_value_int": "0x0",
+                            "description": "Select minimal key length. To enforce usage of RSA4096, setting 0b11 value is recommended to allow RSA4096 keys only.",
                             "values": [
                                 {
                                     "name": "RSA2048",
                                     "value": 0,
-                                    "description": "Allow RSA2048 and higher"
+                                    "description": "RSA2048 or higher can be used for image signing. Only RSA2048 can be used as debug keys."
                                 },
                                 {
                                     "name": "RSA4096_0",
                                     "value": 1,
-                                    "description": "RSA4096 only"
+                                    "description": "Only RSA4096 keys can be used for image signing and debug authentication."
                                 },
                                 {
                                     "name": "RSA4096_1",
                                     "value": 2,
-                                    "description": "RSA4096 only"
+                                    "description": "Only RSA4096 keys can be used for image signing and debug authentication."
                                 },
                                 {
                                     "name": "RSA4096_2",
                                     "value": 3,
-                                    "description": "RSA4096 only"
+                                    "description": "Only RSA4096 keys can be used for image signing and debug authentication."
                                 }
                             ]
                         },
@@ -742,7 +742,7 @@
                             "width": "2",
                             "name": "DICE_INC_NXP_CFG",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Include NXP area in DICE computation.",
                             "values": [
                                 {
@@ -773,7 +773,7 @@
                             "width": "2",
                             "name": "DICE_CUST_CFG",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Include Customer factory area (including keys) in DICE computation.",
                             "values": [
                                 {
@@ -804,7 +804,7 @@
                             "width": "2",
                             "name": "SKIP_DICE",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Skip DICE computation",
                             "values": [
                                 {
@@ -835,7 +835,7 @@
                             "width": "2",
                             "name": "TZM_IMAGE_TYPE",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "TrustZone-M mode",
                             "values": [
                                 {
@@ -866,7 +866,7 @@
                             "width": "2",
                             "name": "BLOCK_SET_KEY",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Block PUF key code generation",
                             "values": [
                                 {
@@ -897,7 +897,7 @@
                             "width": "2",
                             "name": "BLOCK_ENROLL",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Block PUF enrollment",
                             "values": [
                                 {
@@ -928,7 +928,7 @@
                             "width": "2",
                             "name": "DICE_INC_SEC_EPOCH",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Include security EPOCH in DICE"
                         },
                         {
@@ -936,7 +936,7 @@
                             "offset": "0x10",
                             "width": "14",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -945,7 +945,7 @@
                             "width": "2",
                             "name": "SEC_BOOT_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Secure boot enable",
                             "values": [
                                 {
@@ -978,7 +978,7 @@
                     "reg_width": "32",
                     "name": "PRINCE_BASE_ADDR",
                     "description": "Prince Base Address",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field020-bits0-3",
@@ -986,7 +986,7 @@
                             "width": "4",
                             "name": "ADDR0_PRG",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Programmable portion of the base address of region 0"
                         },
                         {
@@ -995,7 +995,7 @@
                             "width": "4",
                             "name": "ADDR1_PRG",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Programmable portion of the base address of region 1"
                         },
                         {
@@ -1004,7 +1004,7 @@
                             "width": "4",
                             "name": "ADDR2_PRG",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Programmable portion of the base address of region 2"
                         },
                         {
@@ -1012,7 +1012,7 @@
                             "offset": "0xc",
                             "width": "6",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -1021,7 +1021,7 @@
                             "width": "2",
                             "name": "LOCK_REG0",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Lock PRINCE region0 settings",
                             "values": [
                                 {
@@ -1052,7 +1052,7 @@
                             "width": "2",
                             "name": "LOCK_REG1",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Lock PRINCE region1 settings",
                             "values": [
                                 {
@@ -1082,7 +1082,7 @@
                             "offset": "0x16",
                             "width": "2",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         },
                         {
@@ -1091,7 +1091,7 @@
                             "width": "2",
                             "name": "REG0_ERASE_CHECK_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "For PRINCE region0 enable checking whether all encrypted pages are erased together",
                             "values": [
                                 {
@@ -1122,7 +1122,7 @@
                             "width": "2",
                             "name": "REG1_ERASE_CHECK_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "For PRINCE region1 enable checking whether all encrypted pages are erased together",
                             "values": [
                                 {
@@ -1153,7 +1153,7 @@
                             "width": "2",
                             "name": "REG2_ERASE_CHECK_EN",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "For PRINCE region2 enable checking whether all encrypted pages are erased together",
                             "values": [
                                 {
@@ -1183,7 +1183,7 @@
                             "offset": "0x1e",
                             "width": "2",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         }
                     ]
@@ -1194,7 +1194,7 @@
                     "reg_width": "32",
                     "name": "PRINCE_SR_0",
                     "description": "Region 0, sub-region enable",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field028",
@@ -1202,7 +1202,7 @@
                     "reg_width": "32",
                     "name": "PRINCE_SR_1",
                     "description": "Region 1, sub-region enable",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field02C",
@@ -1210,7 +1210,7 @@
                     "reg_width": "32",
                     "name": "PRINCE_SR_2",
                     "description": "Region 2, sub-region enable",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field030",
@@ -1218,7 +1218,7 @@
                     "reg_width": "32",
                     "name": "XTAL_32KHZ_CAPABANK_TRIM",
                     "description": "Xtal 32kHz capabank trimming.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field030-bit0",
@@ -1226,7 +1226,7 @@
                             "width": "1",
                             "name": "TRIM_VALID",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "XTAL 32kHz capa bank trimmings",
                             "values": [
                                 {
@@ -1247,7 +1247,7 @@
                             "width": "10",
                             "name": "XTAL_LOAD_CAP_IEC_PF_X100",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Load capacitance, pF x 100. For example, 6pF becomes 600."
                         },
                         {
@@ -1256,7 +1256,7 @@
                             "width": "10",
                             "name": "PCB_XIN_PARA_CAP_PF_X100",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600."
                         },
                         {
@@ -1265,7 +1265,7 @@
                             "width": "10",
                             "name": "PCB_XOUT_PARA_CAP_PF_X100",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600."
                         },
                         {
@@ -1273,7 +1273,7 @@
                             "offset": "0x1f",
                             "width": "1",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         }
                     ]
@@ -1284,7 +1284,7 @@
                     "reg_width": "32",
                     "name": "XTAL_16MHZ_CAPABANK_TRIM",
                     "description": "Xtal 16MHz capabank trimming.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field034-bit0",
@@ -1292,7 +1292,7 @@
                             "width": "1",
                             "name": "TRIM_VALID",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "XTAL 16MHz capa bank trimmings",
                             "values": [
                                 {
@@ -1313,7 +1313,7 @@
                             "width": "10",
                             "name": "XTAL_LOAD_CAP_IEC_PF_X100",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Load capacitance, pF x 100. For example, 6pF becomes 600."
                         },
                         {
@@ -1322,7 +1322,7 @@
                             "width": "10",
                             "name": "PCB_XIN_PARA_CAP_PF_X100",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600."
                         },
                         {
@@ -1331,7 +1331,7 @@
                             "width": "10",
                             "name": "PCB_XOUT_PARA_CAP_PF_X100",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600."
                         },
                         {
@@ -1339,7 +1339,7 @@
                             "offset": "0x1f",
                             "width": "1",
                             "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "N/A"
                         }
                     ]
@@ -1350,7 +1350,7 @@
                     "reg_width": "32",
                     "name": "ROTKH0",
                     "description": "ROTKH0 for Root of Trust Keys Table hash[255:224]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field054",
@@ -1358,7 +1358,7 @@
                     "reg_width": "32",
                     "name": "ROTKH1",
                     "description": "ROTKH1 for Root of Trust Keys Table hash[223:192]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field058",
@@ -1366,7 +1366,7 @@
                     "reg_width": "32",
                     "name": "ROTKH2",
                     "description": "ROTKH2 for Root of Trust Keys Table hash[191:160]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field05C",
@@ -1374,7 +1374,7 @@
                     "reg_width": "32",
                     "name": "ROTKH3",
                     "description": "ROTKH3 for Root of Trust Keys Table hash[159:128]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field060",
@@ -1382,7 +1382,7 @@
                     "reg_width": "32",
                     "name": "ROTKH4",
                     "description": "ROTKH4 for Root of Trust Keys Table hash[127:96]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field064",
@@ -1390,7 +1390,7 @@
                     "reg_width": "32",
                     "name": "ROTKH5",
                     "description": "ROTKH5 for Root of Trust Keys Table hash[95:64]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field068",
@@ -1398,7 +1398,7 @@
                     "reg_width": "32",
                     "name": "ROTKH6",
                     "description": "ROTKH6 for Root of Trust Keys Table hash[63:32]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field06C",
@@ -1406,7 +1406,7 @@
                     "reg_width": "32",
                     "name": "ROTKH7",
                     "description": "ROTKH7 for Root of Trust Keys Table hash[31:0]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field100",
@@ -1414,7 +1414,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED0",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field104",
@@ -1422,7 +1422,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED1",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field108",
@@ -1430,7 +1430,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED2",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field10C",
@@ -1438,7 +1438,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED3",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field110",
@@ -1446,7 +1446,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED4",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field114",
@@ -1454,7 +1454,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED5",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field118",
@@ -1462,7 +1462,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED6",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field11C",
@@ -1470,7 +1470,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED7",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field120",
@@ -1478,7 +1478,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED8",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field124",
@@ -1486,7 +1486,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED9",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field128",
@@ -1494,7 +1494,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED10",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field12C",
@@ -1502,7 +1502,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED11",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field130",
@@ -1510,7 +1510,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED12",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field134",
@@ -1518,7 +1518,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED13",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field138",
@@ -1526,7 +1526,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED14",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field13C",
@@ -1534,7 +1534,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED15",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field140",
@@ -1542,7 +1542,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED16",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field144",
@@ -1550,7 +1550,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED17",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field148",
@@ -1558,7 +1558,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED18",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field14C",
@@ -1566,7 +1566,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED19",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field150",
@@ -1574,7 +1574,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED20",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field154",
@@ -1582,7 +1582,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED21",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field158",
@@ -1590,7 +1590,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED22",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field15C",
@@ -1598,7 +1598,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED23",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field160",
@@ -1606,7 +1606,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED24",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field164",
@@ -1614,7 +1614,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED25",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field168",
@@ -1622,7 +1622,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED26",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field16C",
@@ -1630,7 +1630,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED27",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field170",
@@ -1638,7 +1638,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED28",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field174",
@@ -1646,7 +1646,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED29",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field178",
@@ -1654,7 +1654,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED30",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field17C",
@@ -1662,7 +1662,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED31",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field180",
@@ -1670,7 +1670,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED32",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field184",
@@ -1678,7 +1678,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED33",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field188",
@@ -1686,7 +1686,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED34",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field18C",
@@ -1694,7 +1694,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED35",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field190",
@@ -1702,7 +1702,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED36",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field194",
@@ -1710,7 +1710,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED37",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field198",
@@ -1718,7 +1718,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED38",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field19C",
@@ -1726,7 +1726,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED39",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A0",
@@ -1734,7 +1734,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED40",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A4",
@@ -1742,7 +1742,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED41",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A8",
@@ -1750,7 +1750,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED42",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1AC",
@@ -1758,7 +1758,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED43",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B0",
@@ -1766,7 +1766,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED44",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B4",
@@ -1774,7 +1774,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED45",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B8",
@@ -1782,7 +1782,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED46",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1BC",
@@ -1790,7 +1790,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED47",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C0",
@@ -1798,7 +1798,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED48",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C4",
@@ -1806,7 +1806,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED49",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C8",
@@ -1814,7 +1814,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED50",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1CC",
@@ -1822,7 +1822,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED51",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D0",
@@ -1830,7 +1830,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED52",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D4",
@@ -1838,7 +1838,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED53",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D8",
@@ -1846,7 +1846,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED54",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1DC",
@@ -1854,7 +1854,7 @@
                     "reg_width": "32",
                     "name": "CUSTOMER_DEFINED55",
                     "description": "Customer Defined (Programmable through ROM API)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E0",
@@ -1862,7 +1862,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST0",
                     "description": "SHA256_DIGEST0 for DIGEST[31:0]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E4",
@@ -1870,7 +1870,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST1",
                     "description": "SHA256_DIGEST1 for DIGEST[63:32]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E8",
@@ -1878,7 +1878,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST2",
                     "description": "SHA256_DIGEST2 for DIGEST[95:64]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1EC",
@@ -1886,7 +1886,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST3",
                     "description": "SHA256_DIGEST3 for DIGEST[127:96]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F0",
@@ -1894,7 +1894,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST4",
                     "description": "SHA256_DIGEST4 for DIGEST[159:128]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F4",
@@ -1902,7 +1902,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST5",
                     "description": "SHA256_DIGEST5 for DIGEST[191:160]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F8",
@@ -1910,7 +1910,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST6",
                     "description": "SHA256_DIGEST6 for DIGEST[223:192]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1FC",
@@ -1918,7 +1918,7 @@
                     "reg_width": "32",
                     "name": "SHA256_DIGEST7",
                     "description": "SHA256_DIGEST7 for DIGEST[255:224]",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 }
             ]
         }

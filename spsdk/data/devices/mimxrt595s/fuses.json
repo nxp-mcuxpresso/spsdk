@@ -415,6 +415,7 @@
                     "index_int": "0x005F",
                     "shadow_reg_offset_int": "0x017C",
                     "individual_write_lock": "always_lock",
+                    "default_value_int": "0",
                     "lock": {
                         "register_id": "fuse8",
                         "write_lock_int": "0x0001"
@@ -734,10 +735,7 @@
                             ]
                         },
                         {
-                            "width": 6,
-                            "id": "fuse95-bits-25-30",
-                            "name": "Reserved",
-                            "description": "Reserved for NXP internal (and future) use only. Users should keep this zero."
+                            "width": 6
                         },
                         {
                             "width": 1,
@@ -766,6 +764,7 @@
                     "index_int": "0x0064",
                     "shadow_reg_offset_int": "0x0190",
                     "individual_write_lock": "always_lock",
+                    "default_value_int": "0",
                     "lock": {
                         "register_id": "fuse8",
                         "write_lock_int": "0x0002"
@@ -1085,10 +1084,7 @@
                             ]
                         },
                         {
-                            "width": 6,
-                            "id": "fuse100-bits-25-30",
-                            "name": "Reserved",
-                            "description": "Reserved for NXP internal (and future) use only. Users should keep this zero."
+                            "width": 6
                         },
                         {
                             "width": 1,

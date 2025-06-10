@@ -12,6 +12,7 @@ import os
 import pytest
 
 from spsdk.apps import nxpmemcfg
+from spsdk.exceptions import SPSDKValueError
 from spsdk.memcfg.memcfg import MemoryConfig, SPSDKUnsupportedInterface
 from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
@@ -19,7 +20,9 @@ from tests.cli_runner import CliRunner
 
 def test_app_help(cli_runner: CliRunner):
     """Simple test that application works at least with help."""
-    ret = cli_runner.invoke(nxpmemcfg.main, "")
+    ret = cli_runner.invoke(
+        nxpmemcfg.main, "", expected_code=cli_runner.get_help_error_code(use_help_flag=False)
+    )
     assert "nxpmemcfg" in ret.output
     assert "export" in ret.output
     assert "parse" in ret.output
@@ -94,7 +97,10 @@ def test_app_parse_export_all(
     cli_runner: CliRunner, tmpdir, peripheral: str, mem_type: str, interfaces: list[str]
 ):
     """Test of family info command."""
-    memories = MemoryConfig.get_known_memories(mem_type=mem_type, interfaces=interfaces)
+    memories = MemoryConfig.get_known_peripheral_memories(
+        family=FamilyRevision("mimxrt1189"), peripheral=peripheral
+    )
+
     for memory in memories:
         cmd = f"parse -f mimxrt1189 -p {peripheral} "
         for ow in memory.interfaces[0].option_words:
@@ -104,8 +110,6 @@ def test_app_parse_export_all(
         ).replace("\\", "/")
         cmd += f"-o {cfg_file}"
         ret = cli_runner.invoke(nxpmemcfg.main, cmd)
-        assert ret.exit_code == 0
-
         ret = cli_runner.invoke(nxpmemcfg.main, f"export -c {cfg_file}")
 
         assert ret.exit_code == 0

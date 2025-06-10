@@ -146,7 +146,7 @@ def test_shadowreg_verify_write(mock_test_database, data_dir):
     assert probe.mem_reg_read(1) == 0x87654321
 
     probe.set_virtual_memory_substitute_data({1: [0x12345678, 0x5555AAAA]})
-    with pytest.raises(SR.IoVerificationError):
+    with pytest.raises(SR.SPSDKVerificationError):
         shadowregs._write_shadow_reg(1, 0x87654321, verify_mask=0xFFFFFFFF)
 
     assert probe.mem_reg_read(1) == 0x5555AAAA

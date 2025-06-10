@@ -1076,15 +1076,16 @@ class BootImageV21(BaseClass):
 
         secure_binary.signature_provider = signature_provider
 
-        if not rkth_out_path:
-            if "RKTHOutputPath" in config:
-                rkth_out_path = config.get_output_file_name("RKTHOutputPath")
-                # Only write the file if a path was explicitly provided
+        if secure_binary.cert_block:
+            if not rkth_out_path:
+                if "RKTHOutputPath" in config:
+                    rkth_out_path = config.get_output_file_name("RKTHOutputPath")
+                    # Only write the file if a path was explicitly provided
+                    write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
+            else:
+                # rkth_out_path was provided, so write the file
+                assert isinstance(rkth_out_path, str), "Hash of hashes path must be string"
                 write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
-        else:
-            # rkth_out_path was provided, so write the file
-            assert isinstance(rkth_out_path, str), "Hash of hashes path must be string"
-            write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
 
         return secure_binary
 

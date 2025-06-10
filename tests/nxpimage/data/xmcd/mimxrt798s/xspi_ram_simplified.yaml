@@ -9,16 +9,14 @@
 # All registers is possible to define also as one value although the bitfields are used. Instead of bitfields: ...
 # field, the value: ... definition works as well.
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
-# Possible options: <mimxrt1165, mimxrt1166, mimxrt1171, mimxrt1172, mimxrt1173, mimxrt1175, mimxrt1176, mimxrt1181,
-# mimxrt1182, mimxrt1187, mimxrt1189, mimxrt735s, mimxrt758s, mimxrt798s>
 family: mimxrt798s
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon. The 'latest' name, means most current revision.
-# Possible options: <a0, a1, latest>
+# Possible options: <a0, a1, b0, latest>
 revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
 # Description: Specify type of memory used by XMCD description.
@@ -38,21 +36,20 @@ xmcd_settings:
     configurationBlockSize: 12
     # ----------------------------------===== configurationBlockType [Optional] =====-----------------------------------
     # Description: Offset: 12b, Width: 4b, Configuration block type: 0 - Simplified, 1 - Full
-    # - XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, (0): Simplified configuration block type
-    # - XMCD_CONFIG_BLOCK_TYPE_FULL, (1): Full configuration block type
-    # Possible options: <XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, XMCD_CONFIG_BLOCK_TYPE_FULL>
-    configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED
+    # - SIMPLIFIED, (0): Simplified configuration block type
+    # Possible options: <SIMPLIFIED>
+    configurationBlockType: SIMPLIFIED
     # -----------------------------------------===== instance [Optional] =====------------------------------------------
     # Description: Offset: 16b, Width: 4b, XSPI instance: 0 - XSPI0, 1 - XSPI1
-    # - XMCD_XSPI0, (0): XSPI0
-    # - XMCD_XSPI1, (1): XSPI1
-    # Possible options: <XMCD_XSPI0, XMCD_XSPI1>
-    instance: XMCD_XSPI0
+    # - XSPI0, (0): XSPI0
+    # - XSPI1, (1): XSPI1
+    # Possible options: <XSPI0, XSPI1>
+    instance: XSPI0
     # --------------------------------------===== memoryInterface [Optional] =====--------------------------------------
     # Description: Offset: 20b, Width: 4b, Memory interface: 0 - XSPI
-    # - XMCD_MEMORY_INTERFACE_XSPI, (0): XSPI memory interface
-    # Possible options: <XMCD_MEMORY_INTERFACE_XSPI>
-    memoryInterface: XMCD_MEMORY_INTERFACE_XSPI
+    # - XSPI, (0): XSPI memory interface
+    # Possible options: <XSPI>
+    memoryInterface: XSPI
     # ------------------------------------------===== version [Optional] =====------------------------------------------
     # Description: Offset: 24b, Width: 4b, Version, fixed value 0x0
     version: 0
@@ -67,41 +64,37 @@ xmcd_settings:
     sizeInMB: 0
     # -------------------------------------===== maximumFrequency [Optional] =====--------------------------------------
     # Description: Offset: 8b, Width: 4b, Maximum frequency (SoC specific definitions)
-    # - XMCD_XSPI_RAM_MAX_FREQ_30_MHZ, (1): 30MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_50_MHZ, (2): 50MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_60_MHZ, (3): 60MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_80_MHZ, (4): 80MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_100_MHZ, (5): 100MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_120_MHZ, (6): 120MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_133_MHZ, (7): 133MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_166_MHZ, (8): 166MHz
-    # - XMCD_XSPI_RAM_MAX_FREQ_200_MHZ, (9): 200MHz
-    # Possible options: <XMCD_XSPI_RAM_MAX_FREQ_30_MHZ, XMCD_XSPI_RAM_MAX_FREQ_50_MHZ, XMCD_XSPI_RAM_MAX_FREQ_60_MHZ,
-    # XMCD_XSPI_RAM_MAX_FREQ_80_MHZ, XMCD_XSPI_RAM_MAX_FREQ_100_MHZ, XMCD_XSPI_RAM_MAX_FREQ_120_MHZ,
-    # XMCD_XSPI_RAM_MAX_FREQ_133_MHZ, XMCD_XSPI_RAM_MAX_FREQ_166_MHZ, XMCD_XSPI_RAM_MAX_FREQ_200_MHZ>
-    maximumFrequency: XMCD_XSPI_RAM_MAX_FREQ_133_MHZ
+    # - MAX_FREQ_30_MHZ, (1): Maximum 30MHz
+    # - MAX_FREQ_50_MHZ, (2): Maximum 50MHz
+    # - MAX_FREQ_60_MHZ, (3): Maximum 60MHz
+    # - MAX_FREQ_80_MHZ, (4): Maximum 80MHz
+    # - MAX_FREQ_100_MHZ, (5): Maximum 100MHz
+    # - MAX_FREQ_120_MHZ, (6): Maximum 120MHz
+    # - MAX_FREQ_133_MHZ, (7): Maximum 133MHz
+    # - MAX_FREQ_166_MHZ, (8): Maximum 166MHz
+    # - MAX_FREQ_200_MHZ, (9): Maximum 200MHz
+    # Possible options: <MAX_FREQ_30_MHZ, MAX_FREQ_50_MHZ, MAX_FREQ_60_MHZ, MAX_FREQ_80_MHZ, MAX_FREQ_100_MHZ,
+    # MAX_FREQ_120_MHZ, MAX_FREQ_133_MHZ, MAX_FREQ_166_MHZ, MAX_FREQ_200_MHZ>
+    maximumFrequency: MAX_FREQ_133_MHZ
     # -------------------------------------------===== misc [Optional] =====--------------------------------------------
     # Description: Offset: 12b, Width: 4b, Misc. For HyperRAM: 0 - Differential clock driven, 1 - Single-ended clock
     # driven
-    # - XMCD_XSPI_RAM_MISC_DIFFERENTIAL_CLOCK, (0): Differential clock driven
-    # - XMCD_XSPI_RAM_MISC_SINGLE_ENDED_CLOCK, (1): Single-ended clock driven
-    # Possible options: <XMCD_XSPI_RAM_MISC_DIFFERENTIAL_CLOCK, XMCD_XSPI_RAM_MISC_SINGLE_ENDED_CLOCK>
-    misc: XMCD_XSPI_RAM_MISC_DIFFERENTIAL_CLOCK
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 4b, Reserved for future use
-    reserved: 0
+    # - DIFFERENTIAL_CLOCK, (0): Differential clock driven
+    # - SINGLE_ENDED_CLOCK, (1): Single-ended clock driven
+    # Possible options: <DIFFERENTIAL_CLOCK, SINGLE_ENDED_CLOCK>
+    misc: DIFFERENTIAL_CLOCK
     # ----------------------------------------===== deviceType [Optional] =====-----------------------------------------
     # Description: Offset: 20b, Width: 4b, Device type: 0 - HyperRAM, 1 - APMemory
-    # - XMCD_XSPI_RAM_DEVICE_TYPE_HYPER_RAM, (0): HyperRAM
-    # - XMCD_XSPI_RAM_DEVICE_TYPE_AP_MEMORY, (1): APMemory
-    # Possible options: <XMCD_XSPI_RAM_DEVICE_TYPE_HYPER_RAM, XMCD_XSPI_RAM_DEVICE_TYPE_AP_MEMORY>
-    deviceType: XMCD_XSPI_RAM_DEVICE_TYPE_HYPER_RAM
+    # - HYPER_RAM, (0): HyperRAM
+    # - AP_MEMORY, (1): APMemory
+    # Possible options: <HYPER_RAM, AP_MEMORY>
+    deviceType: HYPER_RAM
     # ----------------------------------------===== optionSize [Optional] =====-----------------------------------------
     # Description: Offset: 24b, Width: 4b, Option Size
-    # - XMCD_XSPI_OPTION_SIZE_1, (0): Option words = 1
-    # - XMCD_XSPI_OPTION_SIZE_2, (1): Option words = 2
-    # Possible options: <XMCD_XSPI_OPTION_SIZE_1, XMCD_XSPI_OPTION_SIZE_2>
-    optionSize: XMCD_XSPI_OPTION_SIZE_2
+    # - OPTION_SIZE_1, (0): Option words = 1
+    # - OPTION_SIZE_2, (1): Option words = 2
+    # Possible options: <OPTION_SIZE_1, OPTION_SIZE_2>
+    optionSize: OPTION_SIZE_2
     # --------------------------------------------===== tag [Optional] =====--------------------------------------------
     # Description: Offset: 28b, Width: 4b, Tag, fixed value 0xC
     tag: 12
@@ -115,19 +108,16 @@ xmcd_settings:
     # Description: Offset: 4b, Width: 4b, Write dummy cycles: 0 - Auto detection, Others - Specified dummy cycles
     writeDummyCycles: 0
     # ---------------------------------------===== maxCsLowTime [Optional] =====----------------------------------------
-    # Description: Offset: 8b, Width: 7b, Maximum CS Low time - value x 0.1 Î¼s
+    # Description: Offset: 8b, Width: 7b, Maximum CS Low time - value x 0.1
     maxCsLowTime: 0
     # -----------------------------------------===== busWidth [Optional] =====------------------------------------------
     # Description: Offset: 15b, Width: 1b, Bus width
-    # - XMCD_XSPI_BUS_WIDTH_X8, (0): X8 mode
-    # - XMCD_XSPI_BUS_WIDTH_X16, (1): X16 mode
-    # Possible options: <XMCD_XSPI_BUS_WIDTH_X8, XMCD_XSPI_BUS_WIDTH_X16>
-    busWidth: XMCD_XSPI_BUS_WIDTH_X8
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 24b, Width: 4b, Reserved for future use
-    reserved: 0
+    # - BUS_WIDTH_X8, (0): X8 mode
+    # - BUS_WIDTH_X16, (1): X16 mode
+    # Possible options: <BUS_WIDTH_X8, BUS_WIDTH_X16>
+    busWidth: BUS_WIDTH_X8
     # ---------------------------------------===== ramConnection [Optional] =====---------------------------------------
-    # Description: Offset: 28b, Width: 4b, RAM connection: 0 - PORTA
-    # - XMCD_XSPI_RAM_CONNECTION_PORTA, (0): PORTA
-    # Possible options: <XMCD_XSPI_RAM_CONNECTION_PORTA>
-    ramConnection: XMCD_XSPI_RAM_CONNECTION_PORTA
+    # Description: Offset: 28b, Width: 4b, RAM connection configuration
+    # - CONNECTION_PORTA, (0): RAM connection: 0 - PORTA
+    # Possible options: <CONNECTION_PORTA>
+    ramConnection: CONNECTION_PORTA

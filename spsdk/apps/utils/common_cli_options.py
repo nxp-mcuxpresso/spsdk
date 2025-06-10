@@ -58,7 +58,7 @@ class FamilyChoice(click.Choice):
             [x.name for x in choices]
         )
         self.all_families = choices
-        super().__init__(choices=list(set(x.name for x in choices)), case_sensitive=False)
+        super().__init__(choices=sorted(list(set(x.name for x in choices))), case_sensitive=False)
 
     def to_info_dict(self) -> dict[str, Any]:
         """Just prepare the dict with base info."""
@@ -69,12 +69,8 @@ class FamilyChoice(click.Choice):
         info_dict["case_sensitive"] = self.case_sensitive
         return info_dict
 
-    def get_metavar(self, param: click.Parameter) -> str:
-        """Prepare the help string.
-
-        :param param: Input click parameter object.
-        :return: Help string.
-        """
+    def get_metavar(self, param: click.Parameter, *args: Any, **kwargs: Any) -> str:
+        """Prepare the help string for family choice parameter."""
         if len(self.choices) > self.MAX_FAMILIES_TO_PRINT:
             choices_str = (
                 "|".join(self.choices[: self.MAX_FAMILIES_TO_PRINT])
@@ -972,7 +968,7 @@ class GetFamiliesCommand(click.Command):
                 )
             self.cmd_family_params[cmd_name] = family_param
             choice = cast(click.Choice, self.params[0].type)
-            cast(list, choice.choices).append(cmd_name)
+            choice.choices = tuple([*choice.choices, cmd_name])
 
     def handle_families_info(self, cmd_name: Optional[str] = None) -> None:
         """Show the supported families."""

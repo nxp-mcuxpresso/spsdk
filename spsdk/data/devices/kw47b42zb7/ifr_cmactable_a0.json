@@ -12,25 +12,24 @@
                     "name": "Hash update needed",
                     "description": "Hash update needed",
                     "offset_int": "0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 128,
                     "bitfields": [
                         {
                             "width": 32,
-                            "reset_value_int": "0xFFFFFFFF",
                             "id": "field000-bit0",
                             "name": "Hash update needed",
                             "description": "Hash update needed",
                             "values": [
                                 {
                                     "name": "NO HASH UPDATE NEEDED",
-                                    "value": "0x0",
+                                    "value": 0,
                                     "description": "No hash update needed"
                                 },
                                 {
                                     "name": "HASH UPDATE NEEDED",
-                                    "value": "0xFFFFFFFF",
+                                    "value": 4294967295,
                                     "description": "Hash update needed"
                                 }
                             ]
@@ -43,7 +42,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 96
                 },
@@ -53,7 +52,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x16",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 128
                 },
@@ -62,25 +61,24 @@
                     "name": "Hash update needed 1",
                     "description": "Hash update needed 1",
                     "offset_int": "0x20",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 128,
                     "bitfields": [
                         {
                             "width": 32,
-                            "reset_value_int": "0xFFFFFFFF",
                             "id": "field000-bit0",
                             "name": "Hash update needed 1",
                             "description": "Hash update needed 1",
                             "values": [
                                 {
                                     "name": "NO HASH UPDATE NEEDED",
-                                    "value": "0x0",
+                                    "value": 0,
                                     "description": "No hash update needed"
                                 },
                                 {
                                     "name": "HASH UPDATE NEEDED",
-                                    "value": "0xFFFFFFFF",
+                                    "value": 4294967295,
                                     "description": "Hash update needed"
                                 }
                             ]
@@ -93,7 +91,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x24",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 96
                 },
@@ -103,7 +101,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x30",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 128
                 },
@@ -112,25 +110,24 @@
                     "name": "Hash update needed 2",
                     "description": "Hash update needed",
                     "offset_int": "0x40",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 128,
                     "bitfields": [
                         {
                             "width": 32,
-                            "reset_value_int": "0xFFFFFFFF",
                             "id": "field000-bit0",
                             "name": "Hash update needed",
                             "description": "Hash update needed",
                             "values": [
                                 {
                                     "name": "NO HASH UPDATE NEEDED",
-                                    "value": "0x0",
+                                    "value": 0,
                                     "description": "No hash update needed"
                                 },
                                 {
                                     "name": "HASH UPDATE NEEDED",
-                                    "value": "0xFFFFFFFF",
+                                    "value": 4294967295,
                                     "description": "Hash update needed"
                                 }
                             ]
@@ -143,7 +140,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x44",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 96
                 },
@@ -153,7 +150,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x50",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 128
                 }

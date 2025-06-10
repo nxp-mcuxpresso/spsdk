@@ -49,16 +49,10 @@ features:
   # ======== FCF section ========
   fcf:
     reg_spec: fcf.json
-    grouped_registers:
-      - uid: fcf_backdoor_comparison_key
-        name: BACKDOOR_COMPARISON_KEY
-        width: 64
-        config_as_hexstring: true
-        description:
-          Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command and Unsecuring the Chip Using Backdoor Key Access.
-        sub_regs:
-          - field000
-          - field004
+    reg_spec_modification:
+      field000:
+        reverse: True
+        config_as_hexstring: True
 
   # ======== MBI section ========
   mbi:

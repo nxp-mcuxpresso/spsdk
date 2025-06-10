@@ -62,17 +62,6 @@ load_addr:
       title: Loading address of application
       description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
       template_value: 0
-  required: [outputImageExecutionAddress]
-
-load_addr_optional:
-  type: object
-  title: Basic Settings
-  properties:
-    outputImageExecutionAddress:
-      type: [number, string]
-      title: Loading address of application
-      description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
-      template_value: 0
 
 firmware_version:
   type: object
@@ -205,6 +194,7 @@ hmac:
         Could be defined as hex number and also as hex/binary file.\n
         Used algorithm by tool the get HMAC Key; AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)
       template_value: otp_master_key.bin
+      format: file-or-hex-value
 
 hmac_mandatory:
   type: object
@@ -218,6 +208,7 @@ hmac_mandatory:
         Could be defined as hex number and also as hex/binary file.\n
         Used algorithm by tool the get HMAC Key; AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)
       template_value: otp_master_key.bin
+      format: file-or-hex-value
   required: [outputImageEncryptionKeyFile]
 
 ctr_init_vector:
@@ -229,6 +220,7 @@ ctr_init_vector:
       title: The output image encryption initial vector for encryption counter
       description: The initial vector for encryption counter. Could be defined as hex number and also as hex/binary file
       template_value: "0xc3df2316fd40b15586cb5ae49483aee2"
+      format: file-or-hex-value
 
 app_table:
   type: object
@@ -237,7 +229,7 @@ app_table:
     applicationTable:
       type: array
       title: The list of additional binaries
-      description: This is software future of RTxxx family that NXP SDK startup code(not ROM) could load additional images.
+      description: This is software feature of RTxxx family that NXP SDK startup code (not ROM) could load additional images.
       items:
         type: object
         required: [binary, destAddress, load]

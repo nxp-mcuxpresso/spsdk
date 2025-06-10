@@ -371,8 +371,8 @@ def famode(
         raise SPSDKAppError(f"Set fault analysis mode failed: {e}") from e
 
 
-@cmd_group.command(name="ispmode", no_args_is_help=True)
-@click.option("-m", "--mode", type=INT(), required=True)
+@cmd_group.command(name="ispmode", no_args_is_help=False)
+@click.option("-m", "--mode", type=INT(), required=False, default="1")
 @click.pass_obj
 def ispmode_command(pass_obj: dict, mode: int) -> None:
     """Enter ISP Mode."""

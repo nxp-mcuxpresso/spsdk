@@ -23,9 +23,9 @@ pipeline {
         stage('Codecheck') {
             steps {
                 withVenv(
-        			'uv pip install tox-uv',
-        			'tox --recreate -e py39 -- --info-check gitcov'
-    			)
+                    'uv pip install uv==0.7.0',
+                    'tox --recreate -e py39 -- --info-check gitcov'
+                )
             }
         }
     }

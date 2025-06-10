@@ -985,7 +985,6 @@ def ele_gen_keyblob_dek(
 @click.option(
     "-r",
     "--read-only",
-    type=bool,
     is_flag=True,
     default=False,
     help="Configuration is read only",
@@ -993,7 +992,6 @@ def ele_gen_keyblob_dek(
 @click.option(
     "-d",
     "--decryption_enabled",
-    type=bool,
     is_flag=True,
     default=False,
     help="Decryption is enabled",
@@ -1001,7 +999,6 @@ def ele_gen_keyblob_dek(
 @click.option(
     "-v",
     "--valid",
-    type=bool,
     is_flag=True,
     default=False,
     help="Configuration is valid",
@@ -1240,7 +1237,6 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 @click.option(
     "-b",
     "--bypass",
-    type=bool,
     is_flag=True,
     default=False,
     help="Bypass Encryption",
@@ -1248,7 +1244,6 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 @click.option(
     "-l",
     "--locked",
-    type=bool,
     is_flag=True,
     default=False,
     help="Lock configuration",

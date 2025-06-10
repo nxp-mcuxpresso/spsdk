@@ -1,6 +1,7 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  XMCD converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
@@ -23,7 +24,6 @@ xmcd_settings: # [Required], rt116x
       sizeInMB: 0  # [Optional], sizeInMB; Size in MB: 0 - Auto detection, Others - Size in MB
       maximumFrequency: 7 # [Optional], maximumFrequency; Maximum frequency (SoC specific definitions)
       misc: 0 # [Optional], Misc. For HyperRAM: 0 - 1.8V, 1 - 3V
-      reserved: 0 # [Optional], Reserved for future use
       deviceType: 0 # [Optional], deviceType; Device type: 0 - HyperRAM, 1 - APMemory
       optionSize: 0 # [Optional], optionSize; Option Size
       tag: 12 # [Optional], Tag, fixed value 0xC

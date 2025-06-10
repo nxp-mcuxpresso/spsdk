@@ -47,7 +47,7 @@ bca:
   # Description: Offset: 0x00000011, Width: 8b; I2C Slave Address
   I2C_SLAVE_ADDRESS: '0xAA'
   # --------------------------------===== PERIPHERAL_DETECTION_TIMEOUT [Optional] =====---------------------------------
-  # Description: Offset: 0x00000012, Width: 16b; Timeout in miliseconds for active peripheral detection. If 0xFFFF,
+  # Description: Offset: 0x00000012, Width: 16b; Timeout in milliseconds for active peripheral detection. If 0xFFFF,
   # defaults to 5 seconds.
   PERIPHERAL_DETECTION_TIMEOUT: '0x5555'
   # ---------------------------------------------===== USB [Optional] =====---------------------------------------------

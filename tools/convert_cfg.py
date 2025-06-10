@@ -433,7 +433,6 @@ def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
 @click.option(
     "--rename",
     is_flag=True,
-    type=bool,
     help="Add to original file additional extension '.converted'",
 )
 def main(

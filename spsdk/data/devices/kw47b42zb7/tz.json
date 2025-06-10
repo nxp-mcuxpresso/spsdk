@@ -10,2714 +10,2714 @@
                 {
                     "id": "field000",
                     "offset_int": "0x0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Start of block (tzm_magic)",
                     "description": "TrustZone register - Start of block (tzm_magic)",
-                    "reset_value_int": "0x4d2d5a54"
+                    "default_value_int": "0x4d2d5a54"
                 },
                 {
                     "id": "field004",
                     "offset_int": "0x4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "TZM info which data are initialized (tzm_control)",
                     "description": "TrustZone register - TZM info which data are initialized (tzm_control)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field008",
                     "offset_int": "0x8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Secure vector table address (cm33_vtor_addr)",
                     "description": "TrustZone register - CM33 Secure vector table address (cm33_vtor_addr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field00C",
                     "offset_int": "0xc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Non-secure vector table address (cm33_vtor_ns_addr)",
                     "description": "TrustZone register - CM33 Non-secure vector table address (cm33_vtor_ns_addr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field010",
                     "offset_int": "0x10",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0)",
                     "description": "TrustZone register - CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field014",
                     "offset_int": "0x14",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1)",
                     "description": "TrustZone register - CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field018",
                     "offset_int": "0x18",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Interrupt target non-secure register 2 (cm33_nvic_itns2)",
                     "description": "TrustZone register - CM33 Interrupt target non-secure register 2 (cm33_nvic_itns2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field01C",
                     "offset_int": "0x1c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Miscellaneous CM33 settings (cm33_misc_ctrl)",
                     "description": "TrustZone register - Miscellaneous CM33 settings (cm33_misc_ctrl)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field020",
                     "offset_int": "0x20",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Non-secure Access Control Register (cm33_nsacr)",
                     "description": "TrustZone register - CM33 Non-secure Access Control Register (cm33_nsacr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field024",
                     "offset_int": "0x24",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Coprocessor Power Control Register (cm33_cppwr)",
                     "description": "TrustZone register - CM33 Coprocessor Power Control Register (cm33_cppwr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field028",
                     "offset_int": "0x28",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "CM33 Coprocessor Access Control Register (cm33_cpacr)",
                     "description": "TrustZone register - CM33 Coprocessor Access Control Register (cm33_cpacr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field02C",
                     "offset_int": "0x2c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Control Register (cm33_mpu_ctrl)",
                     "description": "TrustZone register - MPU Control Register (cm33_mpu_ctrl)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field030",
                     "offset_int": "0x30",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0)",
                     "description": "TrustZone register - MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field034",
                     "offset_int": "0x34",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1)",
                     "description": "TrustZone register - MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field038",
                     "offset_int": "0x38",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 0 Base Address Register (cm33_mpu_rbar0)",
                     "description": "TrustZone register - MPU Region 0 Base Address Register (cm33_mpu_rbar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field03C",
                     "offset_int": "0x3c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 0 Limit Address Register (cm33_mpu_rlar0)",
                     "description": "TrustZone register - MPU Region 0 Limit Address Register (cm33_mpu_rlar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field040",
                     "offset_int": "0x40",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 1 Base Address Register (cm33_mpu_rbar1)",
                     "description": "TrustZone register - MPU Region 1 Base Address Register (cm33_mpu_rbar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field044",
                     "offset_int": "0x44",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 1 Limit Address Register (cm33_mpu_rlar1)",
                     "description": "TrustZone register - MPU Region 1 Limit Address Register (cm33_mpu_rlar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field048",
                     "offset_int": "0x48",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 2 Base Address Register (cm33_mpu_rbar2)",
                     "description": "TrustZone register - MPU Region 2 Base Address Register (cm33_mpu_rbar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field04C",
                     "offset_int": "0x4c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 2 Limit Address Register (cm33_mpu_rlar2)",
                     "description": "TrustZone register - MPU Region 2 Limit Address Register (cm33_mpu_rlar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field050",
                     "offset_int": "0x50",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 3 Base Address Register (cm33_mpu_rbar3)",
                     "description": "TrustZone register - MPU Region 3 Base Address Register (cm33_mpu_rbar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field054",
                     "offset_int": "0x54",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 3 Limit Address Register (cm33_mpu_rlar3)",
                     "description": "TrustZone register - MPU Region 3 Limit Address Register (cm33_mpu_rlar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field058",
                     "offset_int": "0x58",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 4 Base Address Register (cm33_mpu_rbar4)",
                     "description": "TrustZone register - MPU Region 4 Base Address Register (cm33_mpu_rbar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field05C",
                     "offset_int": "0x5c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 4 Limit Address Register (cm33_mpu_rlar4)",
                     "description": "TrustZone register - MPU Region 4 Limit Address Register (cm33_mpu_rlar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field060",
                     "offset_int": "0x60",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 5 Base Address Register (cm33_mpu_rbar5)",
                     "description": "TrustZone register - MPU Region 5 Base Address Register (cm33_mpu_rbar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field064",
                     "offset_int": "0x64",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 5 Limit Address Register (cm33_mpu_rlar5)",
                     "description": "TrustZone register - MPU Region 5 Limit Address Register (cm33_mpu_rlar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field068",
                     "offset_int": "0x68",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 6 Base Address Register (cm33_mpu_rbar6)",
                     "description": "TrustZone register - MPU Region 6 Base Address Register (cm33_mpu_rbar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field06C",
                     "offset_int": "0x6c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 6 Limit Address Register (cm33_mpu_rlar6)",
                     "description": "TrustZone register - MPU Region 6 Limit Address Register (cm33_mpu_rlar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field070",
                     "offset_int": "0x70",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 7 Base Address Register (cm33_mpu_rbar7)",
                     "description": "TrustZone register - MPU Region 7 Base Address Register (cm33_mpu_rbar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field074",
                     "offset_int": "0x74",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 7 Limit Address Register (cm33_mpu_rlar7)",
                     "description": "TrustZone register - MPU Region 7 Limit Address Register (cm33_mpu_rlar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field078",
                     "offset_int": "0x78",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Control Register (cm33_mpu_ctrl_ns)",
                     "description": "TrustZone register - Non-secure MPU Control Register (cm33_mpu_ctrl_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field07C",
                     "offset_int": "0x7c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0_ns)",
                     "description": "TrustZone register - Non-secure MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field080",
                     "offset_int": "0x80",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1_ns)",
                     "description": "TrustZone register - Non-secure MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field084",
                     "offset_int": "0x84",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 0 Base Address Register (cm33_mpu_rbar0_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 0 Base Address Register (cm33_mpu_rbar0_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field088",
                     "offset_int": "0x88",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 0 Limit Address Register(cm33_mpu_rlar0_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 0 Limit Address Register(cm33_mpu_rlar0_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field08C",
                     "offset_int": "0x8c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 1 Base Address Register (cm33_mpu_rbar1_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 1 Base Address Register (cm33_mpu_rbar1_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field090",
                     "offset_int": "0x90",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 1 Limit Address Register(cm33_mpu_rlar1_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 1 Limit Address Register(cm33_mpu_rlar1_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field094",
                     "offset_int": "0x94",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 2 Base Address Register (cm33_mpu_rbar2_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 2 Base Address Register (cm33_mpu_rbar2_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field098",
                     "offset_int": "0x98",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 2 Limit Address Register(cm33_mpu_rlar2_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 2 Limit Address Register(cm33_mpu_rlar2_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field09C",
                     "offset_int": "0x9c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 3 Base Address Register (cm33_mpu_rbar3_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 3 Base Address Register (cm33_mpu_rbar3_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0A0",
                     "offset_int": "0xa0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 3 Limit Address Register(cm33_mpu_rlar3_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 3 Limit Address Register(cm33_mpu_rlar3_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0A4",
                     "offset_int": "0xa4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 4 Base Address Register (cm33_mpu_rbar4_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 4 Base Address Register (cm33_mpu_rbar4_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0A8",
                     "offset_int": "0xa8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 4 Limit Address Register(cm33_mpu_rlar4_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 4 Limit Address Register(cm33_mpu_rlar4_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0AC",
                     "offset_int": "0xac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 5 Base Address Register (cm33_mpu_rbar5_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 5 Base Address Register (cm33_mpu_rbar5_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0B0",
                     "offset_int": "0xb0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 5 Limit Address Register(cm33_mpu_rlar5_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 5 Limit Address Register(cm33_mpu_rlar5_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0B4",
                     "offset_int": "0xb4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 6 Base Address Register (cm33_mpu_rbar6_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 6 Base Address Register (cm33_mpu_rbar6_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0B8",
                     "offset_int": "0xb8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 6 Limit Address Register(cm33_mpu_rlar6_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 6 Limit Address Register(cm33_mpu_rlar6_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0BC",
                     "offset_int": "0xbc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 7 Base Address Register (cm33_mpu_rbar7_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 7 Base Address Register (cm33_mpu_rbar7_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0C0",
                     "offset_int": "0xc0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 7 Limit Address Register(cm33_mpu_rlar7_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 7 Limit Address Register(cm33_mpu_rlar7_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0C4",
                     "offset_int": "0xc4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Control Register (cm33_sau_ctrl)",
                     "description": "TrustZone register - SAU Control Register (cm33_sau_ctrl)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0C8",
                     "offset_int": "0xc8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 0 Base Address Register (cm33_sau_rbar0)",
                     "description": "TrustZone register - SAU Region 0 Base Address Register (cm33_sau_rbar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0CC",
                     "offset_int": "0xcc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 0 Limit Address Register (cm33_sau_rlar0)",
                     "description": "TrustZone register - SAU Region 0 Limit Address Register (cm33_sau_rlar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0D0",
                     "offset_int": "0xd0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 1 Base Address Register (cm33_sau_rbar1)",
                     "description": "TrustZone register - SAU Region 1 Base Address Register (cm33_sau_rbar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0D4",
                     "offset_int": "0xd4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 1 Limit Address Register (cm33_sau_rlar1)",
                     "description": "TrustZone register - SAU Region 1 Limit Address Register (cm33_sau_rlar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0D8",
                     "offset_int": "0xd8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 2 Base Address Register (cm33_sau_rbar2)",
                     "description": "TrustZone register - SAU Region 2 Base Address Register (cm33_sau_rbar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0DC",
                     "offset_int": "0xdc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 2 Limit Address Register (cm33_sau_rlar2)",
                     "description": "TrustZone register - SAU Region 2 Limit Address Register (cm33_sau_rlar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E0",
                     "offset_int": "0xe0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 3 Base Address Register (cm33_sau_rbar3)",
                     "description": "TrustZone register - SAU Region 3 Base Address Register (cm33_sau_rbar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E4",
                     "offset_int": "0xe4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 3 Limit Address Register (cm33_sau_rlar3)",
                     "description": "TrustZone register - SAU Region 3 Limit Address Register (cm33_sau_rlar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E8",
                     "offset_int": "0xe8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 4 Base Address Register (cm33_sau_rbar4)",
                     "description": "TrustZone register - SAU Region 4 Base Address Register (cm33_sau_rbar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0EC",
                     "offset_int": "0xec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 4 Limit Address Register (cm33_sau_rlar4)",
                     "description": "TrustZone register - SAU Region 4 Limit Address Register (cm33_sau_rlar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0F0",
                     "offset_int": "0xf0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 5 Base Address Register (cm33_sau_rbar5)",
                     "description": "TrustZone register - SAU Region 5 Base Address Register (cm33_sau_rbar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0F4",
                     "offset_int": "0xf4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 5 Limit Address Register (cm33_sau_rlar5)",
                     "description": "TrustZone register - SAU Region 5 Limit Address Register (cm33_sau_rlar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0F8",
                     "offset_int": "0xf8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 6 Base Address Register (cm33_sau_rbar6)",
                     "description": "TrustZone register - SAU Region 6 Base Address Register (cm33_sau_rbar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0FC",
                     "offset_int": "0xfc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 6 Limit Address Register (cm33_sau_rlar6)",
                     "description": "TrustZone register - SAU Region 6 Limit Address Register (cm33_sau_rlar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field100",
                     "offset_int": "0x100",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 7 Base Address Register (cm33_sau_rbar7)",
                     "description": "TrustZone register - SAU Region 7 Base Address Register (cm33_sau_rbar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field104",
                     "offset_int": "0x104",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 7 Limit Address Register (cm33_sau_rlar7)",
                     "description": "TrustZone register - SAU Region 7 Limit Address Register (cm33_sau_rlar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field108",
                     "offset_int": "0x108",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "TRDC Control Register (cr)",
                     "description": "TrustZone register - TRDC Control Register (cr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field10C",
                     "offset_int": "0x10c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "TRDC IDAU Control Register (idau_cr)",
                     "description": "TrustZone register - TRDC IDAU Control Register (idau_cr)",
-                    "reset_value_int": "0x8"
+                    "default_value_int": "0x8"
                 },
                 {
                     "id": "field110",
                     "offset_int": "0x110",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master 0 Domain Assignment Register (mda_w0_0_dfmt0)",
                     "description": "TrustZone register - Master 0 Domain Assignment Register (mda_w0_0_dfmt0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field114",
                     "offset_int": "0x114",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master 1 Domain Assignment Register (mda_w0_1_dfmt1)",
                     "description": "TrustZone register - Master 1 Domain Assignment Register (mda_w0_1_dfmt1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field118",
                     "offset_int": "0x118",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master 2 Domain Assignment Register (mda_w0_2_dfmt1)",
                     "description": "TrustZone register - Master 2 Domain Assignment Register (mda_w0_2_dfmt1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field11C",
                     "offset_int": "0x11c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master 3 Domain Assignment Register (mda_w0_3_dfmt1)",
                     "description": "TrustZone register - Master 3 Domain Assignment Register (mda_w0_3_dfmt1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field120",
                     "offset_int": "0x120",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master 4 Domain Assignment Register (mda_w0_4_dfmt1)",
                     "description": "TrustZone register - Master 4 Domain Assignment Register (mda_w0_4_dfmt1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field124",
                     "offset_int": "0x124",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 0 (mbc0_memn_glbac0)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 0 (mbc0_memn_glbac0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field128",
                     "offset_int": "0x128",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 1 (mbc0_memn_glbac1)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 1 (mbc0_memn_glbac1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field12C",
                     "offset_int": "0x12c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 2 (mbc0_memn_glbac2)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 2 (mbc0_memn_glbac2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field130",
                     "offset_int": "0x130",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 3 (mbc0_memn_glbac3)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 3 (mbc0_memn_glbac3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field134",
                     "offset_int": "0x134",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 4 (mbc0_memn_glbac4)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 4 (mbc0_memn_glbac4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field138",
                     "offset_int": "0x138",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 5 (mbc0_memn_glbac5)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 5 (mbc0_memn_glbac5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field13C",
                     "offset_int": "0x13c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 6 (mbc0_memn_glbac6)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 6 (mbc0_memn_glbac6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field140",
                     "offset_int": "0x140",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Global Access Control Register 7 (mbc0_memn_glbac7)",
                     "description": "TrustZone register - MBC 0 Global Access Control Register 7 (mbc0_memn_glbac7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field144",
                     "offset_int": "0x144",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 0 (mbc0_0_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 0 (mbc0_0_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field148",
                     "offset_int": "0x148",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 1 (mbc0_0_mem0_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 1 (mbc0_0_mem0_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field14C",
                     "offset_int": "0x14c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 2 (mbc0_0_mem0_blk_cfg_w2)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 2 (mbc0_0_mem0_blk_cfg_w2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field150",
                     "offset_int": "0x150",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 3 (mbc0_0_mem0_blk_cfg_w3)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 3 (mbc0_0_mem0_blk_cfg_w3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field154",
                     "offset_int": "0x154",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 4 (mbc0_0_mem0_blk_cfg_w4)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 4 (mbc0_0_mem0_blk_cfg_w4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field158",
                     "offset_int": "0x158",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 5 (mbc0_0_mem0_blk_cfg_w5)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 5 (mbc0_0_mem0_blk_cfg_w5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field15C",
                     "offset_int": "0x15c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 6 (mbc0_0_mem0_blk_cfg_w6)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 6 (mbc0_0_mem0_blk_cfg_w6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field160",
                     "offset_int": "0x160",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 0 Configuration Word Register 7 (mbc0_0_mem0_blk_cfg_w7)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 0 Configuration Word Register 7 (mbc0_0_mem0_blk_cfg_w7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field164",
                     "offset_int": "0x164",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 1 Configuration Word Register 0 (mbc0_0_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 1 Configuration Word Register 0 (mbc0_0_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field168",
                     "offset_int": "0x168",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 2 Configuration Word Register 0 (mbc0_0_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 2 Configuration Word Register 0 (mbc0_0_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field16C",
                     "offset_int": "0x16c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 3 Configuration Word Register 0 (mbc0_0_mem3_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 3 Configuration Word Register 0 (mbc0_0_mem3_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field170",
                     "offset_int": "0x170",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 0 Slave 3 Configuration Word Register 1 (mbc0_0_mem3_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 0 Domain 0 Slave 3 Configuration Word Register 1 (mbc0_0_mem3_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field174",
                     "offset_int": "0x174",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 0 (mbc0_1_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 0 (mbc0_1_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field178",
                     "offset_int": "0x178",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 1 (mbc0_1_mem0_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 1 (mbc0_1_mem0_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field17C",
                     "offset_int": "0x17c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 2 (mbc0_1_mem0_blk_cfg_w2)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 2 (mbc0_1_mem0_blk_cfg_w2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field180",
                     "offset_int": "0x180",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 3 (mbc0_1_mem0_blk_cfg_w3)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 3 (mbc0_1_mem0_blk_cfg_w3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field184",
                     "offset_int": "0x184",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 4 (mbc0_1_mem0_blk_cfg_w4)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 4 (mbc0_1_mem0_blk_cfg_w4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field188",
                     "offset_int": "0x188",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 5 (mbc0_1_mem0_blk_cfg_w5)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 5 (mbc0_1_mem0_blk_cfg_w5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field18C",
                     "offset_int": "0x18c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 6 (mbc0_1_mem0_blk_cfg_w6)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 6 (mbc0_1_mem0_blk_cfg_w6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field190",
                     "offset_int": "0x190",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 0 Configuration Word Register 7 (mbc0_1_mem0_blk_cfg_w7)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 0 Configuration Word Register 7 (mbc0_1_mem0_blk_cfg_w7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field194",
                     "offset_int": "0x194",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 1 Configuration Word Register 0 (mbc0_1_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 1 Configuration Word Register 0 (mbc0_1_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field198",
                     "offset_int": "0x198",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 2 Configuration Word Register 0 (mbc0_1_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 2 Configuration Word Register 0 (mbc0_1_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field19C",
                     "offset_int": "0x19c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 3 Configuration Word Register 0 (mbc0_1_mem3_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 3 Configuration Word Register 0 (mbc0_1_mem3_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A0",
                     "offset_int": "0x1a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 1 Slave 3 Configuration Word Register 1 (mbc0_1_mem3_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 0 Domain 1 Slave 3 Configuration Word Register 1 (mbc0_1_mem3_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A4",
                     "offset_int": "0x1a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 0 (mbc0_2_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 0 (mbc0_2_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A8",
                     "offset_int": "0x1a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 1 (mbc0_2_mem0_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 1 (mbc0_2_mem0_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1AC",
                     "offset_int": "0x1ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 2 (mbc0_2_mem0_blk_cfg_w2)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 2 (mbc0_2_mem0_blk_cfg_w2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B0",
                     "offset_int": "0x1b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 3 (mbc0_2_mem0_blk_cfg_w3)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 3 (mbc0_2_mem0_blk_cfg_w3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B4",
                     "offset_int": "0x1b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 4 (mbc0_2_mem0_blk_cfg_w4)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 4 (mbc0_2_mem0_blk_cfg_w4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B8",
                     "offset_int": "0x1b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 5 (mbc0_2_mem0_blk_cfg_w5)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 5 (mbc0_2_mem0_blk_cfg_w5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1BC",
                     "offset_int": "0x1bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 6 (mbc0_2_mem0_blk_cfg_w6)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 6 (mbc0_2_mem0_blk_cfg_w6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C0",
                     "offset_int": "0x1c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 0 Configuration Word Register 7 (mbc0_2_mem0_blk_cfg_w7)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 0 Configuration Word Register 7 (mbc0_2_mem0_blk_cfg_w7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C4",
                     "offset_int": "0x1c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 1 Configuration Word Register 0 (mbc0_2_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 1 Configuration Word Register 0 (mbc0_2_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C8",
                     "offset_int": "0x1c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 2 Configuration Word Register 0 (mbc0_2_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 2 Configuration Word Register 0 (mbc0_2_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1CC",
                     "offset_int": "0x1cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 3 Configuration Word Register 0 (mbc0_2_mem3_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 3 Configuration Word Register 0 (mbc0_2_mem3_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D0",
                     "offset_int": "0x1d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 0 Domain 2 Slave 3 Configuration Word Register 1 (mbc0_2_mem3_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 0 Domain 2 Slave 3 Configuration Word Register 1 (mbc0_2_mem3_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D4",
                     "offset_int": "0x1d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 0 (mbc1_memn_glbac0)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 0 (mbc1_memn_glbac0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D8",
                     "offset_int": "0x1d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 1 (mbc1_memn_glbac1)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 1 (mbc1_memn_glbac1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1DC",
                     "offset_int": "0x1dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 2 (mbc1_memn_glbac2)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 2 (mbc1_memn_glbac2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E0",
                     "offset_int": "0x1e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 3 (mbc1_memn_glbac3)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 3 (mbc1_memn_glbac3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E4",
                     "offset_int": "0x1e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 4 (mbc1_memn_glbac4)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 4 (mbc1_memn_glbac4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E8",
                     "offset_int": "0x1e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 5 (mbc1_memn_glbac5)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 5 (mbc1_memn_glbac5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1EC",
                     "offset_int": "0x1ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 6 (mbc1_memn_glbac6)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 6 (mbc1_memn_glbac6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F0",
                     "offset_int": "0x1f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Global Access Control Register 7 (mbc1_memn_glbac7)",
                     "description": "TrustZone register - MBC 1 Global Access Control Register 7 (mbc1_memn_glbac7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F4",
                     "offset_int": "0x1f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 0 Slave 0 Configuration Word Register 0 (mbc1_0_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 0 Slave 0 Configuration Word Register 0 (mbc1_0_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F8",
                     "offset_int": "0x1f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 0 Slave 1 Configuration Word Register 0 (mbc1_0_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 0 Slave 1 Configuration Word Register 0 (mbc1_0_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1FC",
                     "offset_int": "0x1fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 0 Slave 1 Configuration Word Register 1 (mbc1_0_mem1_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 1 Domain 0 Slave 1 Configuration Word Register 1 (mbc1_0_mem1_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field200",
                     "offset_int": "0x200",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 0 Slave 2 Configuration Word Register 0 (mbc1_0_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 0 Slave 2 Configuration Word Register 0 (mbc1_0_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field204",
                     "offset_int": "0x204",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 0 Slave 2 Configuration Word Register 1 (mbc1_0_mem2_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 1 Domain 0 Slave 2 Configuration Word Register 1 (mbc1_0_mem2_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field208",
                     "offset_int": "0x208",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 0 Slave 3 Configuration Word Register 0 (mbc1_0_mem3_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 0 Slave 3 Configuration Word Register 0 (mbc1_0_mem3_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field20C",
                     "offset_int": "0x20c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 1 Slave 0 Configuration Word Register 0 (mbc1_1_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 1 Slave 0 Configuration Word Register 0 (mbc1_1_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field210",
                     "offset_int": "0x210",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 1 Slave 1 Configuration Word Register 0 (mbc1_1_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 1 Slave 1 Configuration Word Register 0 (mbc1_1_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field214",
                     "offset_int": "0x214",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 1 Slave 1 Configuration Word Register 1 (mbc1_1_mem1_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 1 Domain 1 Slave 1 Configuration Word Register 1 (mbc1_1_mem1_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field218",
                     "offset_int": "0x218",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 1 Slave 2 Configuration Word Register 0 (mbc1_1_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 1 Slave 2 Configuration Word Register 0 (mbc1_1_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field21C",
                     "offset_int": "0x21c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 1 Slave 2 Configuration Word Register 1 (mbc1_1_mem2_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 1 Domain 1 Slave 2 Configuration Word Register 1 (mbc1_1_mem2_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field220",
                     "offset_int": "0x220",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 1 Slave 3 Configuration Word Register 0 (mbc1_1_mem3_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 1 Slave 3 Configuration Word Register 0 (mbc1_1_mem3_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field224",
                     "offset_int": "0x224",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 2 Slave 0 Configuration Word Register 0 (mbc1_2_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 2 Slave 0 Configuration Word Register 0 (mbc1_2_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field228",
                     "offset_int": "0x228",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 2 Slave 1 Configuration Word Register 0 (mbc1_2_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 2 Slave 1 Configuration Word Register 0 (mbc1_2_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field22C",
                     "offset_int": "0x22c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 2 Slave 1 Configuration Word Register 1 (mbc1_2_mem1_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 1 Domain 2 Slave 1 Configuration Word Register 1 (mbc1_2_mem1_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field230",
                     "offset_int": "0x230",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 2 Slave 2 Configuration Word Register 0 (mbc1_2_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 2 Slave 2 Configuration Word Register 0 (mbc1_2_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field234",
                     "offset_int": "0x234",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 2 Slave 2 Configuration Word Register 1 (mbc1_2_mem2_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 1 Domain 2 Slave 2 Configuration Word Register 1 (mbc1_2_mem2_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field238",
                     "offset_int": "0x238",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 1 Domain 2 Slave 3 Configuration Word Register 0 (mbc1_2_mem3_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 1 Domain 2 Slave 3 Configuration Word Register 0 (mbc1_2_mem3_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field23C",
                     "offset_int": "0x23c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 0 (mbc2_memn_glbac0)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 0 (mbc2_memn_glbac0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field240",
                     "offset_int": "0x240",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 1 (mbc2_memn_glbac1)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 1 (mbc2_memn_glbac1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field244",
                     "offset_int": "0x244",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 2 (mbc2_memn_glbac2)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 2 (mbc2_memn_glbac2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field248",
                     "offset_int": "0x248",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 3 (mbc2_memn_glbac3)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 3 (mbc2_memn_glbac3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field24C",
                     "offset_int": "0x24c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 4 (mbc2_memn_glbac4)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 4 (mbc2_memn_glbac4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field250",
                     "offset_int": "0x250",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 5 (mbc2_memn_glbac5)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 5 (mbc2_memn_glbac5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field254",
                     "offset_int": "0x254",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 6 (mbc2_memn_glbac6)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 6 (mbc2_memn_glbac6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field258",
                     "offset_int": "0x258",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Global Access Control Register 7 (mbc2_memn_glbac7)",
                     "description": "TrustZone register - MBC 2 Global Access Control Register 7 (mbc2_memn_glbac7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field25C",
                     "offset_int": "0x25c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 0 (mbc2_0_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 0 (mbc2_0_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field260",
                     "offset_int": "0x260",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 1 (mbc2_0_mem0_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 1 (mbc2_0_mem0_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field264",
                     "offset_int": "0x264",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 2 (mbc2_0_mem0_blk_cfg_w2)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 2 (mbc2_0_mem0_blk_cfg_w2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field268",
                     "offset_int": "0x268",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 3 (mbc2_0_mem0_blk_cfg_w3)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 3 (mbc2_0_mem0_blk_cfg_w3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field26C",
                     "offset_int": "0x26c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 4 (mbc2_0_mem0_blk_cfg_w4)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 4 (mbc2_0_mem0_blk_cfg_w4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field270",
                     "offset_int": "0x270",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 5 (mbc2_0_mem0_blk_cfg_w5)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 5 (mbc2_0_mem0_blk_cfg_w5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field274",
                     "offset_int": "0x274",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 6 (mbc2_0_mem0_blk_cfg_w6)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 6 (mbc2_0_mem0_blk_cfg_w6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field278",
                     "offset_int": "0x278",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 7 (mbc2_0_mem0_blk_cfg_w7)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 7 (mbc2_0_mem0_blk_cfg_w7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field27C",
                     "offset_int": "0x27c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 8 (mbc2_0_mem0_blk_cfg_w8)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 8 (mbc2_0_mem0_blk_cfg_w8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field280",
                     "offset_int": "0x280",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 9 (mbc2_0_mem0_blk_cfg_w9)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 9 (mbc2_0_mem0_blk_cfg_w9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field284",
                     "offset_int": "0x284",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 0 Configuration Word Register 10 (mbc2_0_mem0_blk_cfg_w10)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 0 Configuration Word Register 10 (mbc2_0_mem0_blk_cfg_w10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field288",
                     "offset_int": "0x288",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 1 Configuration Word Register 0 (mbc2_0_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 1 Configuration Word Register 0 (mbc2_0_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field28C",
                     "offset_int": "0x28c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 2 Configuration Word Register 0 (mbc2_0_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 2 Configuration Word Register 0 (mbc2_0_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field290",
                     "offset_int": "0x290",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 0 Slave 2 Configuration Word Register 1 (mbc2_0_mem2_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 2 Domain 0 Slave 2 Configuration Word Register 1 (mbc2_0_mem2_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field294",
                     "offset_int": "0x294",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_1_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_1_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field298",
                     "offset_int": "0x298",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_1_mem0_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_1_mem0_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field29C",
                     "offset_int": "0x29c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_1_mem0_blk_cfg_w2)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_1_mem0_blk_cfg_w2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2A0",
                     "offset_int": "0x2a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_1_mem0_blk_cfg_w3)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_1_mem0_blk_cfg_w3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2A4",
                     "offset_int": "0x2a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_1_mem0_blk_cfg_w4)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_1_mem0_blk_cfg_w4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2A8",
                     "offset_int": "0x2a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_1_mem0_blk_cfg_w5)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_1_mem0_blk_cfg_w5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2AC",
                     "offset_int": "0x2ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_1_mem0_blk_cfg_w6)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_1_mem0_blk_cfg_w6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2B0",
                     "offset_int": "0x2b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_1_mem0_blk_cfg_w7)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_1_mem0_blk_cfg_w7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2B4",
                     "offset_int": "0x2b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_1_mem0_blk_cfg_w8)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_1_mem0_blk_cfg_w8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2B8",
                     "offset_int": "0x2b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_1_mem0_blk_cfg_w9)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_1_mem0_blk_cfg_w9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2BC",
                     "offset_int": "0x2bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 10 (mbc2_1_mem0_blk_cfg_w10)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 10 (mbc2_1_mem0_blk_cfg_w10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2C0",
                     "offset_int": "0x2c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_1_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_1_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2C4",
                     "offset_int": "0x2c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_1_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_1_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2C8",
                     "offset_int": "0x2c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_1_mem2_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_1_mem2_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2CC",
                     "offset_int": "0x2cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_2_mem0_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_2_mem0_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2D0",
                     "offset_int": "0x2d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_2_mem0_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_2_mem0_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2D4",
                     "offset_int": "0x2d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_2_mem0_blk_cfg_w2)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_2_mem0_blk_cfg_w2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2D8",
                     "offset_int": "0x2d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_2_mem0_blk_cfg_w3)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_2_mem0_blk_cfg_w3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2DC",
                     "offset_int": "0x2dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_2_mem0_blk_cfg_w4)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_2_mem0_blk_cfg_w4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2E0",
                     "offset_int": "0x2e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_2_mem0_blk_cfg_w5)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_2_mem0_blk_cfg_w5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2E4",
                     "offset_int": "0x2e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_2_mem0_blk_cfg_w6)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_2_mem0_blk_cfg_w6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2E8",
                     "offset_int": "0x2e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_2_mem0_blk_cfg_w7)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_2_mem0_blk_cfg_w7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2EC",
                     "offset_int": "0x2ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_2_mem0_blk_cfg_w8)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_2_mem0_blk_cfg_w8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2F0",
                     "offset_int": "0x2f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_2_mem0_blk_cfg_w9)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_2_mem0_blk_cfg_w9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2F4",
                     "offset_int": "0x2f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 0 Configuration Word Register 10 (mbc2_2_mem0_blk_cfg_w10)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 0 Configuration Word Register 10 (mbc2_2_mem0_blk_cfg_w10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2F8",
                     "offset_int": "0x2f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_2_mem1_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_2_mem1_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2FC",
                     "offset_int": "0x2fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_2_mem2_blk_cfg_w0)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_2_mem2_blk_cfg_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field300",
                     "offset_int": "0x300",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_2_mem2_blk_cfg_w1)",
                     "description": "TrustZone register - MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_2_mem2_blk_cfg_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field304",
                     "offset_int": "0x304",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 0 (mrc0_memn_glbac0)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 0 (mrc0_memn_glbac0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field308",
                     "offset_int": "0x308",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 1 (mrc0_memn_glbac1)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 1 (mrc0_memn_glbac1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field30C",
                     "offset_int": "0x30c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 2 (mrc0_memn_glbac2)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 2 (mrc0_memn_glbac2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field310",
                     "offset_int": "0x310",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 3 (mrc0_memn_glbac3)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 3 (mrc0_memn_glbac3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field314",
                     "offset_int": "0x314",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 4 (mrc0_memn_glbac4)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 4 (mrc0_memn_glbac4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field318",
                     "offset_int": "0x318",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 5 (mrc0_memn_glbac5)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 5 (mrc0_memn_glbac5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field31C",
                     "offset_int": "0x31c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 6 (mrc0_memn_glbac6)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 6 (mrc0_memn_glbac6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field320",
                     "offset_int": "0x320",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Global Access Control Register 7 (mrc0_memn_glbac7)",
                     "description": "TrustZone register - MRC 0 Global Access Control Register 7 (mrc0_memn_glbac7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field324",
                     "offset_int": "0x324",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 0 (mrc0_0_rgd0_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 0 (mrc0_0_rgd0_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field328",
                     "offset_int": "0x328",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 1 (mrc0_0_rgd0_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 1 (mrc0_0_rgd0_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field32C",
                     "offset_int": "0x32c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 0 (mrc0_0_rgd1_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 0 (mrc0_0_rgd1_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field330",
                     "offset_int": "0x330",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 1 (mrc0_0_rgd1_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 1 (mrc0_0_rgd1_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field334",
                     "offset_int": "0x334",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 0 (mrc0_0_rgd2_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 0 (mrc0_0_rgd2_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field338",
                     "offset_int": "0x338",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 1 (mrc0_0_rgd2_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 1 (mrc0_0_rgd2_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field33C",
                     "offset_int": "0x33c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 0 (mrc0_0_rgd3_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 0 (mrc0_0_rgd3_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field340",
                     "offset_int": "0x340",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 1 (mrc0_0_rgd3_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 1 (mrc0_0_rgd3_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field344",
                     "offset_int": "0x344",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 0 (mrc0_0_rgd4_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 0 (mrc0_0_rgd4_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field348",
                     "offset_int": "0x348",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 1 (mrc0_0_rgd4_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 1 (mrc0_0_rgd4_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field34C",
                     "offset_int": "0x34c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 0 (mrc0_0_rgd5_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 0 (mrc0_0_rgd5_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field350",
                     "offset_int": "0x350",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 1 (mrc0_0_rgd5_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 1 (mrc0_0_rgd5_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field354",
                     "offset_int": "0x354",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 0 (mrc0_0_rgd6_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 0 (mrc0_0_rgd6_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field358",
                     "offset_int": "0x358",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 1 (mrc0_0_rgd6_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 1 (mrc0_0_rgd6_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field35C",
                     "offset_int": "0x35c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 0 (mrc0_0_rgd7_w0)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 0 (mrc0_0_rgd7_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field360",
                     "offset_int": "0x360",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 1 (mrc0_0_rgd7_w1)",
                     "description": "TrustZone register - MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 1 (mrc0_0_rgd7_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field364",
                     "offset_int": "0x364",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 0 (mrc0_1_rgd0_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 0 (mrc0_1_rgd0_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field368",
                     "offset_int": "0x368",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 1 (mrc0_1_rgd0_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 1 (mrc0_1_rgd0_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field36C",
                     "offset_int": "0x36c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 0 (mrc0_1_rgd1_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 0 (mrc0_1_rgd1_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field370",
                     "offset_int": "0x370",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 1 (mrc0_1_rgd1_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 1 (mrc0_1_rgd1_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field374",
                     "offset_int": "0x374",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 0 (mrc0_1_rgd2_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 0 (mrc0_1_rgd2_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field378",
                     "offset_int": "0x378",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 1 (mrc0_1_rgd2_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 1 (mrc0_1_rgd2_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field37C",
                     "offset_int": "0x37c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 0 (mrc0_1_rgd3_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 0 (mrc0_1_rgd3_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field380",
                     "offset_int": "0x380",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 1 (mrc0_1_rgd3_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 1 (mrc0_1_rgd3_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field384",
                     "offset_int": "0x384",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 0 (mrc0_1_rgd4_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 0 (mrc0_1_rgd4_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field388",
                     "offset_int": "0x388",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 1 (mrc0_1_rgd4_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 1 (mrc0_1_rgd4_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field38C",
                     "offset_int": "0x38c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 0 (mrc0_1_rgd5_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 0 (mrc0_1_rgd5_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field390",
                     "offset_int": "0x390",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 1 (mrc0_1_rgd5_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 1 (mrc0_1_rgd5_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field394",
                     "offset_int": "0x394",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 0 (mrc0_1_rgd6_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 0 (mrc0_1_rgd6_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field398",
                     "offset_int": "0x398",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 1 (mrc0_1_rgd6_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 1 (mrc0_1_rgd6_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field39C",
                     "offset_int": "0x39c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 0 (mrc0_1_rgd7_w0)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 0 (mrc0_1_rgd7_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3A0",
                     "offset_int": "0x3a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 1 (mrc0_1_rgd7_w1)",
                     "description": "TrustZone register - MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 1 (mrc0_1_rgd7_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3A4",
                     "offset_int": "0x3a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 0 (mrc0_2_rgd0_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 0 (mrc0_2_rgd0_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3A8",
                     "offset_int": "0x3a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 1 (mrc0_2_rgd0_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 1 (mrc0_2_rgd0_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3AC",
                     "offset_int": "0x3ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 0 (mrc0_2_rgd1_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 0 (mrc0_2_rgd1_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3B0",
                     "offset_int": "0x3b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 1 (mrc0_2_rgd1_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 1 (mrc0_2_rgd1_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3B4",
                     "offset_int": "0x3b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 0 (mrc0_2_rgd2_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 0 (mrc0_2_rgd2_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3B8",
                     "offset_int": "0x3b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 1 (mrc0_2_rgd2_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 1 (mrc0_2_rgd2_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3BC",
                     "offset_int": "0x3bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 0 (mrc0_2_rgd3_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 0 (mrc0_2_rgd3_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3C0",
                     "offset_int": "0x3c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 1 (mrc0_2_rgd3_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 1 (mrc0_2_rgd3_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3C4",
                     "offset_int": "0x3c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 0 (mrc0_2_rgd4_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 0 (mrc0_2_rgd4_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3C8",
                     "offset_int": "0x3c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 1 (mrc0_2_rgd4_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 1 (mrc0_2_rgd4_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3CC",
                     "offset_int": "0x3cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 0 (mrc0_2_rgd5_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 0 (mrc0_2_rgd5_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3D0",
                     "offset_int": "0x3d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 1 (mrc0_2_rgd5_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 1 (mrc0_2_rgd5_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3D4",
                     "offset_int": "0x3d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 0 (mrc0_2_rgd6_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 0 (mrc0_2_rgd6_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3D8",
                     "offset_int": "0x3d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 1 (mrc0_2_rgd6_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 1 (mrc0_2_rgd6_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3DC",
                     "offset_int": "0x3dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 0 (mrc0_2_rgd7_w0)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 0 (mrc0_2_rgd7_w0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3E0",
                     "offset_int": "0x3e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 1 (mrc0_2_rgd7_w1)",
                     "description": "TrustZone register - MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 1 (mrc0_2_rgd7_w1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3E4",
                     "offset_int": "0x3e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Lock Register (gpioa_lock)",
                     "description": "TrustZone register - GPIO A Lock Register (gpioa_lock)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3E8",
                     "offset_int": "0x3e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Pin Control Non-Secure Register (gpioa_pcns)",
                     "description": "TrustZone register - GPIO A Pin Control Non-Secure Register (gpioa_pcns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3EC",
                     "offset_int": "0x3ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Non-Secure Register (gpioa_icns)",
                     "description": "TrustZone register - GPIO A Interrupt Control Non-Secure Register (gpioa_icns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3F0",
                     "offset_int": "0x3f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Pin Control Non-Privilege Register (gpioa_pcnp)",
                     "description": "TrustZone register - GPIO A Pin Control Non-Privilege Register (gpioa_pcnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3F4",
                     "offset_int": "0x3f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Non-Privilege Register (gpioa_icnp)",
                     "description": "TrustZone register - GPIO A Interrupt Control Non-Privilege Register (gpioa_icnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3F8",
                     "offset_int": "0x3f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 0 (gpioa_icr0)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 0 (gpioa_icr0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3FC",
                     "offset_int": "0x3fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 1 (gpioa_icr1)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 1 (gpioa_icr1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field400",
                     "offset_int": "0x400",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 2 (gpioa_icr2)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 2 (gpioa_icr2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field404",
                     "offset_int": "0x404",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 3 (gpioa_icr3)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 3 (gpioa_icr3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field408",
                     "offset_int": "0x408",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 4 (gpioa_icr4)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 4 (gpioa_icr4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field40C",
                     "offset_int": "0x40c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 5 (gpioa_icr5)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 5 (gpioa_icr5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field410",
                     "offset_int": "0x410",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 6 (gpioa_icr6)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 6 (gpioa_icr6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field414",
                     "offset_int": "0x414",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 7 (gpioa_icr7)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 7 (gpioa_icr7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field418",
                     "offset_int": "0x418",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 8 (gpioa_icr8)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 8 (gpioa_icr8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field41C",
                     "offset_int": "0x41c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 9 (gpioa_icr9)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 9 (gpioa_icr9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field420",
                     "offset_int": "0x420",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 10 (gpioa_icr10)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 10 (gpioa_icr10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field424",
                     "offset_int": "0x424",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 11 (gpioa_icr11)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 11 (gpioa_icr11)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field428",
                     "offset_int": "0x428",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 16 (gpioa_icr16)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 16 (gpioa_icr16)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field42C",
                     "offset_int": "0x42c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 17 (gpioa_icr17)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 17 (gpioa_icr17)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field430",
                     "offset_int": "0x430",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 18 (gpioa_icr18)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 18 (gpioa_icr18)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field434",
                     "offset_int": "0x434",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 19 (gpioa_icr19)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 19 (gpioa_icr19)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field438",
                     "offset_int": "0x438",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 20 (gpioa_icr20)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 20 (gpioa_icr20)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field43C",
                     "offset_int": "0x43c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 21 (gpioa_icr21)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 21 (gpioa_icr21)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field440",
                     "offset_int": "0x440",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 22 (gpioa_icr22)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 22 (gpioa_icr22)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field444",
                     "offset_int": "0x444",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 23 (gpioa_icr23)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 23 (gpioa_icr23)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field448",
                     "offset_int": "0x448",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 24 (gpioa_icr24)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 24 (gpioa_icr24)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field44C",
                     "offset_int": "0x44c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 25 (gpioa_icr25)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 25 (gpioa_icr25)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field450",
                     "offset_int": "0x450",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 26 (gpioa_icr26)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 26 (gpioa_icr26)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field454",
                     "offset_int": "0x454",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 27 (gpioa_icr27)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 27 (gpioa_icr27)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field458",
                     "offset_int": "0x458",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 30 (gpioa_icr30)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 30 (gpioa_icr30)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field45C",
                     "offset_int": "0x45c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO A Interrupt Control Pin 31 (gpioa_icr31)",
                     "description": "TrustZone register - GPIO A Interrupt Control Pin 31 (gpioa_icr31)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field460",
                     "offset_int": "0x460",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Lock Register (gpiob_lock)",
                     "description": "TrustZone register - GPIO B Lock Register (gpiob_lock)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field464",
                     "offset_int": "0x464",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Pin Control Non-Secure Register (gpiob_pcns)",
                     "description": "TrustZone register - GPIO B Pin Control Non-Secure Register (gpiob_pcns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field468",
                     "offset_int": "0x468",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Non-Secure Register (gpiob_icns)",
                     "description": "TrustZone register - GPIO B Interrupt Control Non-Secure Register (gpiob_icns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field46C",
                     "offset_int": "0x46c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Pin Control Non-Privilege Register (gpiob_pcnp)",
                     "description": "TrustZone register - GPIO B Pin Control Non-Privilege Register (gpiob_pcnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field470",
                     "offset_int": "0x470",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Non-Privilege Register (gpiob_icnp)",
                     "description": "TrustZone register - GPIO B Interrupt Control Non-Privilege Register (gpiob_icnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field474",
                     "offset_int": "0x474",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 0 (gpiob_icr0)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 0 (gpiob_icr0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field478",
                     "offset_int": "0x478",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 1 (gpiob_icr1)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 1 (gpiob_icr1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field47C",
                     "offset_int": "0x47c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 2 (gpiob_icr2)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 2 (gpiob_icr2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field480",
                     "offset_int": "0x480",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 3 (gpiob_icr3)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 3 (gpiob_icr3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field484",
                     "offset_int": "0x484",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 4 (gpiob_icr4)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 4 (gpiob_icr4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field488",
                     "offset_int": "0x488",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 5 (gpiob_icr5)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 5 (gpiob_icr5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field48C",
                     "offset_int": "0x48c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 6 (gpiob_icr6)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 6 (gpiob_icr6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field490",
                     "offset_int": "0x490",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 7 (gpiob_icr7)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 7 (gpiob_icr7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field494",
                     "offset_int": "0x494",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 8 (gpiob_icr8)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 8 (gpiob_icr8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field498",
                     "offset_int": "0x498",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 9 (gpiob_icr9)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 9 (gpiob_icr9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field49C",
                     "offset_int": "0x49c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 10 (gpiob_icr10)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 10 (gpiob_icr10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4A0",
                     "offset_int": "0x4a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO B Interrupt Control Pin 11 (gpiob_icr11)",
                     "description": "TrustZone register - GPIO B Interrupt Control Pin 11 (gpiob_icr11)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4A4",
                     "offset_int": "0x4a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Lock Register (gpioc_lock)",
                     "description": "TrustZone register - GPIO C Lock Register (gpioc_lock)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4A8",
                     "offset_int": "0x4a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Pin Control Non-Secure Register (gpioc_pcns)",
                     "description": "TrustZone register - GPIO C Pin Control Non-Secure Register (gpioc_pcns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4AC",
                     "offset_int": "0x4ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Non-Secure Register (gpioc_icns)",
                     "description": "TrustZone register - GPIO C Interrupt Control Non-Secure Register (gpioc_icns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4B0",
                     "offset_int": "0x4b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Pin Control Non-Privilege Register (gpioc_pcnp)",
                     "description": "TrustZone register - GPIO C Pin Control Non-Privilege Register (gpioc_pcnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4B4",
                     "offset_int": "0x4b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Non-Privilege Register (gpioc_icnp)",
                     "description": "TrustZone register - GPIO C Interrupt Control Non-Privilege Register (gpioc_icnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4B8",
                     "offset_int": "0x4b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 0 (gpioc_icr0)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 0 (gpioc_icr0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4BC",
                     "offset_int": "0x4bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 1 (gpioc_icr1)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 1 (gpioc_icr1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4C0",
                     "offset_int": "0x4c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 2 (gpioc_icr2)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 2 (gpioc_icr2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4C4",
                     "offset_int": "0x4c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 3 (gpioc_icr3)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 3 (gpioc_icr3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4C8",
                     "offset_int": "0x4c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 4 (gpioc_icr4)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 4 (gpioc_icr4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4CC",
                     "offset_int": "0x4cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 5 (gpioc_icr5)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 5 (gpioc_icr5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4D0",
                     "offset_int": "0x4d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 6 (gpioc_icr6)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 6 (gpioc_icr6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4D4",
                     "offset_int": "0x4d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 7 (gpioc_icr7)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 7 (gpioc_icr7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4D8",
                     "offset_int": "0x4d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 8 (gpioc_icr8)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 8 (gpioc_icr8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4DC",
                     "offset_int": "0x4dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 9 (gpioc_icr9)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 9 (gpioc_icr9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4E0",
                     "offset_int": "0x4e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 10 (gpioc_icr10)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 10 (gpioc_icr10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4E4",
                     "offset_int": "0x4e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 11 (gpioc_icr11)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 11 (gpioc_icr11)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4E8",
                     "offset_int": "0x4e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 12 (gpioc_icr12)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 12 (gpioc_icr12)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4EC",
                     "offset_int": "0x4ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 13 (gpioc_icr13)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 13 (gpioc_icr13)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4F0",
                     "offset_int": "0x4f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 14 (gpioc_icr14)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 14 (gpioc_icr14)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4F4",
                     "offset_int": "0x4f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 15 (gpioc_icr15)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 15 (gpioc_icr15)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4F8",
                     "offset_int": "0x4f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 16 (gpioc_icr16)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 16 (gpioc_icr16)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field4FC",
                     "offset_int": "0x4fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 17 (gpioc_icr17)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 17 (gpioc_icr17)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field500",
                     "offset_int": "0x500",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 18 (gpioc_icr18)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 18 (gpioc_icr18)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field504",
                     "offset_int": "0x504",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO C Interrupt Control Pin 19 (gpioc_icr19)",
                     "description": "TrustZone register - GPIO C Interrupt Control Pin 19 (gpioc_icr19)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field508",
                     "offset_int": "0x508",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Lock Register (gpiod_lock)",
                     "description": "TrustZone register - GPIO D Lock Register (gpiod_lock)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field50C",
                     "offset_int": "0x50c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Pin Control Non-Secure Register (gpiod_pcns)",
                     "description": "TrustZone register - GPIO D Pin Control Non-Secure Register (gpiod_pcns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field510",
                     "offset_int": "0x510",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Non-Secure Register (gpiod_icns)",
                     "description": "TrustZone register - GPIO D Interrupt Control Non-Secure Register (gpiod_icns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field514",
                     "offset_int": "0x514",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Pin Control Non-Privilege Register (gpiod_pcnp)",
                     "description": "TrustZone register - GPIO D Pin Control Non-Privilege Register (gpiod_pcnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field518",
                     "offset_int": "0x518",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Non-Privilege Register (gpiod_icnp)",
                     "description": "TrustZone register - GPIO D Interrupt Control Non-Privilege Register (gpiod_icnp)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field51C",
                     "offset_int": "0x51c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 0 (gpiod_icr0)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 0 (gpiod_icr0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field520",
                     "offset_int": "0x520",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 1 (gpiod_icr1)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 1 (gpiod_icr1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field524",
                     "offset_int": "0x524",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 2 (gpiod_icr2)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 2 (gpiod_icr2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field528",
                     "offset_int": "0x528",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 3 (gpiod_icr3)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 3 (gpiod_icr3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field52C",
                     "offset_int": "0x52c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 4 (gpiod_icr4)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 4 (gpiod_icr4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field530",
                     "offset_int": "0x530",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 5 (gpiod_icr5)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 5 (gpiod_icr5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field534",
                     "offset_int": "0x534",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 6 (gpiod_icr6)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 6 (gpiod_icr6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field538",
                     "offset_int": "0x538",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 7 (gpiod_icr7)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 7 (gpiod_icr7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field53C",
                     "offset_int": "0x53c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 8 (gpiod_icr8)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 8 (gpiod_icr8)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field540",
                     "offset_int": "0x540",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 9 (gpiod_icr9)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 9 (gpiod_icr9)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field544",
                     "offset_int": "0x544",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 10 (gpiod_icr10)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 10 (gpiod_icr10)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field548",
                     "offset_int": "0x548",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "GPIO D Interrupt Control Pin 11 (gpiod_icr11)",
                     "description": "TrustZone register - GPIO D Interrupt Control Pin 11 (gpiod_icr11)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 }
             ]
         }

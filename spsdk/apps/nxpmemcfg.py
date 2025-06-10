@@ -297,7 +297,6 @@ def export(config: Config) -> MemoryConfig:
 )
 @click.option(
     "--secure-addresses",
-    type=bool,
     is_flag=True,
     default=False,
     help=("If defined, the secure address will be used in case of generating FCB block."),

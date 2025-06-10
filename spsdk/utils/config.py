@@ -134,7 +134,10 @@ class Config(dict):
         :param key: Key path to config with input file name.
         :return The absolute path to input file.
         """
-        return find_file(self[key], search_paths=self.search_paths)
+        try:
+            return find_file(self[key], search_paths=self.search_paths)
+        except SPSDKError as exc:
+            raise SPSDKError(f"Cannot find input file for '{key}': {str(exc)}") from exc
 
     def get_output_file_name(self, key: str) -> str:
         """Get the absolute output file name.
@@ -158,7 +161,10 @@ class Config(dict):
 
     def load_sub_config(self, key: str) -> "Config":
         """Get sub configuration."""
-        path = find_file(self[key], search_paths=self.search_paths)
+        try:
+            path = find_file(self[key], search_paths=self.search_paths)
+        except SPSDKError as exc:
+            raise SPSDKError(f"Cannot find file for '{key}': {str(exc)}") from exc
         ret = self.create_from_file(path)
         ret.search_paths.extend(self.search_paths)
         return ret

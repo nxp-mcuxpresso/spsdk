@@ -5,7 +5,7 @@
 # ===========================  fcf Configuration template for mc56f81768, Revision: latest.  ===========================
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
@@ -17,11 +17,25 @@ revision: latest
 # ------------------------------------------===== mc56f81768 [Required] =====-------------------------------------------
 fcf:
   # ----------------------------------------===== BACKDOOR_KEY [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000000, Width: 64b; Backdoor key bytes
-  BACKDOOR_KEY: '0xFFFFFFFFFFFFFFFF'
-  # --------------------------------------===== FLASH_PROTECTION [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000008, Width: 32b; Flash protection bytes
-  FLASH_PROTECTION: '0xFFFFFFFF'
+  # Description: Offset: 0x00000000, Width: 64b; Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command
+  # and Unsecuring the Chip Using Backdoor Key Access.
+  BACKDOOR_KEY: 0x0123456789abcdef
+  # --------------------------------------------===== FPROT [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Program flash protection bytes. Refer to the description of the Program
+  # Flash Protection Registers (FPROT0-3).
+  FPROT:
+    # ------------------------------------------===== FPROT3 [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Program Flash Protection Registers (FPROT3)
+    FPROT3: 255
+    # ------------------------------------------===== FPROT2 [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b, Program Flash Protection Registers (FPROT2)
+    FPROT2: 255
+    # ------------------------------------------===== FPROT1 [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 8b, Program Flash Protection Registers (FPROT1)
+    FPROT1: 255
+    # ------------------------------------------===== FPROT0 [Optional] =====-------------------------------------------
+    # Description: Offset: 24b, Width: 8b, Program Flash Protection Registers (FPROT0)
+    FPROT0: 255
   # ------------------------------------------===== LIFECYCLE [Optional] =====------------------------------------------
   # Description: Offset: 0x0000000C, Width: 8b; DSA Secure Lifecycle state
   LIFECYCLE:
@@ -38,7 +52,8 @@ fcf:
     # Possible options: <OEM_OPEN_ROP0, OEM_CLOSED_ROP1, OEM_CLOSED_ROP2, OEM_CLOSED_ROP3, OEM_CLOSED_NO_RETURN>
     LIFECYCLE_STATE: OEM_OPEN_ROP0
   # -----------------------------------------===== OPTION_BYTE [Optional] =====-----------------------------------------
-  # Description: Offset: 0x0000000D, Width: 8b; Flash configuration options
+  # Description: Offset: 0x0000000D, Width: 8b; Flash nonvolatile option byte. Refer to the description of the Flash
+  # Option Register (FOPT).
   OPTION_BYTE:
     # ----------------------------------------===== POWER_MODE [Optional] =====-----------------------------------------
     # Description: Offset: 0b, Width: 1b, Controls which power mode register takes effect
@@ -46,6 +61,3 @@ fcf:
     # - SIM_PWR, (0): Writing SIM_PWRMODE register doesn't take effect, writing SIM_PWR register takes effect
     # Possible options: <SIM_PWRMODE, SIM_PWR>
     POWER_MODE: SIM_PWRMODE
-    # ---------------------------------------===== RESERVED_BITS [Optional] =====---------------------------------------
-    # Description: Offset: 1b, Width: 7b, N/A
-    RESERVED_BITS: 127

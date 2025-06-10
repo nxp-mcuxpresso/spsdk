@@ -1,0 +1,3 @@
+@Library('shared-lib@SPSDK-3965-spsdk-create-github-deployment-pipeline') _
+
+doGithubDeployment("spsdk")

@@ -87,7 +87,7 @@ def main(family: str, revision: str, c_file: str, output: str, debug: bool) -> N
             uid=f"field{offset:03X}",
             description=f"TrustZone register - {key}",
         )
-        reg._reset_value = value_to_int(val)
+        reg._default_value = value_to_int(val)
         regs.add_register(reg)
         offset += 4
     regs.write_spec(output)

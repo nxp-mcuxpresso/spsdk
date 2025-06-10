@@ -21,6 +21,8 @@ from spsdk.image.hab.commands.commands import CmdBase
 from spsdk.image.hab.constants import CertFormatEnum, CmdName, CmdTag, EnumAlgorithm
 from spsdk.image.hab.hab_certificate import HabCertificate
 from spsdk.image.hab.hab_header import CmdHeader
+from spsdk.image.hab.hab_mac import MAC
+from spsdk.image.hab.hab_signature import Signature
 from spsdk.image.hab.hab_srk import SrkTable
 from spsdk.image.hab.utils import get_app_image, get_header_version, get_initial_load_size
 from spsdk.utils.config import Config
@@ -218,14 +220,16 @@ class SecCmdInstallKey(CmdBase):
         return self._certificate_ref
 
     @cmd_data_reference.setter
-    def cmd_data_reference(self, value: Union[HabCertificate, SrkTable]) -> None:
+    def cmd_data_reference(self, value: Union[HabCertificate, Signature, MAC, SrkTable]) -> None:
         """Setter.
 
         By default, the command does not support cmd_data_reference
 
         :param value: to be set
+        :raises SPSDKError: If value is not of expected type
         """
-        assert isinstance(value, (HabCertificate, SrkTable))
+        if not isinstance(value, (HabCertificate, SrkTable)):
+            raise SPSDKError(f"Expected HabCertificate or SrkTable, got {type(value).__name__}")
         self._certificate_ref = value
 
     def parse_cmd_data(self, data: bytes) -> Union[HabCertificate, SrkTable, None]:

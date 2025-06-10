@@ -36,7 +36,7 @@ def test_nxpimage_binary_merge_with_random(cli_runner: CliRunner, tmpdir, data_d
     with use_working_directory(data_dir):
         merge_cfg = os.path.join("utils", "binary", "binary_merge.yaml")
         merged_file = os.path.join(tmpdir, "merged.bin")
-        cmd = f"utils binary-image export -c {merge_cfg} -o {merged_file}"
+        cmd = f"utils binary-image export -c {merge_cfg} -o {merged_file} --keep-padding"
         cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(merged_file)
         output = load_binary(merged_file)
@@ -46,23 +46,23 @@ def test_nxpimage_binary_merge_with_random(cli_runner: CliRunner, tmpdir, data_d
 
 
 @pytest.mark.parametrize(
-    "config,output,result_code,adjust_offsets",
+    "config,output,result_code,keep_padding",
     [
-        ("signed_merge.yaml", "signed_merge.bin", 0, False),
-        ("adjust_offset_merge.yaml", "adjust_offset_merge.bin", 0, True),
-        ("invalid_size_merge.yaml", "", 1, False),
-        ("invalid_offset_merge.yaml", "", 1, False),
+        ("signed_merge.yaml", "signed_merge.bin", 0, True),
+        ("adjust_offset_merge.yaml", "adjust_offset_merge.bin", 0, False),
+        ("invalid_size_merge.yaml", "", 1, True),
+        ("invalid_offset_merge.yaml", "", 1, True),
     ],
 )
 def test_nxpimage_binary_merge(
-    cli_runner: CliRunner, tmpdir, data_dir, config, output, result_code, adjust_offsets
+    cli_runner: CliRunner, tmpdir, data_dir, config, output, result_code, keep_padding
 ):
     with use_working_directory(data_dir):
         merge_cfg = os.path.join("utils", "binary", config)
         merged_file = os.path.join(tmpdir, "merged.bin")
         cmd = f"utils binary-image export -c {merge_cfg} -o {merged_file}"
-        if adjust_offsets:
-            cmd += " --adjust-offsets"
+        if keep_padding:
+            cmd += " --keep-padding"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=result_code)
         if result_code == 0:
             assert os.path.isfile(merged_file)
@@ -83,7 +83,7 @@ def test_nxpimage_binary_merge_s19(
     with use_working_directory(data_dir):
         merge_cfg = os.path.join("utils", "binary", config)
         merged_file = os.path.join(tmpdir, "merged.bin")
-        cmd = f"utils binary-image export -c {merge_cfg} -o {merged_file} -f S19"
+        cmd = f"utils binary-image export -c {merge_cfg} -o {merged_file} -f S19 --keep-padding"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=result_code)
         if result_code == 0:
             assert os.path.isfile(merged_file)
@@ -332,10 +332,9 @@ def test_nxpimage_binary_export_with_min_offset_log(cli_runner: CliRunner, tmpdi
         config_file = os.path.join(tmpdir, "image_config.yaml")
         write_file(config_content, config_file, "w")
 
-        # Export with adjust_offsets
-        output_file = os.path.join(tmpdir, "adjusted_image.bin")
 
-        cmd = f"utils binary-image export -c {config_file} -o {output_file} --adjust-offsets"
+        output_file = os.path.join(tmpdir, "adjusted_image.bin")
+        cmd = f"utils binary-image export -c {config_file} -o {output_file}"
         cli_runner.invoke(nxpimage.main, cmd.split())
 
         # Verify the export worked
@@ -373,3 +372,22 @@ def test_nxpimage_binary_create_sizes(cli_runner: CliRunner, tmpdir):
                     assert data == bytes([i % 256 for i in range(size)])
                 elif pattern == "0xA5" and size > 0:
                     assert all(b == 0xA5 for b in data)
+
+@pytest.mark.parametrize(
+    "input_file, split_image, output_files",
+    [
+        ("distinct_segments.s19", False, ["output.bin"]),
+        ("distinct_segments.s19", True, ["output_0x0.bin", "output_0x12.bin", "output_0x24.bin"]),
+        ("evkmimxrt595_hello_world_s.s19", True, ["output.bin"]),
+        ("evkmimxrt595_hello_world_s.s19", True, ["output.bin"]),
+    ],
+)
+def test_nxpimage_binary_convert_split_image(cli_runner: CliRunner, tmpdir, data_dir, input_file, split_image, output_files):
+    with use_working_directory(os.path.join(data_dir, "utils", "binary")):
+        out_file = os.path.join(tmpdir, "output.bin")
+        cmd = f"utils binary-image convert -i {input_file} -f BIN -o {out_file}"
+        if split_image:
+            cmd += " --split-image"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        for output in output_files:
+            os.path.isfile(output)

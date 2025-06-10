@@ -2876,10 +2876,10 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "reset_value_int": "0"
+                            "width": 1
                         }
-                    ]
+                    ],
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "fuse33",
@@ -3317,10 +3317,10 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "reset_value_int": "0"
+                            "width": 1
                         }
-                    ]
+                    ],
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "fuse34",
@@ -3354,7 +3354,7 @@
                     "description": "Life cycle state of rw61x platform.",
                     "index_int": "0x002D",
                     "shadow_reg_offset_int": "0x00B4",
-                    "reset_value_int": "0x0303",
+                    "default_value_int": "0x0303",
                     "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse1",

@@ -98,6 +98,7 @@ features:
     mem_types:
       flexspi_nor:
         reg_spec: fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== BEE section ========
   bee: {}
@@ -150,6 +151,8 @@ features:
       sd:
         instances: [1, 2]
       mmc:
+        instances: [1, 2]
+      emmc:
         instances: [1, 2]
       spi_nor:
         instances: [1, 2, 3, 4]

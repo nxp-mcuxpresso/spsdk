@@ -26,13 +26,13 @@ info:
   isp:
     rom:
       protocol: mboot
-      interfaces: ["usb","uart", "spi", "i2c"]
+      interfaces: ["usb", "uart", "spi", "i2c"]
       usb:
         vid: 0x1FC9
         pid: 0x0155
 
 features:
-# ======== Communication buffer section ========
+  # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000
     size: 0x1000

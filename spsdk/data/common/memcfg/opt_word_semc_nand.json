@@ -10,27 +10,23 @@
                 {
                     "id": "field000",
                     "offset_int": "0x0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ConfigOption0",
                     "description": "SEMC NAND Configuration Option 0",
-                    "reset_value_int": "0xd0000100",
+                    "default_value_int": "0xd0000100",
                     "bitfields": [
                         {
                             "id": "field000-bits0-2",
-                            "offset": "0x0",
-                            "width": "3",
+                            "width": 3,
                             "name": "OnfiVersion",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "access": "RW",
                             "description": "ONFI version"
                         },
                         {
                             "id": "field000-bit3",
-                            "offset": "0x3",
-                            "width": "1",
+                            "width": 1,
                             "name": "EdoMode",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "access": "RW",
                             "description": "EDO mode",
                             "values": [
                                 {
@@ -47,11 +43,9 @@
                         },
                         {
                             "id": "field000-bits4-6",
-                            "offset": "0x4",
-                            "width": "3",
+                            "width": 3,
                             "name": "OnfiTimingMode",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "access": "RW",
                             "description": "ONFI Timing mode",
                             "values": [
                                 {
@@ -97,37 +91,23 @@
                             ]
                         },
                         {
-                            "id": "field000-bit7",
-                            "offset": "0x7",
-                            "width": "1",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
-                            "description": "Reserved for future use"
+                            "width": 1
                         },
                         {
                             "id": "field000-bits8-9",
-                            "offset": "0x8",
-                            "width": "2",
+                            "width": 2,
                             "name": "IoPortDiv8",
-                            "access": "R/W",
-                            "reset_value_int": "0x1",
+                            "access": "RW",
                             "description": "IO port size, Minimum is 1"
                         },
                         {
-                            "id": "field000-bits10-11",
-                            "offset": "0xa",
-                            "width": "2",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
-                            "description": "Reserved for future use"
+                            "width": 2
                         },
                         {
                             "id": "field000-bits12-14",
-                            "offset": "0xc",
-                            "width": "3",
+                            "width": 3,
                             "name": "PcsSelection",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "access": "RW",
                             "description": "SEMC NAND PCS selection",
                             "values": [
                                 {
@@ -158,20 +138,13 @@
                             ]
                         },
                         {
-                            "id": "field000-bit15",
-                            "offset": "0xf",
-                            "width": "1",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
-                            "description": "Reserved for future use"
+                            "width": 1
                         },
                         {
                             "id": "field000-bit16",
-                            "offset": "0x10",
-                            "width": "1",
+                            "width": 1,
                             "name": "EccType",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "access": "RW",
                             "description": "ECC type",
                             "values": [
                                 {
@@ -188,11 +161,9 @@
                         },
                         {
                             "id": "field000-bit17",
-                            "offset": "0x11",
-                            "width": "1",
+                            "width": 1,
                             "name": "EccStatus",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
+                            "access": "RW",
                             "description": "ECC status",
                             "values": [
                                 {
@@ -208,28 +179,13 @@
                             ]
                         },
                         {
-                            "id": "field000-bits18-23",
-                            "offset": "0x12",
-                            "width": "6",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
-                            "description": "Reserved for future use"
+                            "width": 6
                         },
                         {
-                            "id": "field000-bits24-27",
-                            "offset": "0x18",
-                            "width": "4",
-                            "access": "R/W",
-                            "reset_value_int": "0x0",
-                            "description": "Reserved for future use"
+                            "width": 4
                         },
                         {
-                            "id": "field000-bits28-31",
-                            "offset": "0x1c",
-                            "width": "4",
-                            "access": "R/W",
-                            "reset_value_int": "0xd",
-                            "description": "Tag, fixed value 0xD"
+                            "width": 4
                         }
                     ]
                 }

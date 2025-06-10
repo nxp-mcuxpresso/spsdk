@@ -28,7 +28,7 @@ from spsdk.utils.registers import SPSDKRegsErrorRegisterNotFound
 logger = logging.getLogger(__name__)
 
 
-class IoVerificationError(SPSDKError):
+class SPSDKVerificationError(SPSDKError):
     """The error during write verification - exception for use with SPSDK."""
 
 
@@ -105,12 +105,12 @@ class ShadowRegisters(FeatureBaseClassComm):
         for computed_reg, fields in computed_fields.items():
             reg_obj = regs.get_reg(computed_reg)
             for bitfield in fields.keys():
-                reg_obj.get_bitfield(bitfield).hidden = True
+                reg_obj.get_bitfield(bitfield).reserved = True
                 logger.debug(f"Hiding bitfield: {bitfield} in {computed_reg}")
 
         # Set the antipolize handler
         for antipole_reg in antipole_regs.values():
-            regs.get_reg(antipole_reg).hidden = True
+            regs.get_reg(antipole_reg).reserved = True
             logger.debug(f"Hiding anti pole register: {antipole_reg}")
 
         return regs
@@ -123,7 +123,7 @@ class ShadowRegisters(FeatureBaseClassComm):
         param addr: Shadow register address.
         param data: Shadow register data to write.
         param verify_mask: Verify bit mask for read back and compare, if 0 verify is disable
-        raises IoVerificationError
+        raises SPSDKVerificationError
         """
         if not self.probe:
             raise SPSDKDebugProbeError(
@@ -138,10 +138,9 @@ class ShadowRegisters(FeatureBaseClassComm):
 
         if verify_mask and self.possible_verification:
             read_back = self.probe.mem_reg_read(addr)
-            if read_back & verify_mask != data & verify_mask:
-                raise IoVerificationError(
-                    f"The verification of written shadow register 0x{addr:08X} failed."
-                    " Maybe a READ LOCK is set for that register."
+            if (read_back & verify_mask) != (data & verify_mask):
+                raise SPSDKVerificationError(
+                    f"Written value: 0x{(data & verify_mask):08X}, read value: 0x{(read_back & verify_mask):08X}"
                 )
 
     def reload_registers(self) -> None:
@@ -199,11 +198,17 @@ class ShadowRegisters(FeatureBaseClassComm):
                 raise SPSDKError(
                     f"Register {reg.name} does not have shadow register address defined"
                 )
-            self._write_shadow_reg(
-                addr=reg.shadow_register_addr,
-                data=reg.get_value(raw=True),
-                verify_mask=verify_mask,
-            )
+            try:
+                self._write_shadow_reg(
+                    addr=reg.shadow_register_addr,
+                    data=reg.get_value(raw=True),
+                    verify_mask=verify_mask,
+                )
+            except SPSDKVerificationError as e:
+                raise SPSDKVerificationError(
+                    f"Verification on register {reg.name} failed: {e}."
+                    "Maybe a READ LOCK is set for that register."
+                ) from e
 
         try:
             reg = self.registers.find_reg(reg_name, include_group_regs=True)

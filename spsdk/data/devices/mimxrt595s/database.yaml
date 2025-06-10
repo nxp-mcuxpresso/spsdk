@@ -185,7 +185,7 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvtZeroTotalLength
-          - Mbi_MixinLoadAddressOptional
+          - Mbi_MixinLoadAddress
           - Mbi_MixinTrustZone
           - Mbi_MixinHwKey
           - Mbi_ExportMixinAppTrustZone
@@ -226,6 +226,7 @@ features:
     mem_types:
       flexspi_nor:
         reg_spec: fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== Bootable image section ========
   bootable_image:
@@ -311,7 +312,7 @@ features:
         instances: [0, 1]
       sd:
         instances: [0, 1]
-      mmc:
+      emmc:
         instances: [0, 1]
       spi_nor:
         reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json

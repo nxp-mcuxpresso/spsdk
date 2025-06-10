@@ -165,15 +165,31 @@ secondary_image_container_set:
   title: Secondary Executable Segment definition
   properties:
     secondary_image_container_set:
-      type: string
-      title: Secondary Image Container Set
-      format: file
-      description:
-        This is secondary AHAB image that is validated by SPL from primary image.
-        It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
-        In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
-      template_value: secondary_image_container_set.yaml
-
+      oneOf:
+        - type: string
+          title: Secondary Image Container Set
+          format: file
+          description: >
+            This is secondary AHAB image that is validated by SPL from primary image.
+            It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
+            In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+          template_value: primary_image_container_set.yaml
+        - type: object
+          title: Secondary Image Container Set with custom offset
+          properties:
+            path:
+              type: string
+              title: Secondary Image Container Set path
+              format: file
+              description: >
+                Path to the secondary AHAB image that is validated by SPL from primary image.
+            offset:
+              type: [number, string]
+              title: Custom offset
+              format: number
+              description: Custom offset for the secondary image container set
+          required: ["path"]
+          skip_in_template: True
 sb21:
   title: Secure Binary Executable Segment definition
   properties:

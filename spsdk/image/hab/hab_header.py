@@ -90,7 +90,12 @@ class Header(BaseClass):
         :return: Header object
         :raises SPSDKParsingError: if required header tag does not match
         """
+        if len(data) < cls.SIZE:
+            raise SPSDKParsingError(
+                f"Invalid input data size for {cls.__name__}: ({len(data)} < {cls.SIZE})."
+            )
         tag, length, param = unpack_from(cls.FORMAT, data)
+
         if required_tag is not None and tag != required_tag:
             raise SPSDKParsingError(
                 f"Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "

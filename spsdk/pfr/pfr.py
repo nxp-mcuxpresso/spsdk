@@ -41,6 +41,8 @@ class BaseConfigArea(FeatureBaseClass):
     MARK = b"SEAL"
     DESCRIPTION = "Base Config Area"
     IMAGE_PREFILL_PATTERN = "0x00"
+    WRITE_METHOD = "write_memory"
+    READ_METHOD = "read_memory"
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize an instance.
@@ -95,7 +97,7 @@ class BaseConfigArea(FeatureBaseClass):
         for reg, fields in computed_fields.items():
             reg_obj = registers.get_reg(reg)
             for bitfield in fields.keys():
-                reg_obj.get_bitfield(bitfield).hidden = True
+                reg_obj.get_bitfield(bitfield).reserved = True
                 logger.debug(f"Hiding bitfield: {bitfield} in {reg}")
         return registers
 
@@ -395,11 +397,24 @@ class CMACTABLE(BaseConfigArea):
     DESCRIPTION = "CMAC table - Used to save hashes of multiple boot components"
 
 
+class IFR(BaseConfigArea):
+    """Information flash region - Information Flash Region."""
+
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "ifr"
+    BINARY_SIZE = 256
+    IMAGE_PREFILL_PATTERN = "0xFF"
+    DESCRIPTION = "Information Flash Region configuration"
+    READ_METHOD = "flash_read_resource"
+    WRITE_METHOD = "flash_program_once"
+
+
 CONFIG_AREA_CLASSES: dict[str, Type[BaseConfigArea]] = {
     "cmpa": CMPA,
     "cfpa": CFPA,
     "romcfg": ROMCFG,
     "cmactable": CMACTABLE,
+    "ifr": IFR,
 }
 
 

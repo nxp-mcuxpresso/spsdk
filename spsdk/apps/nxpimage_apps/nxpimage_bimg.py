@@ -245,17 +245,38 @@ def fcb_export(config: Config, output: str) -> None:
     click.echo(f"Success. (FCB: {output} created.)")
 
 
+def fcb_mem_type_callback(
+    ctx: click.Context, param: click.Option, value: Optional[str]
+) -> MemoryType:
+    """Dynamically set memory type choices based on selected family."""
+    family = FamilyRevision(ctx.params["family"], ctx.params.get("revision", "latest"))
+    supported_mem_types = FCB.get_supported_memory_types(family)
+    # If value is None and we need to provide a default, get the first supported memory type
+    if value is None:
+        return supported_mem_types[0]
+
+    supported_labels = [mem_type.label for mem_type in supported_mem_types]
+    if value not in supported_labels:
+        supported_str = ", ".join(supported_labels)
+        raise click.BadParameter(
+            f"Memory type '{value}' is not supported for family {family.name}. "
+            f"Supported types: {supported_str}"
+        )
+
+    return MemoryType.from_label(value)
+
+
 @fcb.command(name="parse", no_args_is_help=True)
 @spsdk_family_option(families=FCB.get_supported_families())
 @click.option(
     "-m",
     "--mem-type",
-    default="flexspi_nor",
     type=click.Choice(
         [mem_type.label for mem_type in FCB.get_supported_memory_types()], case_sensitive=False
     ),
-    required=True,
+    required=False,  # The callback will provide default if needed
     help="Select the chip used memory type.",
+    callback=fcb_mem_type_callback,
 )
 @click.option(
     "-b",
@@ -265,9 +286,11 @@ def fcb_export(config: Config, output: str) -> None:
     help="Path to binary FCB image to parse.",
 )
 @spsdk_output_option()
-def fcb_parse_command(family: FamilyRevision, mem_type: str, binary: str, output: str) -> None:
+def fcb_parse_command(
+    family: FamilyRevision, mem_type: MemoryType, binary: str, output: str
+) -> None:
     """Parse FCB Image into YAML configuration."""
-    fcb_parse(family, MemoryType.from_label(mem_type), binary, output)
+    fcb_parse(family, mem_type, binary, output)
 
 
 def fcb_parse(family: FamilyRevision, mem_type: MemoryType, binary: str, output: str) -> None:

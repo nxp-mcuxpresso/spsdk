@@ -42,7 +42,7 @@ containers:
       # -------------------------------------===== SRK revoke mask [Optional] =====-------------------------------------
       # Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit
       # 1 = revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
-      srk_revoke_mask: '0x00'
+      srk_revoke_mask: "0x00"
       # ----------------------------------===== GDET runtime behavior [Optional] =====----------------------------------
       # Description: This option defines runtime behavior of Glitch detector. Not supported by all devices and their ELE
       # firmware.
@@ -63,7 +63,7 @@ containers:
       #  - slice_hash: Slice and hash mode.
       #  - on_fly: On the fly hash.
       # Possible options: <enabled, slice_hash, on_fly>
-      fast_boot: enabled
+      fast_boot: disabled
       # --------------------------------------===== Fuse version [Optional] =====---------------------------------------
       # Description: The value must be equal or greater than the version stored in fuses to allow loading this
       # container.

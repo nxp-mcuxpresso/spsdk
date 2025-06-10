@@ -1,0 +1,239 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  fcf Configuration template for mcxe247, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe247
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# --------------------------------------------===== mcxe247 [Required] =====--------------------------------------------
+fcf:
+  # ----------------------------------------===== BACKDOOR_KEY [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000000, Width: 64b; Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command
+  # and Unsecuring the Chip Using Backdoor Key Access.
+  BACKDOOR_KEY: FFFFFFFFFFFFFFFF
+  # --------------------------------------------===== FPROT [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Program flash protection bytes. Refer to the description of the Program
+  # Flash Protection Registers (FPROT0-3).
+  FPROT:
+    # ------------------------------------------===== FPROT3 [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Program Flash Protection Registers (FPROT3)
+    FPROT3: 255
+    # ------------------------------------------===== FPROT2 [Optional] =====-------------------------------------------
+    # Description: Offset: 8b, Width: 8b, Program Flash Protection Registers (FPROT2)
+    FPROT2: 255
+    # ------------------------------------------===== FPROT1 [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 8b, Program Flash Protection Registers (FPROT1)
+    FPROT1: 255
+    # ------------------------------------------===== FPROT0 [Optional] =====-------------------------------------------
+    # Description: Offset: 24b, Width: 8b, Program Flash Protection Registers (FPROT0)
+    FPROT0: 255
+  # --------------------------------------------===== FSEC [Optional] =====---------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b; Flash security byte. Refer to the description of the Flash Security
+  # Register (FSEC).
+  FSEC:
+    # --------------------------------------------===== SEC [Optional] =====--------------------------------------------
+    # Description: Offset: 0b, Width: 2b, Flash Security.
+    # - SECURE_0, (0): MCU security status is secure.
+    # - SECURE, (1): MCU security status is secure.
+    # - UNSECURE, (2): MCU security status is unsecure. (The standard shipping condition of the flash memory module is
+    # unsecure.)
+    # - SECURE_3, (3): MCU security status is secure.
+    # Possible options: <SECURE_0, SECURE, UNSECURE, SECURE_3>
+    SEC: UNSECURE
+    # ------------------------------------------===== FSLACC [Optional] =====-------------------------------------------
+    # Description: Offset: 2b, Width: 2b, Factory Security Level Access Code.
+    # - GRANTED_0, (0): NXP factory access granted
+    # - DENIED_1, (1): NXP factory access denied
+    # - DENIED_2, (2): NXP factory access denied
+    # - GRANTED_3, (3): NXP factory access granted
+    # Possible options: <GRANTED_0, DENIED_1, DENIED_2, GRANTED_3>
+    FSLACC: GRANTED_3
+    # -------------------------------------------===== MEEN [Optional] =====--------------------------------------------
+    # Description: Offset: 4b, Width: 2b, Mass Erase Enable. Enables and disables mass erase capability of the flash
+    # memory module.
+    # - ENABLED_0, (0): Mass erase is enabled
+    # - ENABLED, (1): Mass erase is enabled
+    # - DISABLED, (2): Mass erase is disabled
+    # - ENABLED_3, (3): Mass erase is enabled
+    # Possible options: <ENABLED_0, ENABLED, DISABLED, ENABLED_3>
+    MEEN: ENABLED_3
+    # -------------------------------------------===== KEYEN [Optional] =====-------------------------------------------
+    # Description: Offset: 6b, Width: 2b, Backdoor Key Security Enable. Enables or disables backdoor key access to the
+    # flash memory module.
+    # - DISABLED_0, (0): Backdoor key access disabled
+    # - DISABLED, (1): Backdoor key access disabled (preferred KEYEN state to disable backdoor key access)
+    # - ENABLED, (2): Backdoor key access enabled
+    # - DISABLED_3, (3): Backdoor key access disabled
+    # Possible options: <DISABLED_0, DISABLED, ENABLED, DISABLED_3>
+    KEYEN: DISABLED_3
+  # --------------------------------------------===== FOPT [Optional] =====---------------------------------------------
+  # Description: Offset: 0x0000000D, Width: 8b; Flash nonvolatile option byte. Refer to the description of the Flash
+  # Option Register (FOPT).
+  FOPT:
+    # ------------------------------------------===== LPBOOT [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Controls the reset value of clock divider of IRC 48 Mhz to feed the Core and
+    # platform clocks. Larger divide value selections produce lower average power consumption during POR and reset
+    # sequencing and after reset exit.
+    # - DIV_BY_2, (0): Core and system clock divider (OUTDIV1) is 0x1 (divide by 2).
+    # - DIV_BY_1, (1): Core and system clock divider (OUTDIV1) is 0x0 (divide by 1).
+    # Possible options: <DIV_BY_2, DIV_BY_1>
+    LPBOOT: DIV_BY_1
+    # ----------------------------------------===== NMI_PIN_CFG [Optional] =====----------------------------------------
+    # Description: Offset: 2b, Width: 1b, Enables/disables control for the NMI function.
+    # - DISABLE, (0): NMI interrupts are always blocked. The associated pin continues to default to NMI_b pin controls
+    # with internal pullup enabled. When NMI_b pin function is disabled, it cannot be used as a source for low-power
+    # mode wake-up. If the NMI function is not required, either for an interrupt or wake up source, it is recommended
+    # that the NMI function be disabled by writing 0 to NMI_PIN_CFG.
+    # - ENABLE, (1): NMI_b pin/interrupts reset default to enabled.
+    # Possible options: <DISABLE, ENABLE>
+    NMI_PIN_CFG: ENABLE
+    # ---------------------------------------===== RESET_PIN_CFG [Optional] =====---------------------------------------
+    # Description: Offset: 3b, Width: 1b, Enables/disables control for the RESET pin.
+    # - DISABLE, (0): RESET_B pin is disabled following a POR and cannot be enabled as reset function. When this option
+    # is selected, there could be a short period of contention during a POR ramp where the MCU drives the pin low prior
+    # to establishing the setting of this option and releasing the reset function on the pin. This bit is preserved
+    # through system resets and low-power modes. When RESET_B pin function is disabled, it cannot be used as a source
+    # for low-power mode wake-up.
+    # - ENABLE, (1): The port is configured with pullup enabled, passive filter enabled.
+    # Possible options: <DISABLE, ENABLE>
+    RESET_PIN_CFG: ENABLE
+  # -------------------------------------------===== FEPROT [Optional] =====--------------------------------------------
+  # Description: Offset: 0x0000000E, Width: 8b; EEPROM Region Protect. Individual emulated EEPROM regions can be
+  # protected from alteration by setting the associated EPROT bit to the protected state. The EPROT bits are not used
+  # when the FlexNVM Partition Code is set to data flash only. When the FlexNVM Partition Code is set to data flash and
+  # EEPROM or EEPROM only, each EPROT bit covers one-eighth of the configured EEPROM data. In NVM Normal mode: The
+  # protection can only be increased, meaning currently-unprotected memory can be protected, but currently-protected
+  # memory cannot be unprotected. Unprotected regions are marked with a 1 and protected regions use a 0. Trying to alter
+  # data by writing to any protected area in the emulated EEPROM results in a protection violation error and sets the
+  # FSTAT[FPVIOL] bit.
+  FEPROT:
+    # ------------------------------------------===== EPROT0 [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, EEPROM Region Protect Bit 0 - Controls protection for 1/8th of the EEPROM data
+    # (first region)
+    # - PROTECTED, (0): EEPROM region 0 is protected
+    # - UNPROTECTED, (1): EEPROM region 0 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT0: UNPROTECTED
+    # ------------------------------------------===== EPROT1 [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, EEPROM Region Protect Bit 1 - Controls protection for 1/8th of the EEPROM data
+    # (second region)
+    # - PROTECTED, (0): EEPROM region 1 is protected
+    # - UNPROTECTED, (1): EEPROM region 1 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT1: UNPROTECTED
+    # ------------------------------------------===== EPROT2 [Optional] =====-------------------------------------------
+    # Description: Offset: 2b, Width: 1b, EEPROM Region Protect Bit 2 - Controls protection for 1/8th of the EEPROM data
+    # (third region)
+    # - PROTECTED, (0): EEPROM region 2 is protected
+    # - UNPROTECTED, (1): EEPROM region 2 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT2: UNPROTECTED
+    # ------------------------------------------===== EPROT3 [Optional] =====-------------------------------------------
+    # Description: Offset: 3b, Width: 1b, EEPROM Region Protect Bit 3 - Controls protection for 1/8th of the EEPROM data
+    # (fourth region)
+    # - PROTECTED, (0): EEPROM region 3 is protected
+    # - UNPROTECTED, (1): EEPROM region 3 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT3: UNPROTECTED
+    # ------------------------------------------===== EPROT4 [Optional] =====-------------------------------------------
+    # Description: Offset: 4b, Width: 1b, EEPROM Region Protect Bit 4 - Controls protection for 1/8th of the EEPROM data
+    # (fifth region)
+    # - PROTECTED, (0): EEPROM region 4 is protected
+    # - UNPROTECTED, (1): EEPROM region 4 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT4: UNPROTECTED
+    # ------------------------------------------===== EPROT5 [Optional] =====-------------------------------------------
+    # Description: Offset: 5b, Width: 1b, EEPROM Region Protect Bit 5 - Controls protection for 1/8th of the EEPROM data
+    # (sixth region)
+    # - PROTECTED, (0): EEPROM region 5 is protected
+    # - UNPROTECTED, (1): EEPROM region 5 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT5: UNPROTECTED
+    # ------------------------------------------===== EPROT6 [Optional] =====-------------------------------------------
+    # Description: Offset: 6b, Width: 1b, EEPROM Region Protect Bit 6 - Controls protection for 1/8th of the EEPROM data
+    # (seventh region)
+    # - PROTECTED, (0): EEPROM region 6 is protected
+    # - UNPROTECTED, (1): EEPROM region 6 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT6: UNPROTECTED
+    # ------------------------------------------===== EPROT7 [Optional] =====-------------------------------------------
+    # Description: Offset: 7b, Width: 1b, EEPROM Region Protect Bit 7 - Controls protection for 1/8th of the EEPROM data
+    # (eighth region)
+    # - PROTECTED, (0): EEPROM region 7 is protected
+    # - UNPROTECTED, (1): EEPROM region 7 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    EPROT7: UNPROTECTED
+  # -------------------------------------------===== FDPROT [Optional] =====--------------------------------------------
+  # Description: Offset: 0x0000000F, Width: 8b; Data Flash Region Protect. Individual data flash regions can be
+  # protected from program and erase operations by setting the associated DPROT bit to the protected state. Each DPROT
+  # bit protects one-eighth of the partitioned data flash memory space. The granularity of data flash protection cannot
+  # be less than the data flash sector size. If an unused DPROT bit is set to the protected state, the Erase all Blocks
+  # command does not execute and sets the FSTAT[FPVIOL] bit. Unprotected regions are marked with a 1 and protected
+  # regions use a 0. Trying to alter data in any protected area in the data flash memory results in a protection
+  # violation error and sets the FSTAT[FPVIOL] bit.
+  FDPROT:
+    # ------------------------------------------===== DPROT0 [Optional] =====-------------------------------------------
+    # Description: Offset: 0b, Width: 1b, Data Flash Region Protect Bit 0 - Controls protection for 1/8th of the data
+    # flash (first region)
+    # - PROTECTED, (0): Data Flash region 0 is protected
+    # - UNPROTECTED, (1): Data Flash region 0 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT0: UNPROTECTED
+    # ------------------------------------------===== DPROT1 [Optional] =====-------------------------------------------
+    # Description: Offset: 1b, Width: 1b, Data Flash Region Protect Bit 1 - Controls protection for 1/8th of the data
+    # flash (second region)
+    # - PROTECTED, (0): Data Flash region 1 is protected
+    # - UNPROTECTED, (1): Data Flash region 1 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT1: UNPROTECTED
+    # ------------------------------------------===== DPROT2 [Optional] =====-------------------------------------------
+    # Description: Offset: 2b, Width: 1b, Data Flash Region Protect Bit 2 - Controls protection for 1/8th of the data
+    # flash (third region)
+    # - PROTECTED, (0): Data Flash region 2 is protected
+    # - UNPROTECTED, (1): Data Flash region 2 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT2: UNPROTECTED
+    # ------------------------------------------===== DPROT3 [Optional] =====-------------------------------------------
+    # Description: Offset: 3b, Width: 1b, Data Flash Region Protect Bit 3 - Controls protection for 1/8th of the data
+    # flash (fourth region)
+    # - PROTECTED, (0): Data Flash region 3 is protected
+    # - UNPROTECTED, (1): Data Flash region 3 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT3: UNPROTECTED
+    # ------------------------------------------===== DPROT4 [Optional] =====-------------------------------------------
+    # Description: Offset: 4b, Width: 1b, Data Flash Region Protect Bit 4 - Controls protection for 1/8th of the data
+    # flash (fifth region)
+    # - PROTECTED, (0): Data Flash region 4 is protected
+    # - UNPROTECTED, (1): Data Flash region 4 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT4: UNPROTECTED
+    # ------------------------------------------===== DPROT5 [Optional] =====-------------------------------------------
+    # Description: Offset: 5b, Width: 1b, Data Flash Region Protect Bit 5 - Controls protection for 1/8th of the data
+    # flash (sixth region)
+    # - PROTECTED, (0): Data Flash region 5 is protected
+    # - UNPROTECTED, (1): Data Flash region 5 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT5: UNPROTECTED
+    # ------------------------------------------===== DPROT6 [Optional] =====-------------------------------------------
+    # Description: Offset: 6b, Width: 1b, Data Flash Region Protect Bit 6 - Controls protection for 1/8th of the data
+    # flash (seventh region)
+    # - PROTECTED, (0): Data Flash region 6 is protected
+    # - UNPROTECTED, (1): Data Flash region 6 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT6: UNPROTECTED
+    # ------------------------------------------===== DPROT7 [Optional] =====-------------------------------------------
+    # Description: Offset: 7b, Width: 1b, Data Flash Region Protect Bit 7 - Controls protection for 1/8th of the data
+    # flash (eighth region)
+    # - PROTECTED, (0): Data Flash region 7 is protected
+    # - UNPROTECTED, (1): Data Flash region 7 is not protected
+    # Possible options: <PROTECTED, UNPROTECTED>
+    DPROT7: UNPROTECTED

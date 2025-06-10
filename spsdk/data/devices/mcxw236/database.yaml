@@ -38,7 +38,6 @@ info:
         vid: 0x1FC9
         pid: 0x0021
 
-
 features:
   # ======== Communication buffer section ========
   comm_buffer:
@@ -63,7 +62,7 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvt
-          - Mbi_MixinLoadAddressOptional
+          - Mbi_MixinLoadAddress
           - Mbi_MixinTrustZone
           - Mbi_ExportMixinAppTrustZone
       crc_ram:
@@ -81,6 +80,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
           - Mbi_ExportMixinAppTrustZone
           - Mbi_ExportMixinCrcSign
       signed_ram:
@@ -99,6 +99,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
           - Mbi_MixinCertBlockV1
           - Mbi_ExportMixinAppTrustZoneCertBlock
           - Mbi_ExportMixinRsaSign

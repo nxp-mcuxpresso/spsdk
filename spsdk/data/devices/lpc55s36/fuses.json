@@ -18,7 +18,6 @@
                             "id": "fuse0-bits-0-7",
                             "name": "LC_STATE[7:0]",
                             "description": "OTP life cycle state LC_STATE[7:0].",
-                            "advanced": true,
                             "values": [
                                 {
                                     "name": "BLANK",

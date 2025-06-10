@@ -14,7 +14,7 @@ from struct import calcsize, pack, unpack_from
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError
 from spsdk.image.hab.hab_header import Header, SegmentTag
 from spsdk.image.hab.segments.segment import HabSegmentBase, HabSegmentEnum, PaddingSegment
 from spsdk.image.hab.utils import (
@@ -150,6 +150,11 @@ class SegIVT(PaddingSegment):
         :return: SegIVT object
         """
         header = Header.parse(data, SegmentTag.IVT.tag)
+        required_size = header.size + calcsize(cls.FORMAT)
+        if len(data) < required_size:
+            raise SPSDKParsingError(
+                f"Invalid input data size for IVT segment: ({len(data)} < {required_size})."
+            )
         obj = cls(header.param)
         (
             obj.app_address,

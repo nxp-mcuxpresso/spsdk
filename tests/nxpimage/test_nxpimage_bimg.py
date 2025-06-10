@@ -14,6 +14,8 @@ import pytest
 
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
+from spsdk.image.ahab.ahab_data import AhabTargetMemory
+from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import BootableImageSegment
 from spsdk.image.mem_type import MemoryType
@@ -558,3 +560,54 @@ def test_nxpimage_bimg_merge_post_export(
         # assert that the output directory is created and is not empty
         assert os.path.exists(os.path.join(tmpdir, "output"))
         assert len(os.listdir(os.path.join(tmpdir, "output"))) == 4
+
+def test_nxpimage_bimg_merge_custom_offset(
+    cli_runner: CliRunner, tmpdir, data_dir
+):
+    with use_working_directory(data_dir):
+        config_dir = os.path.join(data_dir, "bootable_image", "mimx9352", "serial_downloader")
+        config_file_path = os.path.join(config_dir, "config_custom_offset.yaml")
+        out_file = os.path.join(tmpdir, f"bimg_mimx9352_merged.bin")
+        cmd = [
+            "bootable-image",
+            "export",
+            "-c",
+            config_file_path,
+            "-o",
+            out_file,
+            "-oc",
+            f"post_export={os.path.join(tmpdir, 'output')}",
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+        assert os.path.isfile(out_file)
+        bimg_bin = load_binary(out_file)
+        ahab_1 = AHABImage.parse(bimg_bin, family=FamilyRevision("mimx9352"), target_memory=AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER.label)
+        assert ahab_1
+        ahab_2 = AHABImage.parse(bimg_bin[0xA000:], family=FamilyRevision("mimx9352"), target_memory=AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER.label)
+        assert ahab_2
+
+def test_nxpimage_bimg_parse_custom_offset(
+    cli_runner: CliRunner, tmpdir, data_dir
+):
+    with use_working_directory(data_dir):
+        config_dir = os.path.join(data_dir, "bootable_image", "mimx9352", "serial_downloader")
+        input_binary = os.path.join(config_dir, "merged_image_custom_offset.bin")
+        cmd = [
+            "bootable-image",
+            "parse",
+            "-m",
+            "serial_downloader",
+            "-f",
+            "mimx9352",
+            "-b",
+            input_binary,
+            "-o",
+            str(tmpdir),
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+        bimg_config = os.path.join(tmpdir, f"bootable_image_mimx9352_serial_downloader.yaml")
+        assert os.path.isfile(bimg_config)
+        config = load_configuration(bimg_config)
+        assert config.get("secondary_image_container_set")
+        os.path.isfile(os.path.join(config_dir, config["secondary_image_container_set"]['path']))
+        assert config["secondary_image_container_set"]['offset'] == 40960

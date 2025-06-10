@@ -78,6 +78,7 @@ mbi_basic_tests = [
     ("mb_xip_crc.yaml", "rt7xx"),
     ("mb_xip_plain.yaml", "mcxc444"),
     ("mb_xip_plain_bca.yaml", "mcxc444"),
+    ("mb_xip_plain.yaml", "mcxe247"),
 ]
 
 mbi_signed_tests = [

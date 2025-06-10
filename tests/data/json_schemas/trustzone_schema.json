@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mcuxpresso.nxp.com/secure_provisioning/trustzone_schema.json",
+  "title": "Schema for definition of TrustZone settings for Secure Provision Tool",
+  "description": "Copyright NXP 2020-2025, Schema for definition of the TrustZone settings for Secure Provision Tool",
+
+  "definitions": {
+    "trustzone_register": {
+      "$id": "#/definitions/trustzone_register",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "localschema:processors_registers_schema_def_abstractregister.json"
+        },
+        {
+          "properties": {
+            "name": {
+              "maxLength": 200
+            }
+          }
+        }
+      ]
+
+    }
+  },
+
+  "type": "object",
+  "required": [
+    "cpu", "groups"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "cpu": {
+      "$id": "#/properties/cpu",
+      "type": "string",
+      "title": "Name of the processor series or family or NPI, for which the file is valid"
+    },
+    "groups": {
+      "$id": "#/properties/groups",
+      "type": "array",
+      "title": "List of registers groups. Registers are expected to organized in a logical groups.",
+      "minItems": 1,
+      "additionalItems": false,
+      "items": {
+        "$id": "#/properties/group",
+        "type": "object",
+        "required": [
+          "group", "registers"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "$ref": "localschema:processors_registers_schema_def_group_info.json"
+          },
+          "registers": {
+            "$id": "#/properties/registers",
+            "type": "array",
+            "title": "List of registers in the group.",
+            "minItems": 1,
+            "additionalItems": false,
+            "items": {
+              "$ref": "#/definitions/trustzone_register"
+            }
+          }
+        }
+      }
+    }
+  }
+}

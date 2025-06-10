@@ -85,7 +85,7 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
     [
         ("lpc55s3x", DevHsmSB31),
         ("mc56f818xx", DevHsmSBx),
-        ("mcxa276", DevHsmSBc),
+        ("mcxa286", DevHsmSBc),
     ],
 )
 def test_devhsm_factory(family, expected_cls):
@@ -112,7 +112,7 @@ def test_sbx_devhsm(data_dir):
         ("mcxn9xx"),
         ("mwct20d2"),
         ("rw61x"),
-        ("mcxa276"),
+        ("mcxa286"),
     ],
 )
 def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir, family):

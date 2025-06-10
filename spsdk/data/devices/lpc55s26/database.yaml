@@ -66,6 +66,7 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinLoadAddress
           - Mbi_MixinTrustZone
           - Mbi_ExportMixinAppTrustZone
       crc_ram:
@@ -83,6 +84,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
           - Mbi_ExportMixinAppTrustZone
           - Mbi_ExportMixinCrcSign
       signed_ram:
@@ -101,6 +103,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
           - Mbi_MixinCertBlockV1
           - Mbi_ExportMixinAppTrustZoneCertBlock
           - Mbi_ExportMixinRsaSign

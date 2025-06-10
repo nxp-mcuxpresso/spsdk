@@ -12,12 +12,11 @@
                     "name": "TAG",
                     "description": "Tag: Magic number to verify bootloader configuration is valid. Must be set to 'kcfg' (0x6766636B).",
                     "offset_int": "0",
-                    "reset_value_int": "0x6766636B",
+                    "default_value_int": "0x6766636B",
                     "reg_width": 32,
                     "bitfields": [
                         {
                             "width": 32,
-                            "reset_value_int": "0x6766636B",
                             "id": "field000-bits0-31",
                             "name": "tag",
                             "description": "Tag: Magic number to verify bootloader configuration is valid. Must be set to 'kcfg' (0x6766636B)."
@@ -30,7 +29,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x004",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -39,7 +38,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x008",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -48,7 +47,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -56,12 +55,11 @@
                     "name": "ENABLED_PERIPHERALS",
                     "description": "Configuration bitfields of peripherals to enable. Bootloader will enable the peripheral if corresponding bit is set to 1.",
                     "offset_int": "0x0010",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "1",
                             "id": "field010-bit0",
                             "name": "LPUART",
                             "description": "Enable LPUART peripheral",
@@ -80,7 +78,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "1",
                             "id": "field010-bit1",
                             "name": "I2C",
                             "description": "Enable I2C peripheral",
@@ -99,7 +96,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "1",
                             "id": "field010-bit2",
                             "name": "SPI",
                             "description": "Enable SPI peripheral",
@@ -132,12 +128,11 @@
                     "name": "I2C_SLAVE_ADDRESS",
                     "description": "Configuration of I2C slave address",
                     "offset_int": "0x011",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0xFF",
                             "id": "field011-bits0-7",
                             "name": "i2cSlaveAddress",
                             "description": "If not 0xFF, used as the 7-bit I2C slave address. If 0xFF, defaults to 0x10 for I2C slave address."
@@ -147,17 +142,16 @@
                 {
                     "id": "field012",
                     "name": "PERIPHERAL_DETECTION_TIMEOUT",
-                    "description": "Timeout in miliseconds for active peripheral detection. If 0xFFFF, defaults to 5 seconds.",
+                    "description": "Timeout in milliseconds for active peripheral detection. If 0xFFFF, defaults to 5 seconds.",
                     "offset_int": "0x012",
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 16,
-                            "reset_value_int": "0xFFFF",
                             "id": "field012-bits0-16",
                             "name": "peripheralDetectionTimeout",
-                            "description": "Timeout in miliseconds for active peripheral detection. If 0xFFFF, defaults to 5 seconds."
+                            "description": "Timeout in milliseconds for active peripheral detection. If 0xFFFF, defaults to 5 seconds."
                         }
                     ]
                 },
@@ -167,7 +161,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x014",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "reg_width": 16
                 },
                 {
@@ -176,7 +170,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x016",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "reg_width": 16
                 },
                 {
@@ -185,7 +179,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x018",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -193,12 +187,11 @@
                     "name": "CLOCK_FLAGS",
                     "description": "Configuration clockFlags field. The flags in the clockFlags configuration field are enabled if the corresponding bit is cleared (0).",
                     "offset_int": "0x01C",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x1",
                             "id": "field01C-bit0",
                             "name": "HighSpeed",
                             "description": "Enable high speed mode (i.e., 48 MHz).",
@@ -225,12 +218,11 @@
                     "name": "CLOCK_DIVIDER",
                     "description": "Clock divider configuration",
                     "offset_int": "0x01D",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0xFF",
                             "id": "field01D-bits0-7",
                             "name": "clockDivider",
                             "description": "Inverted value of the divider to use for core and bus clocks when in high speed mode."
@@ -243,7 +235,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "reg_width": 16
                 },
                 {
@@ -252,7 +244,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x020",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -261,7 +253,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x024",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -270,7 +262,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x028",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -279,7 +271,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x02C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -288,7 +280,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x030",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -297,7 +289,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x034",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -306,7 +298,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x038",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 },
                 {
@@ -315,7 +307,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x03C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32
                 }
             ]

@@ -705,13 +705,13 @@
                     "description": "LOCK_CFG4 fuse word",
                     "index_int": "0x0004",
                     "shadow_reg_offset_int": "0x0010",
-                    "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
                         "read_lock_int": "0x4000",
                         "operation_lock_int": "0x2000"
                     },
+                    "reg_width": 16,
                     "bitfields": [
                         {
                             "width": 3
@@ -735,9 +735,9 @@
                             "description": "Customer BOOTCFG2 Lock bits(Over-write Protection bit[1])",
                             "values": [
                                 {
-                                    "name": "NO OP",
+                                    "name": "No OP",
                                     "value": 0,
-                                    "description": "NO OP"
+                                    "description": "No OP"
                                 },
                                 {
                                     "name": "OP",
@@ -919,9 +919,9 @@
                             "description": "Customer BOOTCFG2 Lock bits(Read Protection bit[2])",
                             "values": [
                                 {
-                                    "name": "NO RP",
+                                    "name": "No RP",
                                     "value": 0,
-                                    "description": "NO RP"
+                                    "description": "No RP"
                                 },
                                 {
                                     "name": "RP",
@@ -946,8 +946,7 @@
                     "description": "DCFG_CC_SOCU fuse word",
                     "index_int": "0x0025",
                     "shadow_reg_offset_int": "0x0094",
-                    "default_value_int": "0x00030003",
-                    "individual_write_lock": "implicit",
+                    "default_value_int": "0x00000003",
                     "lock": {
                         "register_id": "fuse3",
                         "write_lock_int": "0x0001",
@@ -959,7 +958,7 @@
                             "width": 8,
                             "id": "fuse37-bits-0-7",
                             "name": "LC_STATE_RED",
-                            "description": "Redundent Life Cycle"
+                            "description": "Redundant Life Cycle"
                         },
                         {
                             "width": 1,
@@ -1109,7 +1108,7 @@
                             "width": 8,
                             "id": "fuse37-bits-16-23",
                             "name": "BP_LC_STATE_RED",
-                            "description": "BP Redundent Life Cycle"
+                            "description": "BP Redundant Life Cycle"
                         },
                         {
                             "width": 1,
@@ -1560,8 +1559,7 @@
                     "description": "DCFG_CC_SOCU_AHB fuse word",
                     "index_int": "0x008F",
                     "shadow_reg_offset_int": "0x023C",
-                    "default_value_int": "0x00030003",
-                    "individual_write_lock": "implicit",
+                    "default_value_int": "0x00000003",
                     "lock": {
                         "register_id": "fuse3",
                         "write_lock_int": "0x0001",
@@ -2927,9 +2925,9 @@
                                     "description": "uSDHC flash"
                                 },
                                 {
-                                    "name": "Serial boot",
+                                    "name": "XSPI NAND flash",
                                     "value": 3,
-                                    "description": "Serial boot (ISP)"
+                                    "description": "XSPI NAND flash"
                                 }
                             ]
                         },
@@ -3123,6 +3121,11 @@
                                     "name": "Normal",
                                     "value": 0,
                                     "description": "Normal boot (192 MHz) - VDD1 = 1.0 V"
+                                },
+                                {
+                                    "name": "High",
+                                    "value": 1,
+                                    "description": "High speed boot (300 MHz) - VDD1 = 1.1 V"
                                 },
                                 {
                                     "name": "Low",
@@ -3535,7 +3538,7 @@
                             "width": 1,
                             "id": "fuse138-bit-3",
                             "name": "XSPI_CACHE64_EN",
-                            "description": "Enabe the pSRAM cache",
+                            "description": "Enable the pSRAM cache",
                             "values": [
                                 {
                                     "name": "Disable",
@@ -3571,7 +3574,22 @@
                             ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse138-bit-6",
+                            "name": "XSPI_DQS_INTERNAL_LOOPBACK_EN",
+                            "description": "Enable to use internal loopback DQS as XSPI read clock ",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
@@ -3631,7 +3649,7 @@
                 },
                 {
                     "id": "fuse139",
-                    "name": "BOOT_CFG3 (IPED CTX  mode)",
+                    "name": "BOOT_CFG3",
                     "description": "BOOT_CFG3 (IPED CTX  mode) fuse word",
                     "index_int": "0x008B",
                     "shadow_reg_offset_int": "0x022C",
@@ -3831,7 +3849,7 @@
                             "width": 1,
                             "id": "fuse140-bit-20",
                             "name": "ISP_REC_LED_PIN_EN",
-                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or receovery boot mode. Output polarity. ",
+                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or recovery boot mode. Output polarity. ",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -3904,7 +3922,7 @@
                             "width": 8,
                             "id": "fuse141-bits-8-15",
                             "name": "POWERDOWN_TIMEOUT_SECS",
-                            "description": "Device enters deep-power down state if it idles beyound this time during ISP command handling loop.\nnd - n x 1 s"
+                            "description": "Device enters deep-power down state if it idles beyond this time during ISP command handling loop.\nnd - n x 1 s"
                         },
                         {
                             "width": 4,
@@ -3916,7 +3934,7 @@
                             "width": 2,
                             "id": "fuse141-bits-20-21",
                             "name": "REC_BOOT_FC_PCS",
-                            "description": "Specifies LP_FLEXCOMM PCS connestes to 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set.",
+                            "description": "Specifies LP_FLEXCOMM PCS connected to 1-bit SPI flash used for recovery boot. This field is valid only if REC_BOOT_EN is set.",
                             "values": [
                                 {
                                     "name": "PCS0",
@@ -3969,7 +3987,56 @@
                             ]
                         },
                         {
-                            "width": 8
+                            "width": 2,
+                            "id": "fuse141-bits-24-25",
+                            "name": "XTAL_FREQ",
+                            "description": "Specifies external XTAL frequency",
+                            "values": [
+                                {
+                                    "name": "24 MHz",
+                                    "value": 0,
+                                    "description": "24 MHz"
+                                },
+                                {
+                                    "name": "30 MHz",
+                                    "value": 1,
+                                    "description": "30 MHz"
+                                },
+                                {
+                                    "name": "32 MHz",
+                                    "value": 2,
+                                    "description": "32 MHz"
+                                },
+                                {
+                                    "name": "19.2 MHz",
+                                    "value": 3,
+                                    "description": "19.2 MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse141-bit-26",
+                            "name": "OSC_HIGH_GAIN_MODE",
+                            "description": "Specifies power mode of external XTAL",
+                            "values": [
+                                {
+                                    "name": "Low power mode",
+                                    "value": 0,
+                                    "description": "Low power mode."
+                                },
+                                {
+                                    "name": "High gain mode",
+                                    "value": 1,
+                                    "description": "High gain mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse141-bits-27-31",
+                            "name": "OSC_SETTLING_TIME",
+                            "description": "Specifies the settling time of OSC\n0d - 390 \u03bcs (default)\nnd - n \u00d7 100 \u03bcs \u00d7 1.3"
                         }
                     ]
                 },
@@ -4016,7 +4083,25 @@
                     },
                     "bitfields": [
                         {
-                            "width": 9
+                            "width": 8
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse160-bit-8",
+                            "name": "DBG_OVER_USB_DIS",
+                            "description": "Disable debug over USB0 pins. ",
+                            "values": [
+                                {
+                                    "name": "Enable",
+                                    "value": 0,
+                                    "description": "Enable"
+                                },
+                                {
+                                    "name": "Disable",
+                                    "value": 1,
+                                    "description": "Disable"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
@@ -4039,8 +4124,8 @@
                         {
                             "width": 3,
                             "id": "fuse160-bits-10-12",
-                            "name": "DBG_OVER_USB_SEL_PORT",
-                            "description": "Defines which GPIO port is selected to enable debug over USB0 pins feature.\nxd - GPIO port x"
+                            "name": "DBG_OVER_USB_SEL_GPIO",
+                            "description": "Defines which GPIO pin is selected to enable debug over USB0 pins feature.\nxd - GPIO pin x"
                         },
                         {
                             "width": 5,
@@ -4055,7 +4140,323 @@
                             "description": "If 00h, defaults to 10h for LPI2C target address.\nIf not 00h, use this value as the 7-bit LPI2C target address"
                         },
                         {
-                            "width": 7
+                            "width": 7,
+                            "id": "fuse160-bits-25-31",
+                            "name": "USBPLL_LOCK_TIME",
+                            "description": "Specifies the lock time of USB PLL\n0d - 30 \u00b5s (default)\nnd - n \u00d7 10 \u00b5s"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse161",
+                    "name": "OTP_XSPI_NAND_CFG9",
+                    "description": "OTP_XSPI_NAND_CFG9 fuse word",
+                    "index_int": "0x00A1",
+                    "shadow_reg_offset_int": "0x0284",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse5",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse161-bit-0",
+                            "name": "XSPI_NAND_SEARCH_CNT",
+                            "description": "0b - Search at most 1 block (for BCB)",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Search at most 1 block (for BCB)"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Search at most 2 blocks"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse161-bit-1",
+                            "name": "XSPI_NAND_COL_ADDR_WIDTH",
+                            "description": "0b - 11 bits (for 2 KB-page devices)",
+                            "values": [
+                                {
+                                    "name": "11 bits",
+                                    "value": 0,
+                                    "description": "11 bits (for 2 KB-page devices)"
+                                },
+                                {
+                                    "name": "12 bits",
+                                    "value": 1,
+                                    "description": "12 bits (for 4 KB-page devices)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse161-bits-2-3",
+                            "name": "XSPI_NAND_CS_INTERVAL",
+                            "description": "CS de-asserted interval between two commands",
+                            "values": [
+                                {
+                                    "name": "100 ns",
+                                    "value": 0,
+                                    "description": "100 ns"
+                                },
+                                {
+                                    "name": "200 ns",
+                                    "value": 1,
+                                    "description": "200 ns"
+                                },
+                                {
+                                    "name": "400 ns",
+                                    "value": 2,
+                                    "description": "400 ns"
+                                },
+                                {
+                                    "name": "50 ns",
+                                    "value": 3,
+                                    "description": "50 ns"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse161-bits-4-5",
+                            "name": "XSPI_NAND_SEARCH_STRIDE",
+                            "description": "BCB search step/stride, aligned with block size",
+                            "values": [
+                                {
+                                    "name": "64 pages",
+                                    "value": 0,
+                                    "description": "64 pages"
+                                },
+                                {
+                                    "name": "128 pages",
+                                    "value": 1,
+                                    "description": "128 pages"
+                                },
+                                {
+                                    "name": "256 pages",
+                                    "value": 2,
+                                    "description": "256 pages"
+                                },
+                                {
+                                    "name": "32 pages",
+                                    "value": 3,
+                                    "description": "32 pages"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse161-bits-6-7",
+                            "name": "XSPI_NAND_HOLD_TIME",
+                            "description": "Hold time before interaction with NAND",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "Wait until NAND is idle (by polling NAND's status register)"
+                                },
+                                {
+                                    "name": "500 us",
+                                    "value": 1,
+                                    "description": "500 us"
+                                },
+                                {
+                                    "name": "1 ms",
+                                    "value": 2,
+                                    "description": "1 ms"
+                                },
+                                {
+                                    "name": "3 ms",
+                                    "value": 3,
+                                    "description": "3 ms"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse161-bits-10-11",
+                            "name": "XSPI_NAND_RESET_TYPE",
+                            "description": "00b - No reset before interaction with NAND",
+                            "values": [
+                                {
+                                    "name": "00",
+                                    "value": 0,
+                                    "description": "No reset before interaction with NAND"
+                                },
+                                {
+                                    "name": "01",
+                                    "value": 1,
+                                    "description": "Reset the NAND with FFh"
+                                },
+                                {
+                                    "name": "10",
+                                    "value": 2,
+                                    "description": "Reset the NAND with 66h, 99h"
+                                },
+                                {
+                                    "name": "11",
+                                    "value": 3,
+                                    "description": "Reset the NAND with dedicated reset pin"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse161-bits-16-18",
+                            "name": "XSPI_NAND_FREQ",
+                            "description": "000b - 80 MHz ",
+                            "values": [
+                                {
+                                    "name": "80 MHz",
+                                    "value": 0,
+                                    "description": "80 MHz"
+                                },
+                                {
+                                    "name": "100 MHz",
+                                    "value": 1,
+                                    "description": "100 MHz"
+                                },
+                                {
+                                    "name": "120 MHz",
+                                    "value": 2,
+                                    "description": "120 MHz"
+                                },
+                                {
+                                    "name": "133 MHz",
+                                    "value": 3,
+                                    "description": "133 MHz"
+                                },
+                                {
+                                    "name": "166 MHz",
+                                    "value": 4,
+                                    "description": "166 MHz"
+                                },
+                                {
+                                    "name": "200 MHz",
+                                    "value": 5,
+                                    "description": "200 MHz"
+                                },
+                                {
+                                    "name": "60 MHz",
+                                    "value": 6,
+                                    "description": "60 MHz"
+                                },
+                                {
+                                    "name": "30 MHz",
+                                    "value": 7,
+                                    "description": "30 MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse161-bits-21-22",
+                            "name": "XSPI_PAGES_PER_BLOCK",
+                            "description": "00b - 64 Pages",
+                            "values": [
+                                {
+                                    "name": "64 Pages",
+                                    "value": 0,
+                                    "description": "64 Pages"
+                                },
+                                {
+                                    "name": "128 Pages",
+                                    "value": 1,
+                                    "description": "128 Pages"
+                                },
+                                {
+                                    "name": "256 Pages",
+                                    "value": 2,
+                                    "description": "256 Pages"
+                                },
+                                {
+                                    "name": "32 Pages",
+                                    "value": 3,
+                                    "description": "32 Pages"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse161-bits-24-31",
+                            "name": "XSPI_FEATURE_CONFIG",
+                            "description": "Used for loading the arguments/parameters for device configuration commands\nbit 0 - For Micron memory, it must be configured as 0b to disable continue read mode; for Macronix or Winbond memory, it must be configured as 1b to enable quad mode.\nbit 3 - For Winbond memory, it must be configured as 1b to enable buffer mode.\nbit 4 - Must be configured as 1b to enable error code correction\nOthers - Reserved"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse162",
+                    "name": "BOOT_CFG10",
+                    "description": "BOOT_CFG10 fuse word",
+                    "index_int": "0x00A2",
+                    "shadow_reg_offset_int": "0x0288",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse5",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    },
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse162-bits-0-3",
+                            "name": "XSPI_CFG_ERASE_SZ",
+                            "description": "Erase size for configuration pages. \nnd - Erase size 2^(n+8) bytes"
+                        },
+                        {
+                            "width": 15,
+                            "id": "fuse162-bits-4-18",
+                            "name": "XSPI_STATIC_CFG_OFFSET",
+                            "description": "Offset expressed as multiple of 4 KB from where configuration pages/sectors start. Maximum memory mapped XSPI space is 128 MB hence 10 bit field.\nXSPI_STATIC_CFG_ADDR = 0800_0000h + (XSPI_STATIC_CFG_OFFSET x 4096)"
+                        },
+                        {
+                            "width": 9,
+                            "id": "fuse162-bits-19-27",
+                            "name": "IMAGE0_OFFSET",
+                            "description": "Offset expressed as multiple of 4 KB from where configuration pages/sectors start."
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse162-bit-28",
+                            "name": "XSPI_ARB_NS_FW_VER",
+                            "description": "Field determines which firmware version counter should be used for anti-rollback checking of dynamic configuration pages.",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Use OTP_SEC_FW_VERSION (up to 63)"
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Use OTP_NS_FW_VERSION (up to 255)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
                         }
                     ]
                 }
@@ -4412,6 +4813,76 @@
                                     "name": "000000",
                                     "value": 0,
                                     "description": "Dummy cycles probed automatically"
+                                },
+                                {
+                                    "name": "0001",
+                                    "value": 1,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "0010",
+                                    "value": 2,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "0011",
+                                    "value": 3,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "0100",
+                                    "value": 4,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "0101",
+                                    "value": 5,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "0110",
+                                    "value": 6,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "0111",
+                                    "value": 7,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1000",
+                                    "value": 8,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1001",
+                                    "value": 9,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1010",
+                                    "value": 10,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1011",
+                                    "value": 11,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1100",
+                                    "value": 12,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1101",
+                                    "value": 13,
+                                    "description": "Number of dummy cycles"
+                                },
+                                {
+                                    "name": "1110",
+                                    "value": 14,
+                                    "description": "Number of dummy cycles"
                                 }
                             ]
                         },
@@ -4561,7 +5032,7 @@
                                     "description": "Additional 500 us"
                                 },
                                 {
-                                    "name": "0011",
+                                    "name": "Additional 1 ms",
                                     "value": 3,
                                     "description": "Additional 1 ms"
                                 },
@@ -4653,14 +5124,7 @@
                             "width": 7,
                             "id": "fuse153-bits-0-6",
                             "name": "XSPI_DELAY_CELL_NUM",
-                            "description": "Delay cell numbers for flash read sampling via external DQS",
-                            "values": [
-                                {
-                                    "name": "0",
-                                    "value": 0,
-                                    "description": "Use the delay cell value calculated by ROM"
-                                }
-                            ]
+                            "description": "Delay cell numbers for flash read sampling via external DQS\n0 - Use the delay cell value calculated by ROM\nOthers - Use the delay cell value in terms of 100 ps"
                         },
                         {
                             "width": 10,
@@ -4688,7 +5152,7 @@
                                 {
                                     "name": "101",
                                     "value": 5,
-                                    "description": "Force using interanal loopback DQS"
+                                    "description": "Force using internal loopback DQS"
                                 }
                             ]
                         },
@@ -4795,7 +5259,7 @@
             "registers": [
                 {
                     "id": "fuse158",
-                    "name": "SDHC_CFGF0 (for uSDHC0)",
+                    "name": "SDHC_CFGF0",
                     "description": "SDHC_CFGF0 (for uSDHC0) fuse word",
                     "index_int": "0x009E",
                     "shadow_reg_offset_int": "0x0278",
@@ -4963,7 +5427,7 @@
                 },
                 {
                     "id": "fuse159",
-                    "name": "SDHC_CFGF1 (for uSDHC1)",
+                    "name": "SDHC_CFGF1",
                     "description": "SDHC_CFGF1 (for uSDHC1) fuse word",
                     "index_int": "0x009F",
                     "shadow_reg_offset_int": "0x027C",
@@ -5137,34 +5601,6 @@
                 "description": "General purpose for customer use"
             },
             "registers": [
-                {
-                    "id": "fuse161",
-                    "name": "BOOT_CFG9",
-                    "description": "For customer use",
-                    "index_int": "0x00A1",
-                    "shadow_reg_offset_int": "0x0284",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse5",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800",
-                        "operation_lock_int": "0x0400"
-                    }
-                },
-                {
-                    "id": "fuse162",
-                    "name": "BOOT_CFG10",
-                    "description": "For customer use",
-                    "index_int": "0x00A2",
-                    "shadow_reg_offset_int": "0x0288",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse5",
-                        "write_lock_int": "0x0200",
-                        "read_lock_int": "0x0800",
-                        "operation_lock_int": "0x0400"
-                    }
-                },
                 {
                     "id": "fuse163",
                     "name": "BOOT_CFG11",
@@ -5593,6 +6029,98 @@
                     "description": "General purpose fuse for customer use",
                     "index_int": "0x01E0",
                     "shadow_reg_offset_int": "0x0780",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "reg_width": 16
+                },
+                {
+                    "id": "fuse481",
+                    "name": "GPR0_CFG9",
+                    "description": "General purpose fuse for customer use",
+                    "index_int": "0x01E1",
+                    "shadow_reg_offset_int": "0x0784",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "reg_width": 16
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PVT",
+                "description": "Domain PVT setpoint"
+            },
+            "registers": [
+                {
+                    "id": "fuse482",
+                    "name": "SENSE_PVT_SP3",
+                    "description": "Sense domain PVT setpoint 3 CPU1/HiFi4 \u2013 Freq/Volt",
+                    "index_int": "0x01E2",
+                    "shadow_reg_offset_int": "0x0788",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "reg_width": 16
+                },
+                {
+                    "id": "fuse483",
+                    "name": "COM_PVT_SP3",
+                    "description": "Compute domain PVT setpoint 3 CPU0/HiFi4 \u2013 Freq/Volt",
+                    "index_int": "0x01E3",
+                    "shadow_reg_offset_int": "0x078C",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "reg_width": 16
+                },
+                {
+                    "id": "fuse484",
+                    "name": "SENSE_PVT_SP2",
+                    "description": "Sense domain PVT setpoint 2 CPU1/HiFi1 \u2013 Freq/Volt",
+                    "index_int": "0x01E4",
+                    "shadow_reg_offset_int": "0x0790",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "reg_width": 16
+                },
+                {
+                    "id": "fuse485",
+                    "name": "COM_PVT_SP2",
+                    "description": "Compute domain PVT setpoint 2 CPU0/HiFi4 \u2013 Freq/Volt",
+                    "index_int": "0x01E5",
+                    "shadow_reg_offset_int": "0x0794",
+                    "lock": {
+                        "register_id": "fuse3",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
+                    "reg_width": 16
+                },
+                {
+                    "id": "fuse486",
+                    "name": "SENSE_PVT_SP1",
+                    "description": "Sense domain PVT setpoint 1 CPU1/HiFi1 \u2013 Freq/Volt",
+                    "index_int": "0x01E6",
+                    "shadow_reg_offset_int": "0x0798",
                     "lock": {
                         "register_id": "fuse3",
                         "write_lock_int": "0x1000",

@@ -12,7 +12,7 @@
                     "name": "HEADER",
                     "description": "Header",
                     "offset_int": "0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -20,7 +20,7 @@
                     "name": "VERSION",
                     "description": "Version",
                     "offset_int": "0x0004",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -28,7 +28,7 @@
                     "name": "S_FW_Version",
                     "description": "Secure firmware version (Monotonic counter)",
                     "offset_int": "0x0008",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -36,7 +36,7 @@
                     "name": "NS_FW_Version",
                     "description": "Non-Secure firmware version (Monotonic counter)",
                     "offset_int": "0x000C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -44,7 +44,7 @@
                     "name": "IMAGE_KEY_REVOKE",
                     "description": "Image key revocation ID (Monotonic counter)",
                     "offset_int": "0x0010",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -53,7 +53,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0014",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -61,12 +61,11 @@
                     "name": "ROTKH_REVOKE",
                     "description": "Root of Trust Key Hash Revoke",
                     "offset_int": "0x0018",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field018-bits0-1",
                             "name": "RoTK0_EN",
                             "description": "RoT Key 0 enable.",
@@ -95,7 +94,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field018-bits2-3",
                             "name": "RoTK1_EN",
                             "description": "RoT Key 1 enable.",
@@ -124,7 +122,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field018-bits4-5",
                             "name": "RoTK2_EN",
                             "description": "RoT Key 2 enable.",
@@ -153,7 +150,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field018-bits6-7",
                             "name": "RoTK3_EN",
                             "description": "RoT Key 3 enable.",
@@ -190,19 +186,17 @@
                     "name": "VENDOR_USAGE",
                     "description": "Vendor Usage",
                     "offset_int": "0x001C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field01C-bits0-15",
                             "name": "DBG_VENDOR_USAGE",
                             "description": "Debug Vendor Usage"
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field01C-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "inverse value of bits [15:0]",
@@ -215,12 +209,11 @@
                     "name": "DCFG_CC_SOCU_NS_PIN",
                     "description": "Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.",
                     "offset_int": "0x0020",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field020-bit0",
                             "name": "NIDEN",
                             "description": "Non Secure non-invasive debug enable",
@@ -239,7 +232,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field020-bit1",
                             "name": "DBGEN",
                             "description": "Non Secure debug enable",
@@ -261,7 +253,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field020-bit4",
                             "name": "TAPEN",
                             "description": "JTAG TAP enable",
@@ -283,7 +274,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field020-bit6",
                             "name": "ISP_CMD_EN",
                             "description": "ISP Boot Command enable",
@@ -302,7 +292,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field020-bit7",
                             "name": "FA_ME_CMD_EN",
                             "description": "Fault Analysis/Mass Erase Command enable",
@@ -324,7 +313,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field020-bit15",
                             "name": "UUID_CHECK",
                             "description": "Enforce UUID match during Debug authentication.",
@@ -343,7 +331,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field020-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "inverse value of bits [15:0]",
@@ -356,12 +343,11 @@
                     "name": "DCFG_CC_SOCU_NS_DFLT",
                     "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.",
                     "offset_int": "0x0024",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit0",
                             "name": "NIDEN",
                             "description": "Non Secure non-invasive debug fixed state",
@@ -380,7 +366,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit1",
                             "name": "DBGEN",
                             "description": "Non Secure debug fixed state",
@@ -402,7 +387,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit4",
                             "name": "TAPEN",
                             "description": "JTAG TAP fixed state",
@@ -424,7 +408,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit6",
                             "name": "ISP_CMD_EN",
                             "description": "ISP Boot Command fixed state",
@@ -443,7 +426,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit7",
                             "name": "FA_ME_CMD_EN",
                             "description": "Fault Analysis/Mass Erase Command fixed state",
@@ -465,7 +447,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field024-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "inverse value of bits [15:0]",
@@ -478,7 +459,7 @@
                     "name": "ENABLE_FA_MODE",
                     "description": "Enable FA mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.",
                     "offset_int": "0x0028",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -487,7 +468,7 @@
                     "description": "CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.",
                     "offset_int": "0x002C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -504,7 +485,7 @@
                     "description": "Field.",
                     "offset_int": "0x0030",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -513,12 +494,11 @@
                     "description": "Field.",
                     "offset_int": "0x0034",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field034-bits0-1",
                             "name": "TYPE",
                             "description": "Type."
@@ -528,7 +508,6 @@
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field034-bits8-11",
                             "name": "INDEX",
                             "description": "Index."
@@ -538,7 +517,6 @@
                         },
                         {
                             "width": 6,
-                            "reset_value_int": "0",
                             "id": "field034-bits24-29",
                             "name": "SIZE",
                             "description": "Size."
@@ -554,7 +532,7 @@
                     "description": "Field.",
                     "offset_int": "0x0038",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -563,7 +541,7 @@
                     "description": "Field.",
                     "offset_int": "0x003C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -572,7 +550,7 @@
                     "description": "Field.",
                     "offset_int": "0x0040",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -581,7 +559,7 @@
                     "description": "Field.",
                     "offset_int": "0x0044",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -590,7 +568,7 @@
                     "description": "Field.",
                     "offset_int": "0x0048",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -599,7 +577,7 @@
                     "description": "Field.",
                     "offset_int": "0x004C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -608,7 +586,7 @@
                     "description": "Field.",
                     "offset_int": "0x0050",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -617,7 +595,7 @@
                     "description": "Field.",
                     "offset_int": "0x0054",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -626,7 +604,7 @@
                     "description": "Field.",
                     "offset_int": "0x0058",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -635,7 +613,7 @@
                     "description": "Field.",
                     "offset_int": "0x005C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -644,7 +622,7 @@
                     "description": "Field.",
                     "offset_int": "0x0060",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -653,7 +631,7 @@
                     "description": "Field.",
                     "offset_int": "0x0064",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -670,7 +648,7 @@
                     "description": "Field.",
                     "offset_int": "0x0068",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -679,12 +657,11 @@
                     "description": "Field.",
                     "offset_int": "0x006C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field06C-bits0-1",
                             "name": "TYPE",
                             "description": "Type."
@@ -694,7 +671,6 @@
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field06C-bits8-11",
                             "name": "INDEX",
                             "description": "Index."
@@ -704,7 +680,6 @@
                         },
                         {
                             "width": 6,
-                            "reset_value_int": "0",
                             "id": "field06C-bits24-29",
                             "name": "SIZE",
                             "description": "Size."
@@ -720,7 +695,7 @@
                     "description": "Field.",
                     "offset_int": "0x0070",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -729,7 +704,7 @@
                     "description": "Field.",
                     "offset_int": "0x0074",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -738,7 +713,7 @@
                     "description": "Field.",
                     "offset_int": "0x0078",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -747,7 +722,7 @@
                     "description": "Field.",
                     "offset_int": "0x007C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -756,7 +731,7 @@
                     "description": "Field.",
                     "offset_int": "0x0080",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -765,7 +740,7 @@
                     "description": "Field.",
                     "offset_int": "0x0084",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -774,7 +749,7 @@
                     "description": "Field.",
                     "offset_int": "0x0088",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -783,7 +758,7 @@
                     "description": "Field.",
                     "offset_int": "0x008C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -792,7 +767,7 @@
                     "description": "Field.",
                     "offset_int": "0x0090",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -801,7 +776,7 @@
                     "description": "Field.",
                     "offset_int": "0x0094",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -810,7 +785,7 @@
                     "description": "Field.",
                     "offset_int": "0x0098",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -819,7 +794,7 @@
                     "description": "Field.",
                     "offset_int": "0x009C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -836,7 +811,7 @@
                     "description": "Field.",
                     "offset_int": "0x00A0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -845,12 +820,11 @@
                     "description": "Field.",
                     "offset_int": "0x00A4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0A4-bits0-1",
                             "name": "TYPE",
                             "description": "Type."
@@ -860,7 +834,6 @@
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field0A4-bits8-11",
                             "name": "INDEX",
                             "description": "Index."
@@ -870,7 +843,6 @@
                         },
                         {
                             "width": 6,
-                            "reset_value_int": "0",
                             "id": "field0A4-bits24-29",
                             "name": "SIZE",
                             "description": "Size."
@@ -886,7 +858,7 @@
                     "description": "Field.",
                     "offset_int": "0x00A8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -895,7 +867,7 @@
                     "description": "Field.",
                     "offset_int": "0x00AC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -904,7 +876,7 @@
                     "description": "Field.",
                     "offset_int": "0x00B0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -913,7 +885,7 @@
                     "description": "Field.",
                     "offset_int": "0x00B4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -922,7 +894,7 @@
                     "description": "Field.",
                     "offset_int": "0x00B8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -931,7 +903,7 @@
                     "description": "Field.",
                     "offset_int": "0x00BC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -940,7 +912,7 @@
                     "description": "Field.",
                     "offset_int": "0x00C0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -949,7 +921,7 @@
                     "description": "Field.",
                     "offset_int": "0x00C4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -958,7 +930,7 @@
                     "description": "Field.",
                     "offset_int": "0x00C8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -967,7 +939,7 @@
                     "description": "Field.",
                     "offset_int": "0x00CC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -976,7 +948,7 @@
                     "description": "Field.",
                     "offset_int": "0x00D0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -985,7 +957,7 @@
                     "description": "Field.",
                     "offset_int": "0x00D4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1002,7 +974,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1011,7 +983,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00DC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1020,7 +992,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1029,7 +1001,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1038,7 +1010,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1047,7 +1019,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00EC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1056,7 +1028,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1065,7 +1037,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1074,7 +1046,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1083,7 +1055,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00FC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1099,7 +1071,7 @@
                     "name": "CUSTOMER_DEFINED0",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0100",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1107,7 +1079,7 @@
                     "name": "CUSTOMER_DEFINED1",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0104",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1115,7 +1087,7 @@
                     "name": "CUSTOMER_DEFINED2",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0108",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1123,7 +1095,7 @@
                     "name": "CUSTOMER_DEFINED3",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x010C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1131,7 +1103,7 @@
                     "name": "CUSTOMER_DEFINED4",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0110",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1139,7 +1111,7 @@
                     "name": "CUSTOMER_DEFINED5",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0114",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1147,7 +1119,7 @@
                     "name": "CUSTOMER_DEFINED6",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0118",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1155,7 +1127,7 @@
                     "name": "CUSTOMER_DEFINED7",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x011C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1163,7 +1135,7 @@
                     "name": "CUSTOMER_DEFINED8",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0120",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1171,7 +1143,7 @@
                     "name": "CUSTOMER_DEFINED9",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0124",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1179,7 +1151,7 @@
                     "name": "CUSTOMER_DEFINED10",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0128",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1187,7 +1159,7 @@
                     "name": "CUSTOMER_DEFINED11",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x012C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1195,7 +1167,7 @@
                     "name": "CUSTOMER_DEFINED12",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0130",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1203,7 +1175,7 @@
                     "name": "CUSTOMER_DEFINED13",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0134",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1211,7 +1183,7 @@
                     "name": "CUSTOMER_DEFINED14",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0138",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1219,7 +1191,7 @@
                     "name": "CUSTOMER_DEFINED15",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x013C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1227,7 +1199,7 @@
                     "name": "CUSTOMER_DEFINED16",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0140",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1235,7 +1207,7 @@
                     "name": "CUSTOMER_DEFINED17",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0144",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1243,7 +1215,7 @@
                     "name": "CUSTOMER_DEFINED18",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0148",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1251,7 +1223,7 @@
                     "name": "CUSTOMER_DEFINED19",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x014C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1259,7 +1231,7 @@
                     "name": "CUSTOMER_DEFINED20",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0150",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1267,7 +1239,7 @@
                     "name": "CUSTOMER_DEFINED21",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0154",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1275,7 +1247,7 @@
                     "name": "CUSTOMER_DEFINED22",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0158",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1283,7 +1255,7 @@
                     "name": "CUSTOMER_DEFINED23",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x015C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1291,7 +1263,7 @@
                     "name": "CUSTOMER_DEFINED24",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0160",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1299,7 +1271,7 @@
                     "name": "CUSTOMER_DEFINED25",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0164",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1307,7 +1279,7 @@
                     "name": "CUSTOMER_DEFINED26",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0168",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1315,7 +1287,7 @@
                     "name": "CUSTOMER_DEFINED27",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x016C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1323,7 +1295,7 @@
                     "name": "CUSTOMER_DEFINED28",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0170",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1331,7 +1303,7 @@
                     "name": "CUSTOMER_DEFINED29",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0174",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1339,7 +1311,7 @@
                     "name": "CUSTOMER_DEFINED30",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0178",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1347,7 +1319,7 @@
                     "name": "CUSTOMER_DEFINED31",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x017C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1355,7 +1327,7 @@
                     "name": "CUSTOMER_DEFINED32",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0180",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1363,7 +1335,7 @@
                     "name": "CUSTOMER_DEFINED33",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0184",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1371,7 +1343,7 @@
                     "name": "CUSTOMER_DEFINED34",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0188",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1379,7 +1351,7 @@
                     "name": "CUSTOMER_DEFINED35",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x018C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1387,7 +1359,7 @@
                     "name": "CUSTOMER_DEFINED36",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0190",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1395,7 +1367,7 @@
                     "name": "CUSTOMER_DEFINED37",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0194",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1403,7 +1375,7 @@
                     "name": "CUSTOMER_DEFINED38",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x0198",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1411,7 +1383,7 @@
                     "name": "CUSTOMER_DEFINED39",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x019C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1419,7 +1391,7 @@
                     "name": "CUSTOMER_DEFINED40",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01A0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1427,7 +1399,7 @@
                     "name": "CUSTOMER_DEFINED41",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01A4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1435,7 +1407,7 @@
                     "name": "CUSTOMER_DEFINED42",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01A8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1443,7 +1415,7 @@
                     "name": "CUSTOMER_DEFINED43",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01AC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1451,7 +1423,7 @@
                     "name": "CUSTOMER_DEFINED44",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01B0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1459,7 +1431,7 @@
                     "name": "CUSTOMER_DEFINED45",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01B4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1467,7 +1439,7 @@
                     "name": "CUSTOMER_DEFINED46",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01B8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1475,7 +1447,7 @@
                     "name": "CUSTOMER_DEFINED47",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01BC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1483,7 +1455,7 @@
                     "name": "CUSTOMER_DEFINED48",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01C0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1491,7 +1463,7 @@
                     "name": "CUSTOMER_DEFINED49",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01C4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1499,7 +1471,7 @@
                     "name": "CUSTOMER_DEFINED50",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01C8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1507,7 +1479,7 @@
                     "name": "CUSTOMER_DEFINED51",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01CC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1515,7 +1487,7 @@
                     "name": "CUSTOMER_DEFINED52",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01D0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1523,7 +1495,7 @@
                     "name": "CUSTOMER_DEFINED53",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01D4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1531,7 +1503,7 @@
                     "name": "CUSTOMER_DEFINED54",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01D8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1539,7 +1511,7 @@
                     "name": "CUSTOMER_DEFINED55",
                     "description": "Customer Defined (Programmable through ROM API)",
                     "offset_int": "0x01DC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1556,7 +1528,7 @@
                     "description": "SHA256_DIGEST0 for DIGEST[31:0]",
                     "offset_int": "0x01E0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1565,7 +1537,7 @@
                     "description": "SHA256_DIGEST1 for DIGEST[63:32]",
                     "offset_int": "0x01E4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1574,7 +1546,7 @@
                     "description": "SHA256_DIGEST2 for DIGEST[95:64]",
                     "offset_int": "0x01E8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1583,7 +1555,7 @@
                     "description": "SHA256_DIGEST3 for DIGEST[127:96]",
                     "offset_int": "0x01EC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1592,7 +1564,7 @@
                     "description": "SHA256_DIGEST4 for DIGEST[159:128]",
                     "offset_int": "0x01F0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1601,7 +1573,7 @@
                     "description": "SHA256_DIGEST5 for DIGEST[191:160]",
                     "offset_int": "0x01F4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1610,7 +1582,7 @@
                     "description": "SHA256_DIGEST6 for DIGEST[223:192]",
                     "offset_int": "0x01F8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1619,7 +1591,7 @@
                     "description": "SHA256_DIGEST7 for DIGEST[255:224]",
                     "offset_int": "0x01FC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]

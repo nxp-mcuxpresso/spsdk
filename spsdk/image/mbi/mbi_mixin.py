@@ -342,7 +342,6 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
     """Master Boot Image load address class."""
 
     VALIDATION_SCHEMAS: list[str] = ["load_addr"]
-    NEEDED_MEMBERS: dict[str, Any] = {"load_address": 0}
 
     load_address: Optional[int]
     ivt_table: "Mbi_MixinIvt"
@@ -352,7 +351,7 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
 
         :param config: Dictionary with configuration fields.
         """
-        self.load_address = config.get_int("outputImageExecutionAddress")
+        self.load_address = config.get_int("outputImageExecutionAddress", 0)
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
@@ -371,19 +370,6 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
         :param data: Final Image in bytes.
         """
         self.load_address = self.ivt_table.get_load_address_from_data(data)
-
-
-class Mbi_MixinLoadAddressOptional(Mbi_MixinLoadAddress):
-    """Master Boot Image optional load address class."""
-
-    VALIDATION_SCHEMAS: list[str] = ["load_addr_optional"]
-
-    def mix_load_from_config(self, config: Config) -> None:
-        """Load configuration from dictionary.
-
-        :param config: Dictionary with configuration fields.
-        """
-        self.load_address = config.get_int("outputImageExecutionAddress", 0)
 
 
 class Mbi_MixinFwVersion(Mbi_Mixin):
@@ -611,6 +597,12 @@ class Mbi_MixinIvt(Mbi_Mixin):
             "<I", self.create_flags()
         )
 
+        # Execution address
+        load_addr = self.load_address if hasattr(self, "load_address") else 0
+        data[self.IVT_LOAD_ADDR_OFFSET : self.IVT_LOAD_ADDR_OFFSET + 4] = struct.pack(
+            "<I", load_addr
+        )
+
         data[self.IVT_IMAGE_LENGTH_OFFSET : self.IVT_IMAGE_LENGTH_OFFSET + 4] = struct.pack(
             "<I", total_len
         )
@@ -619,12 +611,6 @@ class Mbi_MixinIvt(Mbi_Mixin):
         crc_val_cert_offset = 0 if int(self.IMAGE_TYPE.tag) == 0 else crc_val_cert_offset
         data[self.IVT_CRC_CERTIFICATE_OFFSET : self.IVT_CRC_CERTIFICATE_OFFSET + 4] = struct.pack(
             "<I", crc_val_cert_offset
-        )
-
-        # Execution address
-        load_addr = self.load_address if hasattr(self, "load_address") else 0
-        data[self.IVT_LOAD_ADDR_OFFSET : self.IVT_LOAD_ADDR_OFFSET + 4] = struct.pack(
-            "<I", load_addr
         )
 
         return bytes(data)
@@ -1323,10 +1309,12 @@ class Mbi_MixinBca(Mbi_Mixin):
                 logger.info("Updating BCA from YAML configuration")
             except (SPSDKError, SPSDKTypeError):
                 bca_file = config.get_input_file_name("bca")
-                self.bca = BCA.parse(
-                    load_binary(bca_file, config.search_paths),
-                    family=self.family,
-                )
+                bca_bin = load_binary(bca_file, config.search_paths)
+                if len(bca_bin) != BCA.SIZE:
+                    raise SPSDKError(  # pylint: disable=raise-missing-from
+                        f"Invalid BCA binary file size. Expected {BCA.SIZE} bytes."
+                    )
+                self.bca = BCA.parse(bca_bin, family=self.family)
                 logger.info(f"Successfully loaded BCA from binary file: {bca_file}")
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
@@ -1448,10 +1436,12 @@ class Mbi_MixinFcf(Mbi_Mixin):
                 logger.info("Updating FCF from YAML configuration")
             except (SPSDKError, SPSDKTypeError):
                 fcf_file = config.get_input_file_name("fcf")
-                self.fcf = FCF.parse(
-                    load_binary(fcf_file, config.search_paths),
-                    family=self.family,
-                )
+                fcf_bin = load_binary(fcf_file, config.search_paths)
+                if len(fcf_bin) != FCF.SIZE:
+                    raise SPSDKError(  # pylint: disable=raise-missing-from
+                        f"Invalid FCF binary file size. Expected {FCF.SIZE} bytes."
+                    )
+                self.fcf = FCF.parse(fcf_bin, family=self.family)
                 logger.info(f"Successfully loaded FCF from binary file: {fcf_file}")
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:

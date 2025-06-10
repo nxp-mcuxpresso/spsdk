@@ -313,6 +313,15 @@ class SB21Helper:
         else:
             raise SPSDKError("Neither 'file', neither 'values' is missing in config to get data.")
 
+        # Ensure keyblobs is a list and keyblob_id is a Number
+        if not isinstance(keyblobs, list):
+            raise SPSDKError(f"Expected list of keyblobs, got {type(keyblobs).__name__}")
+        if not isinstance(keyblob_id, Number):
+            try:
+                keyblob_id = int(str(keyblob_id), 0)
+            except (ValueError, TypeError) as exc:
+                raise SPSDKError(f"Invalid keyblob_id: {keyblob_id}, must be a number") from exc
+
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
         except SPSDKError as exc:
@@ -355,12 +364,23 @@ class SB21Helper:
         :return: CmdLoad object
         """
         # iterate over keyblobs
-        keyblobs = cmd_args.get("keyblobs", None)
-        keyblob_id = cmd_args.get("keyblob_id", None)
+        keyblobs = cmd_args.get("keyblobs", [])
+        keyblob_id = cmd_args.get("keyblob_id")
 
         address = value_to_int(cmd_args["address"])
         otfad_key = cmd_args["values"]
 
+        # Ensure keyblobs is a list and keyblob_id is a Number
+        if not isinstance(keyblobs, list):
+            raise SPSDKError(f"Expected list of keyblobs, got {type(keyblobs).__name__}")
+        if keyblob_id is None:
+            raise SPSDKError("keyblob_id is required but was not provided")
+        if not isinstance(keyblob_id, Number):
+            try:
+                keyblob_id = int(str(keyblob_id), 0)
+            except (ValueError, TypeError) as exc:
+                raise SPSDKError(f"Invalid keyblob_id: {keyblob_id}, must be a number") from exc
+            assert isinstance(keyblob_id, Number), f"Invalid keyblob_id type: {type(keyblob_id)}"
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
         except SPSDKError as exc:

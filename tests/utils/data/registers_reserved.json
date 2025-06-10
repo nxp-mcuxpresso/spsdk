@@ -13,7 +13,7 @@
                     "reg_width": "32",
                     "name": "TestReg",
                     "description": "TestReg Description",
-                    "reset_value_int": "0x550a00",
+                    "default_value_int": "0x550a00",
                     "bitfields": [
                         {
                             "width": 8
@@ -24,7 +24,7 @@
                             "width": "4",
                             "name": "TestBitfield",
                             "access": "RW",
-                            "reset_value_int": "0xa",
+                            "default_value_int": "0xa",
                             "description": "Test Bitfield Description"
                         },
                         {
@@ -35,7 +35,7 @@
                             "offset": "0x10",
                             "width": "8",
                             "access": "RW",
-                            "reset_value_int": "0x55",
+                            "default_value_int": "0x55",
                             "description": "Test Reserved Bitfield Description"
                         }
                     ]
