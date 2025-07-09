@@ -149,7 +149,7 @@ class Segment(BaseClass):
         return b""
 
     def post_export(self, output_path: str) -> list[str]:
-        """Post export arifacts like fuse scripts.
+        """Post export artifacts like fuse scripts.
 
         :param output_path: Path to export artifacts
         :return: List of post export artifacts (usually fuse scripts)
@@ -325,6 +325,18 @@ class SegmentFcb(Segment):
         self.fcb = fcb
         if fcb and raw_block and raw_block != fcb.export():
             raise SPSDKParsingError("The FCB block doesn't match the raw data.")
+        self._size: Optional[int] = None
+
+    @property
+    def is_fcb_supported(self) -> bool:
+        """Check if FCB is supported for the current family.
+
+        This property determines whether Flash Configuration Block (FCB) functionality
+        is available for the chip family assigned to this segment.
+
+        :return: True if FCB is supported for the current family, False otherwise.
+        """
+        return self.family in FCB.get_supported_families(True)
 
     def clear(self) -> None:
         """Clear the segment to init state."""
@@ -333,8 +345,21 @@ class SegmentFcb(Segment):
 
     @property
     def size(self) -> int:
-        """Size of FCB segment."""
-        return FCB(family=self.family, mem_type=self.mem_type).registers.size
+        """Size of the segment in bytes.
+
+        :return: The segment size in bytes.
+        """
+        if self._size is None:
+            if self.is_fcb_supported:
+                # Use existing FCB if available, otherwise create a new one to get size
+                self._size = (
+                    self.fcb.size
+                    if self.fcb
+                    else FCB(family=self.family, mem_type=self.mem_type).size
+                )
+            else:
+                self._size = -1
+        return self._size
 
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
@@ -347,8 +372,7 @@ class SegmentFcb(Segment):
         if len(binary) < self.size:
             raise SPSDKParsingError("The input binary block is smaller than FCB.")
         if binary[:4] in [FCB.TAG, FCB.TAG_SWAPPED]:
-            devices = FCB.get_supported_families(True)
-            if self.family in devices:
+            if self.is_fcb_supported:
                 self.raw_block = binary[: self.size]
                 self.fcb = FCB.parse(
                     binary[: self.size], family=self.family, mem_type=self.mem_type

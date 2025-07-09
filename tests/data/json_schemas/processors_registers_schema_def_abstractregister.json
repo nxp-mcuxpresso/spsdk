@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mcuxpresso.nxp.com/secure_provisioning/processors_registers_schema.json",
+  "title": "Schema for definition of processor registers/fuses for Secure Provision Tool and SPSDK",
+  "description":"Copyright NXP 2020-2025, Schema for definition of processor registers for Secure Provision Tool and SPSDK",
+
+  "$id": "#/definitions/abstract_register",
+  "type": "object",
+  "title": "Definition of the abstract register. Do not use `additionalProperties` here, as the inheritance would not work",
+  "required": [
+    "id", "name", "description"
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "id": {
+      "$id": "#/properties/register/id",
+      "type": "string",
+      "minLength": 2,
+      "title": "Unique identifier of the register.",
+      "pattern": "^[_a-zA-Z][-_a-zA-Z0-9]*$"
+    },
+    "name": {
+      "$id": "#/properties/register/name",
+      "type": "string",
+      "minLength": 2,
+      "title": "Name of the register to be displayed in UI."
+    },
+    "description": {
+      "$id": "#/properties/register/description",
+      "type": "string",
+      "minLength": 4,
+      "title": "Description of the register to be displayed in tooltip."
+    },
+    "offset_int": {
+      "$id": "#/properties/register/offset",
+      "type": "string",
+      "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+      "title": "Offset of the register to the peripheral address space. -1 if the fuse address is not published.",
+      "default": "-1"
+    },
+    "index_int": {
+      "$id": "#/properties/register/index",
+      "type": "string",
+      "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+      "title": "Index of the fuse used as parameter for blhost."
+    },
+    "is_reserved": {
+      "$id": "#/properties/register/is_reserved",
+      "type": "boolean",
+      "default": false,
+      "title": "Whether the register is completelly reserved."
+    },
+    "access": {
+      "$id": "#/properties/register/access",
+      "type": "string",
+      "default": "RW",
+      "title": "Access to the register: Read/Write; Read-Only or Write-Only",
+      "enum": [
+          "RW",
+          "WO",
+          "RO",
+          "WRITE_CONST"
+      ]
+    },
+    "default_value_int": {
+      "$id": "#/properties/register/default_value_int",
+      "type": "string",
+      "pattern":"^[-]?(0x[0-9a-fA-F]+|[0-9]+)$",
+      "default": "-1",
+      "title": "After reset value. -1 if not specified or value specified in bit-fields."
+    },
+    "individual_write_lock": {
+      "$id": "#/properties/register/individual_write_lock",
+      "type": "string",
+      "default": "none",
+      "title": "Type of individual write lock. 'none'=no individual lock for the register; 'user'=user configurable lock (optional); 'always_lock'=always generate lock after write; 'implicit/implicit_16bytes'=register/16bytes block/ will be locked automatically without lock parameter;",
+      "enum": [
+          "none",
+          "user",
+          "always_lock",
+          "implicit",
+          "implicit_16bytes"
+      ]
+    },
+    "calculated": {
+      "$id": "#/properties/register/calculated",
+      "type": "object",
+      "title": "Optional information how the register value should be calculated; None if the register is not calculated.",
+      "required": [
+        "src_register_id", "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "$id": "#/properties/register/calculated/method",
+          "type": "string",
+          "title": "Method, how the register is calculated. The following methods are supported: `inverse` - inversion of another register.",
+          "enum": [
+            "inverse"
+          ]
+        },
+        "src_register_id": {
+          "$id": "#/properties/register/calculated/register_id",
+          "type": "string",
+          "title": "Reference to another register used as source for calculation. See method for info, how the reister us used."
+        }
+      }
+    },
+    "reg_width": {
+      "$id": "#/properties/register/reg_width",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096,
+      "title": "Width of the register, in bits."
+    },
+    "min_value_int": {
+      "$id": "#/properties/register/min_value_int",
+      "type": "string",
+      "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+      "default": "0",
+      "title": "Minimal value of the `integer` style of the register. 0 by default."
+    },
+    "max_value_int": {
+      "$id": "#/properties/register/max_value_int",
+      "type": "string",
+      "pattern":"^[-]?(0x[0-9a-fA-F]+|[0-9]+)$",
+      "default": "-1",
+      "title": "Maximal value of the `integer` style of the register. -1 represents maximal value derived for the register width."
+    },
+    "bitfields": {
+      "$id": "#/properties/register/bitfields",
+      "type": "array",
+      "title": "Information about register bit-fields. This information is optional and it is provided only if register contains >1 bitfield.",
+      "minItems": 1,
+      "additionalItems": false,
+      "items": {
+        "$ref": "localschema:processors_registers_schema_def_bitfield.json"
+      }
+    }
+  }
+}

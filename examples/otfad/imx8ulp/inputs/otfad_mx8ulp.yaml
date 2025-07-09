@@ -1,0 +1,76 @@
+# Copyright 2024-2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================  On-The-Fly AES decryption Configuration template for mimx9352.  ==========================
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+# Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
+# For example:
+#   In case of using FlexSPI2 the secure base address address is 0x1400_0000. But in setting of the OTFAD use
+# 0x0400_0000 as a base address.
+#   The code must be still linked on secure base address 0x1400_0000 to proper run of OTFAD hardware.
+
+#   Same is for FlexSPI1, but instead of 0x3800_0000 base address, the 0x2800_0000 must be used in OTFAD configuration.
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mimx9352, mimxrt1010, mimxrt1165, mimxrt1166, mimxrt1171, mimxrt1172, mimxrt1173, mimxrt1175,
+# mimxrt1176, mimxrt1181, mimxrt1182, mimxrt1187, mimxrt1189, mimxrt533s, mimxrt555s, mimxrt595s, mimxrt685s>
+family: mimx8ulp
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== OTFAD output folder [Required] =====--------------------------------------
+# Description: Path to directory where the OTFAD output will be generated
+output_folder: ../workspace/encrypted
+# ======================================================================================================================
+#                                                  == OTFAD Settings ==
+# ======================================================================================================================
+# ----------------------------------------------===== KEK [Required] =====----------------------------------------------
+# Description: OTFAD Key Encryption Key to encrypt OTFAD table. Might be provided as a path to binary file containing
+# KEK or as a string or number
+kek: "0x00112233445566778899AABBCCDDEEFF"
+# ---------------------------------===== OTFAD key blobs table address [Required] =====---------------------------------
+# Description: The base address of key blob table, it should be aligned to 1 KB (1024 B)
+otfad_table_address: "0x04000000"
+# ----------------------------------------===== Data blobs list [Optional] =====----------------------------------------
+# Description: List of all data blobs included in this key blob
+data_blobs:
+  - # -----------------------------------===== Plain Text data blob [Required] =====------------------------------------
+    # Description: Path to binary file with plain text data to be encrypted if desired
+    data: workspace/m33-boot.bin
+    # -------------------------------------===== Data blob address [Required] =====-------------------------------------
+    # Description: Data blob address, it could be omitted if data blob starts at start_address
+    address: "0x04001000"
+# --------------------------------===== List of Key Blobs used by OTFAD [Required] =====--------------------------------
+# Description: The list of definition of individual key blobs including plain data. Add other array items as you need
+# and device allows
+key_blobs:
+  - # ------------------------------------------===== AES key [Required] =====------------------------------------------
+    # Description: AES key for the key blob
+    aes_key: "0xB1A0C56AF31E98CD6936A79D9E6F829D"
+    # -------------------------------------===== AES Counter value [Required] =====-------------------------------------
+    # Description: AES counter value for the key blob
+    aes_ctr: "0x5689fab8b4bfb264"
+    # ------------------------------===== Start address of key blob data [Required] =====-------------------------------
+    # Description: Start address of key blob data, it should be aligned to 1 KB (1024 B)
+    start_address: "0x04001000"
+    # -------------------------------===== End address of key blob data [Required] =====--------------------------------
+    # Description: End address of key blob data, it should be aligned to 1 KB (1024 B)
+    end_address: "0x04030000"
+    # --------------------------------===== AES decryption enable flag [Optional] =====---------------------------------
+    # Description: For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or
+    # simply bypassed
+    aes_decryption_enable: true
+    # ----------------------------------------===== Valid flag [Optional] =====-----------------------------------------
+    # Description: This field signals if the context is valid or not
+    valid: true
+    # --------------------------------------===== Read Only flag [Optional] =====---------------------------------------
+    # Description: This field signals if the context is Read only or not
+    read_only: true

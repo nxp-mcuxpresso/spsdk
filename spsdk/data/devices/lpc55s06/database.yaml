@@ -63,6 +63,7 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinLoadAddress
           - Mbi_MixinTrustZone
           - Mbi_MixinHwKey
           - Mbi_ExportMixinAppTrustZone

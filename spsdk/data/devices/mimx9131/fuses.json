@@ -12,8 +12,6 @@
                     "name": "LOCK_CFG0",
                     "description": "LOCK_CFG0",
                     "index_int": "0",
-                    "shadow_reg_offset_int": "0",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -137,8 +135,6 @@
                     "name": "LOCK_CFG1",
                     "description": "LOCK_CFG1",
                     "index_int": "0x0001",
-                    "shadow_reg_offset_int": "0x0004",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -307,8 +303,6 @@
                     "name": "LOCK_CFG2",
                     "description": "LOCK_CFG2",
                     "index_int": "0x0002",
-                    "shadow_reg_offset_int": "0x0008",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -492,8 +486,6 @@
                     "name": "LOCK_CFG3",
                     "description": "LOCK_CFG3",
                     "index_int": "0x0003",
-                    "shadow_reg_offset_int": "0x000C",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -542,8 +534,6 @@
                     "name": "LOCK_CFG4",
                     "description": "LOCK_CFG4",
                     "index_int": "0x0004",
-                    "shadow_reg_offset_int": "0x0010",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -682,9 +672,7 @@
                     "name": "Reserved 0x5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0005",
-                    "shadow_reg_offset_int": "0x0014",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -712,9 +700,7 @@
                     "name": "Reserved 0x6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0006",
-                    "shadow_reg_offset_int": "0x0018",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -742,9 +728,7 @@
                     "name": "Reserved 0x7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0007",
-                    "shadow_reg_offset_int": "0x001C",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -772,9 +756,7 @@
                     "name": "Reserved 0x8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0008",
-                    "shadow_reg_offset_int": "0x0020",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -802,8 +784,6 @@
                     "name": "LOCK_CFG9",
                     "description": "LOCK_CFG9",
                     "index_int": "0x0009",
-                    "shadow_reg_offset_int": "0x0024",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -972,9 +952,7 @@
                     "name": "Reserved 0xA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x000A",
-                    "shadow_reg_offset_int": "0x0028",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -1002,9 +980,7 @@
                     "name": "Reserved 0xB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x000B",
-                    "shadow_reg_offset_int": "0x002C",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -1032,7 +1008,6 @@
                     "name": "Reserved 0xC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x000C",
-                    "shadow_reg_offset_int": "0x0030",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -1041,7 +1016,6 @@
                     "name": "Reserved 0xD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x000D",
-                    "shadow_reg_offset_int": "0x0034",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -1050,7 +1024,6 @@
                     "name": "Reserved 0xE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x000E",
-                    "shadow_reg_offset_int": "0x0038",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -1059,7 +1032,6 @@
                     "name": "Reserved 0xF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x000F",
-                    "shadow_reg_offset_int": "0x003C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -1068,9 +1040,7 @@
                     "name": "Reserved 0x10",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0010",
-                    "shadow_reg_offset_int": "0x0040",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -1095,9 +1065,7 @@
                     "name": "Reserved 0x11",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0011",
-                    "shadow_reg_offset_int": "0x0044",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -1105,7 +1073,6 @@
                     "name": "Reserved 0x12",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0012",
-                    "shadow_reg_offset_int": "0x0048",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -1128,7 +1095,6 @@
                     "name": "Reserved 0x13",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0013",
-                    "shadow_reg_offset_int": "0x004C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -1208,7 +1174,6 @@
                     "name": "Reserved 0x14",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0014",
-                    "shadow_reg_offset_int": "0x0050",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -1315,7 +1280,6 @@
                     "name": "Reserved 0x15",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0015",
-                    "shadow_reg_offset_int": "0x0054",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -1356,7 +1320,6 @@
                     "name": "Reserved 0x16",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0016",
-                    "shadow_reg_offset_int": "0x0058",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -1365,7 +1328,6 @@
                     "name": "Reserved 0x17",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0017",
-                    "shadow_reg_offset_int": "0x005C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -1400,7 +1362,6 @@
                     "name": "BOOT_CFG0",
                     "description": "BOOT_CFG0",
                     "index_int": "0x0018",
-                    "shadow_reg_offset_int": "0x0060",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
@@ -1532,7 +1493,7 @@
                                 {
                                     "name": "0",
                                     "value": 0,
-                                    "description": "Not override the default seleciton (2K page)"
+                                    "description": "Not override the default selection (2K page)"
                                 },
                                 {
                                     "name": "1",
@@ -1859,7 +1820,6 @@
                     "name": "BOOT_CFG1",
                     "description": "BOOT_CFG1",
                     "index_int": "0x0019",
-                    "shadow_reg_offset_int": "0x0064",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
@@ -2090,7 +2050,6 @@
                     "name": "BOOT_CFG2",
                     "description": "BOOT_CFG2",
                     "index_int": "0x001A",
-                    "shadow_reg_offset_int": "0x0068",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
@@ -2125,7 +2084,7 @@
                                 {
                                     "name": "01",
                                     "value": 1,
-                                    "description": "2 Redudant value"
+                                    "description": "2 Redundant value"
                                 },
                                 {
                                     "name": "4",
@@ -2353,7 +2312,6 @@
                     "name": "BOOT_CFG3",
                     "description": "BOOT_CFG3",
                     "index_int": "0x001B",
-                    "shadow_reg_offset_int": "0x006C",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse0",
@@ -2411,7 +2369,6 @@
                     "name": "Reserved 0x1C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x001C",
-                    "shadow_reg_offset_int": "0x0070",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2420,7 +2377,6 @@
                     "name": "Reserved 0x1D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x001D",
-                    "shadow_reg_offset_int": "0x0074",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2429,7 +2385,6 @@
                     "name": "Reserved 0x1E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x001E",
-                    "shadow_reg_offset_int": "0x0078",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2438,9 +2393,7 @@
                     "name": "Reserved 0x1F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x001F",
-                    "shadow_reg_offset_int": "0x007C",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -2448,7 +2401,6 @@
                     "name": "BOOT_CFG8",
                     "description": "NXP Reserved - BOOT Configuration",
                     "index_int": "0x0020",
-                    "shadow_reg_offset_int": "0x0080",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -2700,7 +2652,7 @@
                                 {
                                     "name": "1",
                                     "value": 1,
-                                    "description": "Configure PLLs after instaill ROM patch"
+                                    "description": "Configure PLLs after installing ROM patch"
                                 }
                             ]
                         },
@@ -2714,7 +2666,6 @@
                     "name": "BOOT_CFG9",
                     "description": "NXP Reserved - BOOT Configuration",
                     "index_int": "0x0021",
-                    "shadow_reg_offset_int": "0x0084",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -2799,7 +2750,6 @@
                     "name": "BOOT_CFG10",
                     "description": "NXP Reserved - BOOT Configuration",
                     "index_int": "0x0022",
-                    "shadow_reg_offset_int": "0x0088",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -2854,7 +2804,6 @@
                     "name": "Reserved 0x23",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0023",
-                    "shadow_reg_offset_int": "0x008C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2863,7 +2812,6 @@
                     "name": "Reserved 0x24",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0024",
-                    "shadow_reg_offset_int": "0x0090",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2872,7 +2820,6 @@
                     "name": "Reserved 0x25",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0025",
-                    "shadow_reg_offset_int": "0x0094",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2881,7 +2828,6 @@
                     "name": "Reserved 0x26",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0026",
-                    "shadow_reg_offset_int": "0x0098",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2890,7 +2836,6 @@
                     "name": "Reserved 0x27",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0027",
-                    "shadow_reg_offset_int": "0x009C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -2899,7 +2844,6 @@
                     "name": "Reserved 0x28",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0028",
-                    "shadow_reg_offset_int": "0x00A0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -2916,7 +2860,6 @@
                     "name": "Reserved 0x29",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0029",
-                    "shadow_reg_offset_int": "0x00A4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -2933,7 +2876,6 @@
                     "name": "Reserved 0x2A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x002A",
-                    "shadow_reg_offset_int": "0x00A8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -2959,7 +2901,6 @@
                     "name": "Reserved 0x2B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x002B",
-                    "shadow_reg_offset_int": "0x00AC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -2979,7 +2920,6 @@
                     "name": "Reserved 0x2C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x002C",
-                    "shadow_reg_offset_int": "0x00B0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -3008,7 +2948,6 @@
                     "name": "Reserved 0x2D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x002D",
-                    "shadow_reg_offset_int": "0x00B4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -3040,7 +2979,6 @@
                     "name": "Reserved 0x2E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x002E",
-                    "shadow_reg_offset_int": "0x00B8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -3072,7 +3010,6 @@
                     "name": "Reserved 0x2F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x002F",
-                    "shadow_reg_offset_int": "0x00BC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -3092,7 +3029,6 @@
                     "name": "Reserved 0x30",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0030",
-                    "shadow_reg_offset_int": "0x00C0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -3101,7 +3037,6 @@
                     "name": "Reserved 0x31",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0031",
-                    "shadow_reg_offset_int": "0x00C4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -3110,7 +3045,6 @@
                     "name": "Reserved 0x32",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0032",
-                    "shadow_reg_offset_int": "0x00C8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -3119,7 +3053,6 @@
                     "name": "Reserved 0x33",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0033",
-                    "shadow_reg_offset_int": "0x00CC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -3128,7 +3061,6 @@
                     "name": "Reserved 0x34",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0034",
-                    "shadow_reg_offset_int": "0x00D0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -3137,7 +3069,6 @@
                     "name": "Reserved 0x35",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0035",
-                    "shadow_reg_offset_int": "0x00D4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -3154,9 +3085,7 @@
                     "name": "Reserved 0x37",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0037",
-                    "shadow_reg_offset_int": "0x00DC",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3169,7 +3098,6 @@
                     "name": "ELE_MISC_CTRL0",
                     "description": "OEM controlled Fuse.",
                     "index_int": "0x0038",
-                    "shadow_reg_offset_int": "0x00E0",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -3212,7 +3140,6 @@
                     "name": "ELE_MISC_CTRL1",
                     "description": "OEM controlled Fuse.",
                     "index_int": "0x0039",
-                    "shadow_reg_offset_int": "0x00E4",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -3270,8 +3197,6 @@
                     "name": "ELE_MISC_CTRL2",
                     "description": "OEM controlled Fuse.",
                     "index_int": "0x003A",
-                    "shadow_reg_offset_int": "0x00E8",
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3329,7 +3254,6 @@
                     "name": "Reserved 0x3B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x003B",
-                    "shadow_reg_offset_int": "0x00EC",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -3383,15 +3307,14 @@
                         {
                             "width": 4
                         }
-                    ]
+                    ],
+                    "is_reserved": true
                 },
                 {
                     "id": "fuse60",
                     "name": "ELE_MISC_CTRL4",
                     "description": "OEM and NXP controlled. NXP should set OP to 1 so the shadows cannot be overwritten.",
                     "index_int": "0x003C",
-                    "shadow_reg_offset_int": "0x00F0",
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3410,7 +3333,6 @@
                     "name": "ELE_MISC_CTRL5",
                     "description": "OEM and NXP controlled. NXP should set OP to 1 so the shadows cannot be overwritten.",
                     "index_int": "0x003D",
-                    "shadow_reg_offset_int": "0x00F4",
                     "individual_write_lock": "implicit",
                     "bitfields": [
                         {
@@ -3519,7 +3441,6 @@
                     "name": "Reserved 0x3E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x003E",
-                    "shadow_reg_offset_int": "0x00F8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -3560,9 +3481,7 @@
                     "name": "Reserved 0x3F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x003F",
-                    "shadow_reg_offset_int": "0x00FC",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3791,7 +3710,6 @@
                     "name": "JTAG_RESP7",
                     "description": "Part of 128 bit key to enable SoC domain debug",
                     "index_int": "0x0058",
-                    "shadow_reg_offset_int": "0x0160",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3805,7 +3723,6 @@
                     "name": "JTAG_RESP6",
                     "description": "Part of 128 bit key to enable SoC domain debug",
                     "index_int": "0x0059",
-                    "shadow_reg_offset_int": "0x0164",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3819,7 +3736,6 @@
                     "name": "JTAG_RESP5",
                     "description": "Part of 128 bit key to enable SoC domain debug",
                     "index_int": "0x005A",
-                    "shadow_reg_offset_int": "0x0168",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3833,7 +3749,6 @@
                     "name": "JTAG_RESP4",
                     "description": "Part of 128 bit key to enable SoC domain debug",
                     "index_int": "0x005B",
-                    "shadow_reg_offset_int": "0x016C",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3847,7 +3762,6 @@
                     "name": "JTAG_RESP3",
                     "description": "Part of 128 bit key to TZ SoC domain debug",
                     "index_int": "0x005C",
-                    "shadow_reg_offset_int": "0x0170",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3861,7 +3775,6 @@
                     "name": "JTAG_RESP2",
                     "description": "Part of 128 bit key to TZ SoC domain debug",
                     "index_int": "0x005D",
-                    "shadow_reg_offset_int": "0x0174",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3875,7 +3788,6 @@
                     "name": "JTAG_RESP1",
                     "description": "Part of 128 bit key to TZ SoC domain debug",
                     "index_int": "0x005E",
-                    "shadow_reg_offset_int": "0x0178",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3889,7 +3801,6 @@
                     "name": "JTAG_RESP0",
                     "description": "Part of 128 bit key to TZ SoC domain debug",
                     "index_int": "0x005F",
-                    "shadow_reg_offset_int": "0x017C",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -3904,7 +3815,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0060",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3918,7 +3828,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0061",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3932,7 +3841,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0062",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3946,7 +3854,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0063",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3960,7 +3867,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0064",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3974,7 +3880,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0065",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -3988,7 +3893,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0066",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4002,7 +3906,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0067",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4015,7 +3918,6 @@
                     "name": "Reserved 0x68",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0068",
-                    "shadow_reg_offset_int": "0x01A0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4024,7 +3926,6 @@
                     "name": "Reserved 0x69",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0069",
-                    "shadow_reg_offset_int": "0x01A4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4033,7 +3934,6 @@
                     "name": "Reserved 0x6A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x006A",
-                    "shadow_reg_offset_int": "0x01A8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4042,7 +3942,6 @@
                     "name": "Reserved 0x6B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x006B",
-                    "shadow_reg_offset_int": "0x01AC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4051,7 +3950,6 @@
                     "name": "Reserved 0x6C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x006C",
-                    "shadow_reg_offset_int": "0x01B0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4060,7 +3958,6 @@
                     "name": "Reserved 0x6D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x006D",
-                    "shadow_reg_offset_int": "0x01B4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4069,7 +3966,6 @@
                     "name": "Reserved 0x6E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x006E",
-                    "shadow_reg_offset_int": "0x01B8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4078,7 +3974,6 @@
                     "name": "Reserved 0x6F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x006F",
-                    "shadow_reg_offset_int": "0x01BC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4087,7 +3982,6 @@
                     "name": "Reserved 0x70",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0070",
-                    "shadow_reg_offset_int": "0x01C0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4096,7 +3990,6 @@
                     "name": "Reserved 0x71",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0071",
-                    "shadow_reg_offset_int": "0x01C4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4105,7 +3998,6 @@
                     "name": "Reserved 0x72",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0072",
-                    "shadow_reg_offset_int": "0x01C8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4114,7 +4006,6 @@
                     "name": "Reserved 0x73",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0073",
-                    "shadow_reg_offset_int": "0x01CC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4123,7 +4014,6 @@
                     "name": "Reserved 0x74",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0074",
-                    "shadow_reg_offset_int": "0x01D0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4132,7 +4022,6 @@
                     "name": "Reserved 0x75",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0075",
-                    "shadow_reg_offset_int": "0x01D4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4141,7 +4030,6 @@
                     "name": "Reserved 0x76",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0076",
-                    "shadow_reg_offset_int": "0x01D8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4150,7 +4038,6 @@
                     "name": "Reserved 0x77",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0077",
-                    "shadow_reg_offset_int": "0x01DC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4160,7 +4047,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0078",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4174,7 +4060,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0079",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4188,7 +4073,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x007A",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4202,7 +4086,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x007B",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4216,7 +4099,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x007C",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4230,7 +4112,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x007D",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4244,7 +4125,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x007E",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4258,7 +4138,6 @@
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x007F",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4372,114 +4251,73 @@
                 },
                 {
                     "id": "fuse136",
-                    "name": "OEM_SRKH8 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x88",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0088",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse137",
-                    "name": "OEM_SRKH9 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x89",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0089",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse138",
-                    "name": "OEM_SRKH10 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x8A",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x008A",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse139",
-                    "name": "OEM_SRKH11 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x8B",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x008B",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse140",
-                    "name": "OEM_SRKH12 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x8C",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x008C",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse141",
-                    "name": "OEM_SRKH13 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x8D",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x008D",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse142",
-                    "name": "OEM_SRKH14 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x8E",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x008E",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse143",
-                    "name": "OEM_SRKH15 (Reserved)",
-                    "description": "Hash of OEM SRK public keys stored in Container",
+                    "name": "Reserved 0x8F",
+                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x008F",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse4",
-                        "write_lock_int": "0x1000",
-                        "read_lock_int": "0x4000",
-                        "operation_lock_int": "0x2000"
-                    }
+                    "is_reserved": true,
+                    "individual_write_lock": "implicit"
                 },
                 {
                     "id": "fuse144",
                     "name": "Reserved 0x90",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0090",
-                    "shadow_reg_offset_int": "0x0240",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4488,7 +4326,6 @@
                     "name": "Reserved 0x91",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0091",
-                    "shadow_reg_offset_int": "0x0244",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4497,7 +4334,6 @@
                     "name": "Reserved 0x92",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0092",
-                    "shadow_reg_offset_int": "0x0248",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4506,7 +4342,6 @@
                     "name": "Reserved 0x93",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0093",
-                    "shadow_reg_offset_int": "0x024C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4515,7 +4350,6 @@
                     "name": "Reserved 0x94",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0094",
-                    "shadow_reg_offset_int": "0x0250",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4524,7 +4358,6 @@
                     "name": "Reserved 0x95",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0095",
-                    "shadow_reg_offset_int": "0x0254",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4533,7 +4366,6 @@
                     "name": "Reserved 0x96",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0096",
-                    "shadow_reg_offset_int": "0x0258",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4542,7 +4374,6 @@
                     "name": "Reserved 0x97",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0097",
-                    "shadow_reg_offset_int": "0x025C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4551,7 +4382,6 @@
                     "name": "Reserved 0x98",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0098",
-                    "shadow_reg_offset_int": "0x0260",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4560,7 +4390,6 @@
                     "name": "Reserved 0x99",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0099",
-                    "shadow_reg_offset_int": "0x0264",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4569,7 +4398,6 @@
                     "name": "Reserved 0x9A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x009A",
-                    "shadow_reg_offset_int": "0x0268",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4578,7 +4406,6 @@
                     "name": "Reserved 0x9B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x009B",
-                    "shadow_reg_offset_int": "0x026C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4587,7 +4414,6 @@
                     "name": "Reserved 0x9C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x009C",
-                    "shadow_reg_offset_int": "0x0270",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4596,7 +4422,6 @@
                     "name": "Reserved 0x9D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x009D",
-                    "shadow_reg_offset_int": "0x0274",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4605,7 +4430,6 @@
                     "name": "Reserved 0x9E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x009E",
-                    "shadow_reg_offset_int": "0x0278",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4614,7 +4438,6 @@
                     "name": "Reserved 0x9F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x009F",
-                    "shadow_reg_offset_int": "0x027C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4623,7 +4446,6 @@
                     "name": "Reserved 0xA0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A0",
-                    "shadow_reg_offset_int": "0x0280",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4632,7 +4454,6 @@
                     "name": "Reserved 0xA1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A1",
-                    "shadow_reg_offset_int": "0x0284",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4641,7 +4462,6 @@
                     "name": "Reserved 0xA2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A2",
-                    "shadow_reg_offset_int": "0x0288",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4650,7 +4470,6 @@
                     "name": "Reserved 0xA3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A3",
-                    "shadow_reg_offset_int": "0x028C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4659,7 +4478,6 @@
                     "name": "Reserved 0xA4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A4",
-                    "shadow_reg_offset_int": "0x0290",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4668,7 +4486,6 @@
                     "name": "Reserved 0xA5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A5",
-                    "shadow_reg_offset_int": "0x0294",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4677,7 +4494,6 @@
                     "name": "Reserved 0xA6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A6",
-                    "shadow_reg_offset_int": "0x0298",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4686,7 +4502,6 @@
                     "name": "Reserved 0xA7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A7",
-                    "shadow_reg_offset_int": "0x029C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4695,9 +4510,7 @@
                     "name": "Reserved 0xA8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A8",
-                    "shadow_reg_offset_int": "0x02A0",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4710,9 +4523,7 @@
                     "name": "Reserved 0xA9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00A9",
-                    "shadow_reg_offset_int": "0x02A4",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4725,9 +4536,7 @@
                     "name": "Reserved 0xAA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00AA",
-                    "shadow_reg_offset_int": "0x02A8",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4740,9 +4549,7 @@
                     "name": "Reserved 0xAB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00AB",
-                    "shadow_reg_offset_int": "0x02AC",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4755,9 +4562,7 @@
                     "name": "Reserved 0xAC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00AC",
-                    "shadow_reg_offset_int": "0x02B0",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4770,9 +4575,7 @@
                     "name": "Reserved 0xAD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00AD",
-                    "shadow_reg_offset_int": "0x02B4",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4785,9 +4588,7 @@
                     "name": "Reserved 0xAE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00AE",
-                    "shadow_reg_offset_int": "0x02B8",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4800,9 +4601,7 @@
                     "name": "Reserved 0xAF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00AF",
-                    "shadow_reg_offset_int": "0x02BC",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4815,9 +4614,7 @@
                     "name": "Reserved 0xB0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B0",
-                    "shadow_reg_offset_int": "0x02C0",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -4833,7 +4630,6 @@
                     "name": "Reserved 0xB1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B1",
-                    "shadow_reg_offset_int": "0x02C4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4842,7 +4638,6 @@
                     "name": "Reserved 0xB2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B2",
-                    "shadow_reg_offset_int": "0x02C8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4851,7 +4646,6 @@
                     "name": "Reserved 0xB3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B3",
-                    "shadow_reg_offset_int": "0x02CC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4860,7 +4654,6 @@
                     "name": "Reserved 0xB4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B4",
-                    "shadow_reg_offset_int": "0x02D0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4869,7 +4662,6 @@
                     "name": "Reserved 0xB5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B5",
-                    "shadow_reg_offset_int": "0x02D4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4878,7 +4670,6 @@
                     "name": "Reserved 0xB6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B6",
-                    "shadow_reg_offset_int": "0x02D8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -4916,7 +4707,6 @@
                     "name": "Reserved 0xB7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00B7",
-                    "shadow_reg_offset_int": "0x02DC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -4925,7 +4715,6 @@
                     "name": "OTFAD1_KEY3",
                     "description": "On the Fly Decryption module Key bits 127 - 96",
                     "index_int": "0x00B8",
-                    "shadow_reg_offset_int": "0x02E0",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -4939,7 +4728,6 @@
                     "name": "OTFAD1_KEY2",
                     "description": "On the Fly Decryption module Key bits 95 - 64",
                     "index_int": "0x00B9",
-                    "shadow_reg_offset_int": "0x02E4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -4953,7 +4741,6 @@
                     "name": "OTFAD1_KEY1",
                     "description": "On the Fly Decryption module Key bits 63 - 32",
                     "index_int": "0x00BA",
-                    "shadow_reg_offset_int": "0x02E8",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -4967,7 +4754,6 @@
                     "name": "OTFAD1_KEY0",
                     "description": "On the Fly Decryption module Key bits  31 - 0",
                     "index_int": "0x00BB",
-                    "shadow_reg_offset_int": "0x02EC",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -4981,7 +4767,6 @@
                     "name": "OTFAD1_CFG4",
                     "description": "On the Fly Decryption module control bits.",
                     "index_int": "0x00BC",
-                    "shadow_reg_offset_int": "0x02F0",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -5059,7 +4844,6 @@
                     "name": "OTFAD1_KEY_SCRAMBLE",
                     "description": "OTFAD Key Scramble value",
                     "index_int": "0x00BD",
-                    "shadow_reg_offset_int": "0x02F4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse2",
@@ -5073,7 +4857,6 @@
                     "name": "Reserved 0xBE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00BE",
-                    "shadow_reg_offset_int": "0x02F8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -5102,9 +4885,7 @@
                     "name": "Reserved 0xBF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x00BF",
-                    "shadow_reg_offset_int": "0x02FC",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -6077,7 +5858,6 @@
                     "name": "COM_DEVICE_ID_CFG0",
                     "description": "COM_DEVICE_ID_CFG0",
                     "index_int": "0x0138",
-                    "shadow_reg_offset_int": "0x04E0",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -6105,7 +5885,6 @@
                     "name": "COM_DEVICE_ID_CFG1",
                     "description": "COM_DEVICE_ID_CFG1",
                     "index_int": "0x0139",
-                    "shadow_reg_offset_int": "0x04E4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -6130,7 +5909,6 @@
                     "name": "Reserved 0x13A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x013A",
-                    "shadow_reg_offset_int": "0x04E8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6147,7 +5925,6 @@
                     "name": "COM_DEVICE_ID_CFG3",
                     "description": "COM_DEVICE_ID_CFG3",
                     "index_int": "0x013B",
-                    "shadow_reg_offset_int": "0x04EC",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -6169,7 +5946,6 @@
                     "name": "COM_DEVICE_ID_CFG4",
                     "description": "COM_DEVICE_ID_CFG4",
                     "index_int": "0x013C",
-                    "shadow_reg_offset_int": "0x04F0",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -6197,7 +5973,6 @@
                     "name": "COM_DEVICE_ID_CFG5",
                     "description": "COM_DEVICE_ID_CFG5",
                     "index_int": "0x013D",
-                    "shadow_reg_offset_int": "0x04F4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -6219,7 +5994,6 @@
                     "name": "Reserved 0x13E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x013E",
-                    "shadow_reg_offset_int": "0x04F8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6233,7 +6007,6 @@
                     "name": "Reserved 0x13F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x013F",
-                    "shadow_reg_offset_int": "0x04FC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6250,7 +6023,6 @@
                     "name": "Reserved 0x140",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0140",
-                    "shadow_reg_offset_int": "0x0500",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6264,7 +6036,6 @@
                     "name": "Reserved 0x141",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0141",
-                    "shadow_reg_offset_int": "0x0504",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6278,7 +6049,6 @@
                     "name": "Reserved 0x142",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0142",
-                    "shadow_reg_offset_int": "0x0508",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6295,7 +6065,6 @@
                     "name": "Reserved 0x143",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0143",
-                    "shadow_reg_offset_int": "0x050C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6309,7 +6078,6 @@
                     "name": "Reserved 0x144",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0144",
-                    "shadow_reg_offset_int": "0x0510",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6323,7 +6091,6 @@
                     "name": "Reserved 0x145",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0145",
-                    "shadow_reg_offset_int": "0x0514",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6340,7 +6107,6 @@
                     "name": "Reserved 0x146",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0146",
-                    "shadow_reg_offset_int": "0x0518",
                     "is_reserved": true,
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -6354,8 +6120,6 @@
                     "name": "OEM_SW_CFG",
                     "description": "OEM Software Configuration",
                     "index_int": "0x0147",
-                    "shadow_reg_offset_int": "0x051C",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0001",
@@ -6369,7 +6133,6 @@
                     "name": "Reserved 0x148",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0148",
-                    "shadow_reg_offset_int": "0x0520",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6378,7 +6141,6 @@
                     "name": "Reserved 0x149",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0149",
-                    "shadow_reg_offset_int": "0x0524",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6387,7 +6149,6 @@
                     "name": "Reserved 0x14A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x014A",
-                    "shadow_reg_offset_int": "0x0528",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6396,7 +6157,6 @@
                     "name": "Reserved 0x14B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x014B",
-                    "shadow_reg_offset_int": "0x052C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6405,7 +6165,6 @@
                     "name": "Reserved 0x14C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x014C",
-                    "shadow_reg_offset_int": "0x0530",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6414,7 +6173,6 @@
                     "name": "Reserved 0x14D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x014D",
-                    "shadow_reg_offset_int": "0x0534",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6423,7 +6181,6 @@
                     "name": "Reserved 0x14E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x014E",
-                    "shadow_reg_offset_int": "0x0538",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6432,7 +6189,6 @@
                     "name": "Reserved 0x14F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x014F",
-                    "shadow_reg_offset_int": "0x053C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6441,7 +6197,6 @@
                     "name": "Reserved 0x150",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0150",
-                    "shadow_reg_offset_int": "0x0540",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6450,7 +6205,6 @@
                     "name": "Reserved 0x151",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0151",
-                    "shadow_reg_offset_int": "0x0544",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6459,7 +6213,6 @@
                     "name": "Reserved 0x152",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0152",
-                    "shadow_reg_offset_int": "0x0548",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6468,7 +6221,6 @@
                     "name": "Reserved 0x153",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0153",
-                    "shadow_reg_offset_int": "0x054C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6477,7 +6229,6 @@
                     "name": "Reserved 0x154",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0154",
-                    "shadow_reg_offset_int": "0x0550",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6486,7 +6237,6 @@
                     "name": "Reserved 0x155",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0155",
-                    "shadow_reg_offset_int": "0x0554",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6495,7 +6245,6 @@
                     "name": "Reserved 0x156",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0156",
-                    "shadow_reg_offset_int": "0x0558",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6504,7 +6253,6 @@
                     "name": "Reserved 0x157",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0157",
-                    "shadow_reg_offset_int": "0x055C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6513,7 +6261,6 @@
                     "name": "Reserved 0x158",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0158",
-                    "shadow_reg_offset_int": "0x0560",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6522,7 +6269,6 @@
                     "name": "Reserved 0x159",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0159",
-                    "shadow_reg_offset_int": "0x0564",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6531,7 +6277,6 @@
                     "name": "Reserved 0x15A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x015A",
-                    "shadow_reg_offset_int": "0x0568",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6540,7 +6285,6 @@
                     "name": "Reserved 0x15B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x015B",
-                    "shadow_reg_offset_int": "0x056C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6549,7 +6293,6 @@
                     "name": "Reserved 0x15C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x015C",
-                    "shadow_reg_offset_int": "0x0570",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6558,7 +6301,6 @@
                     "name": "Reserved 0x15D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x015D",
-                    "shadow_reg_offset_int": "0x0574",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6567,7 +6309,6 @@
                     "name": "Reserved 0x15E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x015E",
-                    "shadow_reg_offset_int": "0x0578",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6576,7 +6317,6 @@
                     "name": "Reserved 0x15F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x015F",
-                    "shadow_reg_offset_int": "0x057C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6585,7 +6325,6 @@
                     "name": "Reserved 0x160",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0160",
-                    "shadow_reg_offset_int": "0x0580",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6594,7 +6333,6 @@
                     "name": "Reserved 0x161",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0161",
-                    "shadow_reg_offset_int": "0x0584",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6603,7 +6341,6 @@
                     "name": "Reserved 0x162",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0162",
-                    "shadow_reg_offset_int": "0x0588",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6612,7 +6349,6 @@
                     "name": "Reserved 0x163",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0163",
-                    "shadow_reg_offset_int": "0x058C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6621,7 +6357,6 @@
                     "name": "Reserved 0x164",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0164",
-                    "shadow_reg_offset_int": "0x0590",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6630,7 +6365,6 @@
                     "name": "Reserved 0x165",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0165",
-                    "shadow_reg_offset_int": "0x0594",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6639,7 +6373,6 @@
                     "name": "Reserved 0x166",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0166",
-                    "shadow_reg_offset_int": "0x0598",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6648,7 +6381,6 @@
                     "name": "Reserved 0x167",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0167",
-                    "shadow_reg_offset_int": "0x059C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6657,7 +6389,6 @@
                     "name": "Reserved 0x168",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0168",
-                    "shadow_reg_offset_int": "0x05A0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6666,7 +6397,6 @@
                     "name": "Reserved 0x169",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0169",
-                    "shadow_reg_offset_int": "0x05A4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6675,7 +6405,6 @@
                     "name": "Reserved 0x16A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x016A",
-                    "shadow_reg_offset_int": "0x05A8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6684,7 +6413,6 @@
                     "name": "Reserved 0x16B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x016B",
-                    "shadow_reg_offset_int": "0x05AC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6693,7 +6421,6 @@
                     "name": "Reserved 0x16C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x016C",
-                    "shadow_reg_offset_int": "0x05B0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6702,7 +6429,6 @@
                     "name": "Reserved 0x16D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x016D",
-                    "shadow_reg_offset_int": "0x05B4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6711,7 +6437,6 @@
                     "name": "Reserved 0x16E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x016E",
-                    "shadow_reg_offset_int": "0x05B8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6720,7 +6445,6 @@
                     "name": "Reserved 0x16F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x016F",
-                    "shadow_reg_offset_int": "0x05BC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6729,7 +6453,6 @@
                     "name": "Reserved 0x170",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0170",
-                    "shadow_reg_offset_int": "0x05C0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6738,7 +6461,6 @@
                     "name": "Reserved 0x171",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0171",
-                    "shadow_reg_offset_int": "0x05C4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6747,7 +6469,6 @@
                     "name": "Reserved 0x172",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0172",
-                    "shadow_reg_offset_int": "0x05C8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6756,7 +6477,6 @@
                     "name": "Reserved 0x173",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0173",
-                    "shadow_reg_offset_int": "0x05CC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6765,7 +6485,6 @@
                     "name": "Reserved 0x174",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0174",
-                    "shadow_reg_offset_int": "0x05D0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6774,7 +6493,6 @@
                     "name": "Reserved 0x175",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0175",
-                    "shadow_reg_offset_int": "0x05D4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6783,7 +6501,6 @@
                     "name": "Reserved 0x176",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0176",
-                    "shadow_reg_offset_int": "0x05D8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6792,7 +6509,6 @@
                     "name": "Reserved 0x177",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0177",
-                    "shadow_reg_offset_int": "0x05DC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -6801,7 +6517,6 @@
                     "name": "GPR2_CFG0",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x0178",
-                    "shadow_reg_offset_int": "0x05E0",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -6809,7 +6524,6 @@
                     "name": "GPR2_CFG1",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x0179",
-                    "shadow_reg_offset_int": "0x05E4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6823,7 +6537,6 @@
                     "name": "GPR2_CFG2",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x017A",
-                    "shadow_reg_offset_int": "0x05E8",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6837,7 +6550,6 @@
                     "name": "GPR2_CFG3",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x017B",
-                    "shadow_reg_offset_int": "0x05EC",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6851,7 +6563,6 @@
                     "name": "GPR2_CFG4",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x017C",
-                    "shadow_reg_offset_int": "0x05F0",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6865,7 +6576,6 @@
                     "name": "GPR2_CFG5",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x017D",
-                    "shadow_reg_offset_int": "0x05F4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6879,7 +6589,6 @@
                     "name": "GPR2_CFG6",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x017E",
-                    "shadow_reg_offset_int": "0x05F8",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6893,7 +6602,6 @@
                     "name": "GPR2_CFG7",
                     "description": "OEM Reserved - General Purpose Fuse 2",
                     "index_int": "0x017F",
-                    "shadow_reg_offset_int": "0x05FC",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6907,7 +6615,6 @@
                     "name": "GPR3_CFG0",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0180",
-                    "shadow_reg_offset_int": "0x0600",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6921,7 +6628,6 @@
                     "name": "GPR3_CFG1",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0181",
-                    "shadow_reg_offset_int": "0x0604",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6935,7 +6641,6 @@
                     "name": "GPR3_CFG2",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0182",
-                    "shadow_reg_offset_int": "0x0608",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6949,7 +6654,6 @@
                     "name": "GPR3_CFG3",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0183",
-                    "shadow_reg_offset_int": "0x060C",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6963,7 +6667,6 @@
                     "name": "GPR3_CFG4",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0184",
-                    "shadow_reg_offset_int": "0x0610",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6977,7 +6680,6 @@
                     "name": "GPR3_CFG5",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0185",
-                    "shadow_reg_offset_int": "0x0614",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -6991,7 +6693,6 @@
                     "name": "GPR3_CFG6",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0186",
-                    "shadow_reg_offset_int": "0x0618",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -7005,7 +6706,6 @@
                     "name": "GPR3_CFG7",
                     "description": "OEM Reserved - General Purpose Fuse 3",
                     "index_int": "0x0187",
-                    "shadow_reg_offset_int": "0x061C",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
@@ -7019,7 +6719,6 @@
                     "name": "GPR4_CFG0",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x0188",
-                    "shadow_reg_offset_int": "0x0620",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -7027,7 +6726,6 @@
                     "name": "GPR4_CFG1",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x0189",
-                    "shadow_reg_offset_int": "0x0624",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -7035,7 +6733,6 @@
                     "name": "GPR4_CFG2",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x018A",
-                    "shadow_reg_offset_int": "0x0628",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -7043,7 +6740,6 @@
                     "name": "GPR4_CFG3",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x018B",
-                    "shadow_reg_offset_int": "0x062C",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -7051,8 +6747,6 @@
                     "name": "GPR4_CFG4",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x018C",
-                    "shadow_reg_offset_int": "0x0630",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse9",
                         "write_lock_int": "0x0200",
@@ -7066,8 +6760,6 @@
                     "name": "GPR4_CFG5",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x018D",
-                    "shadow_reg_offset_int": "0x0634",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -7075,8 +6767,6 @@
                     "name": "GPR4_CFG6",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x018E",
-                    "shadow_reg_offset_int": "0x0638",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -7084,8 +6774,6 @@
                     "name": "GPR4_CFG7",
                     "description": "OEM Reserved - General Purpose Fuse 4",
                     "index_int": "0x018F",
-                    "shadow_reg_offset_int": "0x063C",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -7093,7 +6781,6 @@
                     "name": "Reserved 0x190",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0190",
-                    "shadow_reg_offset_int": "0x0640",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7102,7 +6789,6 @@
                     "name": "Reserved 0x191",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0191",
-                    "shadow_reg_offset_int": "0x0644",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7111,7 +6797,6 @@
                     "name": "Reserved 0x192",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0192",
-                    "shadow_reg_offset_int": "0x0648",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7120,7 +6805,6 @@
                     "name": "Reserved 0x193",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0193",
-                    "shadow_reg_offset_int": "0x064C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7129,7 +6813,6 @@
                     "name": "Reserved 0x194",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0194",
-                    "shadow_reg_offset_int": "0x0650",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7138,7 +6821,6 @@
                     "name": "Reserved 0x195",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0195",
-                    "shadow_reg_offset_int": "0x0654",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7147,7 +6829,6 @@
                     "name": "Reserved 0x196",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0196",
-                    "shadow_reg_offset_int": "0x0658",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7156,7 +6837,6 @@
                     "name": "Reserved 0x197",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0197",
-                    "shadow_reg_offset_int": "0x065C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7165,7 +6845,6 @@
                     "name": "Reserved 0x198",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0198",
-                    "shadow_reg_offset_int": "0x0660",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7174,7 +6853,6 @@
                     "name": "Reserved 0x199",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x0199",
-                    "shadow_reg_offset_int": "0x0664",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7183,7 +6861,6 @@
                     "name": "Reserved 0x19A",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x019A",
-                    "shadow_reg_offset_int": "0x0668",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7192,7 +6869,6 @@
                     "name": "Reserved 0x19B",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x019B",
-                    "shadow_reg_offset_int": "0x066C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7201,7 +6877,6 @@
                     "name": "Reserved 0x19C",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x019C",
-                    "shadow_reg_offset_int": "0x0670",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7210,7 +6885,6 @@
                     "name": "Reserved 0x19D",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x019D",
-                    "shadow_reg_offset_int": "0x0674",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7219,7 +6893,6 @@
                     "name": "Reserved 0x19E",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x019E",
-                    "shadow_reg_offset_int": "0x0678",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7228,7 +6901,6 @@
                     "name": "Reserved 0x19F",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x019F",
-                    "shadow_reg_offset_int": "0x067C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7237,7 +6909,6 @@
                     "name": "Reserved 0x1A0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A0",
-                    "shadow_reg_offset_int": "0x0680",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7246,7 +6917,6 @@
                     "name": "Reserved 0x1A1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A1",
-                    "shadow_reg_offset_int": "0x0684",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7255,7 +6925,6 @@
                     "name": "Reserved 0x1A2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A2",
-                    "shadow_reg_offset_int": "0x0688",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7264,7 +6933,6 @@
                     "name": "Reserved 0x1A3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A3",
-                    "shadow_reg_offset_int": "0x068C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7273,7 +6941,6 @@
                     "name": "Reserved 0x1A4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A4",
-                    "shadow_reg_offset_int": "0x0690",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7282,7 +6949,6 @@
                     "name": "Reserved 0x1A5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A5",
-                    "shadow_reg_offset_int": "0x0694",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7291,7 +6957,6 @@
                     "name": "Reserved 0x1A6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A6",
-                    "shadow_reg_offset_int": "0x0698",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7300,7 +6965,6 @@
                     "name": "Reserved 0x1A7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A7",
-                    "shadow_reg_offset_int": "0x069C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7309,7 +6973,6 @@
                     "name": "Reserved 0x1A8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A8",
-                    "shadow_reg_offset_int": "0x06A0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7318,7 +6981,6 @@
                     "name": "Reserved 0x1A9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01A9",
-                    "shadow_reg_offset_int": "0x06A4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7327,7 +6989,6 @@
                     "name": "Reserved 0x1AA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01AA",
-                    "shadow_reg_offset_int": "0x06A8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7336,7 +6997,6 @@
                     "name": "Reserved 0x1AB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01AB",
-                    "shadow_reg_offset_int": "0x06AC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7345,7 +7005,6 @@
                     "name": "Reserved 0x1AC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01AC",
-                    "shadow_reg_offset_int": "0x06B0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7354,7 +7013,6 @@
                     "name": "Reserved 0x1AD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01AD",
-                    "shadow_reg_offset_int": "0x06B4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7363,7 +7021,6 @@
                     "name": "Reserved 0x1AE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01AE",
-                    "shadow_reg_offset_int": "0x06B8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7372,7 +7029,6 @@
                     "name": "Reserved 0x1AF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01AF",
-                    "shadow_reg_offset_int": "0x06BC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7381,7 +7037,6 @@
                     "name": "Reserved 0x1B0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B0",
-                    "shadow_reg_offset_int": "0x06C0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7390,7 +7045,6 @@
                     "name": "Reserved 0x1B1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B1",
-                    "shadow_reg_offset_int": "0x06C4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7399,7 +7053,6 @@
                     "name": "Reserved 0x1B2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B2",
-                    "shadow_reg_offset_int": "0x06C8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7408,7 +7061,6 @@
                     "name": "Reserved 0x1B3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B3",
-                    "shadow_reg_offset_int": "0x06CC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7417,7 +7069,6 @@
                     "name": "Reserved 0x1B4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B4",
-                    "shadow_reg_offset_int": "0x06D0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7426,7 +7077,6 @@
                     "name": "Reserved 0x1B5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B5",
-                    "shadow_reg_offset_int": "0x06D4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7435,7 +7085,6 @@
                     "name": "Reserved 0x1B6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B6",
-                    "shadow_reg_offset_int": "0x06D8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7444,7 +7093,6 @@
                     "name": "Reserved 0x1B7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B7",
-                    "shadow_reg_offset_int": "0x06DC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7453,7 +7101,6 @@
                     "name": "Reserved 0x1B8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B8",
-                    "shadow_reg_offset_int": "0x06E0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7462,7 +7109,6 @@
                     "name": "Reserved 0x1B9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01B9",
-                    "shadow_reg_offset_int": "0x06E4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7471,7 +7117,6 @@
                     "name": "Reserved 0x1BA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01BA",
-                    "shadow_reg_offset_int": "0x06E8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7480,7 +7125,6 @@
                     "name": "Reserved 0x1BB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01BB",
-                    "shadow_reg_offset_int": "0x06EC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7489,7 +7133,6 @@
                     "name": "Reserved 0x1BC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01BC",
-                    "shadow_reg_offset_int": "0x06F0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7498,7 +7141,6 @@
                     "name": "Reserved 0x1BD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01BD",
-                    "shadow_reg_offset_int": "0x06F4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7507,7 +7149,6 @@
                     "name": "Reserved 0x1BE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01BE",
-                    "shadow_reg_offset_int": "0x06F8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7516,7 +7157,6 @@
                     "name": "Reserved 0x1BF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01BF",
-                    "shadow_reg_offset_int": "0x06FC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7525,7 +7165,6 @@
                     "name": "Reserved 0x1C0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C0",
-                    "shadow_reg_offset_int": "0x0700",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7534,7 +7173,6 @@
                     "name": "Reserved 0x1C1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C1",
-                    "shadow_reg_offset_int": "0x0704",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7543,7 +7181,6 @@
                     "name": "Reserved 0x1C2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C2",
-                    "shadow_reg_offset_int": "0x0708",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7552,7 +7189,6 @@
                     "name": "Reserved 0x1C3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C3",
-                    "shadow_reg_offset_int": "0x070C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7561,7 +7197,6 @@
                     "name": "Reserved 0x1C4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C4",
-                    "shadow_reg_offset_int": "0x0710",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7570,7 +7205,6 @@
                     "name": "Reserved 0x1C5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C5",
-                    "shadow_reg_offset_int": "0x0714",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7579,7 +7213,6 @@
                     "name": "Reserved 0x1C6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C6",
-                    "shadow_reg_offset_int": "0x0718",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7588,7 +7221,6 @@
                     "name": "Reserved 0x1C7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C7",
-                    "shadow_reg_offset_int": "0x071C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7597,7 +7229,6 @@
                     "name": "Reserved 0x1C8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C8",
-                    "shadow_reg_offset_int": "0x0720",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7606,7 +7237,6 @@
                     "name": "Reserved 0x1C9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01C9",
-                    "shadow_reg_offset_int": "0x0724",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7615,7 +7245,6 @@
                     "name": "Reserved 0x1CA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01CA",
-                    "shadow_reg_offset_int": "0x0728",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7624,7 +7253,6 @@
                     "name": "Reserved 0x1CB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01CB",
-                    "shadow_reg_offset_int": "0x072C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7633,7 +7261,6 @@
                     "name": "Reserved 0x1CC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01CC",
-                    "shadow_reg_offset_int": "0x0730",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7642,7 +7269,6 @@
                     "name": "Reserved 0x1CD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01CD",
-                    "shadow_reg_offset_int": "0x0734",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7651,7 +7277,6 @@
                     "name": "Reserved 0x1CE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01CE",
-                    "shadow_reg_offset_int": "0x0738",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7660,7 +7285,6 @@
                     "name": "Reserved 0x1CF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01CF",
-                    "shadow_reg_offset_int": "0x073C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7669,7 +7293,6 @@
                     "name": "Reserved 0x1D0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D0",
-                    "shadow_reg_offset_int": "0x0740",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7678,7 +7301,6 @@
                     "name": "Reserved 0x1D1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D1",
-                    "shadow_reg_offset_int": "0x0744",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7687,7 +7309,6 @@
                     "name": "Reserved 0x1D2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D2",
-                    "shadow_reg_offset_int": "0x0748",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7696,7 +7317,6 @@
                     "name": "Reserved 0x1D3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D3",
-                    "shadow_reg_offset_int": "0x074C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7705,7 +7325,6 @@
                     "name": "Reserved 0x1D4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D4",
-                    "shadow_reg_offset_int": "0x0750",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7714,7 +7333,6 @@
                     "name": "Reserved 0x1D5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D5",
-                    "shadow_reg_offset_int": "0x0754",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7723,7 +7341,6 @@
                     "name": "Reserved 0x1D6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D6",
-                    "shadow_reg_offset_int": "0x0758",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7732,7 +7349,6 @@
                     "name": "Reserved 0x1D7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D7",
-                    "shadow_reg_offset_int": "0x075C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7741,7 +7357,6 @@
                     "name": "Reserved 0x1D8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D8",
-                    "shadow_reg_offset_int": "0x0760",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7750,7 +7365,6 @@
                     "name": "Reserved 0x1D9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01D9",
-                    "shadow_reg_offset_int": "0x0764",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7759,7 +7373,6 @@
                     "name": "Reserved 0x1DA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01DA",
-                    "shadow_reg_offset_int": "0x0768",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7768,7 +7381,6 @@
                     "name": "Reserved 0x1DB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01DB",
-                    "shadow_reg_offset_int": "0x076C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7777,7 +7389,6 @@
                     "name": "Reserved 0x1DC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01DC",
-                    "shadow_reg_offset_int": "0x0770",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7786,7 +7397,6 @@
                     "name": "Reserved 0x1DD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01DD",
-                    "shadow_reg_offset_int": "0x0774",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7795,7 +7405,6 @@
                     "name": "Reserved 0x1DE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01DE",
-                    "shadow_reg_offset_int": "0x0778",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7804,7 +7413,6 @@
                     "name": "Reserved 0x1DF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01DF",
-                    "shadow_reg_offset_int": "0x077C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7813,7 +7421,6 @@
                     "name": "Reserved 0x1E0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E0",
-                    "shadow_reg_offset_int": "0x0780",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7822,7 +7429,6 @@
                     "name": "Reserved 0x1E1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E1",
-                    "shadow_reg_offset_int": "0x0784",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7831,7 +7437,6 @@
                     "name": "Reserved 0x1E2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E2",
-                    "shadow_reg_offset_int": "0x0788",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7840,7 +7445,6 @@
                     "name": "Reserved 0x1E3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E3",
-                    "shadow_reg_offset_int": "0x078C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7849,7 +7453,6 @@
                     "name": "Reserved 0x1E4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E4",
-                    "shadow_reg_offset_int": "0x0790",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7858,7 +7461,6 @@
                     "name": "Reserved 0x1E5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E5",
-                    "shadow_reg_offset_int": "0x0794",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7867,7 +7469,6 @@
                     "name": "Reserved 0x1E6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E6",
-                    "shadow_reg_offset_int": "0x0798",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7876,7 +7477,6 @@
                     "name": "Reserved 0x1E7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E7",
-                    "shadow_reg_offset_int": "0x079C",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7885,7 +7485,6 @@
                     "name": "Reserved 0x1E8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E8",
-                    "shadow_reg_offset_int": "0x07A0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7894,7 +7493,6 @@
                     "name": "Reserved 0x1E9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01E9",
-                    "shadow_reg_offset_int": "0x07A4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7903,7 +7501,6 @@
                     "name": "Reserved 0x1EA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01EA",
-                    "shadow_reg_offset_int": "0x07A8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7912,7 +7509,6 @@
                     "name": "Reserved 0x1EB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01EB",
-                    "shadow_reg_offset_int": "0x07AC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7921,7 +7517,6 @@
                     "name": "CRC_HI4",
                     "description": "CRC 5",
                     "index_int": "0x01EC",
-                    "shadow_reg_offset_int": "0x07B0",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -7935,7 +7530,6 @@
                     "name": "CRC_HI5",
                     "description": "CRC 6",
                     "index_int": "0x01ED",
-                    "shadow_reg_offset_int": "0x07B4",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -7949,7 +7543,6 @@
                     "name": "CRC_HI6",
                     "description": "CRC 7",
                     "index_int": "0x01EE",
-                    "shadow_reg_offset_int": "0x07B8",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -7963,7 +7556,6 @@
                     "name": "CRC_HI7",
                     "description": "CRC 8",
                     "index_int": "0x01EF",
-                    "shadow_reg_offset_int": "0x07BC",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse1",
@@ -7977,7 +7569,6 @@
                     "name": "Reserved 0x1F0",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F0",
-                    "shadow_reg_offset_int": "0x07C0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7986,7 +7577,6 @@
                     "name": "Reserved 0x1F1",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F1",
-                    "shadow_reg_offset_int": "0x07C4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -7995,7 +7585,6 @@
                     "name": "Reserved 0x1F2",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F2",
-                    "shadow_reg_offset_int": "0x07C8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8004,7 +7593,6 @@
                     "name": "Reserved 0x1F3",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F3",
-                    "shadow_reg_offset_int": "0x07CC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8013,7 +7601,6 @@
                     "name": "Reserved 0x1F4",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F4",
-                    "shadow_reg_offset_int": "0x07D0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8022,7 +7609,6 @@
                     "name": "Reserved 0x1F5",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F5",
-                    "shadow_reg_offset_int": "0x07D4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8031,7 +7617,6 @@
                     "name": "Reserved 0x1F6",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F6",
-                    "shadow_reg_offset_int": "0x07D8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8040,7 +7625,6 @@
                     "name": "Reserved 0x1F7",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F7",
-                    "shadow_reg_offset_int": "0x07DC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8049,7 +7633,6 @@
                     "name": "Reserved 0x1F8",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F8",
-                    "shadow_reg_offset_int": "0x07E0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8058,7 +7641,6 @@
                     "name": "Reserved 0x1F9",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01F9",
-                    "shadow_reg_offset_int": "0x07E4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8067,7 +7649,6 @@
                     "name": "Reserved 0x1FA",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01FA",
-                    "shadow_reg_offset_int": "0x07E8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8076,7 +7657,6 @@
                     "name": "Reserved 0x1FB",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01FB",
-                    "shadow_reg_offset_int": "0x07EC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8085,7 +7665,6 @@
                     "name": "Reserved 0x1FC",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01FC",
-                    "shadow_reg_offset_int": "0x07F0",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8094,7 +7673,6 @@
                     "name": "Reserved 0x1FD",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01FD",
-                    "shadow_reg_offset_int": "0x07F4",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8103,7 +7681,6 @@
                     "name": "Reserved 0x1FE",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01FE",
-                    "shadow_reg_offset_int": "0x07F8",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 },
@@ -8112,7 +7689,6 @@
                     "name": "Reserved 0x1FF",
                     "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
                     "index_int": "0x01FF",
-                    "shadow_reg_offset_int": "0x07FC",
                     "is_reserved": true,
                     "individual_write_lock": "implicit"
                 }

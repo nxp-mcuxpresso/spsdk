@@ -10,2282 +10,2282 @@
                 {
                     "id": "field000",
                     "offset_int": "0x0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure vector table address (vtor_addr)",
                     "description": "TrustZone register - Secure vector table address (vtor_addr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field004",
                     "offset_int": "0x4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure vector table address (vtor_ns_addr)",
                     "description": "TrustZone register - Non-secure vector table address (vtor_ns_addr)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field008",
                     "offset_int": "0x8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Interrupt target non-secure register 0 (nvic_itns0)",
                     "description": "TrustZone register - Interrupt target non-secure register 0 (nvic_itns0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field00C",
                     "offset_int": "0xc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Interrupt target non-secure register 1 (nvic_itns1)",
                     "description": "TrustZone register - Interrupt target non-secure register 1 (nvic_itns1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field010",
                     "offset_int": "0x10",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Control Register (mpu_ctrl)",
                     "description": "TrustZone register - MPU Control Register (mpu_ctrl)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field014",
                     "offset_int": "0x14",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Memory Attribute Indirection Register 0 (mpu_mair0)",
                     "description": "TrustZone register - MPU Memory Attribute Indirection Register 0 (mpu_mair0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field018",
                     "offset_int": "0x18",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Memory Attribute Indirection Register 1 (mpu_mair1)",
                     "description": "TrustZone register - MPU Memory Attribute Indirection Register 1 (mpu_mair1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field01C",
                     "offset_int": "0x1c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 0 Base Address Register (mpu_rbar0)",
                     "description": "TrustZone register - MPU Region 0 Base Address Register (mpu_rbar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field020",
                     "offset_int": "0x20",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 0 Limit Address Register (mpu_rlar0)",
                     "description": "TrustZone register - MPU Region 0 Limit Address Register (mpu_rlar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field024",
                     "offset_int": "0x24",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 1 Base Address Register (mpu_rbar1)",
                     "description": "TrustZone register - MPU Region 1 Base Address Register (mpu_rbar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field028",
                     "offset_int": "0x28",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 1 Limit Address Register (mpu_rlar1)",
                     "description": "TrustZone register - MPU Region 1 Limit Address Register (mpu_rlar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field02C",
                     "offset_int": "0x2c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 2 Base Address Register (mpu_rbar2)",
                     "description": "TrustZone register - MPU Region 2 Base Address Register (mpu_rbar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field030",
                     "offset_int": "0x30",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 2 Limit Address Register (mpu_rlar2)",
                     "description": "TrustZone register - MPU Region 2 Limit Address Register (mpu_rlar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field034",
                     "offset_int": "0x34",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 3 Base Address Register (mpu_rbar3)",
                     "description": "TrustZone register - MPU Region 3 Base Address Register (mpu_rbar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field038",
                     "offset_int": "0x38",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 3 Limit Address Register (mpu_rlar3)",
                     "description": "TrustZone register - MPU Region 3 Limit Address Register (mpu_rlar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field03C",
                     "offset_int": "0x3c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 4 Base Address Register (mpu_rbar4)",
                     "description": "TrustZone register - MPU Region 4 Base Address Register (mpu_rbar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field040",
                     "offset_int": "0x40",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 4 Limit Address Register (mpu_rlar4)",
                     "description": "TrustZone register - MPU Region 4 Limit Address Register (mpu_rlar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field044",
                     "offset_int": "0x44",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 5 Base Address Register (mpu_rbar5)",
                     "description": "TrustZone register - MPU Region 5 Base Address Register (mpu_rbar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field048",
                     "offset_int": "0x48",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 5 Limit Address Register (mpu_rlar5)",
                     "description": "TrustZone register - MPU Region 5 Limit Address Register (mpu_rlar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field04C",
                     "offset_int": "0x4c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 6 Base Address Register (mpu_rbar6)",
                     "description": "TrustZone register - MPU Region 6 Base Address Register (mpu_rbar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field050",
                     "offset_int": "0x50",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 6 Limit Address Register (mpu_rlar6)",
                     "description": "TrustZone register - MPU Region 6 Limit Address Register (mpu_rlar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field054",
                     "offset_int": "0x54",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 7 Base Address Register (mpu_rbar7)",
                     "description": "TrustZone register - MPU Region 7 Base Address Register (mpu_rbar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field058",
                     "offset_int": "0x58",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "MPU Region 7 Limit Address Register (mpu_rlar7)",
                     "description": "TrustZone register - MPU Region 7 Limit Address Register (mpu_rlar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field05C",
                     "offset_int": "0x5c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Control Register (mpu_ctrl_ns)",
                     "description": "TrustZone register - Non-secure MPU Control Register (mpu_ctrl_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field060",
                     "offset_int": "0x60",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Memory Attribute Indirection Register 0 (mpu_mair0_ns)",
                     "description": "TrustZone register - Non-secure MPU Memory Attribute Indirection Register 0 (mpu_mair0_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field064",
                     "offset_int": "0x64",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Memory Attribute Indirection Register 1 (mpu_mair1_ns)",
                     "description": "TrustZone register - Non-secure MPU Memory Attribute Indirection Register 1 (mpu_mair1_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field068",
                     "offset_int": "0x68",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 0 Base Address Register (mpu_rbar0_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 0 Base Address Register (mpu_rbar0_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field06C",
                     "offset_int": "0x6c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 0 Limit Address Register (mpu_rlar0_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 0 Limit Address Register (mpu_rlar0_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field070",
                     "offset_int": "0x70",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 1 Base Address Register (mpu_rbar1_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 1 Base Address Register (mpu_rbar1_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field074",
                     "offset_int": "0x74",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 1 Limit Address Register (mpu_rlar1_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 1 Limit Address Register (mpu_rlar1_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field078",
                     "offset_int": "0x78",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 2 Base Address Register (mpu_rbar2_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 2 Base Address Register (mpu_rbar2_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field07C",
                     "offset_int": "0x7c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 2 Limit Address Register (mpu_rlar2_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 2 Limit Address Register (mpu_rlar2_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field080",
                     "offset_int": "0x80",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 3 Base Address Register (mpu_rbar3_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 3 Base Address Register (mpu_rbar3_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field084",
                     "offset_int": "0x84",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 3 Limit Address Register (mpu_rlar3_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 3 Limit Address Register (mpu_rlar3_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field088",
                     "offset_int": "0x88",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 4 Base Address Register (mpu_rbar4_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 4 Base Address Register (mpu_rbar4_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field08C",
                     "offset_int": "0x8c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 4 Limit Address Register (mpu_rlar4_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 4 Limit Address Register (mpu_rlar4_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field090",
                     "offset_int": "0x90",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 5 Base Address Register (mpu_rbar5_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 5 Base Address Register (mpu_rbar5_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field094",
                     "offset_int": "0x94",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 5 Limit Address Register (mpu_rlar5_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 5 Limit Address Register (mpu_rlar5_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field098",
                     "offset_int": "0x98",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 6 Base Address Register (mpu_rbar6_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 6 Base Address Register (mpu_rbar6_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field09C",
                     "offset_int": "0x9c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 6 Limit Address Register (mpu_rlar6_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 6 Limit Address Register (mpu_rlar6_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0A0",
                     "offset_int": "0xa0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 7 Base Address Register (mpu_rbar7_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 7 Base Address Register (mpu_rbar7_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0A4",
                     "offset_int": "0xa4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Non-secure MPU Region 7 Limit Address Register (mpu_rlar7_ns)",
                     "description": "TrustZone register - Non-secure MPU Region 7 Limit Address Register (mpu_rlar7_ns)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0A8",
                     "offset_int": "0xa8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Control Register (sau_ctrl)",
                     "description": "TrustZone register - SAU Control Register (sau_ctrl)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0AC",
                     "offset_int": "0xac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 0 Base Address Register (sau_rbar0)",
                     "description": "TrustZone register - SAU Region 0 Base Address Register (sau_rbar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0B0",
                     "offset_int": "0xb0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 0 Limit Address Register (sau_rlar0)",
                     "description": "TrustZone register - SAU Region 0 Limit Address Register (sau_rlar0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0B4",
                     "offset_int": "0xb4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 1 Base Address Register (sau_rbar1)",
                     "description": "TrustZone register - SAU Region 1 Base Address Register (sau_rbar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0B8",
                     "offset_int": "0xb8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 1 Limit Address Register (sau_rlar1)",
                     "description": "TrustZone register - SAU Region 1 Limit Address Register (sau_rlar1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0BC",
                     "offset_int": "0xbc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 2 Base Address Register (sau_rbar2)",
                     "description": "TrustZone register - SAU Region 2 Base Address Register (sau_rbar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0C0",
                     "offset_int": "0xc0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 2 Limit Address Register (sau_rlar2)",
                     "description": "TrustZone register - SAU Region 2 Limit Address Register (sau_rlar2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0C4",
                     "offset_int": "0xc4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 3 Base Address Register (sau_rbar3)",
                     "description": "TrustZone register - SAU Region 3 Base Address Register (sau_rbar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0C8",
                     "offset_int": "0xc8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 3 Limit Address Register (sau_rlar3)",
                     "description": "TrustZone register - SAU Region 3 Limit Address Register (sau_rlar3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0CC",
                     "offset_int": "0xcc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 4 Base Address Register (sau_rbar4)",
                     "description": "TrustZone register - SAU Region 4 Base Address Register (sau_rbar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0D0",
                     "offset_int": "0xd0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 4 Limit Address Register (sau_rlar4)",
                     "description": "TrustZone register - SAU Region 4 Limit Address Register (sau_rlar4)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0D4",
                     "offset_int": "0xd4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 5 Base Address Register (sau_rbar5)",
                     "description": "TrustZone register - SAU Region 5 Base Address Register (sau_rbar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0D8",
                     "offset_int": "0xd8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 5 Limit Address Register (sau_rlar5)",
                     "description": "TrustZone register - SAU Region 5 Limit Address Register (sau_rlar5)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0DC",
                     "offset_int": "0xdc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 6 Base Address Register (sau_rbar6)",
                     "description": "TrustZone register - SAU Region 6 Base Address Register (sau_rbar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E0",
                     "offset_int": "0xe0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 6 Limit Address Register (sau_rlar6)",
                     "description": "TrustZone register - SAU Region 6 Limit Address Register (sau_rlar6)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E4",
                     "offset_int": "0xe4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 7 Base Address Register (sau_rbar7)",
                     "description": "TrustZone register - SAU Region 7 Base Address Register (sau_rbar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E8",
                     "offset_int": "0xe8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "SAU Region 7 Limit Address Register (sau_rlar7)",
                     "description": "TrustZone register - SAU Region 7 Limit Address Register (sau_rlar7)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0EC",
                     "offset_int": "0xec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ROM Slave Rule Register 0 (bootrom0_slave_rule0)",
                     "description": "TrustZone register - ROM Slave Rule Register 0 (bootrom0_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0F0",
                     "offset_int": "0xf0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ROM Memory Rule Register 0 (bootrom0_mem_rule0)",
                     "description": "TrustZone register - ROM Memory Rule Register 0 (bootrom0_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0F4",
                     "offset_int": "0xf4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ROM Memory Rule Register 1 (bootrom0_mem_rule1)",
                     "description": "TrustZone register - ROM Memory Rule Register 1 (bootrom0_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0F8",
                     "offset_int": "0xf8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ROM Memory Rule Register 2 (bootrom0_mem_rule2)",
                     "description": "TrustZone register - ROM Memory Rule Register 2 (bootrom0_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0FC",
                     "offset_int": "0xfc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ROM Memory Rule Register 3 (bootrom0_mem_rule3)",
                     "description": "TrustZone register - ROM Memory Rule Register 3 (bootrom0_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field100",
                     "offset_int": "0x100",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI Slave Rule Register 0 (qospi_slave_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI Slave Rule Register 0 (qospi_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field104",
                     "offset_int": "0x104",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 0 (qospi0_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 0 (qospi0_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field108",
                     "offset_int": "0x108",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 1 (qospi0_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 1 (qospi0_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field10C",
                     "offset_int": "0x10c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 2 (qospi0_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 2 (qospi0_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field110",
                     "offset_int": "0x110",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 3 (qospi0_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 3 (qospi0_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field114",
                     "offset_int": "0x114",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 0 (qospi1_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 0 (qospi1_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field118",
                     "offset_int": "0x118",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 1 (qospi1_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 1 (qospi1_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field11C",
                     "offset_int": "0x11c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 2 (qospi1_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 2 (qospi1_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field120",
                     "offset_int": "0x120",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 3 (qospi1_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 3 (qospi1_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field124",
                     "offset_int": "0x124",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 0 (qospi2_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 0 (qospi2_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field128",
                     "offset_int": "0x128",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 1 (qospi2_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 1 (qospi2_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field12C",
                     "offset_int": "0x12c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 2 (qospi2_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 2 (qospi2_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field130",
                     "offset_int": "0x130",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 3 (qospi2_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 3 (qospi2_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field134",
                     "offset_int": "0x134",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 0 (qospi3_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 0 (qospi3_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field138",
                     "offset_int": "0x138",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 1 (qospi3_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 1 (qospi3_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field13C",
                     "offset_int": "0x13c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 2 (qospi3_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 2 (qospi3_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field140",
                     "offset_int": "0x140",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 3 (qospi3_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 3 (qospi3_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field144",
                     "offset_int": "0x144",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 0 (qospi4_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 0 (qospi4_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field148",
                     "offset_int": "0x148",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 1 (qospi4_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 1 (qospi4_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field14C",
                     "offset_int": "0x14c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 2 (qospi4_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 2 (qospi4_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field150",
                     "offset_int": "0x150",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 3 (qospi4_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 3 (qospi4_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field154",
                     "offset_int": "0x154",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM0 Slave Rule Register (ram0_slave_rule)",
                     "description": "TrustZone register - RAM0 Slave Rule Register (ram0_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field158",
                     "offset_int": "0x158",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM00 Memory Rule Register 0 (ram00_mem_rule0)",
                     "description": "TrustZone register - RAM00 Memory Rule Register 0 (ram00_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field15C",
                     "offset_int": "0x15c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM00 Memory Rule Register 1 (ram00_mem_rule1)",
                     "description": "TrustZone register - RAM00 Memory Rule Register 1 (ram00_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field160",
                     "offset_int": "0x160",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM00 Memory Rule Register 2 (ram00_mem_rule2)",
                     "description": "TrustZone register - RAM00 Memory Rule Register 2 (ram00_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field164",
                     "offset_int": "0x164",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM00 Memory Rule Register 3 (ram00_mem_rule3)",
                     "description": "TrustZone register - RAM00 Memory Rule Register 3 (ram00_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field168",
                     "offset_int": "0x168",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM01 Memory Rule Register 0 (ram01_mem_rule0)",
                     "description": "TrustZone register - RAM01 Memory Rule Register 0 (ram01_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field16C",
                     "offset_int": "0x16c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM01 Memory Rule Register 1 (ram01_mem_rule1)",
                     "description": "TrustZone register - RAM01 Memory Rule Register 1 (ram01_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field170",
                     "offset_int": "0x170",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM01 Memory Rule Register 2 (ram01_mem_rule2)",
                     "description": "TrustZone register - RAM01 Memory Rule Register 2 (ram01_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field174",
                     "offset_int": "0x174",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM01 Memory Rule Register 3 (ram01_mem_rule3)",
                     "description": "TrustZone register - RAM01 Memory Rule Register 3 (ram01_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field178",
                     "offset_int": "0x178",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM1 Slave Rule Register (ram1_slave_rule)",
                     "description": "TrustZone register - RAM1 Slave Rule Register (ram1_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field17C",
                     "offset_int": "0x17c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM10 Memory Rule Register 0 (ram10_mem_rule0)",
                     "description": "TrustZone register - RAM10 Memory Rule Register 0 (ram10_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field180",
                     "offset_int": "0x180",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM10 Memory Rule Register 1 (ram10_mem_rule1)",
                     "description": "TrustZone register - RAM10 Memory Rule Register 1 (ram10_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field184",
                     "offset_int": "0x184",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM10 Memory Rule Register 2 (ram10_mem_rule2)",
                     "description": "TrustZone register - RAM10 Memory Rule Register 2 (ram10_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field188",
                     "offset_int": "0x188",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM10 Memory Rule Register 3 (ram10_mem_rule3)",
                     "description": "TrustZone register - RAM10 Memory Rule Register 3 (ram10_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field18C",
                     "offset_int": "0x18c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM11 Memory Rule Register 0 (ram11_mem_rule0)",
                     "description": "TrustZone register - RAM11 Memory Rule Register 0 (ram11_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field190",
                     "offset_int": "0x190",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM11 Memory Rule Register 1 (ram11_mem_rule1)",
                     "description": "TrustZone register - RAM11 Memory Rule Register 1 (ram11_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field194",
                     "offset_int": "0x194",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM11 Memory Rule Register 2 (ram11_mem_rule2)",
                     "description": "TrustZone register - RAM11 Memory Rule Register 2 (ram11_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field198",
                     "offset_int": "0x198",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM11 Memory Rule Register 3 (ram11_mem_rule3)",
                     "description": "TrustZone register - RAM11 Memory Rule Register 3 (ram11_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field19C",
                     "offset_int": "0x19c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM2 Slave Rule Register (ram2_slave_rule)",
                     "description": "TrustZone register - RAM2 Slave Rule Register (ram2_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A0",
                     "offset_int": "0x1a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM20 Memory Rule Register 0 (ram20_mem_rule0)",
                     "description": "TrustZone register - RAM20 Memory Rule Register 0 (ram20_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A4",
                     "offset_int": "0x1a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM20 Memory Rule Register 1 (ram20_mem_rule1)",
                     "description": "TrustZone register - RAM20 Memory Rule Register 1 (ram20_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1A8",
                     "offset_int": "0x1a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM20 Memory Rule Register 2 (ram20_mem_rule2)",
                     "description": "TrustZone register - RAM20 Memory Rule Register 2 (ram20_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1AC",
                     "offset_int": "0x1ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM20 Memory Rule Register 3 (ram20_mem_rule3)",
                     "description": "TrustZone register - RAM20 Memory Rule Register 3 (ram20_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B0",
                     "offset_int": "0x1b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM21 Memory Rule Register 0 (ram21_mem_rule0)",
                     "description": "TrustZone register - RAM21 Memory Rule Register 0 (ram21_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B4",
                     "offset_int": "0x1b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM21 Memory Rule Register 1 (ram21_mem_rule1)",
                     "description": "TrustZone register - RAM21 Memory Rule Register 1 (ram21_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1B8",
                     "offset_int": "0x1b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM21 Memory Rule Register 2 (ram21_mem_rule2)",
                     "description": "TrustZone register - RAM21 Memory Rule Register 2 (ram21_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1BC",
                     "offset_int": "0x1bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM21 Memory Rule Register 3 (ram21_mem_rule3)",
                     "description": "TrustZone register - RAM21 Memory Rule Register 3 (ram21_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C0",
                     "offset_int": "0x1c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM22 Memory Rule Register 0 (ram22_mem_rule0)",
                     "description": "TrustZone register - RAM22 Memory Rule Register 0 (ram22_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C4",
                     "offset_int": "0x1c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM22 Memory Rule Register 1 (ram22_mem_rule1)",
                     "description": "TrustZone register - RAM22 Memory Rule Register 1 (ram22_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1C8",
                     "offset_int": "0x1c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM22 Memory Rule Register 2 (ram22_mem_rule2)",
                     "description": "TrustZone register - RAM22 Memory Rule Register 2 (ram22_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1CC",
                     "offset_int": "0x1cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM22 Memory Rule Register 3 (ram22_mem_rule3)",
                     "description": "TrustZone register - RAM22 Memory Rule Register 3 (ram22_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D0",
                     "offset_int": "0x1d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM23 Memory Rule Register 0 (ram23_mem_rule0)",
                     "description": "TrustZone register - RAM23 Memory Rule Register 0 (ram23_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D4",
                     "offset_int": "0x1d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM23 Memory Rule Register 1 (ram23_mem_rule1)",
                     "description": "TrustZone register - RAM23 Memory Rule Register 1 (ram23_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1D8",
                     "offset_int": "0x1d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM23 Memory Rule Register 2 (ram23_mem_rule2)",
                     "description": "TrustZone register - RAM23 Memory Rule Register 2 (ram23_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1DC",
                     "offset_int": "0x1dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM23 Memory Rule Register 3 (ram23_mem_rule3)",
                     "description": "TrustZone register - RAM23 Memory Rule Register 3 (ram23_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E0",
                     "offset_int": "0x1e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM3 Slave Rule Register (ram3_slave_rule)",
                     "description": "TrustZone register - RAM3 Slave Rule Register (ram3_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E4",
                     "offset_int": "0x1e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM30 Memory Rule Register 0 (ram30_mem_rule0)",
                     "description": "TrustZone register - RAM30 Memory Rule Register 0 (ram30_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1E8",
                     "offset_int": "0x1e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM30 Memory Rule Register 1 (ram30_mem_rule1)",
                     "description": "TrustZone register - RAM30 Memory Rule Register 1 (ram30_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1EC",
                     "offset_int": "0x1ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM30 Memory Rule Register 2 (ram30_mem_rule2)",
                     "description": "TrustZone register - RAM30 Memory Rule Register 2 (ram30_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F0",
                     "offset_int": "0x1f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM30 Memory Rule Register 3 (ram30_mem_rule3)",
                     "description": "TrustZone register - RAM30 Memory Rule Register 3 (ram30_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F4",
                     "offset_int": "0x1f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM31 Memory Rule Register 0 (ram31_mem_rule0)",
                     "description": "TrustZone register - RAM31 Memory Rule Register 0 (ram31_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1F8",
                     "offset_int": "0x1f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM31 Memory Rule Register 1 (ram31_mem_rule1)",
                     "description": "TrustZone register - RAM31 Memory Rule Register 1 (ram31_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field1FC",
                     "offset_int": "0x1fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM31 Memory Rule Register 2 (ram31_mem_rule2)",
                     "description": "TrustZone register - RAM31 Memory Rule Register 2 (ram31_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field200",
                     "offset_int": "0x200",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM31 Memory Rule Register 3 (ram31_mem_rule3)",
                     "description": "TrustZone register - RAM31 Memory Rule Register 3 (ram31_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field204",
                     "offset_int": "0x204",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM32 Memory Rule Register 0 (ram32_mem_rule0)",
                     "description": "TrustZone register - RAM32 Memory Rule Register 0 (ram32_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field208",
                     "offset_int": "0x208",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM32 Memory Rule Register 1 (ram32_mem_rule1)",
                     "description": "TrustZone register - RAM32 Memory Rule Register 1 (ram32_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field20C",
                     "offset_int": "0x20c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM32 Memory Rule Register 2 (ram32_mem_rule2)",
                     "description": "TrustZone register - RAM32 Memory Rule Register 2 (ram32_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field210",
                     "offset_int": "0x210",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM32 Memory Rule Register 3 (ram32_mem_rule3)",
                     "description": "TrustZone register - RAM32 Memory Rule Register 3 (ram32_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field214",
                     "offset_int": "0x214",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM33 Memory Rule Register 0 (ram33_mem_rule0)",
                     "description": "TrustZone register - RAM33 Memory Rule Register 0 (ram33_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field218",
                     "offset_int": "0x218",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM33 Memory Rule Register 1 (ram33_mem_rule1)",
                     "description": "TrustZone register - RAM33 Memory Rule Register 1 (ram33_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field21C",
                     "offset_int": "0x21c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM33 Memory Rule Register 2 (ram33_mem_rule2)",
                     "description": "TrustZone register - RAM33 Memory Rule Register 2 (ram33_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field220",
                     "offset_int": "0x220",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM33 Memory Rule Register 3 (ram33_mem_rule3)",
                     "description": "TrustZone register - RAM33 Memory Rule Register 3 (ram33_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field224",
                     "offset_int": "0x224",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM4 Slave Rule Register (ram4_slave_rule)",
                     "description": "TrustZone register - RAM4 Slave Rule Register (ram4_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field228",
                     "offset_int": "0x228",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM40 Memory Rule Register 0 (ram40_mem_rule0)",
                     "description": "TrustZone register - RAM40 Memory Rule Register 0 (ram40_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field22C",
                     "offset_int": "0x22c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM40 Memory Rule Register 1 (ram40_mem_rule1)",
                     "description": "TrustZone register - RAM40 Memory Rule Register 1 (ram40_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field230",
                     "offset_int": "0x230",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM40 Memory Rule Register 2 (ram40_mem_rule2)",
                     "description": "TrustZone register - RAM40 Memory Rule Register 2 (ram40_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field234",
                     "offset_int": "0x234",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM40 Memory Rule Register 3 (ram40_mem_rule3)",
                     "description": "TrustZone register - RAM40 Memory Rule Register 3 (ram40_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field238",
                     "offset_int": "0x238",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM41 Memory Rule Register 0 (ram41_mem_rule0)",
                     "description": "TrustZone register - RAM41 Memory Rule Register 0 (ram41_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field23C",
                     "offset_int": "0x23c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM41 Memory Rule Register 1 (ram41_mem_rule1)",
                     "description": "TrustZone register - RAM41 Memory Rule Register 1 (ram41_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field240",
                     "offset_int": "0x240",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM41 Memory Rule Register 2 (ram41_mem_rule2)",
                     "description": "TrustZone register - RAM41 Memory Rule Register 2 (ram41_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field244",
                     "offset_int": "0x244",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM41 Memory Rule Register 3 (ram41_mem_rule3)",
                     "description": "TrustZone register - RAM41 Memory Rule Register 3 (ram41_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field248",
                     "offset_int": "0x248",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM42 Memory Rule Register 0 (ram42_mem_rule0)",
                     "description": "TrustZone register - RAM42 Memory Rule Register 0 (ram42_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field24C",
                     "offset_int": "0x24c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM42 Memory Rule Register 1 (ram42_mem_rule1)",
                     "description": "TrustZone register - RAM42 Memory Rule Register 1 (ram42_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field250",
                     "offset_int": "0x250",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM42 Memory Rule Register 2 (ram42_mem_rule2)",
                     "description": "TrustZone register - RAM42 Memory Rule Register 2 (ram42_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field254",
                     "offset_int": "0x254",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM42 Memory Rule Register 3 (ram42_mem_rule3)",
                     "description": "TrustZone register - RAM42 Memory Rule Register 3 (ram42_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field258",
                     "offset_int": "0x258",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM43 Memory Rule Register 0 (ram43_mem_rule0)",
                     "description": "TrustZone register - RAM43 Memory Rule Register 0 (ram43_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field25C",
                     "offset_int": "0x25c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM43 Memory Rule Register 1 (ram43_mem_rule1)",
                     "description": "TrustZone register - RAM43 Memory Rule Register 1 (ram43_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field260",
                     "offset_int": "0x260",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM43 Memory Rule Register 2 (ram43_mem_rule2)",
                     "description": "TrustZone register - RAM43 Memory Rule Register 2 (ram43_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field264",
                     "offset_int": "0x264",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM43 Memory Rule Register 3 (ram43_mem_rule3)",
                     "description": "TrustZone register - RAM43 Memory Rule Register 3 (ram43_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field268",
                     "offset_int": "0x268",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM5 Slave Rule Register (ram5_slave_rule)",
                     "description": "TrustZone register - RAM5 Slave Rule Register (ram5_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field26C",
                     "offset_int": "0x26c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM50 Memory Rule Register 0 (ram50_mem_rule0)",
                     "description": "TrustZone register - RAM50 Memory Rule Register 0 (ram50_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field270",
                     "offset_int": "0x270",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM50 Memory Rule Register 1 (ram50_mem_rule1)",
                     "description": "TrustZone register - RAM50 Memory Rule Register 1 (ram50_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field274",
                     "offset_int": "0x274",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM50 Memory Rule Register 2 (ram50_mem_rule2)",
                     "description": "TrustZone register - RAM50 Memory Rule Register 2 (ram50_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field278",
                     "offset_int": "0x278",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM50 Memory Rule Register 3 (ram50_mem_rule3)",
                     "description": "TrustZone register - RAM50 Memory Rule Register 3 (ram50_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field27C",
                     "offset_int": "0x27c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM51 Memory Rule Register 0 (ram51_mem_rule0)",
                     "description": "TrustZone register - RAM51 Memory Rule Register 0 (ram51_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field280",
                     "offset_int": "0x280",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM51 Memory Rule Register 1 (ram51_mem_rule1)",
                     "description": "TrustZone register - RAM51 Memory Rule Register 1 (ram51_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field284",
                     "offset_int": "0x284",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM51 Memory Rule Register 2 (ram51_mem_rule2)",
                     "description": "TrustZone register - RAM51 Memory Rule Register 2 (ram51_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field288",
                     "offset_int": "0x288",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM51 Memory Rule Register 3 (ram51_mem_rule3)",
                     "description": "TrustZone register - RAM51 Memory Rule Register 3 (ram51_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field28C",
                     "offset_int": "0x28c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM52 Memory Rule Register 0 (ram52_mem_rule0)",
                     "description": "TrustZone register - RAM52 Memory Rule Register 0 (ram52_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field290",
                     "offset_int": "0x290",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM52 Memory Rule Register 1 (ram52_mem_rule1)",
                     "description": "TrustZone register - RAM52 Memory Rule Register 1 (ram52_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field294",
                     "offset_int": "0x294",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM52 Memory Rule Register 2 (ram52_mem_rule2)",
                     "description": "TrustZone register - RAM52 Memory Rule Register 2 (ram52_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field298",
                     "offset_int": "0x298",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM52 Memory Rule Register 3 (ram52_mem_rule3)",
                     "description": "TrustZone register - RAM52 Memory Rule Register 3 (ram52_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field29C",
                     "offset_int": "0x29c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM53 Memory Rule Register 0 (ram53_mem_rule0)",
                     "description": "TrustZone register - RAM53 Memory Rule Register 0 (ram53_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2A0",
                     "offset_int": "0x2a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM53 Memory Rule Register 1 (ram53_mem_rule1)",
                     "description": "TrustZone register - RAM53 Memory Rule Register 1 (ram53_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2A4",
                     "offset_int": "0x2a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM53 Memory Rule Register 2 (ram53_mem_rule2)",
                     "description": "TrustZone register - RAM53 Memory Rule Register 2 (ram53_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2A8",
                     "offset_int": "0x2a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM53 Memory Rule Register 3 (ram53_mem_rule3)",
                     "description": "TrustZone register - RAM53 Memory Rule Register 3 (ram53_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2AC",
                     "offset_int": "0x2ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM6 Slave Rule Register (ram6_slave_rule)",
                     "description": "TrustZone register - RAM6 Slave Rule Register (ram6_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2B0",
                     "offset_int": "0x2b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM60 Memory Rule Register 0 (ram60_mem_rule0)",
                     "description": "TrustZone register - RAM60 Memory Rule Register 0 (ram60_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2B4",
                     "offset_int": "0x2b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM60 Memory Rule Register 1 (ram60_mem_rule1)",
                     "description": "TrustZone register - RAM60 Memory Rule Register 1 (ram60_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2B8",
                     "offset_int": "0x2b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM60 Memory Rule Register 2 (ram60_mem_rule2)",
                     "description": "TrustZone register - RAM60 Memory Rule Register 2 (ram60_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2BC",
                     "offset_int": "0x2bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM60 Memory Rule Register 3 (ram60_mem_rule3)",
                     "description": "TrustZone register - RAM60 Memory Rule Register 3 (ram60_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2C0",
                     "offset_int": "0x2c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM61 Memory Rule Register 0 (ram61_mem_rule0)",
                     "description": "TrustZone register - RAM61 Memory Rule Register 0 (ram61_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2C4",
                     "offset_int": "0x2c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM61 Memory Rule Register 1 (ram61_mem_rule1)",
                     "description": "TrustZone register - RAM61 Memory Rule Register 1 (ram61_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2C8",
                     "offset_int": "0x2c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM61 Memory Rule Register 2 (ram61_mem_rule2)",
                     "description": "TrustZone register - RAM61 Memory Rule Register 2 (ram61_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2CC",
                     "offset_int": "0x2cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM61 Memory Rule Register 3 (ram61_mem_rule3)",
                     "description": "TrustZone register - RAM61 Memory Rule Register 3 (ram61_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2D0",
                     "offset_int": "0x2d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM62 Memory Rule Register 0 (ram62_mem_rule0)",
                     "description": "TrustZone register - RAM62 Memory Rule Register 0 (ram62_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2D4",
                     "offset_int": "0x2d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM62 Memory Rule Register 1 (ram62_mem_rule1)",
                     "description": "TrustZone register - RAM62 Memory Rule Register 1 (ram62_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2D8",
                     "offset_int": "0x2d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM62 Memory Rule Register 2 (ram62_mem_rule2)",
                     "description": "TrustZone register - RAM62 Memory Rule Register 2 (ram62_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2DC",
                     "offset_int": "0x2dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM62 Memory Rule Register 3 (ram62_mem_rule3)",
                     "description": "TrustZone register - RAM62 Memory Rule Register 3 (ram62_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2E0",
                     "offset_int": "0x2e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM63 Memory Rule Register 0 (ram63_mem_rule0)",
                     "description": "TrustZone register - RAM63 Memory Rule Register 0 (ram63_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2E4",
                     "offset_int": "0x2e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM63 Memory Rule Register 1 (ram63_mem_rule1)",
                     "description": "TrustZone register - RAM63 Memory Rule Register 1 (ram63_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2E8",
                     "offset_int": "0x2e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM63 Memory Rule Register 2 (ram63_mem_rule2)",
                     "description": "TrustZone register - RAM63 Memory Rule Register 2 (ram63_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2EC",
                     "offset_int": "0x2ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM63 Memory Rule Register 3 (ram63_mem_rule3)",
                     "description": "TrustZone register - RAM63 Memory Rule Register 3 (ram63_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2F0",
                     "offset_int": "0x2f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM7 Slave Rule Register (ram7_slave_rule)",
                     "description": "TrustZone register - RAM7 Slave Rule Register (ram7_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2F4",
                     "offset_int": "0x2f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM70 Memory Rule Register 0 (ram70_mem_rule0)",
                     "description": "TrustZone register - RAM70 Memory Rule Register 0 (ram70_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2F8",
                     "offset_int": "0x2f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM70 Memory Rule Register 1 (ram70_mem_rule1)",
                     "description": "TrustZone register - RAM70 Memory Rule Register 1 (ram70_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field2FC",
                     "offset_int": "0x2fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM70 Memory Rule Register 2 (ram70_mem_rule2)",
                     "description": "TrustZone register - RAM70 Memory Rule Register 2 (ram70_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field300",
                     "offset_int": "0x300",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM70 Memory Rule Register 3 (ram70_mem_rule3)",
                     "description": "TrustZone register - RAM70 Memory Rule Register 3 (ram70_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field304",
                     "offset_int": "0x304",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM71 Memory Rule Register 0 (ram71_mem_rule0)",
                     "description": "TrustZone register - RAM71 Memory Rule Register 0 (ram71_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field308",
                     "offset_int": "0x308",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM71 Memory Rule Register 1 (ram71_mem_rule1)",
                     "description": "TrustZone register - RAM71 Memory Rule Register 1 (ram71_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field30C",
                     "offset_int": "0x30c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM71 Memory Rule Register 2 (ram71_mem_rule2)",
                     "description": "TrustZone register - RAM71 Memory Rule Register 2 (ram71_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field310",
                     "offset_int": "0x310",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM71 Memory Rule Register 3 (ram71_mem_rule3)",
                     "description": "TrustZone register - RAM71 Memory Rule Register 3 (ram71_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field314",
                     "offset_int": "0x314",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM72 Memory Rule Register 0 (ram72_mem_rule0)",
                     "description": "TrustZone register - RAM72 Memory Rule Register 0 (ram72_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field318",
                     "offset_int": "0x318",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM72 Memory Rule Register 1 (ram72_mem_rule1)",
                     "description": "TrustZone register - RAM72 Memory Rule Register 1 (ram72_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field31C",
                     "offset_int": "0x31c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM72 Memory Rule Register 2 (ram72_mem_rule2)",
                     "description": "TrustZone register - RAM72 Memory Rule Register 2 (ram72_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field320",
                     "offset_int": "0x320",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM72 Memory Rule Register 3 (ram72_mem_rule3)",
                     "description": "TrustZone register - RAM72 Memory Rule Register 3 (ram72_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field324",
                     "offset_int": "0x324",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM73 Memory Rule Register 0 (ram73_mem_rule0)",
                     "description": "TrustZone register - RAM73 Memory Rule Register 0 (ram73_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field328",
                     "offset_int": "0x328",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM73 Memory Rule Register 1 (ram73_mem_rule1)",
                     "description": "TrustZone register - RAM73 Memory Rule Register 1 (ram73_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field32C",
                     "offset_int": "0x32c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM73 Memory Rule Register 2 (ram73_mem_rule2)",
                     "description": "TrustZone register - RAM73 Memory Rule Register 2 (ram73_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field330",
                     "offset_int": "0x330",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM73 Memory Rule Register 3 (ram73_mem_rule3)",
                     "description": "TrustZone register - RAM73 Memory Rule Register 3 (ram73_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field334",
                     "offset_int": "0x334",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM8 Slave Rule Register (ram8_slave_rule)",
                     "description": "TrustZone register - RAM8 Slave Rule Register (ram8_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field338",
                     "offset_int": "0x338",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM80 Memory Rule Register 0 (ram80_mem_rule0)",
                     "description": "TrustZone register - RAM80 Memory Rule Register 0 (ram80_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field33C",
                     "offset_int": "0x33c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM80 Memory Rule Register 1 (ram80_mem_rule1)",
                     "description": "TrustZone register - RAM80 Memory Rule Register 1 (ram80_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field340",
                     "offset_int": "0x340",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM80 Memory Rule Register 2 (ram80_mem_rule2)",
                     "description": "TrustZone register - RAM80 Memory Rule Register 2 (ram80_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field344",
                     "offset_int": "0x344",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM80 Memory Rule Register 3 (ram80_mem_rule3)",
                     "description": "TrustZone register - RAM80 Memory Rule Register 3 (ram80_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field348",
                     "offset_int": "0x348",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 0 (ram81_mem_rule0)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 0 (ram81_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field34C",
                     "offset_int": "0x34c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 1 (ram81_mem_rule1)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 1 (ram81_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field350",
                     "offset_int": "0x350",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 2 (ram81_mem_rule2)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 2 (ram81_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field354",
                     "offset_int": "0x354",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 3 (ram81_mem_rule3)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 3 (ram81_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field358",
                     "offset_int": "0x358",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 0 (ram82_mem_rule0)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 0 (ram82_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field35C",
                     "offset_int": "0x35c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 1 (ram82_mem_rule1)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 1 (ram82_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field360",
                     "offset_int": "0x360",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 2 (ram82_mem_rule2)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 2 (ram82_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field364",
                     "offset_int": "0x364",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 3 (ram82_mem_rule3)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 3 (ram82_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field368",
                     "offset_int": "0x368",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 0 (ram83_mem_rule0)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 0 (ram83_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field36C",
                     "offset_int": "0x36c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 1 (ram83_mem_rule1)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 1 (ram83_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field370",
                     "offset_int": "0x370",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 2 (ram83_mem_rule2)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 2 (ram83_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field374",
                     "offset_int": "0x374",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "RAM81 Memory Rule Register 3 (ram83_mem_rule3)",
                     "description": "TrustZone register - RAM81 Memory Rule Register 3 (ram83_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field378",
                     "offset_int": "0x378",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "(ezh_ram_slave_rule)",
                     "description": "TrustZone register - (ezh_ram_slave_rule)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field37C",
                     "offset_int": "0x37c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "(ezh_ram0_slave_rule0)",
                     "description": "TrustZone register - (ezh_ram0_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field380",
                     "offset_int": "0x380",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "(ezh_ram0_slave_rule1)",
                     "description": "TrustZone register - (ezh_ram0_slave_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field384",
                     "offset_int": "0x384",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "(ezh_ram0_slave_rule2)",
                     "description": "TrustZone register - (ezh_ram0_slave_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field388",
                     "offset_int": "0x388",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "(ezh_ram0_slave_rule3)",
                     "description": "TrustZone register - (ezh_ram0_slave_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field38C",
                     "offset_int": "0x38c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI Slave Rule Register 0 (qospi1_slave_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI Slave Rule Register 0 (qospi1_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field390",
                     "offset_int": "0x390",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 0 (qospi10_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 0 (qospi10_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field394",
                     "offset_int": "0x394",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 1 (qospi10_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 1 (qospi10_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field398",
                     "offset_int": "0x398",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 2 (qospi10_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 2 (qospi10_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field39C",
                     "offset_int": "0x39c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 0 Memory Rule Register 3 (qospi10_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 0 Memory Rule Register 3 (qospi10_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3A0",
                     "offset_int": "0x3a0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 0 (qospi11_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 0 (qospi11_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3A4",
                     "offset_int": "0x3a4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 1 (qospi11_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 1 (qospi11_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3A8",
                     "offset_int": "0x3a8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 2 (qospi11_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 2 (qospi11_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3AC",
                     "offset_int": "0x3ac",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 1 Memory Rule Register 3 (qospi11_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 1 Memory Rule Register 3 (qospi11_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3B0",
                     "offset_int": "0x3b0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 0 (qospi12_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 0 (qospi12_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3B4",
                     "offset_int": "0x3b4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 1 (qospi12_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 1 (qospi12_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3B8",
                     "offset_int": "0x3b8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 2 (qospi12_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 2 (qospi12_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3BC",
                     "offset_int": "0x3bc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 2 Memory Rule Register 3 (qospi12_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 2 Memory Rule Register 3 (qospi12_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3C0",
                     "offset_int": "0x3c0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 0 (qospi13_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 0 (qospi13_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3C4",
                     "offset_int": "0x3c4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 1 (qospi13_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 1 (qospi13_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3C8",
                     "offset_int": "0x3c8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 2 (qospi13_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 2 (qospi13_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3CC",
                     "offset_int": "0x3cc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 3 Memory Rule Register 3 (qospi13_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 3 Memory Rule Register 3 (qospi13_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3D0",
                     "offset_int": "0x3d0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 0 (qospi14_mem_rule0)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 0 (qospi14_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3D4",
                     "offset_int": "0x3d4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 1 (qospi14_mem_rule1)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 1 (qospi14_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3D8",
                     "offset_int": "0x3d8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 2 (qospi14_mem_rule2)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 2 (qospi14_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3DC",
                     "offset_int": "0x3dc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Quad/Octal SPI 4 Memory Rule Register 3 (qospi14_mem_rule3)",
                     "description": "TrustZone register - Quad/Octal SPI 4 Memory Rule Register 3 (qospi14_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3E0",
                     "offset_int": "0x3e0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Slave Rule Register (apb_bridge_slave_rule0)",
                     "description": "TrustZone register - APB Bridge Slave Rule Register (apb_bridge_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3E4",
                     "offset_int": "0x3e4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 0 Memory Rule Register 0 (apb_grp0_mem_rule0)",
                     "description": "TrustZone register - APB Bridge Group 0 Memory Rule Register 0 (apb_grp0_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3E8",
                     "offset_int": "0x3e8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 0 Memory Rule Register 1 (apb_grp0_mem_rule1)",
                     "description": "TrustZone register - APB Bridge Group 0 Memory Rule Register 1 (apb_grp0_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3EC",
                     "offset_int": "0x3ec",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 0 Memory Rule Register 2 (apb_grp0_mem_rule2)",
                     "description": "TrustZone register - APB Bridge Group 0 Memory Rule Register 2 (apb_grp0_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3F0",
                     "offset_int": "0x3f0",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 0 Memory Rule Register 3 (apb_grp0_mem_rule3)",
                     "description": "TrustZone register - APB Bridge Group 0 Memory Rule Register 3 (apb_grp0_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3F4",
                     "offset_int": "0x3f4",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 1 Memory Rule Register 0 (apb_grp1_mem_rule0)",
                     "description": "TrustZone register - APB Bridge Group 1 Memory Rule Register 0 (apb_grp1_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3F8",
                     "offset_int": "0x3f8",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 1 Memory Rule Register 1 (apb_grp1_mem_rule1)",
                     "description": "TrustZone register - APB Bridge Group 1 Memory Rule Register 1 (apb_grp1_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field3FC",
                     "offset_int": "0x3fc",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 1 Memory Rule Register 2 (apb_grp1_mem_rule2)",
                     "description": "TrustZone register - APB Bridge Group 1 Memory Rule Register 2 (apb_grp1_mem_rule2)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field400",
                     "offset_int": "0x400",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "APB Bridge Group 1 Memory Rule Register 3 (apb_grp1_mem_rule3)",
                     "description": "TrustZone register - APB Bridge Group 1 Memory Rule Register 3 (apb_grp1_mem_rule3)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field404",
                     "offset_int": "0x404",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 0 Slave Rule Register 0 (ahb_periph0_slave_rule0)",
                     "description": "TrustZone register - AHB Peripherals 0 Slave Rule Register 0 (ahb_periph0_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field408",
                     "offset_int": "0x408",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AIPS bridge 0 Memory Rule Register 0 (aips_bridge0_mem_rule0)",
                     "description": "TrustZone register - AIPS bridge 0 Memory Rule Register 0 (aips_bridge0_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field40C",
                     "offset_int": "0x40c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AIPS bridge 0 Memory Rule Register 1 (aips_bridge0_mem_rule1)",
                     "description": "TrustZone register - AIPS bridge 0 Memory Rule Register 1 (aips_bridge0_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field410",
                     "offset_int": "0x410",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 1 Slave Rule Register (ahb_periph1_slave_rule0)",
                     "description": "TrustZone register - AHB Peripherals 1 Slave Rule Register (ahb_periph1_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field414",
                     "offset_int": "0x414",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 1 Slave Rule Register (ahb_periph1_slave_rule1)",
                     "description": "TrustZone register - AHB Peripherals 1 Slave Rule Register (ahb_periph1_slave_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field418",
                     "offset_int": "0x418",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AIPS Bridge Slave Rule Register (aips_bridge_slave_rule0)",
                     "description": "TrustZone register - AIPS Bridge Slave Rule Register (aips_bridge_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field41C",
                     "offset_int": "0x41c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AIPS bridge 1 Memory Rule Register 0 (aips_bridge1_mem_rule0)",
                     "description": "TrustZone register - AIPS bridge 1 Memory Rule Register 0 (aips_bridge1_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field420",
                     "offset_int": "0x420",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AIPS bridge 1 Memory Rule Register 1 (aips_bridge1_mem_rule1)",
                     "description": "TrustZone register - AIPS bridge 1 Memory Rule Register 1 (aips_bridge1_mem_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field424",
                     "offset_int": "0x424",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 2 Slave Rule Register 0 (ahb_periph2_slave_rule0)",
                     "description": "TrustZone register - AHB Peripherals 2 Slave Rule Register 0 (ahb_periph2_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field428",
                     "offset_int": "0x428",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 2 Slave Rule Register 0 (security_ctrl_mem_rule0)",
                     "description": "TrustZone register - AHB Peripherals 2 Slave Rule Register 0 (security_ctrl_mem_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field42C",
                     "offset_int": "0x42c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 3 Slave Rule Register 0 (ahb_periph3_slave_rule0)",
                     "description": "TrustZone register - AHB Peripherals 3 Slave Rule Register 0 (ahb_periph3_slave_rule0)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field430",
                     "offset_int": "0x430",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "AHB Peripherals 3 Slave Rule Register 0 (ahb_periph3_slave_rule1)",
                     "description": "TrustZone register - AHB Peripherals 3 Slave Rule Register 0 (ahb_periph3_slave_rule1)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field434",
                     "offset_int": "0x434",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 0 (sec_gp_reg0)",
                     "description": "TrustZone register - Secure GPIO Register 0 (sec_gp_reg0)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field438",
                     "offset_int": "0x438",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 1 (sec_gp_reg1)",
                     "description": "TrustZone register - Secure GPIO Register 1 (sec_gp_reg1)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field43C",
                     "offset_int": "0x43c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 2 (sec_gp_reg2)",
                     "description": "TrustZone register - Secure GPIO Register 2 (sec_gp_reg2)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field440",
                     "offset_int": "0x440",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 3 (sec_gp_reg3)",
                     "description": "TrustZone register - Secure GPIO Register 3 (sec_gp_reg3)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field444",
                     "offset_int": "0x444",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 4 (sec_gp_reg4)",
                     "description": "TrustZone register - Secure GPIO Register 4 (sec_gp_reg4)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field448",
                     "offset_int": "0x448",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 5 (sec_gp_reg5)",
                     "description": "TrustZone register - Secure GPIO Register 5 (sec_gp_reg5)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field44C",
                     "offset_int": "0x44c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 6 (sec_gp_reg6)",
                     "description": "TrustZone register - Secure GPIO Register 6 (sec_gp_reg6)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field450",
                     "offset_int": "0x450",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 7 (sec_gp_reg7)",
                     "description": "TrustZone register - Secure GPIO Register 7 (sec_gp_reg7)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field454",
                     "offset_int": "0x454",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Register 8 for DSP (sec_gp_reg8)",
                     "description": "TrustZone register - Secure GPIO Register 8 for DSP (sec_gp_reg8)",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field458",
                     "offset_int": "0x458",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure GPIO Lock Register (sec_gp_reg_lock)",
                     "description": "TrustZone register - Secure GPIO Lock Register (sec_gp_reg_lock)",
-                    "reset_value_int": "0xaaaa"
+                    "default_value_int": "0xaaaa"
                 },
                 {
                     "id": "field45C",
                     "offset_int": "0x45c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master Secure Level Register (master_sec_reg)",
                     "description": "TrustZone register - Master Secure Level Register (master_sec_reg)",
-                    "reset_value_int": "0x80000000"
+                    "default_value_int": "0x80000000"
                 },
                 {
                     "id": "field460",
                     "offset_int": "0x460",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Master Secure Level Anti-pole Register (master_sec_anti_pol_reg)",
                     "description": "TrustZone register - Master Secure Level Anti-pole Register (master_sec_anti_pol_reg)",
-                    "reset_value_int": "0xbfffffff"
+                    "default_value_int": "0xbfffffff"
                 },
                 {
                     "id": "field464",
                     "offset_int": "0x464",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "M33 Lock Control Register (m33_lock_reg)",
                     "description": "TrustZone register - M33 Lock Control Register (m33_lock_reg)",
-                    "reset_value_int": "0x800002aa"
+                    "default_value_int": "0x800002aa"
                 },
                 {
                     "id": "field468",
                     "offset_int": "0x468",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure Control Duplicate Register (misc_ctrl_dp_reg)",
                     "description": "TrustZone register - Secure Control Duplicate Register (misc_ctrl_dp_reg)",
-                    "reset_value_int": "0xaaaa"
+                    "default_value_int": "0xaaaa"
                 },
                 {
                     "id": "field46C",
                     "offset_int": "0x46c",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Secure Control Register (misc_ctrl_reg)",
                     "description": "TrustZone register - Secure Control Register (misc_ctrl_reg)",
-                    "reset_value_int": "0xaaaa"
+                    "default_value_int": "0xaaaa"
                 },
                 {
                     "id": "field470",
                     "offset_int": "0x470",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "Miscellaneous TZM settings (misc_tzm_settings)",
                     "description": "TrustZone register - Miscellaneous TZM settings (misc_tzm_settings)",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 }
             ]
         }

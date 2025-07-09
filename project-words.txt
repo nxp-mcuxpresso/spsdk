@@ -10,6 +10,8 @@ aabb
 aabbccdd
 aabbccddeeffaabbccddeeffaabbccdd
 abcxyz
+acmd
+ACMD
 ACPI
 ACPIPCI
 addoption
@@ -26,6 +28,7 @@ AESK
 aeskey
 AGDET
 AHBAP
+AHBCMDERR
 AHBERR
 AHBSC
 ahoj
@@ -63,6 +66,7 @@ argparse
 armgcc
 ASRT
 astunparse
+ATTES
 autoboot
 autoclass
 autodetection
@@ -87,6 +91,7 @@ BBHH
 BBII
 BBIO
 BBNSM
+BBSM
 BCNT
 bdcompiler
 Behaviour
@@ -136,6 +141,7 @@ bootable
 Bootable
 BOOTABLE
 BOOTCFG
+bootcmd
 bootdevice
 bootfailure
 bootimage
@@ -144,7 +150,9 @@ bootloader
 Bootloader
 BOOTLOADER
 BOOTMODE
+BOOTPIN
 bootrom
+BOOTSRC
 Boya
 brainpool
 BSTATE
@@ -162,6 +170,7 @@ CAAM
 CAAM's
 CACA
 cachier
+CADDR
 calcsize
 CALIB
 capa
@@ -203,6 +212,7 @@ CKDF
 CKDFK
 CLEARTEXT
 clib
+CLKDIV
 CLKIN
 CLKO
 CLKTAMPER
@@ -259,6 +269,7 @@ crcmod
 crctest
 crkt
 CRKT
+CRRM
 crtk
 CRTK
 crypted
@@ -290,6 +301,7 @@ Datablob
 datablobs
 datasheet
 datatable
+DATSZ
 Dbbt
 DBBT
 DBGEN
@@ -336,6 +348,7 @@ DFLAGS
 dflt
 DFLT
 dfmt
+DGDET
 dhcsr
 DHCSR
 dialout
@@ -350,6 +363,7 @@ DLLA
 dllb
 DLLB
 DLLCRA
+DLPR
 dmbox
 dmem
 dnames
@@ -359,6 +373,7 @@ donwloading
 downto
 DRBG
 DROM
+DPROT
 DSASS
 DSPEN
 dtcm
@@ -379,6 +394,7 @@ ecparam
 EDFFABEF
 Edgelock
 EDGELOCK
+edgelockenclaveimport
 EDMA
 EEBA
 eeprom
@@ -400,6 +416,7 @@ elit
 emmc
 encap
 ENCK
+ENCKEY
 encr
 ENCR
 encryptor
@@ -410,6 +427,7 @@ Endianness
 ENDIANNESS
 endswith
 entrypointaddress
+EPROT
 EPSCD
 ernad
 Errno
@@ -434,7 +452,10 @@ fatwrite
 faucibus
 fcfb
 FCFB
+FDET
+FDPROT
 Felis
+FEPROT
 filesize
 fileutil
 filevers
@@ -461,12 +482,16 @@ flexspinor
 FLEXSPINOR
 FLEXSPINORDTR
 flshldr
+FOPT
 fornon
+FPROT
+FPVIOL
 frdm
 FRDM
 Freescale
 fromhex
 FSEC
+FSLACC
 fspath
 fspi
 fspinand
@@ -474,6 +499,7 @@ ftdi
 Ftdi
 FTDI
 FTFA
+Fusemap
 FUSEV
 FWUPD
 fwversioncheck
@@ -502,6 +528,7 @@ gitcov
 GLBA
 glbac
 GLBAC
+GLBL
 gmssl
 GOTP
 gpio
@@ -522,6 +549,7 @@ hexstring
 HIDAPI
 hidraw
 HIFI
+Highdll
 HISPEED
 HKDF
 HKDFK
@@ -536,7 +564,9 @@ hsgpio
 HSPI
 htmlcov
 humanfriendly
+HVST
 Hxxx
+Hyperflash
 iadd
 ibkek
 IBKEK
@@ -578,6 +608,7 @@ IOMUXC
 ioreg
 IOUSB
 ipcmd
+IPCMDERR
 IPED
 ipykernel
 ipynb
@@ -607,6 +638,7 @@ kbps
 KBPS
 kbytes
 KBYTES
+kcfg
 keblob
 keepends
 keil
@@ -663,9 +695,12 @@ loadaddr
 loadcmac
 loadconfig
 LOADE
+loadfdt
 loadhashlocking
+loadimage
 loadkeyblob
 longword
+LPBOOT
 lpcprog
 LPCPROG
 LPCSIO
@@ -680,6 +715,7 @@ lsusb
 luctus
 LUPART
 Lxxx
+LZMA
 macbook
 MACRONIC
 Macronix
@@ -717,16 +753,19 @@ Mcxn
 MCXN
 mcxw
 MECC
+MEEN
 memcfg
 MEMCFG
 memn
 metafunc
+metavar
 MFLAG
 MFWENCK
 MFWISK
 MGTP
 microcontroller
 Microcontrollers
+micropower
 MICROSECS
 mili
 MILISECS
@@ -739,8 +778,12 @@ MLDSA
 mline
 mlist
 MLPK
+MMCAU
+mmcblk
 mmccard
 mmcdev
+mmcpart
+mmcroot
 modindex
 morbi
 moredelay
@@ -752,6 +795,7 @@ Multicore
 multilined
 multiplanes
 multiplicated
+muxed
 mwct
 MXIC
 MXICOPI
@@ -841,6 +885,8 @@ Octa
 odio
 OEIDDR
 OEITCM
+oemelefwkeyimportcmac
+oemelefwkeyimportwrap
 OEMFW
 ofile
 oftad
@@ -853,6 +899,7 @@ ONFI
 openpyxl
 optee
 OPTMK
+OSCAA
 oscca
 OSCCA
 oscrypto
@@ -867,6 +914,7 @@ OTPC
 otpmk
 OTPMK
 OTPS
+OUTDIV
 OUTOFRANGEVAL
 overgeneral
 Oykl
@@ -908,6 +956,8 @@ pkgpath
 platformdirs
 pluggy
 PMCMDEN
+PMCTRL
+PMRO
 Pmsn
 pname
 popen
@@ -957,7 +1007,9 @@ pullups
 pulvinar
 Pulvinar
 Puya
+PVTS
 PWRDN
+PWRMODE
 Pxxx
 pycache
 pycparser
@@ -997,6 +1049,7 @@ QUESTIONMARK
 quis
 Qxxx
 QYEMBT
+RADDR
 Radhostem
 ramb
 RAMB
@@ -1062,6 +1115,7 @@ ROMCP
 ROMLDR
 rootdir
 ROOTKEY
+rootwait
 rotid
 ROTID
 rotk
@@ -1080,11 +1134,14 @@ rsid
 RSID
 rsplit
 rstr
+RSVD
 RTIC
 Rtxxx
 rtxxxx
 ruamel
+RUNM
 rustup
+RWDS
 RWXL
 rxid
 sagittis
@@ -1151,6 +1208,7 @@ Seqs
 serialext
 setenv
 setitem
+setpoint
 setrecursionlimit
 setreg
 setuptools
@@ -1162,6 +1220,7 @@ sgtl
 shadowreg
 shadowregs
 Shamir
+SHDC
 shutil
 SIGB
 signaturetimestamp
@@ -1173,6 +1232,7 @@ SMARTCARD
 SMODE
 SMPR
 smsg
+sniden
 snvs
 SNVS
 socc
@@ -1240,6 +1300,7 @@ STICKYCMP
 STICKYERR
 STICKYORUN
 STILLINMAINAPPLICATION
+STKYBIT
 stlink
 Stlink
 STMP
@@ -1277,10 +1338,13 @@ testestestestestestestestestestestestestestestestestestestest
 testfffffff
 testnormal
 textlength
+textwrap
 TIOCGSERIAL
 TKTH
 tlvelement
 tmpdir
+TMPSNS
+tobytes
 toctree
 tokgen
 toplevel
@@ -1309,6 +1373,7 @@ TRNG
 trustzone
 Trustzone
 Txxxx
+TYPECLASS
 typehints
 typesp
 tztest
@@ -1344,9 +1409,11 @@ Ukropec
 ullamcorper
 Underdrive
 undoc
+undriven
 unhexlify
 UNLK
 unmatch
+upower
 urandom
 urllib
 urna
@@ -1355,7 +1422,10 @@ USBCFG
 usbfilter
 USBHID
 usbid
+usbpath
 USBPHY
+USBPLL
+usbserial
 usbsio
 Usbsio
 USBSIO
@@ -1374,6 +1444,7 @@ VBAT
 VBUS
 VDDIO
 VDDMAIN
+VDET
 VECT
 velit
 venenatis
@@ -1383,6 +1454,7 @@ vidpids
 virtualprobe
 Vitula
 viverra
+VLPR
 VMAPCTX
 VOLTAMPER
 volutpat
@@ -1449,3 +1521,8 @@ Zeroize
 ZEROIZE
 zeroized
 zipp
+pyasn
+SELFTEST
+DLASH
+filelock
+ipywidgets

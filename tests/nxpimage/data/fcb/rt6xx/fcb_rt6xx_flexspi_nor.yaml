@@ -13,8 +13,6 @@ fcb_settings: # [Required], rt6xx
     value: "0x42464346" # [Required], tag;  [0x000-0x003] Tag, fixed value 0x42464346UL
   version: # [Optional], version;  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix
     value: "0x56010400" # [Required], version;  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix
-  reserved0: # [Optional], reserved0;  [0x008-0x00b] Reserved for future use
-    value: "0x00000000" # [Required], reserved0;  [0x008-0x00b] Reserved for future use
   readSampleClkSrc: # [Optional], readSampleClkSrc;  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
     value: "0x00" # [Required], readSampleClkSrc;  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
   csHoldTime: # [Optional], csHoldTime;  [0x00d-0x00d] CS hold time, default value: 3
@@ -33,7 +31,6 @@ fcb_settings: # [Required], rt6xx
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   deviceModeArg: # [Optional], deviceModeArg;  [0x018-0x01b] Argument/Parameter for device configuration
     value: "0x00000000" # [Required], deviceModeArg;  [0x018-0x01b] Argument/Parameter for device configuration
   configCmdEnable: # [Optional], configCmdEnable;  [0x01c-0x01c] Configure command Enable Flag, 1 - Enable, 0 - Disable
@@ -48,27 +45,20 @@ fcb_settings: # [Required], rt6xx
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   configCmdSeqs_1: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   configCmdSeqs_2: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
-  reserved1: # [Optional], reserved1;  [0x02c-0x02f] Reserved for future use
-    value: "0x00000000" # [Required], reserved1;  [0x02c-0x02f] Reserved for future use
   configCmdArgs_0: # [Optional], configCmdArgs_0;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
     value: "0x00000000" # [Required], configCmdArgs_0;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
   configCmdArgs_1: # [Optional], configCmdArgs_1;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
     value: "0x00000000" # [Required], configCmdArgs_1;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
   configCmdArgs_2: # [Optional], configCmdArgs_2;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
     value: "0x00000000" # [Required], configCmdArgs_2;  [0x030-0x03b] Arguments/Parameters for device Configuration commands
-  reserved2: # [Optional], reserved2;  [0x03c-0x03f] Reserved for future use
-    value: "0x00000000" # [Required], reserved2;  [0x03c-0x03f] Reserved for future use
   controllerMiscOption: # [Optional], controllerMiscOption;  [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for       more details
     value: "0x00000010" # [Required], controllerMiscOption;  [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for       more details
   deviceType: # [Optional], deviceType;  [0x044-0x044] Device Type:  See Flash Type Definition for more details
@@ -79,10 +69,6 @@ fcb_settings: # [Required], rt6xx
     value: "0x01" # [Required], serialClkFreq;  [0x046-0x046] Serial Flash Frequency, device specific definitions, See System Boot      Chapter for more details
   lutCustomSeqEnable: # [Optional], lutCustomSeqEnable;  [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot      be done using 1 LUT sequence, currently, only applicable to HyperFLASH
     value: "0x00" # [Required], lutCustomSeqEnable;  [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot      be done using 1 LUT sequence, currently, only applicable to HyperFLASH
-  reserved3_0: # [Optional], reserved3_0;  [0x048-0x04f] Reserved for future use
-    value: "0x00000000" # [Required], reserved3_0;  [0x048-0x04f] Reserved for future use
-  reserved3_1: # [Optional], reserved3_1;  [0x048-0x04f] Reserved for future use
-    value: "0x00000000" # [Required], reserved3_1;  [0x048-0x04f] Reserved for future use
   sflashA1Size: # [Optional], sflashA1Size;  [0x050-0x053] Size of Flash connected to A1
     value: "0x00800000" # [Required], sflashA1Size;  [0x050-0x053] Size of Flash connected to A1
   sflashA2Size: # [Optional], sflashA2Size;  [0x054-0x057] Size of Flash connected to A2
@@ -1530,81 +1516,61 @@ fcb_settings: # [Required], rt6xx
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
   lutCustomSeq_1: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
   lutCustomSeq_2: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
   lutCustomSeq_3: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
   lutCustomSeq_4: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
   lutCustomSeq_5: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
   lutCustomSeq_6: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
   lutCustomSeq_7: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
   lutCustomSeq_8: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
   lutCustomSeq_9: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
   lutCustomSeq_10: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
   # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
   lutCustomSeq_11: # [Optional]
     bitfields: # [Required]
       seqNum: 0 # [Optional], seqNum;  Sequence Number, valid number: 1-16
       seqId: 0 # [Optional], seqId;  Sequence Index, valid number: 0-15
-      reserved: 0 # [Optional], reserved; N/A
-  reserved4_0: # [Optional], reserved4_0;  [0x1b0-0x1bf] Reserved for future use
-    value: "0x00000000" # [Required], reserved4_0;  [0x1b0-0x1bf] Reserved for future use
-  reserved4_1: # [Optional], reserved4_1;  [0x1b0-0x1bf] Reserved for future use
-    value: "0x00000000" # [Required], reserved4_1;  [0x1b0-0x1bf] Reserved for future use
-  reserved4_2: # [Optional], reserved4_2;  [0x1b0-0x1bf] Reserved for future use
-    value: "0x00000000" # [Required], reserved4_2;  [0x1b0-0x1bf] Reserved for future use
-  reserved4_3: # [Optional], reserved4_3;  [0x1b0-0x1bf] Reserved for future use
-    value: "0x00000000" # [Required], reserved4_3;  [0x1b0-0x1bf] Reserved for future use
   pageSize: # [Optional], pageSize;  Page size of Serial NOR
     value: "0x00000100" # [Required], pageSize;  Page size of Serial NOR
   sectorSize: # [Optional], sectorSize;  Sector size of Serial NOR
@@ -1615,8 +1581,6 @@ fcb_settings: # [Required], rt6xx
     value: "0x00" # [Required], isUniformBlockSize;  Sector/Block size is the same
   isDataOrderSwapped: # [Optional], isDataOrderSwapped;  Data order (D0, D1, D2, D3) is swapped (D1,D0, D3, D2)
     value: "0x00" # [Required], isDataOrderSwapped;  Data order (D0, D1, D2, D3) is swapped (D1,D0, D3, D2)
-  reserved0_0: # [Optional], reserved0_0;  Reserved for future use
-    value: "0x00" # [Required], reserved0_0;  Reserved for future use
   serialNorType: # [Optional], serialNorType;  Serial NOR Flash type: 0/1/2/3
     value: "0x00" # [Required], serialNorType;  Serial NOR Flash type: 0/1/2/3
   needExitNoCmdMode: # [Optional], needExitNoCmdMode;  Need to exit NoCmd mode before other IP command

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,9 +13,13 @@ from tests.cli_runner import CliRunner
 
 def test_cli(cli_runner: CliRunner):
     """Test the CLI."""
-    result = cli_runner.invoke(dk6prog.main)
+    result = cli_runner.invoke(
+        dk6prog.main, expected_code=cli_runner.get_help_error_code(use_help_flag=False)
+    )
     assert "Usage: dk6prog [OPTIONS] COMMAND1" in result.output
-    result = cli_runner.invoke(dk6prog.main, ["--help"])
+    result = cli_runner.invoke(
+        dk6prog.main, ["--help"], expected_code=cli_runner.get_help_error_code(use_help_flag=True)
+    )
     assert "Usage: dk6prog [OPTIONS] COMMAND1" in result.output
 
 

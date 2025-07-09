@@ -12,8 +12,7 @@
                     "name": "LIFECYCLE",
                     "description": "Lifecycle state.",
                     "index_int": "0x000A",
-                    "reset_value_int": "0x0007",
-                    "individual_write_lock": "none",
+                    "default_value_int": "0x0007",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -51,11 +50,6 @@
                                     "name": "OEM_RETURN",
                                     "value": 63,
                                     "description": "OEM Return"
-                                },
-                                {
-                                    "name": "BRICK",
-                                    "value": 255,
-                                    "description": "Brick (11xx_xxxx)"
                                 }
                             ]
                         }
@@ -66,7 +60,6 @@
                     "name": "DBG_EN_LOCK",
                     "description": "Debug Enable Lock.",
                     "index_int": "0x000B",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -86,6 +79,9 @@
                                     "description": "The debug access control registers are write-locked before jumping to customer code."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -94,7 +90,6 @@
                     "name": "DBG_AUTH_DIS",
                     "description": "Debug Authentication Disabled.",
                     "index_int": "0x000C",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -114,6 +109,9 @@
                                     "description": "Debug Authentication disabled"
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -122,7 +120,6 @@
                     "name": "TZM_EN",
                     "description": "Trust Zone Mode Enable.",
                     "index_int": "0x000D",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -142,6 +139,9 @@
                                     "description": "TZ-M is enabled"
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -150,7 +150,6 @@
                     "name": "SERIAL_DIS",
                     "description": "Serial Download Disabled.",
                     "index_int": "0x0011",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -170,6 +169,9 @@
                                     "description": "ISP path is disabled."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -178,7 +180,6 @@
                     "name": "WAKEUP_DIS",
                     "description": "Wakeup Disabled.",
                     "index_int": "0x0012",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -190,14 +191,17 @@
                                 {
                                     "name": "Enabled",
                                     "value": 0,
-                                    "description": "Boot-ROM LP wakeup is enabled."
+                                    "description": "Boot-ROM low power wakeup is enabled."
                                 },
                                 {
                                     "name": "Disabled",
                                     "value": 1,
-                                    "description": "Boot-ROM LP wakeup is disabled."
+                                    "description": "Boot-ROM low power wakeup is disabled."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -206,224 +210,131 @@
                     "name": "CUST_PROD_OEMFW_AUTH_PUK_REVOKE",
                     "description": "Key revocation indicators of CUST_PROD_OEMFW_AUTH_PUK.",
                     "index_int": "0x0013",
-                    "individual_write_lock": "none",
-                    "reg_width": 8
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-0",
+                            "name": "REVOKE_ROTK_1",
+                            "description": "Revokes Root of Trust Key 1.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 1."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-1",
+                            "name": "REVOKE_ROTK_2",
+                            "description": "Revokes Root of Trust Key 2.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 2."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 2."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-2",
+                            "name": "REVOKE_ROTK_3",
+                            "description": "Revokes Root of Trust Key 3.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 3."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 3."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-3",
+                            "name": "REVOKE_ROTK_4",
+                            "description": "Revokes Root of Trust Key 4.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 4."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 4."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
                 },
                 {
                     "id": "fuse21",
                     "name": "DBG_AUTH_VU",
-                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates.",
+                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0015",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
                     "id": "fuse22",
                     "name": "IMG_KEY_REVOKE",
-                    "description": "These fuses are used to revoke image signing keys separately from root keys.",
+                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0016",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 }
             ]
         },
         {
             "group": {
-                "name": "CUST_PROD_OEMFW_AUTH_PUK",
-                "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication"
+                "name": "Keys",
+                "description": "Authentication and encryption keys"
             },
             "registers": [
                 {
-                    "id": "fuse31_0",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[255:224]",
+                    "id": "fuse31",
+                    "name": "CUST_PROD_OEMFW_AUTH_PUK",
                     "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
                     "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "implicit",
+                    "reg_width": 256
                 },
                 {
-                    "id": "fuse31_1",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[223:192]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_2",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[191:160]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_3",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[159:128]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_4",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[127:96]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_5",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[95:64]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_6",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[63:32]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_7",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[31:0]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CUST_PROD_OEMFW_ENC_SK",
-                "description": "Encryption key used to protect confidentiality of OEM firmware"
-            },
-            "registers": [
-                {
-                    "id": "fuse32_0",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[255:224]",
+                    "id": "fuse32",
+                    "name": "CUST_PROD_OEMFW_ENC_SK",
                     "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
                     "index_int": "0x0020",
                     "access": "WO",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "implicit",
+                    "reg_width": 256
                 },
                 {
-                    "id": "fuse32_1",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[223:192]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_2",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[191:160]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_3",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[159:128]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_4",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[127:96]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_5",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[95:64]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_6",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[63:32]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_7",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[31:0]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "OEM_Enablement_Token",
-                "description": "RoTKTH (root key hash) typically used for radio firmware authentication"
-            },
-            "registers": [
-                {
-                    "id": "fuse33_0",
-                    "name": "OEM_Enablement_Token[255:224]",
+                    "id": "fuse33",
+                    "name": "OEM_Enablement_Token",
                     "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
                     "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_1",
-                    "name": "OEM_Enablement_Token[223:192]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_2",
-                    "name": "OEM_Enablement_Token[191:160]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_3",
-                    "name": "OEM_Enablement_Token[159:128]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_4",
-                    "name": "OEM_Enablement_Token[127:96]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_5",
-                    "name": "OEM_Enablement_Token[95:64]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_6",
-                    "name": "OEM_Enablement_Token[63:32]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse33_7",
-                    "name": "OEM_Enablement_Token[31:0]",
-                    "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
-                    "index_int": "0x0021",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "implicit",
+                    "reg_width": 256
                 }
             ]
         },
@@ -436,7 +347,7 @@
                 {
                     "id": "fuse34",
                     "name": "DCFG_CC_SOCU_L1",
-                    "description": "Debug authentication configuration for level 1 customer. \nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+                    "description": "Debug authentication configuration for level 1 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0022",
                     "individual_write_lock": "implicit",
                     "bitfields": [
@@ -516,7 +427,7 @@
                             "width": 1,
                             "id": "fuse34-bit-4",
                             "name": "PIN_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio, CM3).",
+                            "description": "Controls debugging of NBU (radio, CM3) core.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -834,7 +745,7 @@
                             "width": 1,
                             "id": "fuse35-bit-4",
                             "name": "PIN_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio, CM3).",
+                            "description": "Controls debugging of NBU (radio, CM3) core.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -1073,207 +984,30 @@
         },
         {
             "group": {
-                "name": "SOC_VER_CNT",
-                "description": "Secure Software Version Counter"
+                "name": "Versions",
+                "description": "Version counters for various software components in SoC"
             },
             "registers": [
                 {
-                    "id": "fuse36_0",
-                    "name": "SOC_VER_CNT[511:480]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
+                    "id": "fuse36",
+                    "name": "SOC_VER_CNT",
+                    "description": "Version counter for various software components in SoC. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0024",
-                    "individual_write_lock": "none"
+                    "reg_width": 512
                 },
                 {
-                    "id": "fuse36_1",
-                    "name": "SOC_VER_CNT[479:448]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_2",
-                    "name": "SOC_VER_CNT[447:416]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_3",
-                    "name": "SOC_VER_CNT[415:384]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_4",
-                    "name": "SOC_VER_CNT[383:352]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_5",
-                    "name": "SOC_VER_CNT[351:320]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_6",
-                    "name": "SOC_VER_CNT[319:288]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_7",
-                    "name": "SOC_VER_CNT[287:256]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_8",
-                    "name": "SOC_VER_CNT[255:224]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_9",
-                    "name": "SOC_VER_CNT[223:192]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_10",
-                    "name": "SOC_VER_CNT[191:160]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_11",
-                    "name": "SOC_VER_CNT[159:128]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_12",
-                    "name": "SOC_VER_CNT[127:96]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_13",
-                    "name": "SOC_VER_CNT[95:64]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_14",
-                    "name": "SOC_VER_CNT[63:32]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_15",
-                    "name": "SOC_VER_CNT[31:0]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CM33_S_VER_CNT",
-                "description": "Secure OEM CM33 firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse37_0",
-                    "name": "CM33_S_VER_CNT[63:32]",
-                    "description": "Secure OEM CM33 firmware version counter (number of set fuse bits).",
+                    "id": "fuse37",
+                    "name": "CM33_S_VER_CNT",
+                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0025",
-                    "individual_write_lock": "none"
+                    "reg_width": 64
                 },
                 {
-                    "id": "fuse37_1",
-                    "name": "CM33_S_VER_CNT[31:0]",
-                    "description": "Secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0025",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CM33_NS_VER_CNT",
-                "description": "Non-secure OEM CM33 firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse38_0",
-                    "name": "CM33_NS_VER_CNT[255:224]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
+                    "id": "fuse38",
+                    "name": "CM33_NS_VER_CNT",
+                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_1",
-                    "name": "CM33_NS_VER_CNT[223:192]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_2",
-                    "name": "CM33_NS_VER_CNT[191:160]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_3",
-                    "name": "CM33_NS_VER_CNT[159:128]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_4",
-                    "name": "CM33_NS_VER_CNT[127:96]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_5",
-                    "name": "CM33_NS_VER_CNT[95:64]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_6",
-                    "name": "CM33_NS_VER_CNT[63:32]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_7",
-                    "name": "CM33_NS_VER_CNT[31:0]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
+                    "reg_width": 256
                 }
             ]
         }

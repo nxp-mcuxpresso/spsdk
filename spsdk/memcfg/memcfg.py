@@ -21,7 +21,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_common_data_file_path, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, get_device, update_validation_schema_family
 from spsdk.utils.misc import Endianness
-from spsdk.utils.registers import Registers
+from spsdk.utils.strict_registers import StrictRegisters
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ class MemoryConfig(FeatureBaseClass):
         if peripheral not in self.get_supported_peripherals(self.family):
             raise SPSDKValueError(f"The {peripheral} is not supported by {self.family}")
         self.peripheral = peripheral
-        self.regs = Registers(
+        self.regs = StrictRegisters(
             family=self.family,
             feature=DatabaseManager.MEMCFG,
             base_key=["peripherals", peripheral],
@@ -204,7 +204,7 @@ class MemoryConfig(FeatureBaseClass):
             sch_family["properties"], cls.get_supported_families(), family
         )
         sch_family["main_title"] = f"Option Words Configuration for {family}, {peripheral}."
-        sch_family["note"] = "Note for settings:\n" + Registers.TEMPLATE_NOTE
+        sch_family["note"] = "Note for settings:\n" + StrictRegisters.TEMPLATE_NOTE
 
         memcfg = cls(family=family, peripheral=peripheral, interface=interface)
         sch_cfg["base"]["properties"]["peripheral"]["template_value"] = memcfg.peripheral
@@ -216,7 +216,7 @@ class MemoryConfig(FeatureBaseClass):
             family, peripheral
         )
 
-        sch_cfg["settings"]["properties"]["settings"] = Registers(
+        sch_cfg["settings"]["properties"]["settings"] = StrictRegisters(
             family, feature=cls.FEATURE, base_key=["peripherals", peripheral]
         ).get_validation_schema()
 
@@ -492,31 +492,58 @@ class MemoryConfig(FeatureBaseClass):
         )
 
     @staticmethod
-    def get_known_peripheral_memories(
-        family: Optional[FamilyRevision], peripheral: Optional[str] = None
-    ) -> list[Memory]:
-        """Get all known supported memory configurations.
+    def _find_family_for_peripheral(peripheral: str) -> Optional[FamilyRevision]:
+        """Find a family that supports the given peripheral.
 
-        :param family: The optional chip family
-        :param peripheral: Restrict results just for this one peripheral if defined
-        :returns: List of memories
+        :param peripheral: The peripheral to find a family for
+        :return: A family that supports the peripheral, or None if not found
         """
-        if not family and not peripheral:
-            return MemoryConfig.get_known_memories()
+        for supported_family in MemoryConfig.get_supported_families():
+            if peripheral in MemoryConfig.get_supported_peripherals(supported_family):
+                logger.debug(
+                    f"Found family {supported_family} that supports peripheral {peripheral}"
+                )
+                return supported_family
+        return None
 
+    @staticmethod
+    def _get_memories_for_peripheral_without_family(peripheral: str) -> list[Memory]:
+        """Get memories for a peripheral when no family is available.
+
+        :param peripheral: The peripheral to get memories for
+        :return: List of memories for the peripheral
+        """
+        logger.warning(
+            f"No family found that supports peripheral {peripheral}, returning all memories"
+        )
+        # Try to determine memory type from default database
+        p_db = DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"]
+        if peripheral in p_db:
+            mem_type = p_db[peripheral]["mem_type"]
+            interfaces = p_db[peripheral]["interfaces"]
+            return MemoryConfig.get_known_memories(mem_type=mem_type, interfaces=interfaces)
+        return MemoryConfig.get_known_memories()
+
+    @staticmethod
+    def _get_peripherals_for_family(family: FamilyRevision, peripheral: Optional[str]) -> list[str]:
+        """Get list of peripherals for a family.
+
+        :param family: The family to get peripherals for
+        :param peripheral: Optional specific peripheral to filter for
+        :return: List of peripherals
+        """
         if peripheral:
-            peripherals = [peripheral]
-        else:
-            assert isinstance(family, FamilyRevision)
-            peripherals = [
-                p for p in MemoryConfig.PERIPHERALS if MemoryConfig.get_peripheral_cnt(family, p)
-            ]
+            return [peripheral]
+        return [p for p in MemoryConfig.PERIPHERALS if MemoryConfig.get_peripheral_cnt(family, p)]
 
-        if family:
-            p_db = get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals")
-        else:
-            p_db = DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"]
+    @staticmethod
+    def _get_memory_types_and_interfaces(peripherals: list[str], p_db: dict) -> dict[str, set]:
+        """Get memory types and interfaces for the given peripherals.
 
+        :param peripherals: List of peripherals
+        :param p_db: Peripherals database
+        :return: Dictionary mapping memory types to sets of interfaces
+        """
         wanted_mem_types: dict[str, set] = {}
         for p in peripherals:
             if p not in p_db:
@@ -529,10 +556,118 @@ class MemoryConfig(FeatureBaseClass):
                 wanted_mem_types[mt].update(set(mi))
             else:
                 wanted_mem_types[mt] = set(mi)
+        return wanted_mem_types
 
+    @staticmethod
+    def _validate_memory_interfaces(
+        memory: Memory, validation_family: FamilyRevision, peripheral: str, memory_type: str
+    ) -> list[MemoryInterface]:
+        """Validate memory interfaces against a family.
+
+        :param memory: The memory to validate
+        :param validation_family: The family to validate against
+        :param peripheral: The peripheral to use for validation
+        :param memory_type: The memory type
+        :return: List of validated interfaces
+        """
+        validated_interfaces = []
+        for interface in memory.interfaces:
+            try:
+                # Convert option words to bytes
+                option_words_bytes = MemoryConfig.option_words_to_bytes(interface.option_words)
+
+                # Try to parse the option words
+                MemoryConfig.parse(
+                    data=option_words_bytes,
+                    family=validation_family,
+                    peripheral=peripheral,
+                    interface=interface.name,
+                )
+                validated_interfaces.append(interface)
+            except Exception as e:
+                logger.debug(
+                    f"Failed to validate option words for {memory.name} with {interface.name}: {str(e)}"
+                )
+        return validated_interfaces
+
+    @staticmethod
+    def get_known_peripheral_memories(
+        family: Optional[FamilyRevision],
+        peripheral: Optional[str] = None,
+        validate_option_words: bool = True,
+    ) -> list[Memory]:
+        """Get all known supported memory configurations.
+
+        :param family: The optional chip family
+        :param peripheral: Restrict results just for this one peripheral if defined
+        :param validate_option_words: If True, validate that option words can be parsed
+        :raises SPSDKValueError: In case the family does not support external memories
+        :returns: List of memories
+        """
+        # Early return for simple case
+        if not family and not peripheral:
+            return MemoryConfig.get_known_memories()
+
+        # Try to find a family if only peripheral is specified
+        if peripheral and not family:
+            family = MemoryConfig._find_family_for_peripheral(peripheral)
+            if not family:
+                return MemoryConfig._get_memories_for_peripheral_without_family(peripheral)
+        assert family is not None  # The family is certainly not None at this point
+        peripherals = MemoryConfig._get_peripherals_for_family(family, peripheral)
+
+        # Get database for the family
+        p_db = get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals")
+
+        # Get memory types and interfaces
+        wanted_mem_types = MemoryConfig._get_memory_types_and_interfaces(peripherals, p_db)
+
+        # Process each memory type
         ret = []
         for mt, mi in wanted_mem_types.items():
-            ret.extend(MemoryConfig.get_known_memories(mt, list(mi)))
+            memories = MemoryConfig.get_known_memories(mt, list(mi))
+
+            # Skip validation if not requested or no peripheral specified
+            if not validate_option_words or not peripheral:
+                ret.extend(memories)
+                continue
+
+            # Find a family for validation if needed
+            validation_family = family
+            if not validation_family:
+                try:
+                    validation_family = MemoryConfig.get_supported_families()[0]
+                    logger.debug(f"Using {validation_family} for option words validation")
+                except IndexError:
+                    # If no families are available, skip validation
+                    logger.warning(
+                        "No families available for option words validation, skipping validation"
+                    )
+                    ret.extend(memories)
+                    continue
+
+            # Validate memories
+            validated_memories = []
+            for memory in memories:
+                peripheral_name = peripherals[0] if len(peripherals) == 1 else f"{mt}_based"
+                validated_interfaces = MemoryConfig._validate_memory_interfaces(
+                    memory, validation_family, peripheral_name, mt
+                )
+
+                # Add memory with validated interfaces
+                if validated_interfaces:
+                    validated_memory = Memory(
+                        name=memory.name,
+                        type=memory.type,
+                        manufacturer=memory.manufacturer,
+                        interfaces=validated_interfaces,
+                    )
+                    validated_memories.append(validated_memory)
+                else:
+                    logger.debug(f"No valid interfaces found for {memory.name}")
+
+            ret.extend(validated_memories)
+
         return ret
 
     @staticmethod

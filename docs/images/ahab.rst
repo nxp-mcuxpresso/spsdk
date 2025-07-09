@@ -19,7 +19,6 @@ AHAB Extensions
 Since SPSDK version 2.2.0, support for AHAB extensions have been added.
 This allows the user to create the standard images like U-Boot for example in the similar manner as with the imx-mkimage tool, without knowing the details of the AHAB format.
 
-
 AHAB Sign
 ==========
 Since SPSDK version 2.3.0 it is possible to sign and encrypt existing image or image container set, without parsing.
@@ -36,6 +35,30 @@ Template for signing might be generated using the get-template command with --si
 
 Example of use for sign and encrypt AHAB container
 ``nxpimage -v ahab sign -c "path\to\config\file.yaml" -c "ahab_image_to_be_signed.bin" -o "path\to_signed_image"``
+
+AHAB Re-sign
+============
+It is possible to re-sign an existing AHAB container without modifying other parts of the image. This is useful when you need to update the signature of a specific container without rebuilding the entire image.
+
+The re-sign command allows you to specify a private key or signature provider configuration to sign a specific container in the AHAB image.
+
+Example of use for re-signing a container in an AHAB image:
+``nxpimage ahab re-sign -f <family> -b "ahab_image.bin" -k "path/to/private_key.pem" -i <container_id>``
+
+For bootable images that contain FCB or XMCD segments, you need to specify the memory type:
+``nxpimage ahab re-sign -f <family> -b "bootable_image.bin" -k "path/to/private_key.pem" -i <container_id> -m <memory_type>``
+
+AHAB Update Keyblob
+===================
+It is possible to update the encryption keyblob in an existing AHAB container. This is useful when you need to update the encryption keys without rebuilding the entire image.
+
+The update-keyblob command allows you to replace the keyblob in a specific container of an AHAB image with a new one.
+
+Example of use for updating a keyblob in an AHAB image:
+``nxpimage ahab update-keyblob -f <family> -b "ahab_image.bin" -k "path/to/new_keyblob.bin" -i <container_id>``
+
+For bootable images that contain FCB or XMCD segments, you need to specify the memory type:
+``nxpimage ahab update-keyblob -f <family> -b "bootable_image.bin" -k "path/to/new_keyblob.bin" -i <container_id> -m <memory_type>``
 
 
 Supported configuration options

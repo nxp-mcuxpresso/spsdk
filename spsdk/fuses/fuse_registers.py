@@ -171,13 +171,18 @@ class FuseRegister(Register):
         self._locks[lock_type] = False
 
     @classmethod
-    def create_from_spec(cls, spec: dict[str, Any]) -> Self:
+    def create_from_spec(
+        cls, spec: dict[str, Any], reg_mods: Optional[dict[str, Any]] = None
+    ) -> Self:
         """Initialization register by specification.
 
         :param spec: Input specification with register data.
+        :param reg_mods: Optional modifications for this register.
         :return: The instance of this class.
         """
-        reg = super().create_from_spec(spec)
+        # First call the parent method to create the basic register
+        reg = super().create_from_spec(spec, reg_mods)
+
         if "index_int" not in spec:
             raise SPSDKKeyError(
                 f"Invalid fuse config for fuse {reg.uid}. Missing index_int attribute"
@@ -297,9 +302,18 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         )
 
     def _load_from_spec(
-        self, config: dict[str, Any], grouped_regs: Optional[list[dict]] = None
+        self,
+        config: dict[str, Any],
+        grouped_regs: Optional[list[dict]] = None,
+        reg_spec_modifications: Optional[dict[str, dict]] = None,
     ) -> None:
-        super()._load_from_spec(config, grouped_regs)
+        """Load registers from specification.
+
+        :param config: Register configuration
+        :param grouped_regs: List of register groups
+        :param reg_spec_modifications: Dictionary with additional register specifications
+        """
+        super()._load_from_spec(config, grouped_regs, reg_spec_modifications)
         if "shadow_reg_base_addr_int" in config:
             self.shadow_reg_base_addr = value_to_int(config["shadow_reg_base_addr_int"])
             for reg in self._registers:

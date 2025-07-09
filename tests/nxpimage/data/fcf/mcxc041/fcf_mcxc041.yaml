@@ -20,7 +20,7 @@ fcf:
   # -----------------------------------===== BACKDOOR_COMPARISON_KEY [Optional] =====-----------------------------------
   # Description: Offset: 0x00000000, Width: 64b; Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command
   # and Unsecuring the Chip Using Backdoor Key Access.
-  BACKDOOR_COMPARISON_KEY: 0000000000000000
+  BACKDOOR_KEY: 0x0123456789abcdef
   # --------------------------------------------===== FPROT [Optional] =====--------------------------------------------
   # Description: Offset: 0x00000008, Width: 32b; Program flash protection bytes. Refer to the description of the Program
   # Flash Protection Registers (FPROT0-3).

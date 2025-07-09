@@ -13,7 +13,7 @@
                     "reg_width": "32",
                     "name": "REG0",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "104"
                 },
                 {
@@ -22,7 +22,7 @@
                     "reg_width": "32",
                     "name": "REG1",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "105"
                 },
                 {
@@ -31,7 +31,7 @@
                     "reg_width": "32",
                     "name": "REG2",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "106"
                 },
                 {
@@ -40,7 +40,7 @@
                     "reg_width": "32",
                     "name": "REG3",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "107"
                 },
                 {
@@ -49,7 +49,7 @@
                     "reg_width": "32",
                     "name": "REG4",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "108"
                 },
                 {
@@ -58,7 +58,7 @@
                     "reg_width": "32",
                     "name": "REG5",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "109"
                 },
                 {
@@ -67,7 +67,7 @@
                     "reg_width": "32",
                     "name": "REG6",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "110"
                 },
                 {
@@ -76,7 +76,7 @@
                     "reg_width": "32",
                     "name": "REG7",
                     "description": "REG test reversed",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "111"
                 }
             ]

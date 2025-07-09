@@ -14,7 +14,7 @@
                     "reg_width": "32",
                     "name": "TestRegA0",
                     "description": "TestRegA0 Description",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field404",
@@ -23,7 +23,7 @@
                     "reg_width": "32",
                     "name": "TestRegA1",
                     "description": "TestRegA1 Description",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field408",
@@ -32,7 +32,7 @@
                     "reg_width": "32",
                     "name": "TestRegA2",
                     "description": "TestRegA2 Description",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field40C",
@@ -41,7 +41,7 @@
                     "reg_width": "32",
                     "name": "TestRegA3",
                     "description": "TestRegA3 Description",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field500",
@@ -50,7 +50,7 @@
                     "reg_width": "32",
                     "name": "TestCorrupted1Reg0",
                     "description": "TestCorrupted1Reg0 Description",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field508",
@@ -59,7 +59,7 @@
                     "reg_width": "32",
                     "name": "TestCorrupted1Reg1",
                     "description": "TestCorrupted1Reg1 Description",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 }
             ]
         }

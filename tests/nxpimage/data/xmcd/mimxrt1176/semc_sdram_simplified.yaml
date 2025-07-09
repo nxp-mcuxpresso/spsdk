@@ -1,32 +1,87 @@
-# Copyright 2023-2024 NXP
+# Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ===========  XMCD converted config.  ===========
-# ----------------------------------------------------------------------------------------------------
-#                                        == General Options ==
-# ----------------------------------------------------------------------------------------------------
-family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'mimxrt1189']
-revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']
-mem_type: semc_sdram # [Required], Memory type; Specify type of memory used by XMCD description; Possible options:['flexspi_ram', 'semc_sdram']
-config_type: simplified # [Required], Configuration type; Specify type of configuration used by XMCD description; Possible options:['simplified', 'full']
-xmcd_settings: # [Required], rt117x
-  header:  # [Optional]
-    bitfields:  # [Required]
-      configurationBlockSize: 13  # [Optional], configurationBlockSize; Configuration block size including XMCD header itself
-      configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED # [Optional], configurationBlockType; Configuration block type: 0 - Simplified, 1 - Full
-      instance: 0 # [Optional], instance; SoC defined instances
-      memoryInterface: XMCD_MEMORY_INTERFACE_SEMC # [Optional], memoryInterface; Memory interface: 0 - FlexSPI, 1 - SEMC
-      version: 0 # [Optional], Version, fixed value 0x0
-      tag: 12 # [Optional], Tag, fixed value 0xC
-  magicNumber: # [Optional], magicNumber; Magic number: Fixed to 0xA1
-    value: '0xa1'  # [Required], magicNumber; Magic number: Fixed to 0xA1
-  version: # [Optional], Version: Set to 1 for this implementation
-    value: '0x01'  # [Required], Version: Set to 1 for this implementation
-  configOption: # [Optional], configOption; Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
-    value: '0x00'  # [Required], configOption; Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
-  clkMhz: # [Optional], clkMhz; Set the working frequency in the unit of MHz
-    value: '0xc6'  # [Required], clkMhz; Set the working frequency in the unit of MHz
-  sdramSizeKb: # [Optional], sdramSizeKb; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
-    value: '0x00010000'  # [Required], sdramSizeKb; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
-  portSize: # [Optional], portSize; Port size of SDRAM
-    value: '0x02'  # [Required], portSize; Port size of SDRAM
+
+# =======================  External Memory Configuration Data for mimxrt1176, Revision: latest.  =======================
+
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+# Note for settings:
+# All registers is possible to define also as one value although the bitfields are used. Instead of bitfields: ...
+# field, the value: ... definition works as well.
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimxrt1176
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by XMCD description.
+# Possible options: <flexspi_ram, semc_sdram>
+mem_type: semc_sdram
+# --------------------------------------===== Configuration type [Required] =====---------------------------------------
+# Description: Specify type of configuration used by XMCD description.
+# Possible options: <simplified, full>
+config_type: simplified
+# ------------------------------------------===== mimxrt1176 [Required] =====-------------------------------------------
+xmcd_settings:
+  # -------------------------------------------===== header [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; XMCD Header
+  header:
+    # ----------------------------------===== configurationBlockSize [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 12b, Configuration block size including XMCD header itself
+    configurationBlockSize: 13
+    # ----------------------------------===== configurationBlockType [Optional] =====-----------------------------------
+    # Description: Offset: 12b, Width: 4b, Configuration block type: 0 - Simplified, 1 - Full
+    # - Simplified, (0): Simplified configuration block type
+    # Possible options: <Simplified>
+    configurationBlockType: Simplified
+    # -----------------------------------------===== instance [Optional] =====------------------------------------------
+    # Description: Offset: 16b, Width: 4b, SoC defined instances
+    instance: 0
+    # --------------------------------------===== memoryInterface [Optional] =====--------------------------------------
+    # Description: Offset: 20b, Width: 4b, Memory interface: 0 - FlexSPI, 1 - SEMC
+    # - SEMC, (1): SEMC memory interface
+    # Possible options: <SEMC>
+    memoryInterface: SEMC
+    # ------------------------------------------===== version [Optional] =====------------------------------------------
+    # Description: Offset: 24b, Width: 4b, Version, fixed value 0x0
+    version: 0
+    # --------------------------------------------===== tag [Optional] =====--------------------------------------------
+    # Description: Offset: 28b, Width: 4b, Tag, fixed value 0xC
+    tag: 12
+  # -----------------------------------------===== magicNumber [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000004, Width: 8b; Magic number: Fixed to 0xA1
+  magicNumber: '0xA1'
+  # -------------------------------------------===== version [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000005, Width: 8b; Version: Set to 1 for this implementation
+  version: '0x01'
+  # ----------------------------------------===== configOption [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000006, Width: 8b; Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
+  configOption:
+    # ---------------------------------------===== configOption [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Config option
+    # - Simplified, (0): Simplified configuration
+    # Possible options: <Simplified>
+    configOption: Simplified
+  # -------------------------------------------===== clkMhz [Optional] =====--------------------------------------------
+  # Description: Offset: 0x00000007, Width: 8b; Set the working frequency in the unit of MHz
+  clkMhz: '0xc6'
+  # -----------------------------------------===== sdramSizeKb [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Set the memory size of SDRAM CS0 in the unit of kilobytes. Range:
+  # 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes.
+  sdramSizeKb: '0x00010000'
+  # ------------------------------------------===== portSize [Optional] =====-------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 8b; Port size of SDRAM
+  portSize:
+    # -----------------------------------------===== portSize [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 8b, Port size of SDRAM
+    # - 8bit, (0): 8-bit
+    # - 16bit, (1): 16-bit
+    # - 32bit, (2): 32-bit
+    # Possible options: <8bit, 16bit, 32bit>
+    portSize: 32bit

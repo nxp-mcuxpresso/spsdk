@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  XMCD converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
@@ -23,7 +24,6 @@ xmcd_settings: # [Required], rt117x
       sizeInMB: 0  # [Optional], sizeInMB; Size in MB: 0 - Auto detection, Others - Size in MB
       maximumFrequency: 7 # [Optional], maximumFrequency; Maximum frequency (SoC specific definitions)
       misc: 0 # [Optional], Misc. For HyperRAM: 0 - 1.8V, 1 - 3V
-      reserved: 0 # [Optional], Reserved for future use
       deviceType: 0 # [Optional], deviceType; Device type: 0 - HyperRAM, 1 - APMemory
       optionSize: 1 # [Optional], optionSize; Option Size
       tag: 12 # [Optional], Tag, fixed value 0xC
@@ -31,7 +31,6 @@ xmcd_settings: # [Required], rt117x
     bitfields:  # [Required]
       readDummyCycles: 0  # [Optional], readDummyCycles; Read dummy cycles: 0 - Auto detection, Others - Specified dummy cycles
       writeDummyCycles: 0 # [Optional], writeDummyCycles; Write dummy cycles: 0 - Auto detection, Others - Specified dummy cycles
-      reserved: 0 # [Optional], Reserved for future use
       pinMuxGroup: 0 # [Optional], pinMuxGroup; Pin mux group: 0 - Primary Group, 1 - Secondary group
       dqsPinmuxGroup: 0 # [Optional], dqsPinmuxGroup; DQS pin mux group: 0 - Default Group, 1 - Secondary group
       ramConnection: 0 # [Optional], ramConnection; RAM connection: 0 - PORTA, 1 - PORTB

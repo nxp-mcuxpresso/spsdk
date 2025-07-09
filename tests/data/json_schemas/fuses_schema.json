@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mcuxpresso.nxp.com/secure_provisioning/fuses_schema.json",
+  "title": "Schema for definition of processor fuses for Secure Provision Tool",
+  "description": "Copyright NXP 2020-2025, Schema for definition of the fuse registers for Secure Provision Tool",
+
+  "definitions": {
+    "fuse_register": {
+      "$id": "#/definitions/fuse_register",
+      "type": "object",
+      "$ref": "localschema:processors_registers_schema_def_abstractregister.json",
+      "additionalProperties": false,
+      "properties": {
+        "shadow_reg_offset_int": {
+          "$id": "#/properties/register/shadow_reg_offset",
+          "type": "string",
+          "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+          "title": "Offset of the shadow register. `-1` if the fuse does not have shadow register.",
+          "default": "-1"
+        },
+        "lock": {
+          "$id": "#/properties/register/lock",
+          "type": "object",
+          "title": "Information about register write and read lock. By default (if no info provided), the register cannot be locked.",
+          "required": [
+            "register_id"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "register_id": {
+              "$id": "#/properties/register/lock/register_id",
+              "type": "string",
+              "title": "Reference to another register in the file where the lock-bitfield is located."
+            },
+            "write_lock_int": {
+              "$id": "#/properties/register/lock/write_lock",
+              "type": "string",
+              "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+              "title": "Mask of the lock register, that represents active `write-lock`. The value cannot be zero, supposing zero value represent unlocked state."
+            },
+            "read_lock_int": {
+              "$id": "#/properties/register/lock/read_lock",
+              "type": "string",
+              "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+              "default": "0",
+              "title": "Mask of the lock register, that represents active `read-lock`. Zero if read-lock not supported, supposing zero value represent unlocked state."
+            },
+            "operation_lock_int": {
+              "$id": "#/properties/register/lock/operation_lock",
+              "type": "string",
+              "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
+              "default": "0",
+              "title": "Mask of the lock register, that represents active `operation-lock`. The OP lock option means that the shadow register associated with that fuse can’t be written with a new value to override the fuse value. Zero if read-lock not supported, supposing zero value represent unlocked state. "
+            }
+          }
+        }
+      }
+    }
+  },
+
+
+  "type": "object",
+  "required": [
+    "cpu", "groups"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "cpu": {
+      "$id": "#/properties/cpu",
+      "type": "string",
+      "title": "Name of the processor series or family or NPI, for which the file is valid"
+    },
+    "shadow_reg_base_addr_int": {
+      "$id": "#/properties/shadow_reg_base_addr_int",
+      "type": "string",
+      "title": "Base address of the shadow registers; `-1` if shadow registers not supported for the processor.",
+      "default": "-1"
+    },
+    "groups": {
+      "$id": "#/properties/groups",
+      "type": "array",
+      "title": "List of registers groups. Registers are expected to organized in a logical groups.",
+      "minItems": 1,
+      "additionalItems": false,
+      "items": {
+        "$id": "#/properties/group",
+        "type": "object",
+        "required": [
+          "group", "registers"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "$ref": "localschema:processors_registers_schema_def_group_info.json"
+          },
+          "registers": {
+            "$id": "#/properties/registers",
+            "type": "array",
+            "title": "List of registers in the group.",
+            "minItems": 1,
+            "additionalItems": false,
+            "items": {
+              "type": "object",
+              "allOf": [
+                {
+                  "$ref": "localschema:processors_registers_schema_def_abstractregister.json"
+                },
+                {
+                  "properties": {
+                  "name": {
+                    "maxLength": 40
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

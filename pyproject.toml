@@ -46,7 +46,6 @@ pemicro = ["spsdk-pemicro<1,>=0.3.1"]
 # disabled until the support of Python 3.12 is fixed (https://github.com/pyauth/python-pkcs11/issues/165)
 # pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
 pqc = ["spsdk-pqc<1.0,>=0.6.1"]
-pyocd = ["spsdk-pyocd<1,>=0.3.1"]
 all = [
     "spsdk[examples]",
     "spsdk[dk6]",
@@ -56,7 +55,6 @@ all = [
     "spsdk[lauterbach]",
     "spsdk[pemicro]",
     "spsdk[pqc]",
-    "spsdk[pyocd]",
 ]
 
 [project.scripts]
@@ -225,7 +223,7 @@ checkers = [
     { "cyclic" = { info_only = true, check_paths = [
         "spsdk",
     ] } },
-    { "cspell" = { info_only = true } },
+    { "cspell" = { info_only = false } },
     { "bandit" = { info_only = true } },
     { "black_nb" = { timeout = 120 } },
     "isort_nb",
@@ -258,14 +256,17 @@ spsdk_full_test_scope_ubuntu = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_win10 = { artifact_regex = ".*results.xml" }
 spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
 
-[tool.release-tools.blackduck.env]
-PROTEX_PROJECT_ID = "c_spsdk_automation_19733"
-PROTEX_TEMPLATE = "t_reportwithobligations_7215"
-
 [tool.release-tools.blackduck_sca]
 project_name = "spsdk"
 include_detector_types = ["pip"]
 sbom_location = "SBOM-spsdk.spdx.json"
+install_hook = [
+    'uv pip install ".[all]"',
+    'uv pip install -r requirements-develop.txt',
+]
+
+[tool.release-tools.github]
+full_name = "nxp-mcuxpresso/spsdk"
 
 [tool.check-wheel-contents]
 ignore = "W002" # Wheel contains duplicate files

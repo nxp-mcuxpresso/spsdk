@@ -1,0 +1,508 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+field082:
+  bitfields:
+    field082-bits-0-7:
+      no_yaml_comments: true
+    field082-bits-10-15:
+      no_yaml_comments: true
+    field082-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field084:
+  bitfields:
+    field084-bits-0-7:
+      no_yaml_comments: true
+    field084-bits-10-15:
+      no_yaml_comments: true
+    field084-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field086:
+  bitfields:
+    field086-bits-0-7:
+      no_yaml_comments: true
+    field086-bits-10-15:
+      no_yaml_comments: true
+    field086-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field088:
+  bitfields:
+    field088-bits-0-7:
+      no_yaml_comments: true
+    field088-bits-10-15:
+      no_yaml_comments: true
+    field088-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field08A:
+  bitfields:
+    field08A-bits-0-7:
+      no_yaml_comments: true
+    field08A-bits-10-15:
+      no_yaml_comments: true
+    field08A-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field08C:
+  bitfields:
+    field08C-bits-0-7:
+      no_yaml_comments: true
+    field08C-bits-10-15:
+      no_yaml_comments: true
+    field08C-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field08E:
+  bitfields:
+    field08E-bits-0-7:
+      no_yaml_comments: true
+    field08E-bits-10-15:
+      no_yaml_comments: true
+    field08E-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field092:
+  bitfields:
+    field092-bits-0-7:
+      no_yaml_comments: true
+    field092-bits-10-15:
+      no_yaml_comments: true
+    field092-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field094:
+  bitfields:
+    field094-bits-0-7:
+      no_yaml_comments: true
+    field094-bits-10-15:
+      no_yaml_comments: true
+    field094-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field096:
+  bitfields:
+    field096-bits-0-7:
+      no_yaml_comments: true
+    field096-bits-10-15:
+      no_yaml_comments: true
+    field096-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field098:
+  bitfields:
+    field098-bits-0-7:
+      no_yaml_comments: true
+    field098-bits-10-15:
+      no_yaml_comments: true
+    field098-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field09A:
+  bitfields:
+    field09A-bits-0-7:
+      no_yaml_comments: true
+    field09A-bits-10-15:
+      no_yaml_comments: true
+    field09A-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field09C:
+  bitfields:
+    field09C-bits-0-7:
+      no_yaml_comments: true
+    field09C-bits-10-15:
+      no_yaml_comments: true
+    field09C-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field09E:
+  bitfields:
+    field09E-bits-0-7:
+      no_yaml_comments: true
+    field09E-bits-10-15:
+      no_yaml_comments: true
+    field09E-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0A2:
+  bitfields:
+    field0A2-bits-0-7:
+      no_yaml_comments: true
+    field0A2-bits-10-15:
+      no_yaml_comments: true
+    field0A2-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0A4:
+  bitfields:
+    field0A4-bits-0-7:
+      no_yaml_comments: true
+    field0A4-bits-10-15:
+      no_yaml_comments: true
+    field0A4-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0A6:
+  bitfields:
+    field0A6-bits-0-7:
+      no_yaml_comments: true
+    field0A6-bits-10-15:
+      no_yaml_comments: true
+    field0A6-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0A8:
+  bitfields:
+    field0A8-bits-0-7:
+      no_yaml_comments: true
+    field0A8-bits-10-15:
+      no_yaml_comments: true
+    field0A8-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0AA:
+  bitfields:
+    field0AA-bits-0-7:
+      no_yaml_comments: true
+    field0AA-bits-10-15:
+      no_yaml_comments: true
+    field0AA-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0AC:
+  bitfields:
+    field0AC-bits-0-7:
+      no_yaml_comments: true
+    field0AC-bits-10-15:
+      no_yaml_comments: true
+    field0AC-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0AE:
+  bitfields:
+    field0AE-bits-0-7:
+      no_yaml_comments: true
+    field0AE-bits-10-15:
+      no_yaml_comments: true
+    field0AE-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0B2:
+  bitfields:
+    field0B2-bits-0-7:
+      no_yaml_comments: true
+    field0B2-bits-10-15:
+      no_yaml_comments: true
+    field0B2-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0B4:
+  bitfields:
+    field0B4-bits-0-7:
+      no_yaml_comments: true
+    field0B4-bits-10-15:
+      no_yaml_comments: true
+    field0B4-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0B6:
+  bitfields:
+    field0B6-bits-0-7:
+      no_yaml_comments: true
+    field0B6-bits-10-15:
+      no_yaml_comments: true
+    field0B6-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0B8:
+  bitfields:
+    field0B8-bits-0-7:
+      no_yaml_comments: true
+    field0B8-bits-10-15:
+      no_yaml_comments: true
+    field0B8-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0BA:
+  bitfields:
+    field0BA-bits-0-7:
+      no_yaml_comments: true
+    field0BA-bits-10-15:
+      no_yaml_comments: true
+    field0BA-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0BC:
+  bitfields:
+    field0BC-bits-0-7:
+      no_yaml_comments: true
+    field0BC-bits-10-15:
+      no_yaml_comments: true
+    field0BC-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0BE:
+  bitfields:
+    field0BE-bits-0-7:
+      no_yaml_comments: true
+    field0BE-bits-10-15:
+      no_yaml_comments: true
+    field0BE-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0C2:
+  bitfields:
+    field0C2-bits-0-7:
+      no_yaml_comments: true
+    field0C2-bits-10-15:
+      no_yaml_comments: true
+    field0C2-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0C4:
+  bitfields:
+    field0C4-bits-0-7:
+      no_yaml_comments: true
+    field0C4-bits-10-15:
+      no_yaml_comments: true
+    field0C4-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0C6:
+  bitfields:
+    field0C6-bits-0-7:
+      no_yaml_comments: true
+    field0C6-bits-10-15:
+      no_yaml_comments: true
+    field0C6-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0C8:
+  bitfields:
+    field0C8-bits-0-7:
+      no_yaml_comments: true
+    field0C8-bits-10-15:
+      no_yaml_comments: true
+    field0C8-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0CA:
+  bitfields:
+    field0CA-bits-0-7:
+      no_yaml_comments: true
+    field0CA-bits-10-15:
+      no_yaml_comments: true
+    field0CA-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0CC:
+  bitfields:
+    field0CC-bits-0-7:
+      no_yaml_comments: true
+    field0CC-bits-10-15:
+      no_yaml_comments: true
+    field0CC-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0CE:
+  bitfields:
+    field0CE-bits-0-7:
+      no_yaml_comments: true
+    field0CE-bits-10-15:
+      no_yaml_comments: true
+    field0CE-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0D2:
+  bitfields:
+    field0D2-bits-0-7:
+      no_yaml_comments: true
+    field0D2-bits-10-15:
+      no_yaml_comments: true
+    field0D2-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0D4:
+  bitfields:
+    field0D4-bits-0-7:
+      no_yaml_comments: true
+    field0D4-bits-10-15:
+      no_yaml_comments: true
+    field0D4-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0D6:
+  bitfields:
+    field0D6-bits-0-7:
+      no_yaml_comments: true
+    field0D6-bits-10-15:
+      no_yaml_comments: true
+    field0D6-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0D8:
+  bitfields:
+    field0D8-bits-0-7:
+      no_yaml_comments: true
+    field0D8-bits-10-15:
+      no_yaml_comments: true
+    field0D8-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0DA:
+  bitfields:
+    field0DA-bits-0-7:
+      no_yaml_comments: true
+    field0DA-bits-10-15:
+      no_yaml_comments: true
+    field0DA-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0DC:
+  bitfields:
+    field0DC-bits-0-7:
+      no_yaml_comments: true
+    field0DC-bits-10-15:
+      no_yaml_comments: true
+    field0DC-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0DE:
+  bitfields:
+    field0DE-bits-0-7:
+      no_yaml_comments: true
+    field0DE-bits-10-15:
+      no_yaml_comments: true
+    field0DE-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0E2:
+  bitfields:
+    field0E2-bits-0-7:
+      no_yaml_comments: true
+    field0E2-bits-10-15:
+      no_yaml_comments: true
+    field0E2-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0E4:
+  bitfields:
+    field0E4-bits-0-7:
+      no_yaml_comments: true
+    field0E4-bits-10-15:
+      no_yaml_comments: true
+    field0E4-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0E6:
+  bitfields:
+    field0E6-bits-0-7:
+      no_yaml_comments: true
+    field0E6-bits-10-15:
+      no_yaml_comments: true
+    field0E6-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0E8:
+  bitfields:
+    field0E8-bits-0-7:
+      no_yaml_comments: true
+    field0E8-bits-10-15:
+      no_yaml_comments: true
+    field0E8-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0EA:
+  bitfields:
+    field0EA-bits-0-7:
+      no_yaml_comments: true
+    field0EA-bits-10-15:
+      no_yaml_comments: true
+    field0EA-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0EC:
+  bitfields:
+    field0EC-bits-0-7:
+      no_yaml_comments: true
+    field0EC-bits-10-15:
+      no_yaml_comments: true
+    field0EC-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0EE:
+  bitfields:
+    field0EE-bits-0-7:
+      no_yaml_comments: true
+    field0EE-bits-10-15:
+      no_yaml_comments: true
+    field0EE-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0F2:
+  bitfields:
+    field0F2-bits-0-7:
+      no_yaml_comments: true
+    field0F2-bits-10-15:
+      no_yaml_comments: true
+    field0F2-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0F4:
+  bitfields:
+    field0F4-bits-0-7:
+      no_yaml_comments: true
+    field0F4-bits-10-15:
+      no_yaml_comments: true
+    field0F4-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0F6:
+  bitfields:
+    field0F6-bits-0-7:
+      no_yaml_comments: true
+    field0F6-bits-10-15:
+      no_yaml_comments: true
+    field0F6-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0F8:
+  bitfields:
+    field0F8-bits-0-7:
+      no_yaml_comments: true
+    field0F8-bits-10-15:
+      no_yaml_comments: true
+    field0F8-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0FA:
+  bitfields:
+    field0FA-bits-0-7:
+      no_yaml_comments: true
+    field0FA-bits-10-15:
+      no_yaml_comments: true
+    field0FA-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0FC:
+  bitfields:
+    field0FC-bits-0-7:
+      no_yaml_comments: true
+    field0FC-bits-10-15:
+      no_yaml_comments: true
+    field0FC-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true
+field0FE:
+  bitfields:
+    field0FE-bits-0-7:
+      no_yaml_comments: true
+    field0FE-bits-10-15:
+      no_yaml_comments: true
+    field0FE-bits-8-9:
+      no_yaml_comments: true
+  no_yaml_comments: true

@@ -16,7 +16,7 @@
                     "reg_width": "32",
                     "name": "LOCK0",
                     "description": "Lock fuse.",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field010",
@@ -26,7 +26,7 @@
                     "reg_width": "32",
                     "name": "RESTRICTED_NAME_REG1",
                     "description": "Register 1, used for testing antipole register and some computed fields.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "lock": {
                         "register_id": "lock0",
                         "write_lock_int": "0x1",
@@ -40,7 +40,7 @@
                             "offset": "0x0",
                             "width": "8",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "CRC-8/ITU of upper 3 bytes of this register. Polynomial=0x07, initial value= 0x00, XorOut=0x55."
                         },
                         {
@@ -49,7 +49,7 @@
                             "width": "1",
                             "name": "BITFIELD1",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 1.",
                             "values": [
                                 {
@@ -70,7 +70,7 @@
                             "width": "1",
                             "name": "BITFIELD2",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 2.",
                             "values": [
                                 {
@@ -91,7 +91,7 @@
                             "width": "1",
                             "name": "BITFIELD3",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 3.",
                             "values": [
                                 {
@@ -112,7 +112,7 @@
                             "width": "1",
                             "name": "BITFIELD4",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 4.",
                             "values": [
                                 {
@@ -133,7 +133,7 @@
                             "width": "1",
                             "name": "BITFIELD5",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 5.",
                             "values": [
                                 {
@@ -154,7 +154,7 @@
                             "width": "1",
                             "name": "BITFIELD6",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 6.",
                             "values": [
                                 {
@@ -175,7 +175,7 @@
                             "width": "1",
                             "name": "BITFIELD7",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 7.",
                             "values": [
                                 {
@@ -196,7 +196,7 @@
                             "width": "1",
                             "name": "BITFIELD8",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 8.",
                             "values": [
                                 {
@@ -217,7 +217,7 @@
                             "width": "1",
                             "name": "BITFIELD9",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 9",
                             "values": [
                                 {
@@ -238,7 +238,7 @@
                             "width": "1",
                             "name": "BITFIELD10",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 10.",
                             "values": [
                                 {
@@ -259,7 +259,7 @@
                             "width": "1",
                             "name": "BITFIELD11",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 11.",
                             "values": [
                                 {
@@ -280,7 +280,7 @@
                             "width": "1",
                             "name": "BITFIELD12",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 12.",
                             "values": [
                                 {
@@ -301,7 +301,7 @@
                             "width": "1",
                             "name": "BITFIELD13",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 13.",
                             "values": [
                                 {
@@ -322,7 +322,7 @@
                             "width": "1",
                             "name": "BITFIELD14",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 14.",
                             "values": [
                                 {
@@ -343,7 +343,7 @@
                             "width": "1",
                             "name": "BITFIELD15",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 15.",
                             "values": [
                                 {
@@ -364,7 +364,7 @@
                             "width": "1",
                             "name": "BITFIELD16",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 16.",
                             "values": [
                                 {
@@ -385,7 +385,7 @@
                             "width": "1",
                             "name": "BITFIELD17",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Bitfield 17."
                         },
                         {
@@ -393,7 +393,7 @@
                             "offset": "0x19",
                             "width": "5",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Reserved"
                         },
                         {
@@ -401,7 +401,7 @@
                             "offset": "0x1e",
                             "width": "1",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Reserved"
                         },
                         {
@@ -432,7 +432,7 @@
                     "reg_width": "16",
                     "name": "REG2",
                     "description": "Register 2 used for shadow registers testing.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field014-bits0-3",
@@ -440,7 +440,7 @@
                             "width": "4",
                             "name": "BITFIELD 1",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 1."
                         },
                         {
@@ -449,7 +449,7 @@
                             "width": "1",
                             "name": "BITFIELD 2",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 2."
                         },
                         {
@@ -458,7 +458,7 @@
                             "width": "2",
                             "name": "BITFIELD 3",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 3."
                         },
                         {
@@ -467,7 +467,7 @@
                             "width": "1",
                             "name": "BITFIELD 4",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 4.",
                             "values": [
                                 {
@@ -488,7 +488,7 @@
                             "width": "1",
                             "name": "BITFIELD 5",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 5.",
                             "values": [
                                 {
@@ -509,7 +509,7 @@
                             "width": "1",
                             "name": "BITFIELD 6",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "BitField 6.",
                             "values": [
                                 {
@@ -530,7 +530,7 @@
                             "offset": "0xa",
                             "width": "11",
                             "access": "RW",
-                            "reset_value_int": "0x0",
+                            "default_value_int": "0x0",
                             "description": "Reserved"
                         }
                     ]
@@ -543,7 +543,7 @@
                     "reg_width": "32",
                     "name": "REG_INVERTED_AP",
                     "description": "Anti-pole (inverse) value REG1.",
-                    "reset_value_int": "0x0"
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "field0E0",
@@ -553,7 +553,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG0",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "120"
                 },
                 {
@@ -564,7 +564,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG1",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "121"
                 },
                 {
@@ -575,7 +575,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG2",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "122"
                 },
                 {
@@ -586,7 +586,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG3",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "123"
                 },
                 {
@@ -597,7 +597,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG4",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "124"
                 },
                 {
@@ -608,7 +608,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG5",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "125"
                 },
                 {
@@ -619,7 +619,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG6",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "126"
                 },
                 {
@@ -630,7 +630,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG7",
                     "description": "BIG REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "127"
                 },
                 {
@@ -641,7 +641,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV0",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "220"
                 },
                 {
@@ -652,7 +652,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV1",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "221"
                 },
                 {
@@ -663,7 +663,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV2",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "222"
                 },
                 {
@@ -674,7 +674,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV3",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "223"
                 },
                 {
@@ -685,7 +685,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV4",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "224"
                 },
                 {
@@ -696,7 +696,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV5",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "225"
                 },
                 {
@@ -707,7 +707,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV6",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "226"
                 },
                 {
@@ -718,7 +718,7 @@
                     "reg_width": "32",
                     "name": "REG_BIG_REV7",
                     "description": "BIG REGISTER REVERSED.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "227"
                 },
                 {
@@ -729,7 +729,7 @@
                     "reg_width": "32",
                     "name": "WRITE_ONLY_REG",
                     "description": "Register used for testing the write-only access.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "228",
                     "access": "WO"
                 },
@@ -741,7 +741,7 @@
                     "reg_width": "32",
                     "name": "READ_ONLY_REG",
                     "description": "Register used for testing the read-only access.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "229",
                     "access": "RO"
                 },
@@ -753,7 +753,7 @@
                     "reg_width": "32",
                     "name": "REGISTER_LOCKED",
                     "description": "Register used for testing the locking functionality.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "lock": {
                         "register_id": "lock0",
                         "write_lock_int": "0x1",
@@ -768,7 +768,7 @@
                     "reg_width": "32",
                     "name": "RESTRICTED_REG",
                     "description": "SECRET RESTRICTED REGISTER.",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "otp_index": "1600"
                 }
 

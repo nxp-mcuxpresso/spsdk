@@ -42,25 +42,25 @@ MX25UMxxx45G:
   type: nor
   interfaces:
     octal_spi:
-      option_words: [0xc0403037]
+      option_words: [0xc0403007]
 MX66UMxxx45G:
   manufacturer: Macronix
   type: nor
   interfaces:
     octal_spi:
-      option_words: [0xc0403037]
+      option_words: [0xc0403007]
 MX25LMxxx45G:
   manufacturer: Macronix
   type: nor
   interfaces:
     octal_spi:
-      option_words: [0xc0403037]
+      option_words: [0xc0403007]
 MX25UM51345G:
   manufacturer: Macronix
   type: nor
   interfaces:
     octal_spi:
-      option_words: [0xc0403037]
+      option_words: [0xc0403007]
 # GigaDevice
 GD25QxxxC:
   manufacturer: GigaDevice

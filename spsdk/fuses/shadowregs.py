@@ -105,12 +105,12 @@ class ShadowRegisters(FeatureBaseClassComm):
         for computed_reg, fields in computed_fields.items():
             reg_obj = regs.get_reg(computed_reg)
             for bitfield in fields.keys():
-                reg_obj.get_bitfield(bitfield).hidden = True
+                reg_obj.get_bitfield(bitfield).reserved = True
                 logger.debug(f"Hiding bitfield: {bitfield} in {computed_reg}")
 
         # Set the antipolize handler
         for antipole_reg in antipole_regs.values():
-            regs.get_reg(antipole_reg).hidden = True
+            regs.get_reg(antipole_reg).reserved = True
             logger.debug(f"Hiding anti pole register: {antipole_reg}")
 
         return regs

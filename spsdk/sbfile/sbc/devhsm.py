@@ -152,7 +152,7 @@ class DevHsmSBc(DevHsm):
         logger.debug(f" 5.1: The template SBc header: \n{str(sbc_header)} \n")
         self.store_temp_res("sbc_header.bin", sbc_header_exported)
 
-        # 6: Create dummy certificati block header part of SBc
+        # 6: Create dummy certificate block header part of SBc
         self.info_print(" 6: Creating dummy certificate block header part of SBc.")
         cb_header = CertificateBlockHeaderV2_2()
         cb_header_exported = cb_header.export()

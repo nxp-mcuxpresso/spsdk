@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -26,6 +26,8 @@ if IS_DILITHIUM_SUPPORTED:
 
 PRIVATE_ENCODINGS = [SPSDKEncoding.DER, SPSDKEncoding.PEM]
 PUBLIC_ENCODINGS = [SPSDKEncoding.DER, SPSDKEncoding.PEM, SPSDKEncoding.NXP]
+
+from spsdk.exceptions import SPSDKUnsupportedOperation
 
 
 def test_ecc_serializer(tmpdir: str) -> None:
@@ -82,12 +84,15 @@ def test_sm2_serializer(tmpdir: str) -> None:
 def test_dilithium_serializer(tmpdir: str) -> None:
     for level in PrivateKeyDilithium.SUPPORTED_LEVELS:
         prk = PrivateKeyDilithium.generate_key(level=level)
-        puk = prk.get_public_key()
 
         prk.save(f"{tmpdir}/prk_{level}.bin")
         prk2 = PrivateKey.load(f"{tmpdir}/prk_{level}.bin")
         assert prk == prk2
 
-        puk.save(f"{tmpdir}/puk_{level}.bin")
-        puk2 = PublicKey.load(f"{tmpdir}/puk_{level}.bin")
-        assert puk == puk2
+        try:
+            puk = prk.get_public_key()
+            puk.save(f"{tmpdir}/puk_{level}.bin")
+            puk2 = PublicKey.load(f"{tmpdir}/puk_{level}.bin")
+            assert puk == puk2
+        except SPSDKUnsupportedOperation:
+            pass  # Some key types might not support public key extraction

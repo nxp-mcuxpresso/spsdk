@@ -737,7 +737,7 @@
                     "description": "Device lifecycle and CC_SOCU debug access restrictions per debug domain.",
                     "index_int": "0x0025",
                     "shadow_reg_offset_int": "0x0094",
-                    "reset_value_int": "0x00030003",
+                    "default_value_int": "0x00030003",
                     "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse3",
@@ -1419,7 +1419,7 @@
                     "description": "Device lifecycle and CC_SOCU debug access restrictions per debug domain.",
                     "index_int": "0x008F",
                     "shadow_reg_offset_int": "0x023C",
-                    "reset_value_int": "0x00030003",
+                    "default_value_int": "0x00030003",
                     "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse3",
@@ -3652,7 +3652,7 @@
                             "width": 1,
                             "id": "fuse140-bit-20",
                             "name": "ISP_REC_LED_PIN_EN",
-                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or receovery boot mode. Output polarity.",
+                            "description": "LED enable bit. ROM sets this GPIO whenever boot image is not found in boot media and before entering ISP or recovery boot mode. Output polarity.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -4129,16 +4129,6 @@
                                     "name": "101",
                                     "value": 5,
                                     "description": "Octal DDR"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -4152,11 +4142,6 @@
                                     "name": "000",
                                     "value": 0,
                                     "description": "Quad SPI flash memory address (by default, the chip supports 3B read)"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 1,
-                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "010",
@@ -4177,16 +4162,6 @@
                                     "name": "101",
                                     "value": 5,
                                     "description": "Micron Octal DDR"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -4299,9 +4274,9 @@
                             "description": "Wait time before accessing serial flash memory",
                             "values": [
                                 {
-                                    "name": "500 \u03bcs",
+                                    "name": "500 us",
                                     "value": 0,
-                                    "description": "500 \u03bcs"
+                                    "description": "500 us"
                                 },
                                 {
                                     "name": "1 ms",
@@ -4334,12 +4309,12 @@
                                 {
                                     "name": "0001",
                                     "value": 1,
-                                    "description": "Additional 100 \u03bcs"
+                                    "description": "Additional 100 us"
                                 },
                                 {
                                     "name": "0010",
                                     "value": 2,
-                                    "description": "Additional 500 \u03bcs"
+                                    "description": "Additional 500 us"
                                 },
                                 {
                                     "name": "0011",
@@ -4455,44 +4430,14 @@
                             "description": "XSPI enhance mode",
                             "values": [
                                 {
-                                    "name": "000",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Disable"
                                 },
                                 {
-                                    "name": "Reserved",
-                                    "value": 1,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 2,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 4,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "101",
+                                    "name": "FORCE_LOOPBACK_DQS",
                                     "value": 5,
                                     "description": "Force using internal loopback DQS"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -4700,16 +4645,6 @@
                                     "name": "2.5 ms",
                                     "value": 1,
                                     "description": "2.5 ms"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 2,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -4878,16 +4813,6 @@
                                     "name": "2.5 ms",
                                     "value": 1,
                                     "description": "2.5 ms"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 2,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 }
                             ]
                         },

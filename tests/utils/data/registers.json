@@ -13,7 +13,7 @@
                     "reg_width": "32",
                     "name": "TestReg",
                     "description": "TestReg Description",
-                    "reset_value_int": "0xf0000",
+                    "default_value_int": "0xf0000",
                     "bitfields": [
                         {
                             "width": 15
@@ -24,7 +24,7 @@
                             "width": "5",
                             "name": "TestBitfield",
                             "access": "RW",
-                            "reset_value_int": "0x1e",
+                            "default_value_int": "0x1e",
                             "description": "Test Bitfield Description",
                             "values": [
                                 {

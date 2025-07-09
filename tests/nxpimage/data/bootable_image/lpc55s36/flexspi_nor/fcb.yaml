@@ -12,8 +12,6 @@ fcb_settings:
     value: "0x42464346" # The value width: 32b
   version: #  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix
     value: "0x56010400" # The value width: 32b
-  reserved0: #  [0x008-0x00b] Reserved for future use
-    value: "0x00000000" # The value width: 32b
   readSampleClkSrc: #  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
     value: "0x00" # The value width: 8b
   csHoldTime: #  [0x00d-0x00d] CS hold time, default value: 3
@@ -32,7 +30,6 @@ fcb_settings:
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   deviceModeArg: #  [0x018-0x01b] Argument/Parameter for device configuration
     value: "0x00000000" # The value width: 32b
   configCmdEnable: #  [0x01c-0x01c] Configure command Enable Flag, 1 - Enable, 0 - Disable
@@ -47,26 +44,19 @@ fcb_settings:
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   configCmdSeqs_1: #  [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   configCmdSeqs_2: #  [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
-  reserved1: #  [0x02c-0x02f] Reserved for future use
-    value: "0x00000000" # The value width: 32b
   configCmdArgs_0: #  [0x030-0x03b] Arguments/Parameters for device Configuration commands
     value: "0x00000000" # The value width: 32b
   configCmdArgs_1: #  [0x030-0x03b] Arguments/Parameters for device Configuration commands
     value: "0x00000000" # The value width: 32b
   configCmdArgs_2: #  [0x030-0x03b] Arguments/Parameters for device Configuration commands
-    value: "0x00000000" # The value width: 32b
-  reserved2: #  [0x03c-0x03f] Reserved for future use
     value: "0x00000000" # The value width: 32b
   controllerMiscOption: #  [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for more details
     value: "0x00000010" # The value width: 32b
@@ -78,10 +68,6 @@ fcb_settings:
     value: "0x01" # The value width: 8b
   lutCustomSeqEnable: #  [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot be done using 1 LUT sequence, currently, only applicable to HyperFLASH
     value: "0x00" # The value width: 8b
-  reserved3_0: #  [0x048-0x04f] Reserved for future use
-    value: "0x00000000" # The value width: 32b
-  reserved3_1: #  [0x048-0x04f] Reserved for future use
-    value: "0x00000000" # The value width: 32b
   sflashA1Size: #  [0x050-0x053] Size of Flash connected to A1
     value: "0x00800000" # The value width: 32b
   sflashA2Size: #  [0x054-0x057] Size of Flash connected to A2
@@ -1529,80 +1515,64 @@ fcb_settings:
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
   lutCustomSeq_1: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
   lutCustomSeq_2: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
   lutCustomSeq_3: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
   lutCustomSeq_4: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
   lutCustomSeq_5: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
   lutCustomSeq_6: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
   lutCustomSeq_7: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
   lutCustomSeq_8: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
   lutCustomSeq_9: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
   lutCustomSeq_10: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
   lutCustomSeq_11: #  [0x180-0x1af] Customizable LUT Sequences
     bitfields: # The register bitfields
       seqNum: "0x00" # Offset: 0b, Width: 8b, Description:  Sequence Number, valid number: 1-16
       seqId: "0x00" # Offset: 8b, Width: 8b, Description:  Sequence Index, valid number: 0-15
-      reserved: "0x0000" # Offset: 16b, Width: 16b, Description: N/A
   dll0CrVal: #  [0x1b0-0x1b3] Customizable DLL0CR setting
     value: "0x00000000" # The value width: 32b
   dll1CrVal: #  [0x1b4-0x1b7] Customizable DLL1CR setting
-    value: "0x00000000" # The value width: 32b
-  reserved4_0: #  [0x1b8-0x1bf] Reserved for future use
-    value: "0x00000000" # The value width: 32b
-  reserved4_1: #  [0x1b8-0x1bf] Reserved for future use
     value: "0x00000000" # The value width: 32b
   pageSize: #  Page size of Serial NOR
     value: "0x00000100" # The value width: 32b
@@ -1613,8 +1583,6 @@ fcb_settings:
   isUniformBlockSize: #  Sector/Block size is the same
     value: "0x00" # The value width: 8b
   isDataOrderSwapped: #  Data order (D0, D1, D2, D3) is swapped (D1,D0, D3, D2)
-    value: "0x00" # The value width: 8b
-  reserved0_0: #  Reserved for future use
     value: "0x00" # The value width: 8b
   serialNorType: #  Serial NOR Flash type: 0/1/2/3
     value: "0x00" # The value width: 8b

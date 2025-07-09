@@ -22,6 +22,8 @@ Weblink: `mc56f81646 <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -56,6 +58,8 @@ Weblink: `mc56f81648 <https://www.nxp.com/products/processors-and-microcontrolle
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
@@ -92,6 +96,8 @@ Weblink: `mc56f81666 <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -126,6 +132,8 @@ Weblink: `mc56f81668 <https://www.nxp.com/products/processors-and-microcontrolle
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
@@ -162,6 +170,8 @@ Weblink: `mc56f81746 <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -196,6 +206,8 @@ Weblink: `mc56f81748 <https://www.nxp.com/products/processors-and-microcontrolle
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
@@ -232,6 +244,8 @@ Weblink: `mc56f81766 <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -266,6 +280,8 @@ Weblink: `mc56f81768 <https://www.nxp.com/products/processors-and-microcontrolle
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
@@ -304,6 +320,8 @@ Weblink: `mc56f81866 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -340,6 +358,8 @@ Weblink: `mc56f81868 <https://www.nxp.com/products/processors-and-microcontrolle
     |:ref:`RoT`                    |vX     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
@@ -2670,6 +2690,62 @@ Similar examples for mbi
 * `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
 
 
+mcxe245
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxe245 <https://nxp.com>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`fcf`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpshe`                 |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+mcxe246
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxe246 <https://nxp.com>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`fcf`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpshe`                 |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
 mcxe247
 --------------------------
 
@@ -2677,15 +2753,26 @@ Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxe247 <https://placeholder.com>`_
+Weblink: `mcxe247 <https://nxp.com>`_
 
 .. table::
 
-    +-------------+-------+
-    |   Feature   |Support|
-    +=============+=======+
-    |:ref:`nxpshe`|✅     |
-    +-------------+-------+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`fcf`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpshe`                 |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
 
 mcxn235
 --------------------------
@@ -4794,6 +4881,8 @@ Weblink: `mwct2012 <https://www.nxp.com/products/power-management/wireless-power
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -4830,6 +4919,8 @@ Weblink: `mwct2012a <https://www.nxp.com/products/power-management/wireless-powe
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
@@ -4921,6 +5012,8 @@ Weblink: `mwct20d2 <https://www.nxp.com/products/power-management/wireless-power
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
     |:ref:`bca`                    |✅     |
@@ -4959,6 +5052,8 @@ Weblink: `mwct20d2a <https://www.nxp.com/products/power-management/wireless-powe
     |:ref:`RoT`                    |vX     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
@@ -5045,12 +5140,15 @@ Weblink: `mimx8ulp <https://www.nxp.com/products/processors-and-microcontrollers
     +---------------------+--------+
     |:ref:`nxpele`        |✅      |
     +---------------------+--------+
+    |:ref:`otfad`         |✅      |
+    +---------------------+--------+
     |:ref:`nxpuuu`        |✅      |
     +---------------------+--------+
 
 Examples for mimx8ulp
 
 * `i.MX 8ULP AHAB with U-BOOT <examples/ahab/imx8ulp/imx8ulp_ahab_uboot.ipynb>`__
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples/otfad/imx8ulp/imx8ulp_otfad.ipynb>`__
 
 
 Similar examples for dat
@@ -5071,6 +5169,12 @@ Similar examples for ahab
 * `i.MXRT118x Signed AHAB Example <examples\ahab\rt118x_secure_boot\rt118x_secure_boot.ipynb>`__
 * `i.MXRT118x Signed Flashloader <examples\ahab\rt118x_signed_flashloader\rt118x_signed_flashloader.ipynb>`__
 * `AHAB SRK Table <examples\ahab\srk_table\srk_table.ipynb>`__
+
+
+Similar examples for otfad
+
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
+* `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5095,6 +5199,8 @@ Weblink: `mimx9131 <https://www.nxp.com/products/processors-and-microcontrollers
     |:ref:`RoT`           |SRK AHAB|
     +---------------------+--------+
     |:ref:`nxpdebugmbox`  |✅      |
+    +---------------------+--------+
+    |:ref:`el2go-host`    |✅      |
     +---------------------+--------+
     |:ref:`Bootable image`|✅      |
     +---------------------+--------+
@@ -5156,9 +5262,9 @@ Weblink: `mimx9352 <https://www.nxp.com/products/processors-and-microcontrollers
     +---------------------+--------+
     |:ref:`nxpele`        |✅      |
     +---------------------+--------+
-    |:ref:`nxpuuu`        |✅      |
-    +---------------------+--------+
     |:ref:`otfad`         |✅      |
+    +---------------------+--------+
+    |:ref:`nxpuuu`        |✅      |
     +---------------------+--------+
 
 Examples for mimx9352
@@ -5191,6 +5297,7 @@ Similar examples for ahab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -5350,6 +5457,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -5804,6 +5912,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -5857,6 +5966,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -5910,6 +6020,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -5963,6 +6074,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6016,6 +6128,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6069,6 +6182,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6122,6 +6236,7 @@ Similar examples for hab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6192,6 +6307,7 @@ Similar examples for ahab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6270,6 +6386,7 @@ Similar examples for ahab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6348,6 +6465,7 @@ Similar examples for ahab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6426,6 +6544,7 @@ Similar examples for ahab
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6501,6 +6620,7 @@ Similar examples for bootable_image
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6571,6 +6691,7 @@ Similar examples for bootable_image
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6641,6 +6762,7 @@ Similar examples for bootable_image
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 
@@ -6711,6 +6833,7 @@ Similar examples for bootable_image
 
 Similar examples for otfad
 
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
 
 

@@ -61,7 +61,7 @@ for pkg in excluded_imports:
         datas.append((mod_path, os.path.basename(mod_path)))
 
 
-hidden_imports = {"pkg_resources", "spsdk_pyocd", "spsdk_lauterbach", "pyocd.rtos.threadx"}
+hidden_imports = {"pkg_resources", "spsdk_pyocd", "spsdk_lauterbach", "spsdk_mcu_link", "pyocd.rtos.threadx"}
 
 
 # List of packages that should have there Distutils entrypoints included.

@@ -12,13 +12,12 @@
                     "name": "FLW_Configuration",
                     "description": "FLW Configuration",
                     "offset_int": "0",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field000-bit0",
                             "name": "RESTORE_FLW_FLAG",
                             "description": "FLW Configuration",
@@ -46,7 +45,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0001",
                     "is_reserved": true,
-                    "reset_value_int": "0x00FFFFFF",
+                    "default_value_int": "0x00FFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 24
                 },
@@ -56,7 +55,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0004",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -64,7 +63,7 @@
                     "name": "FLW_REGION_ABASE",
                     "description": "FLW region, the starting address of the alternative boot image",
                     "offset_int": "0x0008",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -72,7 +71,7 @@
                     "name": "FLW_REGION_BCNT",
                     "description": "FLW region, the size of the alternative boot image in 32 KB blocks",
                     "offset_int": "0x000C",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -88,13 +87,12 @@
                     "name": "CONFIGURE_NPX_FOR_NORMAL_BOOT",
                     "description": "NPX configuration",
                     "offset_int": "0x0010",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field010-bit0",
                             "name": "USE_PRINCE",
                             "description": "Configure NPX to use PRINCE",
@@ -113,7 +111,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field010-bit1",
                             "name": "GLOBAL_LOCK",
                             "description": "Global lock",
@@ -132,7 +129,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field010-bit2",
                             "name": "SYSTEM_LOCK",
                             "description": "System lock",
@@ -151,7 +147,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field010-bit3",
                             "name": "GLOBAL_DECRYPTION",
                             "description": "Global decryption",
@@ -170,7 +165,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field010-bit4",
                             "name": "GLOBAL_ENCRYPTION",
                             "description": "Global encryption",
@@ -197,13 +191,12 @@
                     "name": "STICKY",
                     "description": "NPX configuration",
                     "offset_int": "0x0011",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field011-bit0",
                             "name": "CONFIGURE_NPX_REQUIRED",
                             "description": "Configure NPX required",
@@ -231,7 +224,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0012",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 },
@@ -241,7 +234,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0014",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -249,7 +242,7 @@
                     "name": "NPX_REGIONS_VALID",
                     "description": "NPX regions valid",
                     "offset_int": "0x0018",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -257,7 +250,7 @@
                     "name": "NPX_REGIONS_COUNT",
                     "description": "NPX regions count",
                     "offset_int": "0x001C",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -273,7 +266,7 @@
                     "name": "NPX_REGION_0_VALID",
                     "description": "NPX region 0 valid",
                     "offset_int": "0x0020",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -281,7 +274,7 @@
                     "name": "NPX_REGION_0_START_ADDRESS",
                     "description": "NPX region 0 start address",
                     "offset_int": "0x0024",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -289,7 +282,7 @@
                     "name": "NPX_REGION_0_END_ADDRESS",
                     "description": "NPX region 0 end address",
                     "offset_int": "0x0028",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -297,7 +290,7 @@
                     "name": "NPX_REGION_1_VALID",
                     "description": "NPX region 1 valid",
                     "offset_int": "0x002C",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -313,7 +306,7 @@
                     "name": "NPX_REGION_1_START_ADDRESS",
                     "description": "NPX region 1 start address",
                     "offset_int": "0x0030",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -321,7 +314,7 @@
                     "name": "NPX_REGION_1_END_ADDRESS",
                     "description": "NPX region 1 end address",
                     "offset_int": "0x0034",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -329,7 +322,7 @@
                     "name": "NPX_REGION_2_VALID",
                     "description": "NPX region 2 valid",
                     "offset_int": "0x0038",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -337,7 +330,7 @@
                     "name": "NPX_REGION_2_START_ADDRESS",
                     "description": "NPX region 2 start address",
                     "offset_int": "0x003C",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -353,7 +346,7 @@
                     "name": "NPX_REGION_2_END_ADDRESS",
                     "description": "NPX region 2 end address",
                     "offset_int": "0x0040",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -361,7 +354,7 @@
                     "name": "NPX_REGION_3_VALID",
                     "description": "NPX region 3 valid",
                     "offset_int": "0x0044",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -369,7 +362,7 @@
                     "name": "NPX_REGION_3_START_ADDRESS",
                     "description": "NPX region 3 start address",
                     "offset_int": "0x0048",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -377,7 +370,7 @@
                     "name": "NPX_REGION_3_END_ADDRESS",
                     "description": "NPX region 3 end address",
                     "offset_int": "0x004C",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -393,13 +386,12 @@
                     "name": "BOOT_CONFIGURATION",
                     "description": "Boot configuration",
                     "offset_int": "0x0050",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field050-bit0",
                             "name": "ENABLE_ISP_OR_NOT",
                             "description": "Enable ISP",
@@ -418,7 +410,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0x0003",
                             "id": "field050-bits1-2",
                             "name": "BOOT_SPEED",
                             "description": "Boot speed",
@@ -456,7 +447,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0051",
                     "is_reserved": true,
-                    "reset_value_int": "0x00FFFFFF",
+                    "default_value_int": "0x00FFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 24
                 },
@@ -466,7 +457,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0054",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -475,7 +466,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0058",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -484,7 +475,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x005C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -500,13 +491,12 @@
                     "name": "SECURE_BOOT_FAILURE_OPTIONS",
                     "description": "Secure Boot Failure Options",
                     "offset_int": "0x0060",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field060-bit0",
                             "name": "SECURE_BOOT_FAILURE_MODE",
                             "description": "Secure Boot failure mode",
@@ -525,7 +515,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field060-bit1",
                             "name": "SECURE_BOOT_FAILURE_ALERT_PIN",
                             "description": "Secure Boot failure alert pin",
@@ -552,13 +541,12 @@
                     "name": "SECURE_BOOT_FAILURE_ALERT_PIN_SELECTION",
                     "description": "Secure Boot Failure Alert Pin Selection",
                     "offset_int": "0x0061",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 5,
-                            "reset_value_int": "0x001F",
                             "id": "field061-bits0-4",
                             "name": "PIN_SELECTION",
                             "description": "Pin selection",
@@ -727,7 +715,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0x0007",
                             "id": "field061-bits5-7",
                             "name": "PORT_SELECTION",
                             "description": "Port Selection",
@@ -782,7 +769,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0062",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 },
@@ -792,7 +779,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0064",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -801,7 +788,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0068",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -810,7 +797,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x006C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -827,7 +814,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0070",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -836,7 +823,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0074",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -845,7 +832,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0078",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -854,7 +841,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x007C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -870,7 +857,7 @@
                     "name": "BOOT_IMAGE_BASE_ADDRESS3",
                     "description": "Boot Image Base Address 3",
                     "offset_int": "0x0080",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -879,7 +866,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0084",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -888,7 +875,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0088",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -897,7 +884,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x008C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -913,7 +900,7 @@
                     "name": "BOOT_IMAGE_BASE_ADDRESS2",
                     "description": "Boot Image Base Address 2",
                     "offset_int": "0x0090",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -922,7 +909,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0094",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -931,7 +918,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0098",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -940,7 +927,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x009C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -956,7 +943,7 @@
                     "name": "BOOT_IMAGE_BASE_ADDRESS1",
                     "description": "Boot Image Base Address 1",
                     "offset_int": "0x00A0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -965,7 +952,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00A4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -974,7 +961,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00A8",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -983,7 +970,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00AC",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -999,7 +986,7 @@
                     "name": "BOOT_IMAGE_BASE_ADDRESS0",
                     "description": "Boot Image Base Address 0",
                     "offset_int": "0x00B0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1008,7 +995,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00B4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1017,7 +1004,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00B8",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1026,7 +1013,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00BC",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -1043,7 +1030,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C0",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1052,7 +1039,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1061,7 +1048,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C8",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1070,7 +1057,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00CC",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -1087,7 +1074,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D0",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1096,7 +1083,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1105,7 +1092,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D8",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1114,7 +1101,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00DC",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -1131,7 +1118,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E0",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1140,7 +1127,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1149,7 +1136,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E8",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1158,7 +1145,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00EC",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -1175,7 +1162,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F0",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1184,7 +1171,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F4",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1193,7 +1180,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F8",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1202,7 +1189,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00FC",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -1218,13 +1205,12 @@
                     "name": "PERIPHERALS_ENABLE",
                     "description": "Peripherals Enable",
                     "offset_int": "0x0100",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field100-bit0",
                             "name": "LPUART1_PERIPHERAL_FOR_ISP",
                             "description": "LPUART1 peripheral for ISP",
@@ -1243,7 +1229,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field100-bit1",
                             "name": "LPI2C1_PERIPHERAL_FOR_ISP",
                             "description": "LPI2C1 peripheral for ISP",
@@ -1262,7 +1247,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field100-bit2",
                             "name": "LPSPI1_PERIPHERAL_FOR_ISP",
                             "description": "LPSPI1 peripheral for ISP",
@@ -1281,7 +1265,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0x0001",
                             "id": "field100-bit3",
                             "name": "CAN_PERIPHERAL_FOR_ISP",
                             "description": "CAN peripheral for ISP",
@@ -1309,7 +1292,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0101",
                     "is_reserved": true,
-                    "reset_value_int": "0x00FFFFFF",
+                    "default_value_int": "0x00FFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 24
                 },
@@ -1318,7 +1301,7 @@
                     "name": "PERIPHERAL_DETECTION_TIMEOUT",
                     "description": "Peripheral Detection Timeout",
                     "offset_int": "0x0104",
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 },
@@ -1328,7 +1311,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0106",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 },
@@ -1337,7 +1320,7 @@
                     "name": "I2C_SLAVE_ADDRESS",
                     "description": "I2C Slave Address",
                     "offset_int": "0x0108",
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8
                 },
@@ -1347,7 +1330,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0109",
                     "is_reserved": true,
-                    "reset_value_int": "0x00FF",
+                    "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 8
                 },
@@ -1357,7 +1340,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x010A",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 },
@@ -1366,7 +1349,7 @@
                     "name": "CANTxID",
                     "description": "TxID field.",
                     "offset_int": "0x010C",
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 },
@@ -1375,7 +1358,7 @@
                     "name": "CANRxID",
                     "description": "RxID field.",
                     "offset_int": "0x010E",
-                    "reset_value_int": "0xFFFF",
+                    "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "reg_width": 16
                 }
@@ -1392,7 +1375,7 @@
                     "name": "ELE_LOADABLE_FW_ENTRY_ADDRESS",
                     "description": "ELE loadable firmware resides address",
                     "offset_int": "0x0110",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1401,7 +1384,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0114",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1410,7 +1393,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0118",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1419,7 +1402,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x011C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]
@@ -1435,12 +1418,11 @@
                     "name": "SECURE_HASH_BASED_IMAGE_VERIFICATION",
                     "description": "Secure Hash based image verification feature",
                     "offset_int": "0x0120",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes",
                     "bitfields": [
                         {
                             "width": 32,
-                            "reset_value_int": "0xFFFFFFFF",
                             "id": "field120-bits0-31",
                             "name": "SECURE_HASH_BASED_IMAGE_VERIFICATION_CONFIG",
                             "description": "Secure Hash based image verification feature",
@@ -1465,7 +1447,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0124",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1474,7 +1456,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0128",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
@@ -1483,7 +1465,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x012C",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 }
             ]

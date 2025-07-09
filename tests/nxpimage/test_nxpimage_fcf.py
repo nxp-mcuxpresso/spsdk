@@ -38,7 +38,7 @@ def test_nxpimage_fcf_export_cli(cli_runner: CliRunner, tmpdir, data_dir, family
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
-            os.path.join(data_dir, "fcf", family, f"fcf.bin"),
+            os.path.join(data_dir, "fcf", family, "fcf.bin"),
             out_file,
             shallow=False,
         )

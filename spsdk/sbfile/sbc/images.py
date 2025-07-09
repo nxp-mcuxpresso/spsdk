@@ -123,7 +123,7 @@ class SecureBinaryCHeader(BaseClass):
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> Self:
-        """Parse binary data into SecureBinarycHeader.
+        """Parse binary data into SecureBinaryC Header.
 
         :raises SPSDKError: Unable to parse SBc Header.
         """

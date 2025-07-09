@@ -19,7 +19,6 @@ revisions:
           reg_spec: pfr_cfpa_a1.json
         cmpa:
           reg_spec: pfr_cmpa_a1.json
-          override_data_file:
 
       tz:
         reg_spec: tz_a1.json
@@ -66,6 +65,7 @@ info:
   isp:
     rom:
       protocol: mboot
+      interfaces: ["uart", "usb", "can", "spi", "i2c"]
       usb:
         vid: 0x1FC9
         pid: 0x0025
@@ -165,6 +165,7 @@ features:
           field058-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
         field05C: # DCFG_CC_SOCU_NS_DFLT
           field05C-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+
     cmpa: # CMPA description
       address: 0x3_E200
       size: 512
@@ -202,6 +203,42 @@ features:
           field010-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
         field014: # DCFG_CC_SOCU_DFLT
           field014-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+      reg_spec_modification:
+        field090:
+          bitfields:
+            field090-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field094:
+          bitfields:
+            field094-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field098:
+          bitfields:
+            field098-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field09C:
+          bitfields:
+            field09C-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0A4:
+          bitfields:
+            field0A4-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0A8:
+          bitfields:
+            field0A8-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0AC:
+          bitfields:
+            field0AC-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
     rules:
       - ../../common/pfrc_rules.yaml
       - pfrc_rules.yaml
@@ -211,6 +248,7 @@ features:
     mem_types:
       flexspi_nor:
         reg_spec: fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== Bootable image section ========
   bootable_image:
@@ -248,7 +286,6 @@ features:
       - fillMemory
       - checkFwVersion
 
-    
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
     sub_features: [DevHsmSB31]
@@ -285,4 +322,3 @@ features:
     csr_address: 0x2000_0000
     csr_length: 208
     response_length: 324
-

@@ -31,7 +31,6 @@ class FCB(SegmentBase):
     FEATURE = DatabaseManager.FCB
     TAG = b"FCFB"
     TAG_SWAPPED = swap_bytes(TAG)
-    SIZE = 0x200
 
     def __init__(self, family: FamilyRevision, mem_type: MemoryType) -> None:
         """FCB Constructor.
@@ -55,6 +54,14 @@ class FCB(SegmentBase):
         )
 
     @property
+    def size(self) -> int:
+        """Size of the segment in bytes.
+
+        :return: The segment size in bytes.
+        """
+        return self.registers.size
+
+    @property
     def registers(self) -> Registers:
         """Registers of segment."""
         return self._registers
@@ -76,9 +83,9 @@ class FCB(SegmentBase):
         :raises SPSDKError: If given binary block contains wrong FCB tag
         """
         fcb = cls(family=family, mem_type=mem_type)
-        if len(binary[offset:]) < FCB.SIZE:
+        if len(binary[offset:]) < fcb.size:
             raise SPSDKError(
-                f"Invalid input binary block size: ({len(binary[offset:])} < {FCB.SIZE})."
+                f"Invalid input binary block size: ({len(binary[offset:])} < {fcb.size})."
             )
         if binary[: (len(cls.TAG))] == cls.TAG_SWAPPED:
             logger.info("Swapped bytes order has been detected. Fixing the bytes order.")

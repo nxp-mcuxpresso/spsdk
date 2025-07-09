@@ -9,70 +9,40 @@
             "registers": [
                 {
                     "id": "field000",
-                    "name": "BACKDOOR_KEY0",
-                    "description": "Backdoor Comparison Key",
+                    "name": "BACKDOOR_KEY",
                     "offset_int": "0",
-                    "reset_value_int": "0xFFFFFFFF",
-                    "reg_width": 32,
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "reset_value_int": "0xFFFFFFFF",
-                            "id": "field000-bits0-31",
-                            "name": "BACKDOOR_KEY0",
-                            "description": "Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command and Unsecuring the Chip Using Backdoor Key Access."
-                        }
-                    ]
-                },
-                {
-                    "id": "field004",
-                    "name": "BACKDOOR_KEY1",
-                    "description": "Backdoor Comparison Key",
-                    "offset_int": "0x004",
-                    "reset_value_int": "0xFFFFFFFF",
-                    "reg_width": 32,
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "reset_value_int": "0xFFFFFFFF",
-                            "id": "field004-bits0-31",
-                            "name": "BACKDOOR_KEY1",
-                            "description": "Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command and Unsecuring the Chip Using Backdoor Key Access."
-                        }
-                    ]
+                    "default_value_int": "0xFFFFFFFFFFFFFFFF",
+                    "reg_width": 64,
+                    "description": "Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command and Unsecuring the Chip Using Backdoor Key Access."
                 },
                 {
                     "id": "field008",
                     "name": "FPROT",
                     "description": "Program flash protection bytes. Refer to the description of the Program Flash Protection Registers (FPROT0-3).",
                     "offset_int": "0x008",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "reg_width": 32,
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0xFF",
                             "id": "field008-bits0-7",
                             "name": "FPROT3",
                             "description": "Program Flash Protection Registers (FPROT3)"
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0xFF",
                             "id": "field008-bits8-15",
                             "name": "FPROT2",
                             "description": "Program Flash Protection Registers (FPROT2)"
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0xFF",
                             "id": "field008-bits16-23",
                             "name": "FPROT1",
                             "description": "Program Flash Protection Registers (FPROT1)"
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0xFF",
                             "id": "field008-bits24-31",
                             "name": "FPROT0",
                             "description": "Program Flash Protection Registers (FPROT0)"
@@ -88,7 +58,6 @@
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0x02",
                             "id": "field00C-bits0-1",
                             "name": "SEC",
                             "description": "Flash Security.",
@@ -117,7 +86,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0x03",
                             "id": "field00C-bits2-3",
                             "name": "FSLACC",
                             "description": "Factory Security Level Access Code.",
@@ -146,7 +114,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0x03",
                             "id": "field00C-bits4-5",
                             "name": "MEEN",
                             "description": "Mass Erase Enable. Enables and disables mass erase capability of the flash memory module.",
@@ -175,7 +142,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0x03",
                             "id": "field00C-bits6-7",
                             "name": "KEYEN",
                             "description": "Backdoor Key Security Enable. Enables or disables backdoor key access to the flash memory module.",
@@ -202,14 +168,15 @@
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "default_value_int": "0xfe"
                 },
                 {
                     "id": "field00D",
                     "name": "FOPT",
                     "description": "Flash nonvolatile option byte. Refer to the description of the Flash Option Register (FOPT).",
                     "offset_int": "0x00D",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -334,7 +301,7 @@
                                 {
                                     "name": "Reserved",
                                     "value": 1,
-                                    "description": "Reeserved"
+                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "ROM_2",
@@ -356,7 +323,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E",
                     "is_reserved": true,
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8
                 },
                 {
@@ -365,7 +332,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F",
                     "is_reserved": true,
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8
                 }
             ]

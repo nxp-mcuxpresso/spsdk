@@ -63,13 +63,13 @@ def pfr_device_type_options() -> Callable:
     """
 
     def decorator(options: Callable[[FC], FC]) -> Callable[[FC], FC]:
-        """Setup PFR/IFR area <CMPA, CFPA, ROMCFG, CMAC table>."""
+        """Setup PFR/IFR area <CMPA, CFPA, ROMCFG, CMAC, IFR table>."""
         return click.option(
             "-t",
             "--type",
             "area",
             required=True,
-            type=click.Choice(["cmpa", "cfpa", "romcfg", "cmactable"], case_sensitive=False),
+            type=click.Choice(["cmpa", "cfpa", "romcfg", "cmactable", "ifr"], case_sensitive=False),
             help="Select PFR/IFR partition",
         )(options)
 
@@ -86,7 +86,7 @@ def main(log_level: int) -> int:
 
     Supported areas:
     - PFR pages: CMPA (Customer Manufacturing Configuration Area), CFPA (Customer Field Programmable Area)
-    - IFR pages: ROMCFG (ROM Configuration), CMACTABLE (CMAC Table)
+    - IFR pages: ROMCFG (ROM Configuration), CMACTABLE (CMAC Table), IFR
 
     Features:
     - Generate configuration templates
@@ -297,11 +297,17 @@ def write(
         raise SPSDKError(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
-    with McuBoot(interface=interface, cmd_exception=True) as mboot:
-        try:
-            mboot.write_memory(address=pfr_page_address, data=data)
-        except McuBootError as exc:
-            raise SPSDKAppError(f"{pfr_obj.__class__.__name__} data write failed: {exc}") from exc
+
+    if pfr_obj.WRITE_METHOD == "write_memory":
+        with McuBoot(interface=interface, cmd_exception=True) as mboot:
+            try:
+                mboot.write_memory(address=pfr_page_address, data=data)
+            except McuBootError as exc:
+                raise SPSDKAppError(
+                    f"{pfr_obj.__class__.__name__} data write failed: {exc}"
+                ) from exc
+    else:
+        raise SPSDKAppError(f"Unsupported write method: {pfr_obj.WRITE_METHOD}")
     click.echo(f"{pfr_obj.__class__.__name__} data written to device.")
 
 
@@ -342,10 +348,20 @@ def read(
 
     click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
 
-    with McuBoot(interface=interface) as mboot:
-        data = mboot.read_memory(address=pfr_page_address, length=pfr_page_length)
-    if not data:
-        raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
+    if pfr_obj.READ_METHOD == "read_memory":
+        with McuBoot(interface=interface) as mboot:
+            data = mboot.read_memory(address=pfr_page_address, length=pfr_page_length)
+        if not data:
+            raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
+    elif pfr_obj.READ_METHOD == "flash_read_resource":
+        with McuBoot(interface=interface) as mboot:
+            data = mboot.flash_read_resource(
+                address=pfr_page_address, length=pfr_page_length, option=0
+            )
+        if not data:
+            raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
+    else:
+        raise SPSDKAppError(f"Unsupported read method: {pfr_obj.READ_METHOD}")
 
     if output:
         write_file(data, output, "wb")

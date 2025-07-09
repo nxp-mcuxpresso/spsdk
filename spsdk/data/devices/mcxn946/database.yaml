@@ -107,6 +107,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvtZeroTotalLength
           - Mbi_MixinTrustZoneMandatory
+          - Mbi_MixinLoadAddress
           - Mbi_MixinImageVersion
           - Mbi_ExportMixinAppTrustZone
       plain_ram:
@@ -279,12 +280,94 @@ features:
           field040-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
         field044: # DCFG_CC_SOCU_DFLT
           field044-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+      reg_spec_modification:
+        field0B0:
+          bitfields:
+            field0B0-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0B4:
+          bitfields:
+            field0B4-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0B8:
+          bitfields:
+            field0B8-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0BC:
+          bitfields:
+            field0BC-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0C0:
+          bitfields:
+            field0C0-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0C4:
+          bitfields:
+            field0C4-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0C8:
+          bitfields:
+            field0C8-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0CC:
+          bitfields:
+            field0CC-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0D0:
+          bitfields:
+            field0D0-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0D4:
+          bitfields:
+            field0D4-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0D8:
+          bitfields:
+            field0D8-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0DC:
+          bitfields:
+            field0DC-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0E0:
+          bitfields:
+            field0E0-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0E4:
+          bitfields:
+            field0E4-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0E8:
+          bitfields:
+            field0E8-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
+        field0EC:
+          bitfields:
+            field0EC-bits8-31:
+              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+                IPED region. In config file use full 32b address.
 
   # ======== FCB section ========
   fcb:
     mem_types:
       flexspi_nor:
         reg_spec: fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== Bootable image section ========
   bootable_image:

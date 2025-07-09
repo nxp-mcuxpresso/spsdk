@@ -1300,6 +1300,12 @@ def ahab_extend_tree_command(
     existing_srk_files = glob.glob(os.path.join(crts_path, "SRK*"))
     start_idx = len(existing_srk_files)
 
+    if serial and len(serial) < keys_number:
+        raise SPSDKAppError(
+            f"Not enough serial numbers. Specified {len(serial)} numbers, but want to create {keys_number}. "
+            "Each certificate requires a unique serial number."
+        )
+
     generate_srk_keys(
         key_type=key_type,
         encoding=encoding,
@@ -1499,6 +1505,12 @@ def hab_extend_tree_command(
         existing_srk_files = glob.glob(os.path.join(crts_path, "SRK*"))
         start_idx = len(existing_srk_files)
 
+        if serial and len(serial) < keys_number:
+            raise SPSDKAppError(
+                f"Not enough serial numbers. Specified {len(serial)} numbers, but want to create {keys_number}. "
+                "Each certificate requires a unique serial number."
+            )
+
         generate_srk_keys(
             key_type=key_type,
             encoding=encoding,
@@ -1586,6 +1598,9 @@ def hab_extend_srk(
     # Get number of IMG certs to generate that belong to the selected SRK index
     img_files = glob.glob(os.path.join(crts_path, f"IMG{srk_idx}*"))
     start_idx = len(img_files)
+
+    if serial and len(serial) <= srk_idx:
+        serial = [serial[0]] * (srk_idx + 1) if serial else None
 
     for key_number in range(keys_number):
         generate_img_csf_key(

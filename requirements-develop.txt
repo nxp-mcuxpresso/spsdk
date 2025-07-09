@@ -1,6 +1,7 @@
 # tox has to be installed first
 tox<5
 tox-uv<2
+uv==0.7.0
 -r requirements.txt
 # testing
 pytest<9

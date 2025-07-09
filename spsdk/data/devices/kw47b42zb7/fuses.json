@@ -3,6 +3,218 @@
     "groups": [
         {
             "group": {
+                "name": "Locks",
+                "description": "Write/Read/Override Protection"
+            },
+            "registers": [
+                {
+                    "id": "fuse5",
+                    "name": "CUST_PROD_OEMFW_AUTH_PUK_LOCK",
+                    "description": "Locks CUST_PROD_OEMFW_AUTH_PUK[255:0]. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+                    "index_int": "0x0005",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse5-bit-0",
+                            "name": "WRITE_PROTECTION",
+                            "description": "Write protection for CUST_PROD_OEMFW_AUTH_PUK[255:0]. When write protection is blown, it protects the fuses against writing to it.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable write protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable write protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse5-bit-2",
+                            "name": "READ_PROTECTION",
+                            "description": "Read protection for CUST_PROD_OEMFW_AUTH_PUK[255:0]. When read protection is blown, it protects the fuses against reading.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable read protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable read protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse6",
+                    "name": "CUST_PROD_OEMFW_ENC_SK_LOCK",
+                    "description": "Locks CUST_PROD_OEMFW_ENC_SK[255:0]. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+                    "index_int": "0x0006",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-0",
+                            "name": "WRITE_PROTECTION",
+                            "description": "Write protection for CUST_PROD_OEMFW_ENC_SK[255:0]. When write protection is blown, it protects the fuses against writing to it.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable write protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable write protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse6-bit-2",
+                            "name": "READ_PROTECTION",
+                            "description": "Read protection for CUST_PROD_OEMFW_ENC_SK[255:0]. When read protection is blown, it protects the fuses against reading.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable read protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable read protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse8",
+                    "name": "DCFG_CC_SOCU_L1_LOCK",
+                    "description": "Locks DCFG_CC_SOCU_L1. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+                    "index_int": "0x0008",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-0",
+                            "name": "WRITE_PROTECTION",
+                            "description": "Write protection for DCFG_CC_SOCU_L1. When write protection is blown, it protects the fuses against writing to it.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable write protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable write protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-2",
+                            "name": "READ_PROTECTION",
+                            "description": "Read protection for DCFG_CC_SOCU_L1. When read protection is blown, it protects the fuses against reading.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable read protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable read protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse9",
+                    "name": "DCFG_CC_SOCU_L2_LOCK",
+                    "description": "Locks DCFG_CC_SOCU_L2. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+                    "index_int": "0x0009",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-0",
+                            "name": "WRITE_PROTECTION",
+                            "description": "Write protection for DCFG_CC_SOCU_L2. When write protection is blown, it protects the fuses against writing to it.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable write protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable write protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse9-bit-2",
+                            "name": "READ_PROTECTION",
+                            "description": "Read protection for DCFG_CC_SOCU_L2. When read protection is blown, it protects the fuses against reading.",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable read protection lock."
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable read protection lock."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
                 "name": "Config",
                 "description": "Miscellaneous security configuration"
             },
@@ -12,8 +224,7 @@
                     "name": "LIFECYCLE",
                     "description": "Lifecycle state.",
                     "index_int": "0x000A",
-                    "reset_value_int": "0x0007",
-                    "individual_write_lock": "none",
+                    "default_value_int": "0x0007",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -51,11 +262,6 @@
                                     "name": "OEM_RETURN",
                                     "value": 63,
                                     "description": "OEM Return"
-                                },
-                                {
-                                    "name": "BRICK",
-                                    "value": 255,
-                                    "description": "Brick (11xx_xxxx)"
                                 }
                             ]
                         }
@@ -66,7 +272,6 @@
                     "name": "DBG_EN_LOCK",
                     "description": "Debug Enable Lock.",
                     "index_int": "0x000B",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -86,6 +291,9 @@
                                     "description": "The debug access control registers are write-locked before jumping to customer code."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -94,7 +302,6 @@
                     "name": "DBG_AUTH_DIS",
                     "description": "Debug Authentication Disabled.",
                     "index_int": "0x000C",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -114,6 +321,9 @@
                                     "description": "Debug Authentication disabled"
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -122,7 +332,6 @@
                     "name": "TZM_EN",
                     "description": "Trust Zone Mode Enable.",
                     "index_int": "0x000D",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -142,6 +351,9 @@
                                     "description": "TZ-M is enabled"
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -150,7 +362,6 @@
                     "name": "SERIAL_DIS",
                     "description": "Serial Download Disabled.",
                     "index_int": "0x0011",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -170,6 +381,9 @@
                                     "description": "ISP path is disabled."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -178,7 +392,6 @@
                     "name": "WAKEUP_DIS",
                     "description": "Wakeup Disabled.",
                     "index_int": "0x0012",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
@@ -190,14 +403,17 @@
                                 {
                                     "name": "Enabled",
                                     "value": 0,
-                                    "description": "Boot-ROM LP wakeup is enabled."
+                                    "description": "Boot-ROM low power wakeup is enabled."
                                 },
                                 {
                                     "name": "Disabled",
                                     "value": 1,
-                                    "description": "Boot-ROM LP wakeup is disabled."
+                                    "description": "Boot-ROM low power wakeup is disabled."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
                 },
@@ -206,160 +422,135 @@
                     "name": "CUST_PROD_OEMFW_AUTH_PUK_REVOKE",
                     "description": "Key revocation indicators of CUST_PROD_OEMFW_AUTH_PUK.",
                     "index_int": "0x0013",
-                    "individual_write_lock": "none",
-                    "reg_width": 8
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-0",
+                            "name": "REVOKE_ROTK_1",
+                            "description": "Revokes Root of Trust Key 1.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 1."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 1."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-1",
+                            "name": "REVOKE_ROTK_2",
+                            "description": "Revokes Root of Trust Key 2.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 2."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 2."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-2",
+                            "name": "REVOKE_ROTK_3",
+                            "description": "Revokes Root of Trust Key 3.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 3."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 3."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse19-bit-3",
+                            "name": "REVOKE_ROTK_4",
+                            "description": "Revokes Root of Trust Key 4.",
+                            "values": [
+                                {
+                                    "name": "KEEP",
+                                    "value": 0,
+                                    "description": "Keep the RoTK 4."
+                                },
+                                {
+                                    "name": "REVOKE",
+                                    "value": 1,
+                                    "description": "Revoke the RoTK 4."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
                 },
                 {
                     "id": "fuse21",
                     "name": "DBG_AUTH_VU",
-                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates.",
+                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0015",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
                     "id": "fuse22",
                     "name": "IMG_KEY_REVOKE",
-                    "description": "These fuses are used to revoke image signing keys separately from root keys.",
+                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0016",
-                    "individual_write_lock": "none",
                     "reg_width": 16
                 }
             ]
         },
         {
             "group": {
-                "name": "CUST_PROD_OEMFW_AUTH_PUK",
-                "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication"
+                "name": "Keys",
+                "description": "Authentication and encryption keys"
             },
             "registers": [
                 {
-                    "id": "fuse31_0",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[255:224]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
+                    "id": "fuse31",
+                    "name": "CUST_PROD_OEMFW_AUTH_PUK",
+                    "description": "The RoTKTH for P-256 keys will be 256 bits in length, write as-is. The RoTKTH for P-384 keys will be 384 bits in length, users can truncate the value prior to writing the fuse or write it as is and will be truncated automatically.",
                     "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse5",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "reg_width": 256
                 },
                 {
-                    "id": "fuse31_1",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[223:192]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_2",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[191:160]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_3",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[159:128]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_4",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[127:96]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_5",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[95:64]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_6",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[63:32]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse31_7",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK[31:0]",
-                    "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CUST_PROD_OEMFW_ENC_SK",
-                "description": "Encryption key used to protect confidentiality of OEM firmware"
-            },
-            "registers": [
-                {
-                    "id": "fuse32_0",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[255:224]",
+                    "id": "fuse32",
+                    "name": "CUST_PROD_OEMFW_ENC_SK",
                     "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
                     "index_int": "0x0020",
                     "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_1",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[223:192]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_2",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[191:160]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_3",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[159:128]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_4",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[127:96]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_5",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[95:64]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_6",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[63:32]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
-                },
-                {
-                    "id": "fuse32_7",
-                    "name": "CUST_PROD_OEMFW_ENC_SK[31:0]",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+                    },
+                    "reg_width": 256
                 }
             ]
         },
@@ -372,15 +563,21 @@
                 {
                     "id": "fuse34",
                     "name": "DCFG_CC_SOCU_L1",
-                    "description": "Debug authentication configuration for level 1 customer. \nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+                    "description": "Debug authentication configuration for level 1 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0022",
                     "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+                    },
                     "bitfields": [
                         {
                             "width": 1,
                             "id": "fuse34-bit-0",
                             "name": "PIN_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -398,7 +595,7 @@
                             "width": 1,
                             "id": "fuse34-bit-1",
                             "name": "PIN_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -416,7 +613,7 @@
                             "width": 1,
                             "id": "fuse34-bit-2",
                             "name": "PIN_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -434,7 +631,7 @@
                             "width": 1,
                             "id": "fuse34-bit-3",
                             "name": "PIN_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -452,7 +649,7 @@
                             "width": 1,
                             "id": "fuse34-bit-4",
                             "name": "PIN_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio, CM3).",
+                            "description": "Controls debugging of NBU (radio) core.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -469,8 +666,8 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-5",
-                            "name": "PIN_FA_CMD_EN",
-                            "description": "Controls whether DM-AP command, Set FA Mode (command code: 0x06), can be issued through after authentication.",
+                            "name": "PIN_DSP_DBGEN",
+                            "description": "Controls debugging of DSP core.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -505,8 +702,8 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-7",
-                            "name": "PIN_ME_CMD_EN",
-                            "description": "Controls whether DM-AP command, Bulk Erase (command code: 0x02), can be issued through after authentication.",
+                            "name": "PIN_FA_CMD_EN",
+                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -523,26 +720,26 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-8",
-                            "name": "DFLT_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "name": "PIN_ME_CMD_EN",
+                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
                             "values": [
                                 {
-                                    "name": "Disabled",
+                                    "name": "DAP",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
-                                    "name": "Enabled",
+                                    "name": "DFLT",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
                         {
                             "width": 1,
                             "id": "fuse34-bit-9",
-                            "name": "DFLT_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "name": "DFLT_NIDEN",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -559,8 +756,8 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-10",
-                            "name": "DFLT_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "name": "DFLT_DBGEN",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -577,8 +774,8 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-11",
-                            "name": "DFLT_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "name": "DFLT_SPNIDEN",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -595,8 +792,8 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-12",
-                            "name": "DFLT_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio, CM3).",
+                            "name": "DFLT_SPIDEN",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -613,8 +810,8 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-13",
-                            "name": "DFLT_FA_CMD_EN",
-                            "description": "Controls whether DM-AP command, Set FA Mode (command code: 0x06), can be issued through after authentication.",
+                            "name": "DFLT_NBU_DBGEN",
+                            "description": "Controls debugging of NBU (radio) core.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -631,6 +828,24 @@
                         {
                             "width": 1,
                             "id": "fuse34-bit-14",
+                            "name": "DFLT_DSP_DBGEN",
+                            "description": "Controls debugging of DSP core.",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-15",
                             "name": "DFLT_ISP_CMD_EN",
                             "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
                             "values": [
@@ -648,9 +863,9 @@
                         },
                         {
                             "width": 1,
-                            "id": "fuse34-bit-15",
-                            "name": "DFLT_ME_CMD_EN",
-                            "description": "Controls whether DM-AP command, Bulk Erase (command code: 0x02), can be issued through after authentication.",
+                            "id": "fuse34-bit-16",
+                            "name": "DFLT_FA_CMD_EN",
+                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -666,9 +881,27 @@
                         },
                         {
                             "width": 1,
-                            "id": "fuse34-bit-16",
+                            "id": "fuse34-bit-17",
+                            "name": "DFLT_ME_CMD_EN",
+                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-18",
                             "name": "UUID_CHECK",
-                            "description": "UUID matching required flag.",
+                            "description": "Controls whether to enforce UUID check during Debug Credential (DC) validation. If this bit is set, then the device will only accept a Debug Credential (DC) certificate containing a UUID attribute that is an exact match to the device's UUID.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -683,7 +916,35 @@
                             ]
                         },
                         {
-                            "width": 15
+                            "width": 2,
+                            "id": "fuse34-bits-19-20",
+                            "name": "FORCE_P256",
+                            "description": "Valid only for DCFG_SOCU_L1. Must be set to value 10b, when RoTK is based on P-256. All other values (00b, 01b, 11b) indicate P-384. See Protocol Version (DCFG_VER).",
+                            "values": [
+                                {
+                                    "name": "P-384",
+                                    "value": 0,
+                                    "description": "RoTK is based on P-384."
+                                },
+                                {
+                                    "name": "P-384_0",
+                                    "value": 1,
+                                    "description": "RoTK is based on P-384."
+                                },
+                                {
+                                    "name": "P-256",
+                                    "value": 2,
+                                    "description": "RoTK is based on P-256."
+                                },
+                                {
+                                    "name": "P-384_1",
+                                    "value": 3,
+                                    "description": "RoTK is based on P-384."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 11
                         }
                     ]
                 },
@@ -693,12 +954,18 @@
                     "description": "Debug authentication configuration for level 2 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0023",
                     "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse9",
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
+                    },
                     "bitfields": [
                         {
                             "width": 1,
                             "id": "fuse35-bit-0",
                             "name": "PIN_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -716,7 +983,7 @@
                             "width": 1,
                             "id": "fuse35-bit-1",
                             "name": "PIN_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -734,7 +1001,7 @@
                             "width": 1,
                             "id": "fuse35-bit-2",
                             "name": "PIN_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -752,7 +1019,7 @@
                             "width": 1,
                             "id": "fuse35-bit-3",
                             "name": "PIN_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -770,7 +1037,7 @@
                             "width": 1,
                             "id": "fuse35-bit-4",
                             "name": "PIN_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio, CM3).",
+                            "description": "Controls debugging of NBU (radio) core.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -787,8 +1054,8 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-5",
-                            "name": "PIN_FA_CMD_EN",
-                            "description": "Controls whether DM-AP command, Set FA Mode (command code: 0x06), can be issued through after authentication.",
+                            "name": "PIN_DSP_DBGEN",
+                            "description": "Controls debugging of DSP core.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -823,8 +1090,8 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-7",
-                            "name": "PIN_ME_CMD_EN",
-                            "description": "Controls whether DM-AP command, Bulk Erase (command code: 0x02), can be issued through after authentication.",
+                            "name": "PIN_FA_CMD_EN",
+                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
                             "values": [
                                 {
                                     "name": "DAP",
@@ -841,26 +1108,26 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-8",
-                            "name": "DFLT_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "name": "PIN_ME_CMD_EN",
+                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
                             "values": [
                                 {
-                                    "name": "Disabled",
+                                    "name": "DAP",
                                     "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                                    "description": "Use debug authentication. DFLT bit must be zero."
                                 },
                                 {
-                                    "name": "Enabled",
+                                    "name": "DFLT",
                                     "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                                    "description": "Behaviour is defined by DFLT bit."
                                 }
                             ]
                         },
                         {
                             "width": 1,
                             "id": "fuse35-bit-9",
-                            "name": "DFLT_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CM33.",
+                            "name": "DFLT_NIDEN",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -877,8 +1144,8 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-10",
-                            "name": "DFLT_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "name": "DFLT_DBGEN",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -895,8 +1162,8 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-11",
-                            "name": "DFLT_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CM33.",
+                            "name": "DFLT_SPNIDEN",
+                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -913,8 +1180,8 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-12",
-                            "name": "DFLT_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio, CM3).",
+                            "name": "DFLT_SPIDEN",
+                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -931,8 +1198,8 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-13",
-                            "name": "DFLT_FA_CMD_EN",
-                            "description": "Controls whether DM-AP command, Set FA Mode (command code: 0x06), can be issued through after authentication.",
+                            "name": "DFLT_NBU_DBGEN",
+                            "description": "Controls debugging of NBU (radio) core.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -949,6 +1216,24 @@
                         {
                             "width": 1,
                             "id": "fuse35-bit-14",
+                            "name": "DFLT_DSP_DBGEN",
+                            "description": "Controls debugging of DSP core.",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-15",
                             "name": "DFLT_ISP_CMD_EN",
                             "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
                             "values": [
@@ -966,9 +1251,9 @@
                         },
                         {
                             "width": 1,
-                            "id": "fuse35-bit-15",
-                            "name": "DFLT_ME_CMD_EN",
-                            "description": "Controls whether DM-AP command, Bulk Erase (command code: 0x02), can be issued through after authentication.",
+                            "id": "fuse35-bit-16",
+                            "name": "DFLT_FA_CMD_EN",
+                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -984,9 +1269,27 @@
                         },
                         {
                             "width": 1,
-                            "id": "fuse35-bit-16",
+                            "id": "fuse35-bit-17",
+                            "name": "DFLT_ME_CMD_EN",
+                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                                },
+                                {
+                                    "name": "Enabled",
+                                    "value": 1,
+                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-18",
                             "name": "UUID_CHECK",
-                            "description": "UUID matching required flag.",
+                            "description": "Controls whether to enforce UUID check during Debug Credential (DC) validation. If this bit is set, then the device will only accept a Debug Credential (DC) certificate containing a UUID attribute that is an exact match to the device's UUID.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -1001,7 +1304,7 @@
                             ]
                         },
                         {
-                            "width": 15
+                            "width": 13
                         }
                     ]
                 }
@@ -1009,402 +1312,84 @@
         },
         {
             "group": {
-                "name": "SOC_VER_CNT",
-                "description": "Secure Software Version Counter"
+                "name": "Versions",
+                "description": "Version counters for various software components in SoC"
             },
             "registers": [
                 {
-                    "id": "fuse36_0",
-                    "name": "SOC_VER_CNT[511:480]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_1",
-                    "name": "SOC_VER_CNT[479:448]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_2",
-                    "name": "SOC_VER_CNT[447:416]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_3",
-                    "name": "SOC_VER_CNT[415:384]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_4",
-                    "name": "SOC_VER_CNT[383:352]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_5",
-                    "name": "SOC_VER_CNT[351:320]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_6",
-                    "name": "SOC_VER_CNT[319:288]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_7",
-                    "name": "SOC_VER_CNT[287:256]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_8",
-                    "name": "SOC_VER_CNT[255:224]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_9",
-                    "name": "SOC_VER_CNT[223:192]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_10",
-                    "name": "SOC_VER_CNT[191:160]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_11",
-                    "name": "SOC_VER_CNT[159:128]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_12",
-                    "name": "SOC_VER_CNT[127:96]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_13",
-                    "name": "SOC_VER_CNT[95:64]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_14",
-                    "name": "SOC_VER_CNT[63:32]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse36_15",
-                    "name": "SOC_VER_CNT[31:0]",
-                    "description": "Version counter for various software components in SoC. Each software component version counter has dedicated fuse index 0x25 to 0x29.",
-                    "index_int": "0x0024",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CM33_S_VER_CNT",
-                "description": "Secure OEM CM33 firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse37_0",
-                    "name": "CM33_S_VER_CNT[63:32]",
-                    "description": "Secure OEM CM33 firmware version counter (number of set fuse bits).",
+                    "id": "fuse37",
+                    "name": "CM33_S_VER_CNT",
+                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0025",
-                    "individual_write_lock": "none"
+                    "reg_width": 64
                 },
                 {
-                    "id": "fuse37_1",
-                    "name": "CM33_S_VER_CNT[31:0]",
-                    "description": "Secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0025",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CM33_NS_VER_CNT",
-                "description": "Non-secure OEM CM33 firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse38_0",
-                    "name": "CM33_NS_VER_CNT[255:224]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
+                    "id": "fuse38",
+                    "name": "CM33_NS_VER_CNT",
+                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0026",
-                    "individual_write_lock": "none"
+                    "reg_width": 256
                 },
                 {
-                    "id": "fuse38_1",
-                    "name": "CM33_NS_VER_CNT[223:192]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_2",
-                    "name": "CM33_NS_VER_CNT[191:160]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_3",
-                    "name": "CM33_NS_VER_CNT[159:128]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_4",
-                    "name": "CM33_NS_VER_CNT[127:96]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_5",
-                    "name": "CM33_NS_VER_CNT[95:64]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_6",
-                    "name": "CM33_NS_VER_CNT[63:32]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse38_7",
-                    "name": "CM33_NS_VER_CNT[31:0]",
-                    "description": "Non-secure OEM CM33 firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0026",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "RADIO_VER_CNT",
-                "description": "128-bit radio firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse39_0",
-                    "name": "RADIO_VER_CNT[127:96]",
-                    "description": "Radio firmware version counter (number of set fuse bits).",
+                    "id": "fuse39",
+                    "name": "RADIO_VER_CNT",
+                    "description": "Monotonic counter indicating the minimal radio firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
                     "index_int": "0x0027",
-                    "individual_write_lock": "none"
+                    "reg_width": 128
                 },
-                {
-                    "id": "fuse39_1",
-                    "name": "RADIO_VER_CNT[95:64]",
-                    "description": "Radio firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0027",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse39_2",
-                    "name": "RADIO_VER_CNT[63:32]",
-                    "description": "Radio firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0027",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse39_3",
-                    "name": "RADIO_VER_CNT[31:0]",
-                    "description": "Radio firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0027",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "SNT_VER_CNT",
-                "description": "32-bit ELE loadable firmware version counter"
-            },
-            "registers": [
                 {
                     "id": "fuse40",
                     "name": "SNT_VER_CNT",
-                    "description": "ELE loadable firmware version counter (number of set fuse bits).",
-                    "index_int": "0x0028",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CM33_S_VER_CNT_VIRTUAL",
-                "description": "64-bit secure OEM CM33 firmware version counter"
-            },
-            "registers": [
+                    "description": "Monotonic counter indicating the minimum ELE loadable firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "index_int": "0x0028"
+                },
                 {
-                    "id": "fuse42_0",
-                    "name": "CM33_S_VER_CNT_VIRTUAL[63:32]",
-                    "description": "Secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "id": "fuse41",
+                    "name": "CM33_BOOTLOADER_VER_CNT",
+                    "description": "Monotonic counter indicating the minimal CM33 bootloader version. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "index_int": "0x0029",
+                    "reg_width": 16
+                },
+                {
+                    "id": "fuse42",
+                    "name": "CM33_S_VER_CNT_VIRTUAL",
+                    "description": "Virtual counter indicating the secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_S_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
                     "index_int": "0x002A",
-                    "individual_write_lock": "none"
+                    "reg_width": 64
                 },
                 {
-                    "id": "fuse42_1",
-                    "name": "CM33_S_VER_CNT_VIRTUAL[31:0]",
-                    "description": "Secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002A",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "CM33_NS_VER_CNT_VIRTUAL",
-                "description": "265-bit non-secure OEM CM33 firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse43_0",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[255:224]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "id": "fuse43",
+                    "name": "CM33_NS_VER_CNT_VIRTUAL",
+                    "description": "Virtual counter indicating the non-secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_NS_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
                     "index_int": "0x002B",
-                    "individual_write_lock": "none"
+                    "reg_width": 256
                 },
                 {
-                    "id": "fuse43_1",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[223:192]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse43_2",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[191:160]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse43_3",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[159:128]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse43_4",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[127:96]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse43_5",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[95:64]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse43_6",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[63:32]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse43_7",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL[31:0]",
-                    "description": "Non-secure OEM CM33 firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002B",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "RADIO_VER_CNT_VIRTUAL",
-                "description": "128-bit radio firmware version counter"
-            },
-            "registers": [
-                {
-                    "id": "fuse44_0",
-                    "name": "RADIO_VER_CNT_VIRTUAL[127:96]",
-                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
+                    "id": "fuse44",
+                    "name": "RADIO_VER_CNT_VIRTUAL",
+                    "description": "virtual counter indicating the radio firmware version. The integer value of this field indicates the number of set bits in RADIO_VER_CNT and that number equals the version number.Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
                     "index_int": "0x002C",
-                    "individual_write_lock": "none"
+                    "reg_width": 128
                 },
-                {
-                    "id": "fuse44_1",
-                    "name": "RADIO_VER_CNT_VIRTUAL[95:64]",
-                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002C",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse44_2",
-                    "name": "RADIO_VER_CNT_VIRTUAL[63:32]",
-                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002C",
-                    "individual_write_lock": "none"
-                },
-                {
-                    "id": "fuse44_3",
-                    "name": "RADIO_VER_CNT_VIRTUAL[31:0]",
-                    "description": "Radio firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002C",
-                    "individual_write_lock": "none"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "SNT_VER_CNT_VIRTUAL",
-                "description": "32-bit ELE loadable firmware version counter"
-            },
-            "registers": [
                 {
                     "id": "fuse45",
                     "name": "SNT_VER_CNT_VIRTUAL",
-                    "description": "ELE loadable firmware version counter (Integer value equivalent to number of set fuse bits).",
-                    "index_int": "0x002D",
-                    "individual_write_lock": "none"
+                    "description": "Virtual counter indicating the ELE loadable firmware version. The integer value of this field indicates the number of set bits in SNT_VER_CNT and that number equals the version number.Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "index_int": "0x002D"
+                },
+                {
+                    "id": "fuse46",
+                    "name": "CM33_BOOTLOADER_VER_CNT_VIRTUAL",
+                    "description": "Virtual counter indicating the minimal version of the CM33 bootloader. Integer value equivalent to number of set fuse bits. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "index_int": "0x002E",
+                    "reg_width": 16
                 }
             ]
         },
         {
             "group": {
-                "name": "NBU_SEC_BOOT_EN",
-                "description": "NBU secure boot enable"
+                "name": "SEC_BOOT_EN",
+                "description": "Secure boot enable"
             },
             "registers": [
                 {
@@ -1412,14 +1397,13 @@
                     "name": "NBU_SEC_BOOT_EN",
                     "description": "NBU Secure Boot Enable",
                     "index_int": "0x0033",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
                             "id": "fuse51-bit-0",
                             "name": "NBU_SEC_BOOT_EN",
-                            "description": "Serial Download Disabled.",
+                            "description": "NBU secure boot enable fuse.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -1432,28 +1416,22 @@
                                     "description": "NBU secure boot is enabled."
                                 }
                             ]
+                        },
+                        {
+                            "width": 7
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "OEM_SEC_BOOT_EN",
-                "description": "OEM secure boot enable"
-            },
-            "registers": [
+                },
                 {
                     "id": "fuse53",
                     "name": "OEM_SEC_BOOT_EN",
                     "description": "OEM Secure Boot Enable",
                     "index_int": "0x0035",
-                    "individual_write_lock": "none",
                     "reg_width": 8,
                     "bitfields": [
                         {
-                            "width": 1,
-                            "id": "fuse53-bit-0",
+                            "width": 4,
+                            "id": "fuse53-bits-0-3",
                             "name": "OEM_SEC_BOOT_EN",
                             "description": "OEM Secure Boot Enable.",
                             "values": [
@@ -1464,12 +1442,37 @@
                                 },
                                 {
                                     "name": "Enabled",
-                                    "value": 1,
+                                    "value": 10,
                                     "description": "OEM secure boot is enabled."
                                 }
                             ]
+                        },
+                        {
+                            "width": 4
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SECURE_STORAGE_CNT",
+                "description": "Secure storage counter"
+            },
+            "registers": [
+                {
+                    "id": "fuse56",
+                    "name": "SECURE_STORAGE_VER_CNT",
+                    "description": "Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "index_int": "0x0038",
+                    "reg_width": 96
+                },
+                {
+                    "id": "fuse57",
+                    "name": "SECURE_STORAGE_VER_CNT_VIRTUAL",
+                    "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "index_int": "0x0039",
+                    "reg_width": 96
                 }
             ]
         }

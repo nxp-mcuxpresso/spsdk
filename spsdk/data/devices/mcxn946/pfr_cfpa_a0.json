@@ -12,19 +12,17 @@
                     "name": "HEADER",
                     "description": "Description of Header register",
                     "offset_int": "0",
-                    "reset_value_int": "0x96350000",
+                    "default_value_int": "0x96350000",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field000-bits0-7",
                             "name": "CFPA_LC_STATE",
                             "description": "CFPA_LC_STATE."
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field000-bits8-15",
                             "name": "INVERSE_VALUE",
                             "description": "Inverse Value",
@@ -32,7 +30,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0x9635",
                             "access": "RO",
                             "id": "field000-bits16-31",
                             "name": "HEADER",
@@ -45,19 +42,17 @@
                     "name": "CFPA_PAGE_VERSION",
                     "description": "Description of CFPA_PAGE_VERSION register",
                     "offset_int": "0x0004",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field004-bits0-23",
                             "name": "CFPA_PAGE_VERSION",
                             "description": "CFPA page version"
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field004-bits24-25",
                             "name": "IMG_UPD",
                             "description": "Image_updated",
@@ -89,11 +84,9 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field004-bits27-29",
                             "name": "CMPA_UPD",
                             "description": "CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3)  LC state.",
-                            "advanced": true,
                             "values": [
                                 {
                                     "name": "NO_ACTION",
@@ -142,7 +135,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field004-bit31",
                             "name": "DICE_UPD",
                             "description": "Update DICE certificate during next boot.",
@@ -166,7 +158,7 @@
                     "name": "Secure_FW_Version",
                     "description": "Description of Secure_FW_Version register",
                     "offset_int": "0x0008",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -174,7 +166,7 @@
                     "name": "NS_FW_Version",
                     "description": "Description of NS_FW_Version register",
                     "offset_int": "0x000C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -182,7 +174,7 @@
                     "name": "Recovery_FW_Version",
                     "description": "Description of Recovery_FW_Version register",
                     "offset_int": "0x0010",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -190,12 +182,11 @@
                     "name": "SECBOOT_FLAGS",
                     "description": "Description of SECBOOT_FLAGS register",
                     "offset_int": "0x0014",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field014-bits0-1",
                             "name": "RoTK0_EN",
                             "description": "Root of Trust Key 0 Enable",
@@ -224,7 +215,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field014-bits2-3",
                             "name": "RoTK1_EN",
                             "description": "Root of Trust Key 1 Enable",
@@ -253,7 +243,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field014-bits4-5",
                             "name": "RoTK2_EN",
                             "description": "Root of Trust Key 2 Enable",
@@ -282,7 +271,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field014-bits6-7",
                             "name": "RoTK3_EN",
                             "description": "Root of Trust Key 3 Enable",
@@ -314,7 +302,6 @@
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field014-bits28-31",
                             "name": "OEM_RETURN_ERASE_DONE",
                             "description": "OEM_RETURN_ERASE_DONE"
@@ -326,12 +313,11 @@
                     "name": "IMAGE_KEY_REVOKE",
                     "description": "Image Key Revoke",
                     "offset_int": "0x0018",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field018-bits0-23",
                             "name": "IMAGE_KEY_REVOKE_ID",
                             "description": "Image Key Revocation ID (Monotonic counter)"
@@ -346,7 +332,7 @@
                     "name": "LP_VECTOR_ADDR",
                     "description": "Vector address when waking from power-down and deep power down states.",
                     "offset_int": "0x001C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -354,19 +340,17 @@
                     "name": "DBG_REVOKE_VU",
                     "description": "Debug Revoke Vendor Usage",
                     "offset_int": "0x0020",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field020-bits0-15",
                             "name": "VENDOR_USAGE",
                             "description": "Debug Vendor Usage"
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field020-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "Inverse Value",
@@ -379,12 +363,11 @@
                     "name": "DCFG_CC_SOCU_NS_PIN",
                     "description": "Device Configuration Credential Constraints for SoC specific Use Pinned",
                     "offset_int": "0x0024",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit0",
                             "name": "NIDEN",
                             "description": "Non-secure Non-invasive Debug Enable",
@@ -403,7 +386,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit1",
                             "name": "DBGEN",
                             "description": "Non-secure Debug Enable",
@@ -422,7 +404,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit2",
                             "name": "SPNIDEN",
                             "description": "Secure Non-invasive Debug Enable",
@@ -441,7 +422,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit3",
                             "name": "SPIDEN",
                             "description": "Secure Invasive Debug Enable",
@@ -463,7 +443,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit5",
                             "name": "DSP_DBGEN",
                             "description": "DSP Debug Enable",
@@ -482,7 +461,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit6",
                             "name": "ISP_CMD_EN",
                             "description": "ISP Boot Command Enable",
@@ -501,7 +479,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit7",
                             "name": "FA_CMD_EN",
                             "description": "FA Command Enable",
@@ -520,7 +497,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit8",
                             "name": "ME_CMD_EN",
                             "description": "Flash Mass Erase Command Enable",
@@ -539,7 +515,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit9",
                             "name": "CPU1_NIDEN",
                             "description": "Second CM33 debug enable",
@@ -558,7 +533,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit10",
                             "name": "CPU1_DBGEN",
                             "description": "Second CM33 debug",
@@ -580,7 +554,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field024-bit15",
                             "name": "UUID_CHECK",
                             "description": "UUID Check",
@@ -599,7 +572,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field024-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "Inverse Value of Bits [15:0]",
@@ -612,12 +584,11 @@
                     "name": "DCFG_CC_SOCU_NS_DFLT",
                     "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter",
                     "offset_int": "0x0028",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit0",
                             "name": "NIDEN",
                             "description": "Non-secure Non-invasive Debug Fixed State",
@@ -636,7 +607,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit1",
                             "name": "DBGEN",
                             "description": "Non-secure Debug Fixed State",
@@ -655,7 +625,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit2",
                             "name": "SPNIDEN",
                             "description": "Secure Non-invasive Debug Fixed State",
@@ -674,7 +643,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit3",
                             "name": "SPIDEN",
                             "description": "Secure Invasive Debug Fixed State",
@@ -696,7 +664,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit5",
                             "name": "DSP_DBGEN",
                             "description": "DSP Debug Fixed State",
@@ -715,7 +682,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit6",
                             "name": "ISP_CMD_EN",
                             "description": "ISP Boot Command Fixed State",
@@ -734,7 +700,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit7",
                             "name": "FA_CMD_EN",
                             "description": "FA Command Fixed State",
@@ -753,7 +718,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit8",
                             "name": "ME_CMD_EN",
                             "description": "Flash Mass Erase Command Fixed State",
@@ -772,7 +736,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit9",
                             "name": "CPU1_NIDEN",
                             "description": "Second CM33 debug enable",
@@ -791,7 +754,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field028-bit10",
                             "name": "CPU1_DBGEN",
                             "description": "Second CM33 debug",
@@ -813,7 +775,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field028-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "Inverse Value",
@@ -827,7 +788,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x002C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -836,7 +797,7 @@
                     "description": "Erase count for internal Prince region 0 (Monotonic counter)",
                     "offset_int": "0x0030",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -845,7 +806,7 @@
                     "description": "Erase count for internal Prince region 1 (Monotonic counter)",
                     "offset_int": "0x0034",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -854,7 +815,7 @@
                     "description": "Erase count for internal Prince region 2 (Monotonic counter)",
                     "offset_int": "0x0038",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -863,7 +824,7 @@
                     "description": "Erase count for internal Prince region 3 (Monotonic counter)",
                     "offset_int": "0x003C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -872,7 +833,7 @@
                     "description": "Erase count for external Prince region 0 (Monotonic counter)",
                     "offset_int": "0x0040",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -881,7 +842,7 @@
                     "description": "Erase count for external Prince region 1 (Monotonic counter)",
                     "offset_int": "0x0044",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -890,7 +851,7 @@
                     "description": "Erase count for external Prince region 2 (Monotonic counter)",
                     "offset_int": "0x0048",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -899,7 +860,7 @@
                     "description": "Erase count for external Prince region 3 (Monotonic counter)",
                     "offset_int": "0x004C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -908,7 +869,7 @@
                     "description": "Erase count for external Prince region 4 (Monotonic counter)",
                     "offset_int": "0x0050",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -917,7 +878,7 @@
                     "description": "Erase count for external Prince region 5 (Monotonic counter)",
                     "offset_int": "0x0054",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -926,7 +887,7 @@
                     "description": "Erase count for external Prince region 6 (Monotonic counter)",
                     "offset_int": "0x0058",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -935,7 +896,7 @@
                     "description": "Erase count for external Prince region 7 (Monotonic counter)",
                     "offset_int": "0x005C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -944,7 +905,7 @@
                     "description": "Authentication failure counter during boot, SB3, debug authentication (Monotonic counter)",
                     "offset_int": "0x0060",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -953,7 +914,7 @@
                     "description": "Tamper event counter (ITRC reset, WDT reset, WDT reset, GDET reset, Tamper pin) (Monotonic counter)",
                     "offset_int": "0x0064",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -961,7 +922,7 @@
                     "name": "ERR_CFG_FAIL_COUNT",
                     "description": "Configuration check failure counter during CMPA, CFPA, ROM patch, TRNG, PUF start (Monotonic counter)",
                     "offset_int": "0x0068",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -969,7 +930,7 @@
                     "name": "ERR_CONT3",
                     "description": "Reserved error counter (Monotonic counter)",
                     "offset_int": "0x006C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -977,7 +938,7 @@
                     "name": "ERR_CONT4",
                     "description": "Reserved error counter (Monotonic counter)",
                     "offset_int": "0x0070",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -985,7 +946,7 @@
                     "name": "ERR_CONT5",
                     "description": "Reserved error counter (Monotonic counter)",
                     "offset_int": "0x0074",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -993,7 +954,7 @@
                     "name": "ERR_CONT6",
                     "description": "Reserved error counter (Monotonic counter)",
                     "offset_int": "0x0078",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1001,7 +962,7 @@
                     "name": "ERR_CONT7",
                     "description": "Reserved error counter (Monotonic counter)",
                     "offset_int": "0x007C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1009,7 +970,7 @@
                     "name": "MCTR_CUST_CTR0",
                     "description": "Customer defined Monotonic counter 0",
                     "offset_int": "0x0080",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1017,7 +978,7 @@
                     "name": "MCTR_CUST_CTR1",
                     "description": "Customer defined Monotonic counter 1",
                     "offset_int": "0x0084",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1025,7 +986,7 @@
                     "name": "MCTR_CUST_CTR2",
                     "description": "Customer defined Monotonic counter 2",
                     "offset_int": "0x0088",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1033,7 +994,7 @@
                     "name": "MCTR_CUST_CTR3",
                     "description": "Customer defined Monotonic counter 3",
                     "offset_int": "0x008C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1041,7 +1002,7 @@
                     "name": "MCTR_CUST_CTR4",
                     "description": "Customer defined Monotonic counter 4",
                     "offset_int": "0x0090",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1049,7 +1010,7 @@
                     "name": "MCTR_CUST_CTR5",
                     "description": "Customer defined Monotonic counter 5",
                     "offset_int": "0x0094",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1057,7 +1018,7 @@
                     "name": "MCTR_CUST_CTR6",
                     "description": "Customer defined Monotonic counter 6",
                     "offset_int": "0x0098",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1065,7 +1026,7 @@
                     "name": "MCTR_CUST_CTR7",
                     "description": "Customer defined Monotonic counter 7",
                     "offset_int": "0x009C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1073,7 +1034,7 @@
                     "name": "MFLAG_CUST_0",
                     "description": "Customer defined Monotonic flags 0 (once a bit is set the newer version of the page should have the flag set.)",
                     "offset_int": "0x00A0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1081,7 +1042,7 @@
                     "name": "MFLAG_CUST_1",
                     "description": "Customer defined Monotonic flags 1",
                     "offset_int": "0x00A4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1089,7 +1050,7 @@
                     "name": "MFLAG_CUST_2",
                     "description": "Customer defined Monotonic flags 2",
                     "offset_int": "0x00A8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1097,7 +1058,7 @@
                     "name": "MFLAG_CUST_3",
                     "description": "Customer defined Monotonic flags 3",
                     "offset_int": "0x00AC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1105,7 +1066,7 @@
                     "name": "MFLAG_CUST_4",
                     "description": "Customer defined Monotonic flags 4",
                     "offset_int": "0x00B0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1113,7 +1074,7 @@
                     "name": "MFLAG_CUST_5",
                     "description": "Customer defined Monotonic flags 5",
                     "offset_int": "0x00B4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1121,7 +1082,7 @@
                     "name": "MFLAG_CUST_6",
                     "description": "Customer defined Monotonic flags 6",
                     "offset_int": "0x00B8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1129,7 +1090,7 @@
                     "name": "MFLAG_CUST_7",
                     "description": "Customer defined Monotonic flags 7",
                     "offset_int": "0x00BC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1137,12 +1098,11 @@
                     "name": "FLASH_ACL_0_7",
                     "description": "Description of FLASH_ACL_0_7 register",
                     "offset_int": "0x00C0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits0-2",
                             "name": "ACL_SEC_0",
                             "description": "Access control for flash sector."
@@ -1152,7 +1112,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits4-6",
                             "name": "ACL_SEC_1",
                             "description": "Access control for flash sector."
@@ -1162,7 +1121,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits8-10",
                             "name": "ACL_SEC_2",
                             "description": "Access control for flash sector."
@@ -1172,7 +1130,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits12-14",
                             "name": "ACL_SEC_3",
                             "description": "Access control for flash sector."
@@ -1182,7 +1139,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits16-18",
                             "name": "ACL_SEC_4",
                             "description": "Access control for flash sector."
@@ -1192,7 +1148,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits20-22",
                             "name": "ACL_SEC_5",
                             "description": "Access control for flash sector."
@@ -1202,7 +1157,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits24-26",
                             "name": "ACL_SEC_6",
                             "description": "Access control for flash sector."
@@ -1212,7 +1166,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits28-30",
                             "name": "ACL_SEC_7",
                             "description": "Access control for flash sector."
@@ -1227,12 +1180,11 @@
                     "name": "FLASH_ACL_8_15",
                     "description": "Description of FLASH_ACL_8_15 register",
                     "offset_int": "0x00C4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits0-2",
                             "name": "ACL_SEC_8",
                             "description": "Access control for flash sector."
@@ -1242,7 +1194,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits4-6",
                             "name": "ACL_SEC_9",
                             "description": "Access control for flash sector."
@@ -1252,7 +1203,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits8-10",
                             "name": "ACL_SEC_10",
                             "description": "Access control for flash sector."
@@ -1262,7 +1212,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits12-14",
                             "name": "ACL_SEC_11",
                             "description": "Access control for flash sector."
@@ -1272,7 +1221,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits16-18",
                             "name": "ACL_SEC_12",
                             "description": "Access control for flash sector."
@@ -1282,7 +1230,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits20-22",
                             "name": "ACL_SEC_13",
                             "description": "Access control for flash sector."
@@ -1292,7 +1239,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits24-26",
                             "name": "ACL_SEC_14",
                             "description": "Access control for flash sector."
@@ -1302,7 +1248,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits28-30",
                             "name": "ACL_SEC_15",
                             "description": "Access control for flash sector."
@@ -1317,12 +1262,11 @@
                     "name": "FLASH_ACL_16_23",
                     "description": "Description of FLASH_ACL_16_23 register",
                     "offset_int": "0x00C8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits0-2",
                             "name": "ACL_SEC_16",
                             "description": "Access control for flash sector."
@@ -1332,7 +1276,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits4-6",
                             "name": "ACL_SEC_17",
                             "description": "Access control for flash sector."
@@ -1342,7 +1285,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits8-10",
                             "name": "ACL_SEC_18",
                             "description": "Access control for flash sector."
@@ -1352,7 +1294,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits12-14",
                             "name": "ACL_SEC_19",
                             "description": "Access control for flash sector."
@@ -1362,7 +1303,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits16-18",
                             "name": "ACL_SEC_20",
                             "description": "Access control for flash sector."
@@ -1372,7 +1312,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits20-22",
                             "name": "ACL_SEC_21",
                             "description": "Access control for flash sector."
@@ -1382,7 +1321,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits24-26",
                             "name": "ACL_SEC_22",
                             "description": "Access control for flash sector."
@@ -1392,7 +1330,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits28-30",
                             "name": "ACL_SEC_23",
                             "description": "Access control for flash sector."
@@ -1407,12 +1344,11 @@
                     "name": "FLASH_ACL_24_31",
                     "description": "Description of FLASH_ACL_24_31 register",
                     "offset_int": "0x00CC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits0-2",
                             "name": "ACL_SEC_24",
                             "description": "Access control for flash sector."
@@ -1422,7 +1358,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits4-6",
                             "name": "ACL_SEC_25",
                             "description": "Access control for flash sector."
@@ -1432,7 +1367,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits8-10",
                             "name": "ACL_SEC_26",
                             "description": "Access control for flash sector."
@@ -1442,7 +1376,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits12-14",
                             "name": "ACL_SEC_27",
                             "description": "Access control for flash sector."
@@ -1452,7 +1385,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits16-18",
                             "name": "ACL_SEC_28",
                             "description": "Access control for flash sector."
@@ -1462,7 +1394,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits20-22",
                             "name": "ACL_SEC_29",
                             "description": "Access control for flash sector."
@@ -1472,7 +1403,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits24-26",
                             "name": "ACL_SEC_30",
                             "description": "Access control for flash sector."
@@ -1482,7 +1412,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits28-30",
                             "name": "ACL_SEC_31",
                             "description": "Access control for flash sector."
@@ -1497,12 +1426,11 @@
                     "name": "FLASH_ACL_32_39",
                     "description": "Description of FLASH_ACL_32_39 register",
                     "offset_int": "0x00D0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits0-2",
                             "name": "ACL_SEC_32",
                             "description": "Access control for flash sector."
@@ -1512,7 +1440,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits4-6",
                             "name": "ACL_SEC_33",
                             "description": "Access control for flash sector."
@@ -1522,7 +1449,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits8-10",
                             "name": "ACL_SEC_34",
                             "description": "Access control for flash sector."
@@ -1532,7 +1458,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits12-14",
                             "name": "ACL_SEC_35",
                             "description": "Access control for flash sector."
@@ -1542,7 +1467,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits16-18",
                             "name": "ACL_SEC_36",
                             "description": "Access control for flash sector."
@@ -1552,7 +1476,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits20-22",
                             "name": "ACL_SEC_37",
                             "description": "Access control for flash sector."
@@ -1562,7 +1485,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits24-26",
                             "name": "ACL_SEC_38",
                             "description": "Access control for flash sector."
@@ -1572,7 +1494,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits28-30",
                             "name": "ACL_SEC_39",
                             "description": "Access control for flash sector."
@@ -1587,12 +1508,11 @@
                     "name": "FLASH_ACL_40_47",
                     "description": "Description of FLASH_ACL_40_47 register",
                     "offset_int": "0x00D4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits0-2",
                             "name": "ACL_SEC_40",
                             "description": "Access control for flash sector."
@@ -1602,7 +1522,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits4-6",
                             "name": "ACL_SEC_41",
                             "description": "Access control for flash sector."
@@ -1612,7 +1531,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits8-10",
                             "name": "ACL_SEC_42",
                             "description": "Access control for flash sector."
@@ -1622,7 +1540,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits12-14",
                             "name": "ACL_SEC_43",
                             "description": "Access control for flash sector."
@@ -1632,7 +1549,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits16-18",
                             "name": "ACL_SEC_44",
                             "description": "Access control for flash sector."
@@ -1642,7 +1558,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits20-22",
                             "name": "ACL_SEC_45",
                             "description": "Access control for flash sector."
@@ -1652,7 +1567,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits24-26",
                             "name": "ACL_SEC_46",
                             "description": "Access control for flash sector."
@@ -1662,7 +1576,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits28-30",
                             "name": "ACL_SEC_47",
                             "description": "Access control for flash sector."
@@ -1677,12 +1590,11 @@
                     "name": "FLASH_ACL_48_55",
                     "description": "Description of FLASH_ACL_48_55 register",
                     "offset_int": "0x00D8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits0-2",
                             "name": "ACL_SEC_48",
                             "description": "Access control for flash sector."
@@ -1692,7 +1604,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits4-6",
                             "name": "ACL_SEC_49",
                             "description": "Access control for flash sector."
@@ -1702,7 +1613,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits8-10",
                             "name": "ACL_SEC_50",
                             "description": "Access control for flash sector."
@@ -1712,7 +1622,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits12-14",
                             "name": "ACL_SEC_51",
                             "description": "Access control for flash sector."
@@ -1722,7 +1631,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits16-18",
                             "name": "ACL_SEC_52",
                             "description": "Access control for flash sector."
@@ -1732,7 +1640,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits20-22",
                             "name": "ACL_SEC_53",
                             "description": "Access control for flash sector."
@@ -1742,7 +1649,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits24-26",
                             "name": "ACL_SEC_54",
                             "description": "Access control for flash sector."
@@ -1752,7 +1658,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits28-30",
                             "name": "ACL_SEC_55",
                             "description": "Access control for flash sector."
@@ -1767,12 +1672,11 @@
                     "name": "FLASH_ACL_56_63",
                     "description": "Description of FLASH_ACL_55_63 register",
                     "offset_int": "0x00DC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits0-2",
                             "name": "ACL_SEC_56",
                             "description": "Access control for flash sector."
@@ -1782,7 +1686,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits4-6",
                             "name": "ACL_SEC_57",
                             "description": "Access control for flash sector."
@@ -1792,7 +1695,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits8-10",
                             "name": "ACL_SEC_58",
                             "description": "Access control for flash sector."
@@ -1802,7 +1704,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits12-14",
                             "name": "ACL_SEC_59",
                             "description": "Access control for flash sector."
@@ -1812,7 +1713,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits16-18",
                             "name": "ACL_SEC_60",
                             "description": "Access control for flash sector."
@@ -1822,7 +1722,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits20-22",
                             "name": "ACL_SEC_61",
                             "description": "Access control for flash sector."
@@ -1832,7 +1731,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits24-26",
                             "name": "ACL_SEC_62",
                             "description": "Access control for flash sector."
@@ -1842,7 +1740,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits28-30",
                             "name": "ACL_SEC_63",
                             "description": "Access control for flash sector."
@@ -1857,7 +1754,7 @@
                     "name": "SBL_IMG0_CMAC0",
                     "description": "Image 0 CMAC 0",
                     "offset_int": "0x00E0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1865,7 +1762,7 @@
                     "name": "SBL_IMG0_CMAC1",
                     "description": "Image 0 CMAC 1",
                     "offset_int": "0x00E4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1873,7 +1770,7 @@
                     "name": "SBL_IMG0_CMAC2",
                     "description": "Image 0 CMAC 2",
                     "offset_int": "0x00E8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1881,7 +1778,7 @@
                     "name": "SBL_IMG0_CMAC3",
                     "description": "Image 0 CMAC 3",
                     "offset_int": "0x00EC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1890,7 +1787,7 @@
                     "description": "Image 1 CMAC 0",
                     "offset_int": "0x00F0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1899,7 +1796,7 @@
                     "description": "Image 1 CMAC 1",
                     "offset_int": "0x00F4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1908,7 +1805,7 @@
                     "description": "Image 1 CMAC 2",
                     "offset_int": "0x00F8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1917,7 +1814,7 @@
                     "description": "Image 1 CMAC 3",
                     "offset_int": "0x00FC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1925,7 +1822,7 @@
                     "name": "DICE_Certificate",
                     "description": "DICE Certificate register",
                     "offset_int": "0x0100",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -1942,7 +1839,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0104",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1951,7 +1848,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0108",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1960,7 +1857,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x010C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1969,7 +1866,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0110",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1978,7 +1875,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0114",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1987,7 +1884,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0118",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1996,7 +1893,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x011C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2005,7 +1902,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0120",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2014,7 +1911,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0124",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2023,7 +1920,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0128",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2032,7 +1929,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x012C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2041,7 +1938,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0130",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2050,7 +1947,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0134",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2059,7 +1956,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0138",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2068,7 +1965,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x013C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2077,7 +1974,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0140",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2086,7 +1983,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0144",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2095,7 +1992,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0148",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2104,7 +2001,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x014C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2113,7 +2010,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0150",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2122,7 +2019,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0154",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2131,7 +2028,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0158",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2140,7 +2037,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x015C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2149,7 +2046,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0160",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2158,7 +2055,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0164",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2167,7 +2064,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0168",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2176,7 +2073,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x016C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2185,7 +2082,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0170",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2194,7 +2091,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0174",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2203,7 +2100,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0178",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2212,7 +2109,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x017C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2221,7 +2118,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0180",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2230,7 +2127,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0184",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2239,7 +2136,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0188",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2248,7 +2145,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x018C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2256,7 +2153,7 @@
                     "name": "IPED_GCM_AAD_CTX0",
                     "description": "Additional Authentication Data for IPED context 0",
                     "offset_int": "0x0190",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2264,7 +2161,7 @@
                     "name": "IPED_GCM_AAD_CTX1",
                     "description": "Additional Authentication Data for IPED context 1",
                     "offset_int": "0x0194",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2272,7 +2169,7 @@
                     "name": "IPED_GCM_AAD_CTX2",
                     "description": "Additional Authentication Data for IPED context 2",
                     "offset_int": "0x0198",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2280,7 +2177,7 @@
                     "name": "IPED_GCM_AAD_CTX3",
                     "description": "Additional Authentication Data for IPED context 3",
                     "offset_int": "0x019C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2288,7 +2185,7 @@
                     "name": "IPED_GCM_AAD_CTX4",
                     "description": "Additional Authentication Data for IPED context 4",
                     "offset_int": "0x01A0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2296,7 +2193,7 @@
                     "name": "IPED_GCM_AAD_CTX5",
                     "description": "Additional Authentication Data for IPED context 5",
                     "offset_int": "0x01A4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2304,7 +2201,7 @@
                     "name": "IPED_GCM_AAD_CTX6",
                     "description": "Additional Authentication Data for IPED context 6",
                     "offset_int": "0x01A8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2312,7 +2209,7 @@
                     "name": "IPED_GCM_AAD_CTX7",
                     "description": "Additional Authentication Data for IPED context 7",
                     "offset_int": "0x01AC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -2329,7 +2226,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2338,7 +2235,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2347,7 +2244,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2356,7 +2253,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01BC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2365,7 +2262,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2374,7 +2271,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2383,7 +2280,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2392,7 +2289,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01CC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2401,7 +2298,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2410,7 +2307,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2419,7 +2316,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2428,7 +2325,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01DC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2437,7 +2334,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2446,7 +2343,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2455,7 +2352,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -2472,7 +2369,7 @@
                     "description": "CFPA _CRC[31:0] used during low-power wake.",
                     "offset_int": "0x01EC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2481,7 +2378,7 @@
                     "description": "CFPA0 CMAC 0",
                     "offset_int": "0x01F0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2490,7 +2387,7 @@
                     "description": "CFPA0 CMAC 1",
                     "offset_int": "0x01F4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2499,7 +2396,7 @@
                     "description": "CFPA0 CMAC 2",
                     "offset_int": "0x01F8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2508,7 +2405,7 @@
                     "description": "CFPA0 CMAC 3",
                     "offset_int": "0x01FC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]

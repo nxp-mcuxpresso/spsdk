@@ -8,59 +8,84 @@
             },
             "registers": [
                 {
-                    "id": "BackdoorKey",
+                    "id": "field000",
                     "name": "BACKDOOR_KEY",
-                    "description": "Backdoor key bytes",
-                    "offset_int": "0x000",
-                    "reset_value_int": "0xFFFFFFFFFFFFFFFF",
-                    "reg_width": 64
+                    "offset_int": "0",
+                    "default_value_int": "0xFFFFFFFFFFFFFFFF",
+                    "reg_width": 64,
+                    "description": "Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command and Unsecuring the Chip Using Backdoor Key Access."
                 },
                 {
-                    "id": "FlashProtection",
-                    "name": "FLASH_PROTECTION",
-                    "description": "Flash protection bytes",
+                    "id": "field008",
+                    "name": "FPROT",
+                    "description": "Program flash protection bytes. Refer to the description of the Program Flash Protection Registers (FPROT0-3).",
                     "offset_int": "0x008",
-                    "reset_value_int": "0xFFFFFFFF",
-                    "reg_width": 32
+                    "default_value_int": "0xFFFFFFFF",
+                    "reg_width": 32,
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field008-bits0-7",
+                            "name": "FPROT3",
+                            "description": "Program Flash Protection Registers (FPROT3)"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field008-bits8-15",
+                            "name": "FPROT2",
+                            "description": "Program Flash Protection Registers (FPROT2)"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field008-bits16-23",
+                            "name": "FPROT1",
+                            "description": "Program Flash Protection Registers (FPROT1)"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field008-bits24-31",
+                            "name": "FPROT0",
+                            "description": "Program Flash Protection Registers (FPROT0)"
+                        }
+                    ]
                 },
                 {
                     "id": "field00C",
                     "name": "LIFECYCLE",
                     "description": "DSA Secure Lifecycle state",
                     "offset_int": "0x00C",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFE",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0xFE",
                             "id": "field00C-bits0-7",
                             "name": "LIFECYCLE_STATE",
                             "description": "DSA Secure Lifecycle state",
                             "values": [
                                 {
                                     "name": "OEM_OPEN_ROP0",
-                                    "value": "0xFE",
+                                    "value": 254,
                                     "description": "Most permissive state - full ISP command set available in all conditions"
                                 },
                                 {
                                     "name": "OEM_CLOSED_ROP1",
-                                    "value": "0x90",
+                                    "value": 144,
                                     "description": "Moderate security - partial ISP commands on normal boot, full commands via ROM_API"
                                 },
                                 {
                                     "name": "OEM_CLOSED_ROP2",
-                                    "value": "0x95",
+                                    "value": 149,
                                     "description": "Higher security - no ISP commands on normal boot, partial commands via ROM_API or invalid image"
                                 },
                                 {
                                     "name": "OEM_CLOSED_ROP3",
-                                    "value": "0x9B",
+                                    "value": 155,
                                     "description": "Very high security - no ISP commands except ReceiveSBFile via ROM_API for secure devices only"
                                 },
                                 {
                                     "name": "OEM_CLOSED_NO_RETURN",
-                                    "value": "0x6B",
+                                    "value": 107,
                                     "description": "Maximum security - no ISP commands available in any condition, device cannot be reprogrammed"
                                 }
                             ]
@@ -68,47 +93,53 @@
                     ]
                 },
                 {
-                    "id": "OptionByte",
+                    "id": "field00D",
                     "name": "OPTION_BYTE",
-                    "description": "Flash configuration options",
+                    "description": "Flash nonvolatile option byte. Refer to the description of the Flash Option Register (FOPT).",
                     "offset_int": "0x00D",
-                    "reset_value_int": "0xFF",
+                    "default_value_int": "0xFF",
                     "reg_width": 8,
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0x1",
-                            "bit_offset": 0,
                             "id": "PowerMode",
                             "name": "POWER_MODE",
                             "description": "Controls which power mode register takes effect",
                             "values": [
                                 {
                                     "name": "SIM_PWRMODE",
-                                    "value": "0x1",
+                                    "value": 1,
                                     "description": "Writing SIM_PWRMODE register takes effect, writing SIM_PWR register doesn't take effect"
                                 },
                                 {
                                     "name": "SIM_PWR",
-                                    "value": "0x0",
+                                    "value": 0,
                                     "description": "Writing SIM_PWRMODE register doesn't take effect, writing SIM_PWR register takes effect"
                                 }
                             ]
                         },
                         {
-                            "width": 7,
-                            "name": "RESERVED_BITS"
+                            "width": 7
                         }
                     ]
                 },
                 {
                     "id": "Reserved00E",
-                    "name": "RESERVED_00E_00F",
-                    "description": "These fields are reserved for internal use",
+                    "name": "Reserved 0x00E",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00E",
                     "is_reserved": true,
-                    "reset_value_int": "0xFFFF",
-                    "reg_width": 16
+                    "default_value_int": "0xFF",
+                    "reg_width": 8
+                },
+                {
+                    "id": "Reserved00F",
+                    "name": "Reserved 0x00F",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F",
+                    "is_reserved": true,
+                    "default_value_int": "0xFF",
+                    "reg_width": 8
                 }
             ]
         }

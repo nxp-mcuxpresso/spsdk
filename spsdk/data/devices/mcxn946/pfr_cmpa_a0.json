@@ -12,12 +12,11 @@
                     "name": "BOOT_CFG",
                     "description": "Boot Configuration",
                     "offset_int": "0",
-                    "reset_value_int": "0x59630000",
+                    "default_value_int": "0x59630000",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field000-bits0-1",
                             "name": "DEFAULT_BOOT_SOURCE",
                             "description": "Primary boot source",
@@ -49,7 +48,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field000-bits4-6",
                             "name": "ISP_BOOT_INTERFACE",
                             "description": "ISP boot interface",
@@ -101,7 +99,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field000-bits8-9",
                             "name": "RECOVERY_BOOT_SOURCE",
                             "description": "Recovery boot source",
@@ -133,7 +130,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field000-bits12-13",
                             "name": "CORE_CLOCK",
                             "description": "Core Clock",
@@ -165,7 +161,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0x5963",
                             "access": "RO",
                             "id": "field000-bits16-31",
                             "name": "HEADER",
@@ -178,19 +173,17 @@
                     "name": "FLASH_CFG",
                     "description": "Flash Configuration",
                     "offset_int": "0x0004",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 5,
-                            "reset_value_int": "0",
                             "id": "field004-bits0-4",
                             "name": "FLASH_REMAP_SZ",
                             "description": "Flash remap size.This field should be written to remap field in flash."
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field004-bits5-7",
                             "name": "OEM_BANK1_IFR0_PROT",
                             "description": "Defines protection for Bank1_IFR0.Set RWXL = 1010 when jumping to Bank1_IFR0 address.",
@@ -219,7 +212,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field004-bits8-9",
                             "name": "ISP_FT_ENTRY",
                             "description": "Authentication failure",
@@ -248,7 +240,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field004-bits10-11",
                             "name": "ISP_PIN_ENTRY",
                             "description": "Disable ISP mode entry  through pin assertion.",
@@ -277,7 +268,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field004-bits12-13",
                             "name": "ISP_DM_ENTRY",
                             "description": "Disable ISP mode entry through debug mailbox command.",
@@ -306,7 +296,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field004-bits14-15",
                             "name": "ISP_API_ENTRY",
                             "description": "Disable ISP mode entry through ROM API call. ISP mode can be entered through ROM API invocation",
@@ -343,26 +332,23 @@
                     "name": "BOOT_LED_STATUS",
                     "description": "BOOT_LED_STATUS",
                     "offset_int": "0x0008",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field008-bits0-7",
                             "name": "REC_BOOT_LED",
                             "description": "Assert on recovery boot. ROM drives the GPIO pin identified by this field whenever primary boot fails and fall through to recovery boot source."
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field008-bits8-15",
                             "name": "ISP_BOOT_LED",
                             "description": "Assert on ISP fall through. ROM drives the GPIO pin identified by this field whenever primary boot fails and execution falls through to ISP mode."
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field008-bits16-23",
                             "name": "BOOT_FAIL_LED",
                             "description": "Assert on fatal errors during boot. ROM toggles the GPIO pin identified by this field whenever primary boot fails due to fatal errors before locking-up/reset. Note, use QUICK_SET_/CLR_GPIOx field to set the default level of pin."
@@ -377,19 +363,17 @@
                     "name": "BOOT_TIMERS",
                     "description": "BOOT_TIMERS",
                     "offset_int": "0x000C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field00C-bits0-15",
                             "name": "POWERDOWN_TIMEOUT_SECS",
                             "description": "Powerdown timeout:Timeout value in seconds. When a non-zero value is programmed in this field ROM uses it as idle timeout value to enter power-down state to conserve power."
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field00C-bits16-31",
                             "name": "WDOG_TIMEOUT_COUNT",
                             "description": "WDOG timeout:Upper 16 bits of 24-bit count value in WWDT_TC register Timeout value in seconds. When a non-zero value is programmed in this field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user code."
@@ -401,12 +385,11 @@
                     "name": "FLEXSPI_BOOT_CFG0",
                     "description": "FLEXSPI_BOOT_CFG0",
                     "offset_int": "0x0010",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field010-bit0",
                             "name": "FLEXSPI_AUTO_PROBE",
                             "description": "Quad/Octal-SPI flash auto probe feature enable",
@@ -425,7 +408,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field010-bits1-3",
                             "name": "FLEXSPI_PROBE_TYPE",
                             "description": "Quad/Octal-SPI flash probe type.",
@@ -474,7 +456,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field010-bits4-6",
                             "name": "FLEXSPI_FLASH_TYPE",
                             "description": "Define typical Serial NOR Flash types",
@@ -523,14 +504,12 @@
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field010-bits7-10",
                             "name": "FLEXSPI_DUMMY_CYCLES",
                             "description": "Quad/Octal-SPI dummy cycles for read command."
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field010-bits11-13",
                             "name": "FLEXSPI_FREQUENCY",
                             "description": "Q/O-SPI flash interface frequency.",
@@ -579,7 +558,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field010-bit14",
                             "name": "FLEXSPI_RESET_ENABLE",
                             "description": "Use QSPI_RESET_PIN to reset the flash device.",
@@ -598,21 +576,18 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field010-bits15-17",
                             "name": "FLEXSPI_RESET_GPIO_PORT",
                             "description": "GPIO  port number to use for O/QSPI reset function"
                         },
                         {
                             "width": 5,
-                            "reset_value_int": "0",
                             "id": "field010-bits18-22",
                             "name": "FLEXSPI_RESET_GPIO_PIN",
                             "description": "GPIO  pin number to use for O/QSPI reset function"
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field010-bits23-24",
                             "name": "FLEXSPI_HOLD_TIME",
                             "description": "Wait time before access to Serial Flash.",
@@ -641,7 +616,6 @@
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field010-bits25-28",
                             "name": "FLEXSPI_PWR_HOLD_TIME",
                             "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field.",
@@ -733,7 +707,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field010-bit31",
                             "name": "PORT_SEL",
                             "description": "Defined which FlexSPI portA/B is used for boot.",
@@ -757,26 +730,23 @@
                     "name": "FLEXSPI_BOOT_CFG1",
                     "description": "FLEXSPI_BOOT_CFG1",
                     "offset_int": "0x0014",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 7,
-                            "reset_value_int": "0",
                             "id": "field014-bits0-6",
                             "name": "FLEXSPI_DELAY_CELL_NUM",
                             "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS)"
                         },
                         {
                             "width": 10,
-                            "reset_value_int": "0",
                             "id": "field014-bits7-16",
                             "name": "FLEXSPI_IMAGE_OFFSET",
                             "description": "Any offset in memory mapped Q/Octal-SPI Flash area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field014-bits17-20",
                             "name": "FLEXSPI_REMAP_IMAGE_SIZE",
                             "description": "Any offset in memory mapped QSPI Flash area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. QSPI_IMAGE_OFFSET field specifies the offset location of second image. QSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped.",
@@ -873,40 +843,35 @@
                     "name": "REC_SPI_FLASH_CFG0",
                     "description": "REC_SPI_FLASH_CFG0",
                     "offset_int": "0x0018",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field018-bits0-7",
                             "name": "REC_SPI_SCK_PIN",
                             "description": "Override default SPI_SCK ISP pin.Identifies the pin to be used as SPI_SCK pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field018-bits8-11",
                             "name": "REC_SPI_SCK_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field018-bits12-15",
                             "name": "REC_SPI_FLEXCOM",
                             "description": "Identifies the FlexComm used for SPI ISP mode"
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field018-bits16-23",
                             "name": "REC_SPI_MOSI_PIN",
                             "description": "Override default SPI_MOSI ISP pin"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field018-bits24-27",
                             "name": "REC_SPI_MOSI_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
@@ -921,19 +886,17 @@
                     "name": "REC_SPI_FLASH_CFG1",
                     "description": "REC_SPI_FLASH_CFG1",
                     "offset_int": "0x001C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field01C-bits0-7",
                             "name": "REC_SPI_MISO_PIN",
                             "description": "Override default SPI_MISO ISP pin"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field01C-bits8-11",
                             "name": "REC_SPI_MISO_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot"
@@ -943,21 +906,18 @@
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field01C-bits16-23",
                             "name": "REC_SPI_SSEL_PIN",
                             "description": "Override default SPI_SSEL ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field01C-bits24-27",
                             "name": "REC_SPI_SSEL_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field01C-bits28-29",
                             "name": "REC_SPI_SSEL_X",
                             "description": "SPI chip select number."
@@ -972,47 +932,41 @@
                     "name": "ISP_UART_CFG",
                     "description": "ISP_UART_CFG",
                     "offset_int": "0x0020",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field020-bits0-7",
                             "name": "UART_RX_PIN",
                             "description": "Override default UART RX ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field020-bits8-11",
                             "name": "UART_RX_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field020-bits12-15",
                             "name": "UART_ISP_FLEXCOM",
                             "description": "Identifies the FlexComm used for UART ISP mode."
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field020-bits16-23",
                             "name": "UART_TX_PIN",
                             "description": "Override default UART TX ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field020-bits24-27",
                             "name": "UART_TX_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field020-bits28-31",
                             "name": "UART_BAUD_RATE",
                             "description": "UART baud rate.Baud rate configured during UART ISP mode.",
@@ -1031,40 +985,35 @@
                     "name": "ISP_I2C_CFG",
                     "description": "ISP_I2C_CFG",
                     "offset_int": "0x0024",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field024-bits0-7",
                             "name": "I2C_SCL_PIN",
                             "description": "Override default I2C SCL ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field024-bits8-11",
                             "name": "I2C_SCL_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field024-bits12-15",
                             "name": "I2C_ISP_FLEXCOM",
                             "description": "Identifies the FlexComm used for I2C ISP mode"
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field024-bits16-23",
                             "name": "I2C_SDA_PIN",
                             "description": "Override default I2C SDA ISP pin"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field024-bits24-27",
                             "name": "I2C_SDA_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
@@ -1079,47 +1028,41 @@
                     "name": "ISP_CAN_CFG",
                     "description": "ISP_CAN_CFG",
                     "offset_int": "0x0028",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field028-bits0-7",
                             "name": "CAN_RX_PIN",
                             "description": "Override default CAN  RX ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field028-bits8-11",
                             "name": "CAN_RX_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field028-bits12-15",
                             "name": "CAN_ISP_FLEXCOM",
                             "description": "Identifies the FlexComm used for CAN ISP mode."
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field028-bits16-23",
                             "name": "CAN_TX_PIN",
                             "description": "Override default CAN TX ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field028-bits24-27",
                             "name": "CAN_TX_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field028-bits28-31",
                             "name": "CAN_BAUD_RATE",
                             "description": "CAN baud rate.Baud rate configured during CAN ISP mode. Default: Auto baud detection.",
@@ -1178,40 +1121,35 @@
                     "name": "ISP_SPI_CFG0",
                     "description": "ISP_SPI_CFG0",
                     "offset_int": "0x002C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field02C-bits0-7",
                             "name": "SPI_SCK_PIN",
                             "description": "Override default SPI SCK ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field02C-bits8-11",
                             "name": "SPI_SCK_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field02C-bits12-15",
                             "name": "SPI_ISP_FLEXCOM",
                             "description": "Identifies the FlexComm used for SPI ISP mode"
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field02C-bits16-23",
                             "name": "SPI_MOSI_PIN",
                             "description": "Override default SPI MOSI ISP pin"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field02C-bits24-27",
                             "name": "SPI_MOSI_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
@@ -1226,19 +1164,17 @@
                     "name": "ISP_SPI_CFG1",
                     "description": "ISP_SPI_CFG1",
                     "offset_int": "0x0030",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field030-bits0-7",
                             "name": "SPI_MISO_PIN",
                             "description": "Override default SPI MISO ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field030-bits8-11",
                             "name": "SPI_MISO_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot"
@@ -1248,21 +1184,18 @@
                         },
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field030-bits16-23",
                             "name": "SPI_SSEL_PIN",
                             "description": "Override default SPI SSEL ISP pin"
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field030-bits24-27",
                             "name": "SPI_SSEL_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot."
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field030-bits28-29",
                             "name": "ISP_SPI_SSEL_X",
                             "description": "SPI chip select number."
@@ -1277,19 +1210,17 @@
                     "name": "ISP_USB_ID",
                     "description": "ISP_USB_ID",
                     "offset_int": "0x0034",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field034-bits0-15",
                             "name": "USB_Vendor_ID",
                             "description": "USB Vendor ID"
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field034-bits16-31",
                             "name": "USB_Product_ID",
                             "description": "USB Product ID"
@@ -1301,19 +1232,17 @@
                     "name": "ISP_USB_CFG",
                     "description": "ISP_USB_CFG",
                     "offset_int": "0x0038",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field038-bits0-7",
                             "name": "USB0_VBUS_PIN",
                             "description": "Override default USB VBUS MISO ISP pin."
                         },
                         {
                             "width": 4,
-                            "reset_value_int": "0",
                             "id": "field038-bits8-11",
                             "name": "USB0_VBUS_FUNC_SLOT",
                             "description": "Identifies the pin mux function slot"
@@ -1323,7 +1252,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field038-bits16-18",
                             "name": "EXT_XTAL_CLK",
                             "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board.",
@@ -1367,7 +1295,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field038-bit19",
                             "name": "PRE_DIV",
                             "description": "Enable Pre-divider. Needed to support 48MHz and other high speed crystals."
@@ -1382,12 +1309,11 @@
                     "name": "ISP_MISC_CFG",
                     "description": "ISP_MISC_CFG",
                     "offset_int": "0x003C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8,
-                            "reset_value_int": "0",
                             "id": "field03C-bits0-7",
                             "name": "I2C_SLAVE_ADDR",
                             "description": "I2C slave address. A 7-bit Address used for selecting our device on shared I2C bus system.By default  ROM uses 0x10 as slave address."
@@ -1397,7 +1323,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field03C-bits24-25",
                             "name": "ISP_CAN_CUST",
                             "description": "Use customer defined CAN ISP pins.",
@@ -1426,7 +1351,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field03C-bits26-27",
                             "name": "ISP_SPI_CUST",
                             "description": "Use customer defined SPI ISP pins.",
@@ -1455,7 +1379,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field03C-bits28-29",
                             "name": "ISP_I2C_CUST",
                             "description": "Use customer defined I2C ISP pins.",
@@ -1484,7 +1407,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field03C-bits30-31",
                             "name": "ISP_UART_CUST",
                             "description": "Use customer defined UART ISP pins.",
@@ -1518,12 +1440,11 @@
                     "name": "DCFG_CC_SOCU_PIN",
                     "description": "Credential Constraints for SoC specific Use Pinned",
                     "offset_int": "0x0040",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit0",
                             "name": "NIDEN",
                             "description": "Non-secure Non-invasive Debug Enable",
@@ -1542,7 +1463,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit1",
                             "name": "DBGEN",
                             "description": "Non-secure Debug Enable",
@@ -1561,7 +1481,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit2",
                             "name": "SPNIDEN",
                             "description": "Secure Non-invasive Debug Enable",
@@ -1580,7 +1499,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit3",
                             "name": "SPIDEN",
                             "description": "Secure Invasive Debug Enable",
@@ -1602,7 +1520,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit5",
                             "name": "DSP_DBGEN",
                             "description": "DSP Debug Enable",
@@ -1621,7 +1538,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit6",
                             "name": "ISP_CMD_EN",
                             "description": "ISP Boot Command Enable",
@@ -1640,7 +1556,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit7",
                             "name": "FA_CMD_EN",
                             "description": "FA Command Enable",
@@ -1659,7 +1574,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit8",
                             "name": "ME_CMD_EN",
                             "description": "Flash Mass Erase Command Enable",
@@ -1678,7 +1592,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit9",
                             "name": "CPU1_NIDEN",
                             "description": "Second CM33 debug enable",
@@ -1697,7 +1610,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit10",
                             "name": "CPU1_DBGEN",
                             "description": "Second CM33 debug",
@@ -1719,14 +1631,12 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field040-bit15",
                             "name": "UUID_CHECK",
                             "description": "UUID Check"
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field040-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "Inverse Value",
@@ -1739,12 +1649,11 @@
                     "name": "DCFG_CC_SOCU_DFLT",
                     "description": "Credential Constraints for SoC specific Use Debug Filter",
                     "offset_int": "0x0044",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit0",
                             "name": "NIDEN",
                             "description": "Non Secure Non-invasive Debug Fixed State",
@@ -1763,7 +1672,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit1",
                             "name": "DBGEN",
                             "description": "Non-secure Debug Fixed State",
@@ -1782,7 +1690,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit2",
                             "name": "SPNIDEN",
                             "description": "Secure Non-invasive Debug Fixed State",
@@ -1801,7 +1708,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit3",
                             "name": "SPIDEN",
                             "description": "Secure Invasive Debug Fixed State",
@@ -1823,7 +1729,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit5",
                             "name": "DSP_DBGEN",
                             "description": "DSP Debug Fixed State",
@@ -1842,7 +1747,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit6",
                             "name": "ISP_CMD_EN",
                             "description": "ISP Command Fixed State",
@@ -1861,7 +1765,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit7",
                             "name": "FA_CMD_EN",
                             "description": "FA Command Fixed State",
@@ -1880,7 +1783,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit8",
                             "name": "ME_CMD_EN",
                             "description": "Flash Mass Erase Command Fixed State",
@@ -1899,7 +1801,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit9",
                             "name": "CPU1_NIDEN",
                             "description": "Second CM33 Debug Fixed State",
@@ -1918,7 +1819,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field044-bit10",
                             "name": "CPU1_DBGEN",
                             "description": "Second CM33 debug",
@@ -1940,7 +1840,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field044-bits16-31",
                             "name": "INVERSE_VALUE",
                             "description": "Inverse Value",
@@ -1953,7 +1852,7 @@
                     "name": "VENDOR_USAGE",
                     "description": "Vendor Usage",
                     "offset_int": "0x0048",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
@@ -1961,7 +1860,6 @@
                         },
                         {
                             "width": 16,
-                            "reset_value_int": "0",
                             "id": "field048-bits16-31",
                             "name": "VENDOR_USAGE",
                             "description": "Vendor Usage [31:16]"
@@ -1974,7 +1872,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x004C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -1982,12 +1880,11 @@
                     "name": "SECURE_BOOT_CFG",
                     "description": "Secure Boot Configuration",
                     "offset_int": "0x0050",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits0-1",
                             "name": "SEC_BOOT_EN",
                             "description": "Secure boot enforcement. This field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign).",
@@ -2019,7 +1916,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits3-4",
                             "name": "LP_SEC_BOOT",
                             "description": "Secure boot option for low-power wake from power-down and deep-powerdown.For PFR/ROMP do CRC check always.",
@@ -2051,7 +1947,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits8-9",
                             "name": "ENF_CNSA",
                             "description": "Enforce CNSA",
@@ -2080,7 +1975,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits10-11",
                             "name": "ENF_TZM_PRESET",
                             "description": "Enforce TrustZone-M Preset",
@@ -2109,7 +2003,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits12-13",
                             "name": "ITRC_ZEROIZE",
                             "description": "RAM zeroize on ITRC event. Zeroize long-term storage RAM (AO_RAM) on subsequent boot when Intrusion and Tamper control signals an intrusion event.",
@@ -2138,7 +2031,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits14-15",
                             "name": "ACTIVE_IMG_PROT",
                             "description": "Protection of active image. This field defines protection of flash area occupied by active image. Only applicable to internal flash.",
@@ -2167,7 +2059,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits16-17",
                             "name": "FIPS_SHA_STEN",
                             "description": "FIPS_SHA_STEN",
@@ -2196,7 +2087,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits18-19",
                             "name": "FIPS_AES_STEN",
                             "description": "FIPS_AES_STEN",
@@ -2225,7 +2115,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits20-21",
                             "name": "FIPS_ECDSA_STEN",
                             "description": "FIPS_ECDSA_STEN",
@@ -2254,7 +2143,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits22-23",
                             "name": "FIPS_DRBG_STEN",
                             "description": "FIPS_DRBG_STEN",
@@ -2283,7 +2171,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits24-25",
                             "name": "FIPS_CMAC_STEN",
                             "description": "FIPS_CMAC_STEN",
@@ -2312,7 +2199,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits26-27",
                             "name": "FIPS_KDF_STEN",
                             "description": "FIPS_KDF_STEN",
@@ -2341,7 +2227,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field050-bits28-29",
                             "name": "FIPS_PUF_STEN",
                             "description": "FIPS_PUF_STEN",
@@ -2378,12 +2263,11 @@
                     "name": "RoTK_USAGE",
                     "description": "Root of Trust Key Usage",
                     "offset_int": "0x0054",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field054-bits0-2",
                             "name": "RoTK0_Usage",
                             "description": "RoTK0_Usage",
@@ -2432,7 +2316,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field054-bits3-5",
                             "name": "RoTK1_Usage",
                             "description": "RoTK1_Usage",
@@ -2481,7 +2364,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field054-bits6-8",
                             "name": "RoTK2_Usage",
                             "description": "RoTK2_Usage",
@@ -2530,7 +2412,6 @@
                         },
                         {
                             "width": 3,
-                            "reset_value_int": "0",
                             "id": "field054-bits9-11",
                             "name": "RoTK3_Usage",
                             "description": "RoTK3_Usage",
@@ -2579,7 +2460,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field054-bit12",
                             "name": "SKIP_DICE",
                             "description": "Skip DICE computation.",
@@ -2598,7 +2478,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field054-bit13",
                             "name": "DICE_INC_NXP_CFG",
                             "description": "Include NXP area in DICE computation.",
@@ -2617,7 +2496,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field054-bit14",
                             "name": "DICE_INC_CUST_CFG",
                             "description": "Include Customer factory area (including keys) in DICE computation.",
@@ -2639,7 +2517,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits16-17",
                             "name": "REG0_ERASE_CHECK_EN",
                             "description": "Region 0 Erase Check Enable",
@@ -2668,7 +2545,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits18-19",
                             "name": "REG1_ERASE_CHECK_EN",
                             "description": "Region 1 Erase Check Enable",
@@ -2697,7 +2573,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits20-21",
                             "name": "REG2_ERASE_CHECK_EN",
                             "description": "Region 2 Erase Check Enable",
@@ -2726,7 +2601,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits22-23",
                             "name": "REG3_ERASE_CHECK_EN",
                             "description": "Region 3 Erase Check Enable",
@@ -2755,7 +2629,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits24-25",
                             "name": "NPX_LOCK_CTX0",
                             "description": "Lock onchip flash NPX PRINCE context 0 settings.",
@@ -2771,12 +2644,12 @@
                                     "description": "LOCKED_NO_ERASE_CHECK: Region is locked. But no erase check."
                                 },
                                 {
-                                    "name": "LOCKED_ERASE_CHECK_E",
+                                    "name": "LOCKED_ERASE_CHECK_EN",
                                     "value": 2,
                                     "description": "LOCKED_ERASE_CHECK_EN_0: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 },
                                 {
-                                    "name": "LOCKED_ERASE_CHECK_E",
+                                    "name": "LOCKED_ERASE_CHECK_EN_1",
                                     "value": 3,
                                     "description": "LOCKED_ERASE_CHECK_EN_1: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 }
@@ -2784,7 +2657,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits26-27",
                             "name": "NPX_LOCK_CTX1",
                             "description": "Lock onchip flash NPX PRINCE context 1 settings.",
@@ -2805,7 +2677,7 @@
                                     "description": "LOCKED_ERASE_CHECK_EN_0: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 },
                                 {
-                                    "name": "LOCKED_ERASE_CHECK_E",
+                                    "name": "LOCKED_ERASE_CHECK_EN_1",
                                     "value": 3,
                                     "description": "LOCKED_ERASE_CHECK_EN_1: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 }
@@ -2813,7 +2685,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits28-29",
                             "name": "NPX_LOCK_CTX2",
                             "description": "Lock onchip flash NPX PRINCE context 2 settings.",
@@ -2834,7 +2705,7 @@
                                     "description": "LOCKED_ERASE_CHECK_EN_0: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 },
                                 {
-                                    "name": "LOCKED_ERASE_CHECK_E",
+                                    "name": "LOCKED_ERASE_CHECK_EN_1",
                                     "value": 3,
                                     "description": "LOCKED_ERASE_CHECK_EN_1: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 }
@@ -2842,7 +2713,6 @@
                         },
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field054-bits30-31",
                             "name": "NPX_LOCK_CTX3",
                             "description": "Lock onchip flash NPX PRINCE context 3 settings.",
@@ -2863,7 +2733,7 @@
                                     "description": "LOCKED_ERASE_CHECK_EN_0: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 },
                                 {
-                                    "name": "LOCKED_ERASE_CHECK_E",
+                                    "name": "LOCKED_ERASE_CHECK_EN_1",
                                     "value": 3,
                                     "description": "LOCKED_ERASE_CHECK_EN_1: Region is locked. Erase check enabled. Flash programming ROM API enforces the erase check. When erase check is enabled all sectors selected in the context should be erased together and only contiguous sectors can be selected in context bitmap."
                                 }
@@ -2885,7 +2755,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0058",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2894,7 +2764,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x005C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -2911,7 +2781,7 @@
                     "description": "Root of Trust Key Hash 0",
                     "offset_int": "0x0060",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2920,7 +2790,7 @@
                     "description": "Root of Trust Key Hash 1",
                     "offset_int": "0x0064",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2929,7 +2799,7 @@
                     "description": "Root of Trust Key Hash 2",
                     "offset_int": "0x0068",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2938,7 +2808,7 @@
                     "description": "Root of Trust Key Hash 3",
                     "offset_int": "0x006C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2947,7 +2817,7 @@
                     "description": "Root of Trust Key Hash 4",
                     "offset_int": "0x0070",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2956,7 +2826,7 @@
                     "description": "Root of Trust Key Hash 5",
                     "offset_int": "0x0074",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2965,7 +2835,7 @@
                     "description": "Root of Trust Key Hash 6",
                     "offset_int": "0x0078",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2974,7 +2844,7 @@
                     "description": "Root of Trust Key Hash 7",
                     "offset_int": "0x007C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2983,7 +2853,7 @@
                     "description": "Root of Trust Key Hash 8",
                     "offset_int": "0x0080",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -2992,7 +2862,7 @@
                     "description": "Root of Trust Key Hash 9",
                     "offset_int": "0x0084",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3001,7 +2871,7 @@
                     "description": "Root of Trust Key Hash 10",
                     "offset_int": "0x0088",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3010,7 +2880,7 @@
                     "description": "Root of Trust Key Hash 11",
                     "offset_int": "0x008C",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3018,7 +2888,7 @@
                     "name": "NPX_CTX0_WD0",
                     "description": "Bitmap mask for NPX Prince context 0 (sectors 0 -31)",
                     "offset_int": "0x0090",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3026,7 +2896,7 @@
                     "name": "NPX_CTX0_WD1",
                     "description": "Bitmap mask for NPX Prince context 0 (sectors 32 - 63)",
                     "offset_int": "0x0094",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3034,7 +2904,7 @@
                     "name": "NPX_CTX1_WD0",
                     "description": "Bitmap mask for NPX Prince context 1 (sectors 0 -31)",
                     "offset_int": "0x0098",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3042,7 +2912,7 @@
                     "name": "NPX_CTX1_WD1",
                     "description": "Bitmap mask for NPX Prince context 1 (sectors 32 - 63)",
                     "offset_int": "0x009C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3050,7 +2920,7 @@
                     "name": "NPX_CTX2_WD0",
                     "description": "Bitmap mask for NPX Prince context 2 (sectors 0 -31)",
                     "offset_int": "0x00A0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3058,7 +2928,7 @@
                     "name": "NPX_CTX2_WD1",
                     "description": "Bitmap mask for NPX Prince context 2 (sectors 32 - 63)",
                     "offset_int": "0x00A4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3066,7 +2936,7 @@
                     "name": "NPX_CTX3_WD0",
                     "description": "Bitmap mask for NPX Prince context 3 (sectors 0 -31)",
                     "offset_int": "0x00A8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3074,7 +2944,7 @@
                     "name": "NPX_CTX3_WD1",
                     "description": "Bitmap mask for NPX Prince context 3 (sectors 32 - 63)",
                     "offset_int": "0x00AC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -3090,12 +2960,11 @@
                     "name": "IPED0_START",
                     "description": "IPED region 0 Start",
                     "offset_int": "0x00B0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0B0-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3114,7 +2983,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0B0-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3136,11 +3004,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0B0-bits8-31",
                             "name": "IPED_CTX0_START_ADDR",
-                            "description": "IPED_CTX0_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX0_START_ADDR"
                         }
                     ]
                 },
@@ -3149,12 +3015,11 @@
                     "name": "IPED0_END",
                     "description": "IPED region 0 End",
                     "offset_int": "0x00B4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0B4-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3186,11 +3051,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0B4-bits8-31",
                             "name": "IPED_CTX0_END_ADDR",
-                            "description": "IPED_CTX0_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX0_END_ADDR"
                         }
                     ]
                 },
@@ -3199,12 +3062,11 @@
                     "name": "IPED1_START",
                     "description": "IPED region 1 Start",
                     "offset_int": "0x00B8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0B8-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3223,7 +3085,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0B8-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3245,11 +3106,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0B8-bits8-31",
                             "name": "IPED_CTX1_START_ADDR",
-                            "description": "IPED_CTX1_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX1_START_ADDR"
                         }
                     ]
                 },
@@ -3258,12 +3117,11 @@
                     "name": "IPED1_END",
                     "description": "IPED region 1 End",
                     "offset_int": "0x00BC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0BC-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3295,11 +3153,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0BC-bits8-31",
                             "name": "IPED_CTX1_END_ADDR",
-                            "description": "IPED_CTX1_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX1_END_ADDR"
                         }
                     ]
                 },
@@ -3308,12 +3164,11 @@
                     "name": "IPED2_START",
                     "description": "IPED region 2 Start",
                     "offset_int": "0x00C0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0C0-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3332,7 +3187,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0C0-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3354,11 +3208,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0C0-bits8-31",
                             "name": "IPED_CTX2_START_ADDR",
-                            "description": "IPED_CTX2_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX2_START_ADDR"
                         }
                     ]
                 },
@@ -3367,12 +3219,11 @@
                     "name": "IPED2_END",
                     "description": "IPED region 2 End",
                     "offset_int": "0x00C4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3404,11 +3255,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0C4-bits8-31",
                             "name": "IPED_CTX2_END_ADDR",
-                            "description": "IPED_CTX2_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX2_END_ADDR"
                         }
                     ]
                 },
@@ -3417,12 +3266,11 @@
                     "name": "IPED3_START",
                     "description": "IPED region 3 Start",
                     "offset_int": "0x00C8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0C8-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3441,7 +3289,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0C8-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3463,11 +3310,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0C8-bits8-31",
                             "name": "IPED_CTX3_START_ADDR",
-                            "description": "IPED_CTX3_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX3_START_ADDR"
                         }
                     ]
                 },
@@ -3476,12 +3321,11 @@
                     "name": "IPED3_END",
                     "description": "IPED region 3 End",
                     "offset_int": "0x00CC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3513,11 +3357,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0CC-bits8-31",
                             "name": "IPED_CTX3_END_ADDR",
-                            "description": "IPED_CTX3_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX3_END_ADDR"
                         }
                     ]
                 },
@@ -3526,12 +3368,11 @@
                     "name": "IPED4_START",
                     "description": "IPED region 4 Start",
                     "offset_int": "0x00D0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0D0-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3550,7 +3391,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0D0-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3572,11 +3412,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0D0-bits8-31",
                             "name": "IPED_CTX4_START_ADDR",
-                            "description": "IPED_CTX4_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX4_START_ADDR"
                         }
                     ]
                 },
@@ -3585,12 +3423,11 @@
                     "name": "IPED4_END",
                     "description": "IPED region 4 End",
                     "offset_int": "0x00D4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3622,11 +3459,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0D4-bits8-31",
                             "name": "IPED_CTX4_END_ADDR",
-                            "description": "IPED_CTX4_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX4_END_ADDR"
                         }
                     ]
                 },
@@ -3635,12 +3470,11 @@
                     "name": "IPED5_START",
                     "description": "IPED region 5 Start",
                     "offset_int": "0x00D8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0D8-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3659,7 +3493,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0D8-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3681,11 +3514,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0D8-bits8-31",
                             "name": "IPED_CTX5_START_ADDR",
-                            "description": "IPED_CTX5_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX5_START_ADDR"
                         }
                     ]
                 },
@@ -3694,12 +3525,11 @@
                     "name": "IPED5_END",
                     "description": "IPED region 5 End",
                     "offset_int": "0x00DC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3731,11 +3561,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0DC-bits8-31",
                             "name": "IPED_CTX5_END_ADDR",
-                            "description": "IPED_CTX5_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX5_END_ADDR"
                         }
                     ]
                 },
@@ -3744,12 +3572,11 @@
                     "name": "IPED6_START",
                     "description": "IPED region 6 Start",
                     "offset_int": "0x00E0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0E0-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3768,7 +3595,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0E0-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3790,11 +3616,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0E0-bits8-31",
                             "name": "IPED_CTX6_START_ADDR",
-                            "description": "IPED_CTX6_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX6_START_ADDR"
                         }
                     ]
                 },
@@ -3803,12 +3627,11 @@
                     "name": "IPED6_END",
                     "description": "IPED region 6 End",
                     "offset_int": "0x00E4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0E4-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3840,11 +3663,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0E4-bits8-31",
                             "name": "IPED_CTX6_END_ADDR",
-                            "description": "IPED_CTX6_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX6_END_ADDR"
                         }
                     ]
                 },
@@ -3853,12 +3674,11 @@
                     "name": "IPED7_START",
                     "description": "IPED region 7 Start",
                     "offset_int": "0x00E8",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0E8-bit0",
                             "name": "GCM_MODE",
                             "description": "GCM mode enable.",
@@ -3877,7 +3697,6 @@
                         },
                         {
                             "width": 1,
-                            "reset_value_int": "0",
                             "id": "field0E8-bit1",
                             "name": "AHBERR_DIS",
                             "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not.",
@@ -3899,11 +3718,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0E8-bits8-31",
                             "name": "IPED_CTX7_START_ADDR",
-                            "description": "IPED_CTX7_START_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX7_START_ADDR"
                         }
                     ]
                 },
@@ -3912,12 +3729,11 @@
                     "name": "IPED7_END",
                     "description": "IPED region 7 End",
                     "offset_int": "0x00EC",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
-                            "reset_value_int": "0",
                             "id": "field0EC-bits0-1",
                             "name": "LOCK_EN",
                             "description": "Lock the external PRINCE context settings.",
@@ -3949,11 +3765,9 @@
                         },
                         {
                             "width": 24,
-                            "reset_value_int": "0",
                             "id": "field0EC-bits8-31",
                             "name": "IPED_CTX7_END_ADDR",
-                            "description": "IPED_CTX7_END_ADDR",
-                            "config_preprocess": "SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."
+                            "description": "IPED_CTX7_END_ADDR"
                         }
                     ]
                 },
@@ -3962,7 +3776,7 @@
                     "name": "REC_IMG_EXT0",
                     "description": "REC_IMG_EXT0: Bitmap mask for recovery image extended sectors (sectors 0 -31)",
                     "offset_int": "0x00F0",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3970,7 +3784,7 @@
                     "name": "REC_IMG_EXT1",
                     "description": "REC_IMG_EXT1: Bitmap mask for recovery image extended sectors (sectors 32 - 63)",
                     "offset_int": "0x00F4",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -3987,7 +3801,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -3996,7 +3810,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00FC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4005,7 +3819,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0100",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4014,7 +3828,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0104",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4023,7 +3837,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0108",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4032,7 +3846,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x010C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4041,7 +3855,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0110",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4050,7 +3864,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0114",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4059,7 +3873,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0118",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4068,7 +3882,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x011C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -4084,7 +3898,7 @@
                     "name": "QUICK_SET_GPIO_0",
                     "description": "Quick Set to Drive GPIO 0 port pins high",
                     "offset_int": "0x0120",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4092,7 +3906,7 @@
                     "name": "QUICK_CLR_GPIO_0",
                     "description": "Quick Clear to Drive GPIO 0 port pins low",
                     "offset_int": "0x0124",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4100,7 +3914,7 @@
                     "name": "QUICK_SET_GPIO_1",
                     "description": "Quick Set to Drive GPIO 1 port pins high",
                     "offset_int": "0x0128",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4108,7 +3922,7 @@
                     "name": "QUICK_CLR_GPIO_1",
                     "description": "Quick Clear to Drive GPIO 1 port pins low",
                     "offset_int": "0x012C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4116,7 +3930,7 @@
                     "name": "QUICK_SET_GPIO_2",
                     "description": "Quick Set to Drive GPIO 2 port pins high",
                     "offset_int": "0x0130",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4124,7 +3938,7 @@
                     "name": "QUICK_CLR_GPIO_2",
                     "description": "Quick Clear to Drive GPIO 2 port pins low",
                     "offset_int": "0x0134",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4132,7 +3946,7 @@
                     "name": "QUICK_SET_GPIO_3",
                     "description": "Quick Set to Drive GPIO 3 port pins high",
                     "offset_int": "0x0138",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4140,7 +3954,7 @@
                     "name": "QUICK_CLR_GPIO_3",
                     "description": "Quick Clear to Drive GPIO 3 port pins low",
                     "offset_int": "0x013C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4148,7 +3962,7 @@
                     "name": "QUICK_SET_GPIO_4",
                     "description": "Quick Set to Drive GPIO 4 port pins high",
                     "offset_int": "0x0140",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4156,7 +3970,7 @@
                     "name": "QUICK_CLR_GPIO_4",
                     "description": "Quick Clear to Drive GPIO 4 port pins low",
                     "offset_int": "0x0144",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4164,7 +3978,7 @@
                     "name": "QUICK_SET_GPIO_5",
                     "description": "Quick Set to Drive GPIO 5 port pins high",
                     "offset_int": "0x0148",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4172,7 +3986,7 @@
                     "name": "QUICK_CLR_GPIO_5",
                     "description": "Quick Clear to Drive GPIO 5 port pins low",
                     "offset_int": "0x014C",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -4189,7 +4003,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0150",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4198,7 +4012,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0154",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4207,7 +4021,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0158",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4216,7 +4030,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x015C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4225,7 +4039,7 @@
                     "description": "CUST_MK_SK_KEY_BLOB",
                     "offset_int": "0x0160",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -4242,7 +4056,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0164",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4251,7 +4065,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0168",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4260,7 +4074,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x016C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4269,7 +4083,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0170",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4278,7 +4092,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0174",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4287,7 +4101,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0178",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4296,7 +4110,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x017C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4305,7 +4119,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0180",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4314,7 +4128,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0184",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4323,7 +4137,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0188",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4332,7 +4146,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x018C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4341,7 +4155,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0190",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4350,7 +4164,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0194",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4359,7 +4173,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0198",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4368,7 +4182,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x019C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4377,7 +4191,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01A0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4386,7 +4200,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01A4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4395,7 +4209,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01A8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4404,7 +4218,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01AC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4413,7 +4227,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4422,7 +4236,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4431,7 +4245,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4440,7 +4254,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01BC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4449,7 +4263,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4458,7 +4272,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4467,7 +4281,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4476,7 +4290,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01CC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4485,7 +4299,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4494,7 +4308,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4503,7 +4317,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4512,7 +4326,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01DC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4521,7 +4335,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4530,7 +4344,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4539,7 +4353,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -4556,7 +4370,7 @@
                     "description": "CMPA_CRC32 for address range 0x0200_4000 - 0x0200_41EB",
                     "offset_int": "0x01EC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]
@@ -4573,7 +4387,7 @@
                     "description": "CMPA CMAC 0",
                     "offset_int": "0x01F0",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4582,7 +4396,7 @@
                     "description": "CMPA CMAC 1",
                     "offset_int": "0x01F4",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4591,7 +4405,7 @@
                     "description": "CMPA CMAC 2",
                     "offset_int": "0x01F8",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 },
                 {
@@ -4600,7 +4414,7 @@
                     "description": "CMPA CMAC 3",
                     "offset_int": "0x01FC",
                     "access": "RO",
-                    "reset_value_int": "0",
+                    "default_value_int": "0",
                     "individual_write_lock": "none"
                 }
             ]

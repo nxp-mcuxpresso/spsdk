@@ -71,3 +71,14 @@ features:
   # ======== FCF section ========
   fcf:
     reg_spec: fcf.json
+    reg_spec_modification:
+      field000:
+        reverse: True
+        config_as_hexstring: True
+
+  # ======== PFR section ========
+  pfr:
+    sub_features: [ifr]
+    ifr:
+      address: 0x0
+      reg_spec: ifr_ns.json

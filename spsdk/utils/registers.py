@@ -28,6 +28,7 @@ from spsdk.utils.misc import (
     Endianness,
     format_value,
     get_bytes_cnt_of_int,
+    load_configuration,
     value_to_bool,
     value_to_bytes,
     value_to_int,
@@ -272,9 +273,8 @@ class RegsBitField:
         width: int,
         uid: str,
         description: Optional[str] = None,
-        reset_val: Optional[Any] = None,
         access: Access = Access.RW,
-        hidden: bool = False,
+        reserved: bool = False,
         config_processor: Optional[ConfigProcessor] = None,
         no_yaml_comments: bool = False,
     ) -> None:
@@ -286,9 +286,8 @@ class RegsBitField:
         :param width: Bit width of bitfield.
         :param uid: Bitfield unique ID
         :param description: Text description of bitfield.
-        :param reset_val: Reset value of bitfield if available.
         :param access: Access type of bitfield.
-        :param hidden: The bitfield will be hidden from standard searches.
+        :param reserved: The bitfield will be hidden from standard searches.
         :param no_yaml_comments: Disable yaml comments for this register.
         """
         self.parent = parent
@@ -298,46 +297,57 @@ class RegsBitField:
         self.uid = uid
         self.description = description or "N/A"
         self.access = access
-        self.hidden = hidden
+        self.reserved = reserved
         self._enums: list[RegsEnum] = []
         self.config_processor = config_processor or ConfigProcessor()
         self.config_width = self.config_processor.width_update(width)
-        self.reset_value = value_to_int(reset_val) if reset_val else self.get_value()
         self.no_yaml_comments = no_yaml_comments
-        if reset_val:
-            self.set_value(self.reset_value, raw=True)
 
     @classmethod
     def create_from_spec(
-        cls, spec: dict[str, Any], offset: int, parent: "Register"
+        cls,
+        spec: dict[str, Any],
+        offset: int,
+        parent: "Register",
+        bitfield_mods: Optional[dict[str, Any]] = None,
     ) -> "RegsBitField":
         """Initialization bitfield by specification.
 
         :param spec: Input subelement with bitfield data.
         :param offset: Bitfield offset.
         :param parent: Reference to parent Register object.
+        :param bitfield_mods: Optional modifications for this bitfield.
         :return: The instance of this class.
         """
-        hidden_name = f"HIDDEN_BITFIELD_{offset:03X}"
-        uid = spec.get("id", "")
         width = value_to_int(spec.get("width", 0))
-        name = spec.get("name", hidden_name)
-        hidden = bool(name == hidden_name)
+        uid = spec.get("id", cls._create_uid(parent.uid, offset, width))
+        name = spec.get("name")
+        reserved = bool(name is None or name.lower().startswith("reserved"))
         description = spec.get("description", "N/A")
         access = Access.from_label(spec.get("access", "RW"))
-        reset_value = value_to_int(spec.get("reset_value_int", 0))
-        config_processor = ConfigProcessor.from_spec(spec.get("config_preprocess"))
-        no_yaml_comments = value_to_bool(spec.get("no_yaml_comments", False))
+        config_processor = ConfigProcessor()
+        no_yaml_comments = False
+        # Apply bitfield modifications if available
+        if bitfield_mods:
+            if "reserved" in bitfield_mods:
+                reserved = value_to_bool(bitfield_mods["reserved"])
+            if "config_processor" in bitfield_mods:
+                config_processor = (
+                    ConfigProcessor.from_spec(bitfield_mods["config_processor"])
+                    or ConfigProcessor()
+                )
+            if "no_yaml_comments" in bitfield_mods:
+                no_yaml_comments = value_to_bool(bitfield_mods["no_yaml_comments"])
+
         bitfield = cls(
             parent,
-            name,
+            name or f"reserved_{uid}",
             offset,
             width,
             uid,
             description,
-            reset_value,
             access,
-            hidden,
+            reserved,
             config_processor,
             no_yaml_comments,
         )
@@ -347,13 +357,27 @@ class RegsBitField:
 
         return bitfield
 
+    @staticmethod
+    def _create_uid(reg_uid: str, offset: int, width: int) -> str:
+        """Generate a consistent UID for bitfields based on parent register and bitfield properties.
+
+        :param reg_uid: Parent register's UID
+        :param offset: Bitfield offset
+        :param width: Bitfield width
+        :return: Generated unique identifier
+        """
+        if width == 1:
+            bitfield_id = f"-bit{offset}"
+        else:
+            bitfield_id = f"-bits{offset}-{offset+width-1}"
+        return reg_uid + bitfield_id
+
     def _get_uid(self) -> str:
         """Get UID of register."""
-        if self.width == 1:
-            bitfield_id = f"-bit{self.offset}"
-        else:
-            bitfield_id = f"-bits{self.offset}-{self.offset+self.width-1}"
-        return self.uid or self.parent._get_uid() + bitfield_id
+        if self.uid:
+            return self.uid
+
+        return self._create_uid(self.parent._get_uid(), self.offset, self.width)
 
     def create_spec(self) -> dict[str, Any]:
         """Creates the register specification structure.
@@ -364,10 +388,9 @@ class RegsBitField:
         spec["id"] = self._get_uid()
         spec["offset"] = hex(self.offset)
         spec["width"] = str(self.width)
-        if not self.hidden:
+        if not self.reserved:
             spec["name"] = self.name
         spec["access"] = self.access.label
-        spec["reset_value_int"] = hex(self.get_reset_value())
         spec["description"] = self.description
         enums = []
         for enum in self._enums:
@@ -414,7 +437,12 @@ class RegsBitField:
 
         :return: Reset value of bitfield.
         """
-        return self.reset_value
+        reg_val = self.parent.get_reset_value()
+        value = reg_val >> self.offset
+        mask = (1 << self.width) - 1
+        value = value & mask
+        value = self.config_processor.post_process(value)
+        return value
 
     def set_value(self, new_val: Any, raw: bool = False, no_preprocess: bool = False) -> None:
         """Updates the value of the bitfield.
@@ -514,10 +542,10 @@ class RegsBitField:
         output += f"Offset:   {self.offset} bits\n"
         output += f"Width:    {self.width} bits\n"
         output += f"Access:   {self.access.label} bits\n"
-        output += f"Reset val:{self.reset_value}\n"
+        output += f"Reset val:{self.get_reset_value()}\n"
         output += f"Description: \n {self.description}\n"
-        if self.hidden:
-            output += "This is hidden bitfield!\n"
+        if self.reserved:
+            output += "This is reserved bitfield!\n"
 
         i = 0
         for enum in self._enums:
@@ -540,13 +568,14 @@ class Register:
         width: int,
         uid: str,
         description: Optional[str] = None,
+        default_value: Optional[int] = None,
         reverse: bool = False,
         access: Access = Access.RW,
         config_as_hexstring: bool = False,
         reverse_subregs_order: bool = False,
         base_endianness: Endianness = Endianness.BIG,
         alt_widths: Optional[list[int]] = None,
-        hidden: bool = False,
+        reserved: bool = False,
         no_yaml_comments: bool = False,
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
@@ -556,13 +585,14 @@ class Register:
         :param width: Bit width of register.
         :param uid: Register unique ID.
         :param description: Text description of register.
+        :param default_value: Default value of register.
         :param reverse: Multi byte register value could be printed in reverse order.
         :param access: Access type of register.
         :param config_as_hexstring: Config is stored as a hex string.
         :param reverse_subregs_order: Reverse order of sub registers.
         :param base_endianness: Base endianness for bytes import/export of value.
         :param alt_widths: List of alternative widths.
-        :param hidden: The register will be hidden from standard searches.
+        :param reserved: The register will be hidden from standard searches.
         :param no_yaml_comments: Disable yaml comments for this register.
         """
         if width % 8 != 0:
@@ -575,14 +605,14 @@ class Register:
         self.access = access
         self.reverse = reverse
         self._bitfields: list[RegsBitField] = []
-        self._value = 0
-        self._reset_value = 0
+        self._default_value = default_value or 0
+        self._value = self._default_value
         self.config_as_hexstring = config_as_hexstring
         self.reverse_subregs_order = reverse_subregs_order
         self.base_endianness = base_endianness
         self.alt_widths = alt_widths
         self._alias_names: list[str] = []
-        self.hidden = hidden
+        self.reserved = reserved
         self.no_yaml_comments = no_yaml_comments
 
         # Grouped register members
@@ -605,15 +635,18 @@ class Register:
             return False
         if obj._value != self._value:
             return False
-        if obj._reset_value != self._reset_value:
+        if obj._default_value != self._default_value:
             return False
         return True
 
     @classmethod
-    def create_from_spec(cls, spec: dict[str, Any]) -> Self:
+    def create_from_spec(
+        cls, spec: dict[str, Any], reg_mods: Optional[dict[str, Any]] = None
+    ) -> Self:
         """Initialization register by specification.
 
         :param spec: Input specification with register data.
+        :param reg_mods: Optional modifications for this register.
         :return: The instance of this class.
         """
         uid = spec.get("id", "")
@@ -624,33 +657,59 @@ class Register:
         access = Access.from_label(spec.get("access", "RW"))
         reserved = value_to_bool(spec.get("is_reserved", False))
         no_yaml_comments = value_to_bool(spec.get("no_yaml_comments", False))
+
+        # Apply register level modifications if available
+        reverse = value_to_bool(spec.get("reverse", False))
+        config_as_hexstring = value_to_bool(spec.get("config_as_hexstring", False))
+        alt_widths = spec.get("alt_widths")
+
+        if reg_mods:
+            if "reverse" in reg_mods:
+                reverse = value_to_bool(reg_mods["reverse"])
+            if "config_as_hexstring" in reg_mods:
+                config_as_hexstring = value_to_bool(reg_mods["config_as_hexstring"])
+            if "alt_widths" in reg_mods:
+                alt_widths = reg_mods["alt_widths"]
+            if "no_yaml_comments" in reg_mods:
+                no_yaml_comments = value_to_bool(reg_mods["no_yaml_comments"])
+
         reg = cls(
             name=name,
             offset=offset,
             width=width,
             uid=uid,
             description=description,
-            reverse=False,
+            reverse=reverse,
             access=access,
-            hidden=reserved,
+            reserved=reserved,
             no_yaml_comments=no_yaml_comments,
+            config_as_hexstring=config_as_hexstring,
+            alt_widths=alt_widths,
         )
-        reg._reset_value = value_to_int(spec.get("reset_value_int", 0))
-        if reg._reset_value:
-            reg.set_value(reg._reset_value, True)
+        reg._default_value = value_to_int(spec.get("default_value_int", 0))
+        if reg._default_value:
+            reg.set_value(reg._default_value, True)
+
         spec_bitfields = spec.get("bitfields", [])
         offset = 0
         for bitfield_spec in spec_bitfields:
-            bitfield = RegsBitField.create_from_spec(bitfield_spec, offset, reg)
+            # Get bitfield modifications if available
+            bitfield_uid = bitfield_spec.get("id", "")
+            bitfield_mods = None
+            if reg_mods and "bitfields" in reg_mods and bitfield_uid in reg_mods["bitfields"]:
+                bitfield_mods = reg_mods["bitfields"].get(bitfield_uid)
+
+            bitfield = RegsBitField.create_from_spec(bitfield_spec, offset, reg, bitfield_mods)
             offset += bitfield.width
             reg.add_bitfield(bitfield)
+
         return reg
 
     def _get_uid(self) -> str:
         """Get UID of register."""
         if self.uid:
             return self.uid
-        if self.hidden:
+        if self.reserved:
             return f"reserved{self.offset:03X}"
 
         return f"field{self.offset:03X}"
@@ -666,7 +725,7 @@ class Register:
         spec["reg_width"] = str(self.width)
         spec["name"] = self.name
         spec["description"] = self.description
-        spec["reset_value_int"] = hex(self.get_reset_value())
+        spec["default_value_int"] = hex(self.get_reset_value())
         bitfields = []
         bitfields_offset = 0
         for bitfield in sorted(self._bitfields, key=lambda x: x.offset):
@@ -734,7 +793,7 @@ class Register:
                     f"The register {reg.name} has different width."
                 )
             # The access validation is skipped for reserved
-            if not reg.hidden and self.access != reg.access:
+            if not reg.reserved and self.access != reg.access:
                 raise SPSDKRegsErrorRegisterGroupMishmash(
                     f"The register {reg.name} has different access type."
                 )
@@ -879,14 +938,7 @@ class Register:
 
         :return: Reset value of register.
         """
-        value = self._reset_value
-        for bitfield in self._bitfields:
-            width = bitfield.width
-            offset = bitfield.offset
-            val = bitfield.reset_value
-            value |= (val & ((1 << width) - 1)) << offset
-
-        return value
+        return self._default_value
 
     def add_bitfield(self, bitfield: RegsBitField) -> None:
         """Add register bitfield.
@@ -904,7 +956,7 @@ class Register:
         """
         ret = []
         for bitf in self._bitfields:
-            if bitf.hidden:
+            if bitf.reserved:
                 continue
             if exclude and bitf.name.startswith(tuple(exclude)):
                 continue
@@ -927,7 +979,7 @@ class Register:
         :raises SPSDKRegsErrorBitfieldNotFound: The bitfield doesn't exist.
         """
         for bitfield in self._bitfields:
-            if uid == bitfield.uid:
+            if uid.upper() == bitfield.uid.upper():
                 return bitfield
 
         raise SPSDKRegsErrorBitfieldNotFound(
@@ -937,14 +989,14 @@ class Register:
     def find_bitfield(self, name: str) -> RegsBitField:
         """Returns the instance of the bitfield by its name.
 
-        :param name: The name of the bitfield.
+        :param name: The name of the bitfield (case insensitive).
         :return: Instance of the bitfield.
         :raises SPSDKRegsErrorBitfieldNotFound: The bitfield doesn't exist.
         """
         for bitfield in self._bitfields:
-            if name == bitfield.name:
+            if name.upper() == bitfield.name.upper():
                 return bitfield
-            if name == bitfield.uid:
+            if name.upper() == bitfield.uid.upper():
                 return bitfield
 
         raise SPSDKRegsErrorBitfieldNotFound(f" The {name} is not found in register {self.name}.")
@@ -1026,7 +1078,22 @@ class _RegistersBase(Generic[RegisterClassT]):
             grouped_registers = self.db.get_list(
                 self.feature, self._create_key("grouped_registers"), []
             )
-            self._load_spec(spec_file=spec_file_name, grouped_regs=grouped_registers)
+            # Get additional register specifications from database
+            reg_spec_modifications = self.db.get_value(
+                self.feature, self._create_key("reg_spec_modification"), {}
+            )
+
+            # Handle potential modifications to register specifications stored in configuration file
+            if isinstance(reg_spec_modifications, str):
+                reg_spec_modifications = load_configuration(
+                    self.db.device.create_file_path(reg_spec_modifications)
+                )
+
+            self._load_spec(
+                spec_file=spec_file_name,
+                grouped_regs=grouped_registers,
+                reg_spec_modifications=reg_spec_modifications,
+            )
         except SPSDKError as exc:
             if do_not_raise_exception:
                 # Only path for testing and internal tools
@@ -1078,11 +1145,11 @@ class _RegistersBase(Generic[RegisterClassT]):
         """
 
         def check_reg(reg: RegisterClassT) -> bool:
-            if name == reg.name:
+            if name.upper() == reg.name.upper():
                 return True
-            if name in reg._alias_names:
+            if name.upper() in [x.upper() for x in reg._alias_names]:
                 return True
-            if name == reg.uid:
+            if name.upper() == reg.uid.upper():
                 return True
             return False
 
@@ -1106,11 +1173,11 @@ class _RegistersBase(Generic[RegisterClassT]):
         :raises SPSDKRegsErrorRegisterNotFound: The register doesn't exist.
         """
         for reg in self._registers:
-            if uid == reg.uid:
+            if uid.upper() == reg.uid.upper():
                 return reg
             if reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
-                    if uid == sub_reg.uid:
+                    if uid.upper() == sub_reg.uid.upper():
                         return sub_reg
 
         raise SPSDKRegsErrorRegisterNotFound(
@@ -1173,7 +1240,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                     sub_regs.extend(reg.sub_regs)
             regs.extend(sub_regs)
 
-        return [x for x in regs if not x.hidden]
+        return [x for x in regs if not x.reserved]
 
     def get_reg_names(
         self, exclude: Optional[list[str]] = None, include_group_regs: bool = False
@@ -1316,9 +1383,10 @@ class _RegistersBase(Generic[RegisterClassT]):
         :return: JSON SCHEMA.
         """
         properties: dict[str, Any] = {}
-        for reg in self.get_registers():
+
+        def add_reg_validation_schema(reg: RegisterClassT, is_subreg: bool = False) -> None:
             bitfields = reg._bitfields
-            bitfields_in_template = len([b for b in bitfields if not b.hidden]) > 0
+            bitfields_in_template = len([b for b in bitfields if not b.reserved]) > 0
             reg_schema = [
                 {
                     "type": ["string", "number"],
@@ -1351,7 +1419,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                             "title": f"{bitfield.name}",
                             "description": self._get_bitfield_yaml_description(bitfield),
                             "template_value": bitfield.get_value(),
-                            "skip_in_template": bitfield.hidden,
+                            "skip_in_template": bitfield.reserved,
                             "no_yaml_comments": bitfield.no_yaml_comments,
                         }
                     else:
@@ -1363,7 +1431,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                             "minimum": 0,
                             "maximum": (1 << bitfield.width) - 1,
                             "template_value": bitfield.get_enum_value(),
-                            "skip_in_template": bitfield.hidden,
+                            "skip_in_template": bitfield.reserved,
                             "no_yaml_comments": bitfield.no_yaml_comments,
                         }
                 # Extend register schema by obsolete style
@@ -1390,17 +1458,24 @@ class _RegistersBase(Generic[RegisterClassT]):
                         "properties": bitfields_schema,
                     },
                 )
-
+            # we show only group registers in template, but we keep sub-registers for validation in case user define it
             reg_properties = {
                 "title": f"{reg.name}",
                 "description": f"Offset: 0x{reg.offset:08X}, Width: {reg.width}b; {reg.description}",
                 "no_yaml_comments": reg.no_yaml_comments,
+                "skip_in_template": is_subreg,
                 "oneOf": reg_schema,
             }
             properties[reg.name] = reg_properties
             # also register UID is accepted as valid schema key
             if reg.uid != reg.name:
                 properties[reg.uid] = {**reg_properties, "skip_in_template": True}
+            if reg.has_group_registers():
+                for sub_reg in reg.sub_regs:
+                    add_reg_validation_schema(sub_reg, is_subreg=True)
+
+        for reg in self.get_registers():
+            add_reg_validation_schema(reg)
 
         return {"type": "object", "title": self.family.name, "properties": properties}
 
@@ -1416,11 +1491,19 @@ class _RegistersBase(Generic[RegisterClassT]):
         return None
 
     def _load_from_spec(
-        self, config: dict[str, Any], grouped_regs: Optional[list[dict]] = None
+        self,
+        config: dict[str, Any],
+        grouped_regs: Optional[list[dict]] = None,
+        reg_spec_modifications: Optional[dict[str, dict]] = None,
     ) -> None:
         for spec_group in config.get("groups", []):
             for spec_reg in spec_group.get("registers", []):
-                reg = self.register_class.create_from_spec(spec_reg)
+                reg_uid = spec_reg.get("id", "")
+                reg_mods = None
+                if reg_spec_modifications and reg_uid in reg_spec_modifications:
+                    reg_mods = reg_spec_modifications.get(reg_uid)
+
+                reg = self.register_class.create_from_spec(spec_reg, reg_mods)
                 group = self._get_register_group(reg, grouped_regs)
                 if group:
                     try:
@@ -1445,11 +1528,17 @@ class _RegistersBase(Generic[RegisterClassT]):
                 else:
                     self.add_register(reg)
 
-    def _load_spec(self, spec_file: str, grouped_regs: Optional[list[dict]] = None) -> None:
+    def _load_spec(
+        self,
+        spec_file: str,
+        grouped_regs: Optional[list[dict]] = None,
+        reg_spec_modifications: Optional[dict[str, dict]] = None,
+    ) -> None:
         """Function loads the registers from the given JSON.
 
         :param spec_file: Input JSON file path.
         :param grouped_regs: List of register prefixes names to be grouped into one.
+        :param reg_spec_modifications: Dictionary with additional register specifications.
         :raises SPSDKError: JSON parse problem occurs.
         """
         try:
@@ -1459,7 +1548,7 @@ class _RegistersBase(Generic[RegisterClassT]):
             raise SPSDKError(
                 f"Cannot load register specification: {spec_file}. {str(exc)}"
             ) from exc
-        self._load_from_spec(spec, grouped_regs)
+        self._load_from_spec(spec, grouped_regs, reg_spec_modifications)
 
     def write_spec(self, file_name: str) -> None:
         """Write loaded register structures into JSON file.
@@ -1590,7 +1679,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                 btf = {}
                 for bitfield in bitfields:
                     if (
-                        diff or bitfield.hidden
+                        diff or bitfield.reserved
                     ) and bitfield.get_value() == bitfield.get_reset_value():
                         continue
                     btf[bitfield.name] = bitfield.get_enum_value()
