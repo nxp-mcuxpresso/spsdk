@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -43,12 +43,14 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinLoadAddress
           - Mbi_ExportMixinApp
       crc_xip:
         image_type: CRC_XIP_IMAGE
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
           - Mbi_ExportMixinApp
           - Mbi_ExportMixinCrcSign
       crc_ram:

@@ -414,6 +414,7 @@
                     "description": "Debug Configuration word (tier-1 developer). Use DCFG_CC_SOCU_WR to write lock this OTP word.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x005F",
                     "shadow_reg_offset_int": "0x017C",
+                    "default_value_int": "0",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -734,10 +735,7 @@
                             ]
                         },
                         {
-                            "width": 6,
-                            "id": "fuse95-bits-25-30",
-                            "name": "Reserved",
-                            "description": "Reserved for NXP internal (and future) use only. Users should keep this zero."
+                            "width": 6
                         },
                         {
                             "width": 1,
@@ -765,6 +763,7 @@
                     "description": "Debug Configuration word (tier-2 developer). Use DCFG_CC_SOCU_NS_WR to write lock this OTP word.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0064",
                     "shadow_reg_offset_int": "0x0190",
+                    "default_value_int": "0",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",
@@ -1085,10 +1084,7 @@
                             ]
                         },
                         {
-                            "width": 6,
-                            "id": "fuse100-bits-25-30",
-                            "name": "Reserved",
-                            "description": "Reserved for NXP internal (and future) use only. Users should keep this zero."
+                            "width": 6
                         },
                         {
                             "width": 1,
@@ -1193,19 +1189,9 @@
                                     "description": "Boot from 1-bit SPI flash device from FlexCom interface pins selected by REDUNDANT_SPI_PORT field. Only load-to-RAM images are supported in this mode."
                                 },
                                 {
-                                    "name": "Reserved",
-                                    "value": 8,
-                                    "description": "Reserved"
-                                },
-                                {
                                     "name": "ISP_MODE",
                                     "value": 9,
                                     "description": "Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface."
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 10,
-                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "QSPI_B_REC_BOOT",
@@ -1226,11 +1212,6 @@
                                     "name": "SDHC1_REC_BOOT",
                                     "value": 14,
                                     "description": "Boot from SDHC1 port device. If image is not found check recovery boot using SPI-flash device  through FlexComm."
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 15,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -1264,16 +1245,6 @@
                                     "name": "I2C_ISP",
                                     "value": 4,
                                     "description": "Support ISP command interface on I2C port only."
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 5,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "DISABLE_ISP",
@@ -1445,7 +1416,7 @@
                                     "description": "Allow non-secure images with and without CRC. Used during development."
                                 },
                                 {
-                                    "name": "ENABLED",
+                                    "name": "ENABLED_SIGNED_ENCRYPTED",
                                     "value": 1,
                                     "description": "Secure boot is enabled. The images have to be signed and optionally AES-CTR encrypted using pre-shared key. ROM does signature checking first and then does decryption of authenticated image."
                                 },
@@ -1455,7 +1426,7 @@
                                     "description": "Secure boot is enabled."
                                 },
                                 {
-                                    "name": "ENABLED",
+                                    "name": "ENABLED_1",
                                     "value": 3,
                                     "description": "Secure boot is enabled."
                                 }
@@ -1560,26 +1531,6 @@
                                     "name": "ADESTO_OCTAL",
                                     "value": 3,
                                     "description": "Adesto Octal FLASH"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 4,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 5,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -1618,16 +1569,6 @@
                                     "name": "OSPI_DDR_MICRON",
                                     "value": 5,
                                     "description": "Micron Octal DDR"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -2609,7 +2550,6 @@
                     "description": "Key scramble data used as input to scramble master key stored in OTP.",
                     "index_int": "0x006B",
                     "shadow_reg_offset_int": "0x01AC",
-                    "write_priority": "first",
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse8",

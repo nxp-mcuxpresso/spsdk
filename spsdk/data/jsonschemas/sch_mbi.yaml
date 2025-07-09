@@ -62,17 +62,6 @@ load_addr:
       title: Loading address of application
       description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
       template_value: 0
-  required: [outputImageExecutionAddress]
-
-load_addr_optional:
-  type: object
-  title: Basic Settings
-  properties:
-    outputImageExecutionAddress:
-      type: [number, string]
-      title: Loading address of application
-      description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
-      template_value: 0
 
 firmware_version:
   type: object
@@ -237,7 +226,7 @@ app_table:
     applicationTable:
       type: array
       title: The list of additional binaries
-      description: This is software future of RTxxx family that NXP SDK startup code(not ROM) could load additional images.
+      description: This is software feature of RTxxx family that NXP SDK startup code (not ROM) could load additional images.
       items:
         type: object
         required: [binary, destAddress, load]

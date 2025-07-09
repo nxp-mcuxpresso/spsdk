@@ -5,8 +5,8 @@
 revisions:
   a0:
     features:
-        fuses:
-          reg_spec: fuses_a0.json
+      fuses:
+        reg_spec: fuses_a0.json
   a1:
     features:
       mbi:
@@ -152,7 +152,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinTrustZoneMandatory
-          - Mbi_MixinLoadAddressOptional
+          - Mbi_MixinLoadAddress
           - Mbi_MixinImageVersion
           - Mbi_ExportMixinAppTrustZone
       plain_ram:
@@ -291,4 +291,4 @@ features:
         interfaces: [instance_0, instance_1]
       spi_nor:
         reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json
-        instances: [0, 1, 2, 3, 4, 5, 6, 7,8 ,9, 10, 11, 12, 13]
+        instances: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]

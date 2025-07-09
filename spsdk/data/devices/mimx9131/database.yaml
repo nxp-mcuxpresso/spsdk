@@ -209,3 +209,11 @@ features:
   fastboot:
     address: 0x8280_0000
     size: 0x2000_0000
+
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_interface: uboot_fastboot
+    el2go_name: IMX9
+    prov_method: oem_app
+    validation_method: max_count=16;max_total_size=16384
+    uuid_fuse_index: "6 0 4"

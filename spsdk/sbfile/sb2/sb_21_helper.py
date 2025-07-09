@@ -251,7 +251,7 @@ class SB21Helper:
         """
         address = value_to_int(cmd_args["address"])
         length = value_to_int(cmd_args.get("length", 0))
-        flags = cmd_args.get("flags", 0)
+        flags = value_to_int(cmd_args.get("flags", 0))
 
         mem_opt = cmd_args.get("mem_opt")
         mem_id = 0
@@ -277,7 +277,7 @@ class SB21Helper:
         :return: CmdEnable object
         """
         address = value_to_int(cmd_args["address"])
-        size = cmd_args.get("size", 4)
+        size = value_to_int(cmd_args.get("size", 4))
         mem_opt = cmd_args.get("mem_opt")
         mem_id = 0
         if mem_opt:
@@ -311,7 +311,16 @@ class SB21Helper:
             values = [int(s, 16) for s in cmd_args["values"].split(",")]
             data = struct.pack(f"<{len(values)}L", *values)
         else:
-            raise SPSDKError("Neither 'file', neither 'values' is missing in config to get data.")
+            raise SPSDKError("Neither 'file' nor 'values' is provided in config to get data.")
+
+        # Ensure keyblobs is a list and keyblob_id is a Number
+        if not isinstance(keyblobs, list):
+            raise SPSDKError(f"Expected list of keyblobs, got {type(keyblobs).__name__}")
+        if not isinstance(keyblob_id, Number):
+            try:
+                keyblob_id = int(str(keyblob_id), 0)
+            except (ValueError, TypeError) as exc:
+                raise SPSDKError(f"Invalid keyblob_id: {keyblob_id}, must be a number") from exc
 
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
@@ -355,12 +364,23 @@ class SB21Helper:
         :return: CmdLoad object
         """
         # iterate over keyblobs
-        keyblobs = cmd_args.get("keyblobs", None)
-        keyblob_id = cmd_args.get("keyblob_id", None)
+        keyblobs = cmd_args.get("keyblobs", [])
+        keyblob_id = cmd_args.get("keyblob_id")
 
         address = value_to_int(cmd_args["address"])
         otfad_key = cmd_args["values"]
 
+        # Ensure keyblobs is a list and keyblob_id is a Number
+        if not isinstance(keyblobs, list):
+            raise SPSDKError(f"Expected list of keyblobs, got {type(keyblobs).__name__}")
+        if keyblob_id is None:
+            raise SPSDKError("keyblob_id is required but was not provided")
+        if not isinstance(keyblob_id, Number):
+            try:
+                keyblob_id = int(str(keyblob_id), 0)
+            except (ValueError, TypeError) as exc:
+                raise SPSDKError(f"Invalid keyblob_id: {keyblob_id}, must be a number") from exc
+            assert isinstance(keyblob_id, Number), f"Invalid keyblob_id type: {type(keyblob_id)}"
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
         except SPSDKError as exc:
@@ -393,7 +413,7 @@ class SB21Helper:
         :param cmd_args: dictionary holding the memory type and address.
         :return: CmdKeyStoreRestore object.
         """
-        mem_opt = cmd_args["mem_opt"]
+        mem_opt = value_to_int(cmd_args["mem_opt"])
         address = value_to_int(cmd_args["address"])
         return CmdKeyStoreRestore(address, ExtMemId.from_tag(mem_opt))
 
@@ -410,7 +430,7 @@ class SB21Helper:
         :param cmd_args: dictionary holding the memory type and address.
         :return: CmdKeyStoreRestore object.
         """
-        mem_opt = cmd_args["mem_opt"]
+        mem_opt = value_to_int(cmd_args["mem_opt"])
         address = value_to_int(cmd_args["address"])
         return CmdKeyStoreBackup(address, ExtMemId.from_tag(mem_opt))
 
@@ -430,8 +450,8 @@ class SB21Helper:
         :param cmd_args: dictionary holding the version type and fw version.
         :return: CmdKeyStoreRestore object.
         """
-        ver_type = cmd_args["ver_type"]
-        fw_version = cmd_args["fw_version"]
+        ver_type = value_to_int(cmd_args["ver_type"])
+        fw_version = value_to_int(cmd_args["fw_version"])
         return CmdVersionCheck(VersionCheckType.from_tag(ver_type), fw_version)
 
     def _validate_keyblob(self, keyblobs: list, keyblob_id: Number) -> Optional[dict]:
@@ -479,8 +499,8 @@ class SB21Helper:
         :param cmd_args: dictionary holding the argument and address.
         :return: CmdJump object.
         """
-        argument = cmd_args.get("argument", 0)
+        argument = value_to_int(cmd_args.get("argument", 0))
         address = value_to_int(cmd_args["address"])
-        spreg = cmd_args.get("spreg")
+        spreg = value_to_int(cmd_args["spreg"]) if "spreg" in cmd_args else None
 
         return CmdJump(address, argument, spreg)

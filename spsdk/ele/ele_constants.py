@@ -51,6 +51,7 @@ class SocId(SpsdkSoftEnum):
 
     MX8ULP = (0x084D, "MX8ULP", "i.MX8ULP")
     RT1180 = (0x1180, "RT1180", "i.MXRT1180")
+    MX91 = (0x9100, "MX91", "i.MX91")
     MX93 = (0x9300, "MX93", "i.MX93")
     MX95 = (0x9500, "MX95", "i.MX95")
     MX943 = (0x9430, "MX943", "i.MX943")

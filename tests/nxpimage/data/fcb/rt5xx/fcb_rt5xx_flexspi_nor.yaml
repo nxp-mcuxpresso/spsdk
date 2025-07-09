@@ -70,9 +70,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x06'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ----------------------------------------===== deviceModeArg [Optional] =====----------------------------------------
   # Description: Offset: 0x00000018, Width: 32b;  [0x018-0x01b] Argument/Parameter for device configuration
   deviceModeArg: '0x00000002'
@@ -98,9 +95,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== configCmdSeqs_1 [Optional] =====---------------------------------------
   # Description: Offset: 0x00000024, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
   # as deviceModeSeq
@@ -111,9 +105,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== configCmdSeqs_2 [Optional] =====---------------------------------------
   # Description: Offset: 0x00000028, Width: 32b;  [0x020-0x02b] Sequence info for Device Configuration command, similar
   # as deviceModeSeq
@@ -124,9 +115,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ------------------------------------------===== reserved1 [Optional] =====------------------------------------------
   # Description: Offset: 0x0000002C, Width: 32b;  [0x02c-0x02f] Reserved for future use
   reserved1: '0x00000000'
@@ -1641,9 +1629,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000184, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_1:
@@ -1653,9 +1638,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000188, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_2:
@@ -1665,9 +1647,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
   # Description: Offset: 0x0000018C, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_3:
@@ -1677,9 +1656,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000190, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_4:
@@ -1689,9 +1665,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000194, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_5:
@@ -1701,9 +1674,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000198, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_6:
@@ -1713,9 +1683,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
   # Description: Offset: 0x0000019C, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_7:
@@ -1725,9 +1692,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
   # Description: Offset: 0x000001A0, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_8:
@@ -1737,9 +1701,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
   # Description: Offset: 0x000001A4, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_9:
@@ -1749,9 +1710,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
   # Description: Offset: 0x000001A8, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_10:
@@ -1761,9 +1719,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
   # Description: Offset: 0x000001AC, Width: 32b;  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_11:
@@ -1773,9 +1728,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: '0x00'
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: '0x0000'
   # -----------------------------------------===== reserved4_0 [Optional] =====-----------------------------------------
   # Description: Offset: 0x000001B0, Width: 32b;  [0x1b0-0x1bf] Reserved for future use
   reserved4_0: '0x00000000'

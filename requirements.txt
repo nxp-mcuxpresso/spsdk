@@ -3,7 +3,7 @@ bincopy<21,>=17.14.5
 bitstring<5,>=3.1
 click-command-tree<2
 click-option-group<1,>=0.3.0
-click!=8.1.4,<8.2,>=7.1
+click!=8.1.4,<9,>=7.1
 colorama<1,>=0.4.6
 crcmod<2
 cryptography<45,>=42.0.0

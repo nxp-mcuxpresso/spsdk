@@ -13,8 +13,9 @@ from typing import Optional
 from spsdk.apps.utils.utils import SPSDKError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.signature_provider import SignatureProvider
+from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
 from spsdk.image.ahab.ahab_blob import AhabBlob
-from spsdk.image.ahab.ahab_data import AhabChipContainerConfig, FlagsSrkSet
+from spsdk.image.ahab.ahab_data import AhabChipContainerConfig, AHABTags, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
 from spsdk.image.ahab.ahab_signature import ContainerSignature
@@ -51,9 +52,14 @@ def ahab_update_keyblob(
     offset = 0
     if mem_type:
         database = get_db(family)
-        offset = database.get_dict(
-            DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
-        )["ahab_container"]
+        try:
+            offset = database.get_dict(
+                DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
+            )["ahab_container"]
+        except KeyError:
+            offset = database.get_dict(
+                DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
+            )["primary_image_container_set"]
 
     keyblob_data = load_binary(keyblob)
 
@@ -121,9 +127,14 @@ def ahab_re_sign(
     offset = 0
     if mem_type:
         database = get_db(family)
-        offset = database.get_dict(
-            DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
-        )["ahab_container"]
+        try:
+            offset = database.get_dict(
+                DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
+            )["ahab_container"]
+        except KeyError:
+            offset = database.get_dict(
+                DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
+            )["primary_image_container_set"]
 
     with open(binary, "r+b") as f:
         try:
@@ -273,3 +284,44 @@ def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> bytes:
             logger.error("Segment does not contain AHAB data")
 
     return bimg.export()
+
+
+def ahab_fix_signature_block_version(
+    family: FamilyRevision,
+    binary: str,
+) -> bytes:
+    """Fix signature block version in AHAB v2 signature blocks.
+
+    imx-mkimage is known to create incorrect signature block versions, so this method
+    corrects the version to match the expected AHAB v2 signature block version. (1)
+
+    :param family: Family revision of the device
+    :param binary: Path to the binary AHAB image to fix
+    :return: Fixed binary data
+    """
+    data = bytearray(load_binary(binary))
+    database = get_db(family)
+    supported_containers = database.get_list(DatabaseManager.AHAB, "container_types")
+
+    if supported_containers[0] != 2:
+        raise SPSDKError("This fix is only applicable for AHAB v2 containers")
+
+    class DummySignature(HeaderContainer):
+        """Dummy container class to use fast checking the base format."""
+
+        VERSION = [0]
+        TAG = AHABTags.SIGNATURE_BLOCK.tag
+
+    logger.info("Trying to find signature blocks version 0 on every 0x10 bytes")
+    for offset in range(0, len(data), 0x10):
+        if not DummySignature.check_container_head(data[offset : offset + 0x10]).has_errors:
+            _, length, version = HeaderContainer.parse_head(data[offset : offset + 0x10])
+            if length == 16 and version == 0:
+                data[offset] = 1
+                logger.info(f"Fixed signature block version at {hex(offset)}")
+
+    bimg = BootableImage.parse(bytes(data), family, None)
+    if bimg.verify().has_errors:
+        raise SPSDKError("Verification of fixed image failed")
+
+    return data

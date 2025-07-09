@@ -127,7 +127,10 @@ signed_message:
         flag_ca:
           type: boolean
           title: CA Flag
-          description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+          description:
+            "CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys.
+            In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
+            This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
           template_value: false
         srk_array:
           type: array
@@ -160,7 +163,10 @@ signed_message:
             flag_ca:
               type: boolean
               title: CA Flag
-              description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+              description:
+                "CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys.
+                In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
+                This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
               template_value: false
             srk_array:
               type: array
@@ -479,10 +485,10 @@ signed_message:
                   title: Key import
                   description:
                     This message is designed to import a symmetric key or a private key of an asymmetric key pair. The imported key must be encrypted
-                    (except specific cases like SKRH). The key used to decrypt the imported key must have the following attributes;
+                    (except specific cases like SRKH). The key used to decrypt the imported key must have the following attributes;
                       -  DECRYPT usage;
                       -  A wrapping key algorithm as permitted algorithm (detailed in next sections).
-                    User must import symmetric key or private key from an asymmetric keypair. For RSA asymmetric
+                    User must import symmetric key or private key from an asymmetric key pair. For RSA asymmetric
                     private keys, it must be the concatenation of private exponent followed by the modulus.
                     To be valid, all key attributes of the imported key must be coherent. If attributes are invalid, an error is returned.
                   allOf:

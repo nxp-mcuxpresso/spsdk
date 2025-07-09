@@ -51,8 +51,9 @@ jobs:
  
       - name: Run Codecheck
         run: |
-          # Ignoring the 'COPYRIGHT' check as the year of merge to Github may differ from the actual year when the file was updated 
-          codecheck -s --output reports_codecheck --info-check gitcov  --info-check COPYRIGHT
+          # Ignoring the 'copyright' check as the year of merge to Github may differ from the actual year when the file was updated
+          # Ignoring the 'cspell' check as cspell may not be installed on gh actions runner
+          codecheck -s --output reports_codecheck --info-check copyright --info-check cspell
 
       - name: Archive Results
         uses: actions/upload-artifact@v4.6.2

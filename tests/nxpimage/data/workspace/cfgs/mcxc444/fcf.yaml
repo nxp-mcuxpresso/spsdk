@@ -6,7 +6,7 @@
 # NXP SPSDK version: 2.6.0.dev51+g7cb8fb6a6  ======
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
@@ -18,10 +18,10 @@ family: mcxc444
 revision: latest
 # --------------------------------------------===== mcxc444 [Required] =====--------------------------------------------
 fcf:
-  # -----------------------------------===== BACKDOOR_COMPARISON_KEY [Optional] =====-----------------------------------
+  # -----------------------------------===== BACKDOOR_KEY [Optional] =====-----------------------------------
   # Description: Offset: 0x00000000, Width: 64b; Backdoor Comparison Key. Refer to Verify Backdoor Access Key Command
   # and Unsecuring the Chip Using Backdoor Key Access.
-  BACKDOOR_COMPARISON_KEY: FFFFFFFFFFFFFFFF
+  BACKDOOR_KEY: FFFFFFFFFFFFFFFF
   # --------------------------------------------===== FPROT [Optional] =====--------------------------------------------
   # Description: Offset: 0x00000008, Width: 32b; Program flash protection bytes. Refer to the description of the Program
   # Flash Protection Registers (FPROT0-3).
@@ -138,7 +138,7 @@ fcf:
     # Description: Offset: 6b, Width: 2b, Boot Source Selection: these bits select the boot sources if boot pin option
     # bit BOOTPIN_OPT = 1
     # - FLASH, (0): Boot from Flash
-    # - Reserved, (1): Reeserved
+    # - Reserved, (1): Reserved
     # - ROM_2, (2): Boot from ROM
     # - ROM, (3): Boot from ROM
     # Possible options: <FLASH, Reserved, ROM_2, ROM>

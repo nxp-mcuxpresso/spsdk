@@ -108,11 +108,12 @@ def get_test_address(family: FamilyRevision) -> int:
     """
     db = get_db(family)
     try:
-        return db.get_int(
-            DatabaseManager.DAT, "test_address", db.get_int(DatabaseManager.COMM_BUFFER, "address")
-        )
-    except SPSDKError as exc:
-        raise SPSDKError(f"Can't get test AHB access address for {family}") from exc
+        return db.get_int(DatabaseManager.DAT, "test_address")
+    except SPSDKError:
+        try:
+            return db.get_int(DatabaseManager.COMM_BUFFER, "address")
+        except SPSDKError as exc:
+            raise SPSDKError(f"Can't get test AHB access address for {family}") from exc
 
 
 def test_ahb_access(

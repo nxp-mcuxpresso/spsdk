@@ -45,6 +45,7 @@ nxpimage
 * The ``nxpimage hab parse`` command now requires a mandatory ``--family`` parameter to correctly interpret HAB container binary data
 * In ``nxpimage sb31``, the Load command configuration has been simplified. The key authentication has been removed (instead, use already implemented commands: LoadhashLocking and LoadCmac)
 * In ``nxpimage sb31``, the input data values have been simplified from value/values/file into one data parameter (data accepts all previously used ways of data definition)
+* In ``nxpimage bootable-image xmcd``, the configuration data values have been simplified and shortened for better clarity and readability. If you were using the full names in your configurations, you'll need to update them to the new shortened versions.
 
 pfr/ifr
 ^^^^^^^
@@ -57,6 +58,9 @@ pfr/ifr
 * In ``pfr`` and ``ifr``, backward compatibility for very old configuration files with 'description:' section has been removed, replaced by simple family/revision/type header keys
 * The BD file for SB2.1 must now contain 'family' and optionally 'revision' in the 'options' block
 
+nxpdice
+^^^^^^^
+* In ``nxpdice``, the configuration data values have been simplified and shortened for better clarity and readability. If you were using the full names in your configurations, you'll need to update them to the new shortened versions.
 
 Removed Applications
 --------------------

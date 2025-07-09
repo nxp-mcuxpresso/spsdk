@@ -63,7 +63,7 @@ containers:
       #  - slice_hash: Slice and hash mode.
       #  - on_fly: On the fly hash.
       # Possible options: <enabled, slice_hash, on_fly>
-      fast_boot: enabled
+      fast_boot: disabled
       # --------------------------------------===== Fuse version [Optional] =====---------------------------------------
       # Description: The value must be equal or greater than the version stored in fuses to allow loading this
       # container.

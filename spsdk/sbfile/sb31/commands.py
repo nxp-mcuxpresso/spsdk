@@ -970,7 +970,7 @@ class CmdCopy(BaseCmd):
         :param config: Dictionary with configuration fields.
         :return: Command object loaded from configuration.
         """
-        address = config.get_int("address", 0)
+        address = config.get_int("addressFrom", 0)
         length = config.get_int("size", 0)
         destination_address = config.get_int("addressTo", 0)
         memory_id_from = config.get_int("memoryIdFrom", 0)

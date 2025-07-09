@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mcuxpresso.nxp.com/secure_provisioning/processors_registers_schema.json",
+  "title": "Schema for definition of processor registers/fuses for Secure Provision Tool and SPSDK",
+  "description":"Copyright NXP 2020-2025, Schema for definition of processor registers for Secure Provision Tool and SPSDK",
+
+    "$id": "#/definitions/register/bitfield",
+    "type": "object",
+    "title": "Definition of the register bit-field.",
+    "required": [
+      "width"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "$id": "#/properties/register/bitfield/ID",
+        "type": "string",
+        "title": "Unique bit-field ID. It must be provided for all bit-fields except reserved bit-fields.",
+        "pattern": "^[_a-zA-Z][-_a-zA-Z0-9]*$"
+      },
+      "name": {
+        "$id": "#/properties/register/bitfield/name",
+        "type": "string",
+        "title": "Bit-field name (to be displayed in UI). Name must be provided for all bit-fields except reserved bit-fields."
+      },
+      "width": {
+        "$id": "#/properties/register/bitfield/width",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 32,
+        "title": "Width of the bit-field, in bits."
+      },
+      "description": {
+        "$id": "#/properties/register/bitfield/description",
+        "type": "string",
+        "title": "Description of the bit-field. Description must be provided for all bit-fields except reserved bit-fields."
+      },
+      "access": {
+        "$id": "#/properties/register/bitfield/access",
+        "type": "string",
+        "default": "same-as-parent",
+        "title": "Access to the bit-field: Read/Write; Read-Only or Write-Only. The bit-field access must be same or STRICTER then register. `none` means no read, no write - currently used for Reserved bitfields which are not readable (RT118x)",
+        "enum": [
+          "RW",
+          "WO",
+          "RO",
+          "WRITE_CONST",
+          "same-as-parent",
+          "none"
+        ] 
+      },
+      "calculated": {
+        "$id": "#/properties/register/bitfield/calculated",
+        "type": "string",
+        "title": "Method how the bit-field value is calculated.",
+        "default": "no",
+        "enum": [
+          "no",
+          "CRC-8/ITU",
+          "INVERSE"
+        ]
+      },
+      "values": {
+        "$id": "#/properties/register/bitfield/values",
+        "type": "array",
+        "minItems": 1,
+        "title": "List of supported bit-field values - for `enumeration` style of bit-field. Values, that are not listed, are considered as reserved. If no values, then bit-field is considered as `integer` style bit-field.",
+        "additionalItems": false,
+        "items": {
+          "$id": "#/properties/register/bitfield/value",
+          "type": "object",
+          "title": "Info about possible bit-field value.",
+          "required": [
+            "name", "value", "description"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "$id": "#/properties/register/bitfield/value/name",
+              "type": "string",
+              "title": "Name of the bit-field value. It is a short text, how the value is displayed in GUI.",
+              "maxLength": 25
+            },
+            "value": {
+              "$id": "#/properties/register/bitfield/value/value",
+              "type": "integer",
+              "title": "Bit-field value.",
+              "minimum": 0
+             },
+             "description": {
+              "$id": "#/properties/register/bitfield/value/description",
+              "type": "string",
+              "title": "Description of the bit-field value."
+            }  
+          }
+        }
+      }
+    }
+}

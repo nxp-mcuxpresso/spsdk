@@ -25,6 +25,7 @@ from tests.cli_runner import CliRunner
     [
         ("rt5xx", "flexspi_nor"),
         ("rt6xx", "flexspi_nor"),
+        ("mimxrt798s", "xspi_nor"),
         ("rt105x", "flexspi_nor"),
         ("rt106x", "flexspi_nor"),
         ("rt117x", "flexspi_nor"),
@@ -47,21 +48,22 @@ def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, me
 
 
 @pytest.mark.parametrize(
-    "family,mem_type,binary",
+    "family,mem_type",
     [
-        ("rt5xx", "flexspi_nor", "fcb.bin"),
-        ("rt6xx", "flexspi_nor", "fcb.bin"),
-        ("rt105x", "flexspi_nor", "fcb.bin"),
-        ("rt106x", "flexspi_nor", "fcb.bin"),
-        ("rt117x", "flexspi_nor", "fcb.bin"),
-        ("lpc55s3x", "flexspi_nor", "fcb.bin"),
-        ("mcxn9xx", "flexspi_nor", "fcb.bin"),
+        ("rt5xx", "flexspi_nor"),
+        ("rt6xx", "flexspi_nor", ),
+        ("mimxrt798s", "xspi_nor"),
+        ("rt105x", "flexspi_nor"),
+        ("rt106x", "flexspi_nor"),
+        ("rt117x", "flexspi_nor"),
+        ("lpc55s3x", "flexspi_nor"),
+        ("mcxn9xx", "flexspi_nor"),
     ],
 )
-def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, binary):
+def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type):
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "fcb", family)
-        binary_path = os.path.join(data_folder, binary)
+        binary_path = os.path.join(data_folder, "fcb.bin")
         out_config = os.path.join(tmpdir, f"fcb_{family}_{mem_type}.yaml")
         cmd = [
             "bootable-image",
@@ -99,6 +101,7 @@ def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family,
         ("rw612", ["flexspi_nor"]),
         ("mcxn947", ["flexspi_nor"]),
         ("lpc5536", ["flexspi_nor"]),
+        ("mimxrt798s", ["xspi_nor"]),
     ],
 )
 def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_types):
@@ -134,3 +137,18 @@ def test_fcb_parse_invalid(binary, fail, family, mem_type):
             FCB.parse(binary, family=FamilyRevision(family), mem_type=mem_type)
     else:
         FCB.parse(binary, family=FamilyRevision(family), mem_type=mem_type)
+
+@pytest.mark.parametrize(
+    "family,mem_type,is_valid",
+    [
+        ("mimxrt798s", 'flexspi_nor', False),
+        ("mimxrt798s", 'xspi_nor', True),
+        ("mimxrt798s", None, True),
+    ],
+)
+def test_default_memory_type(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, is_valid):
+    binary_path = os.path.join(data_dir, "fcb", family, "fcb.bin")
+    cmd = f"bootable-image fcb parse -f {family} -b {binary_path} -o {tmpdir}/output.yaml"
+    if mem_type:
+        cmd += f" -m {mem_type}"
+    cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0 if is_valid else -1)

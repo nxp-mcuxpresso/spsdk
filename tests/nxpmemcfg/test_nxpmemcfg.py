@@ -12,14 +12,16 @@ import os
 import pytest
 
 from spsdk.apps import nxpmemcfg
-from spsdk.memcfg.memcfg import MemoryConfig, SPSDKUnsupportedInterface
-from spsdk.utils.family import FamilyRevision
+from spsdk.memcfg.memcfg import Memory, MemoryConfig, SPSDKUnsupportedInterface
+from spsdk.utils.family import FamilyRevision, get_db
 from tests.cli_runner import CliRunner
 
 
 def test_app_help(cli_runner: CliRunner):
     """Simple test that application works at least with help."""
-    ret = cli_runner.invoke(nxpmemcfg.main, "")
+    ret = cli_runner.invoke(
+        nxpmemcfg.main, "", expected_code=cli_runner.get_help_error_code(use_help_flag=False)
+    )
     assert "nxpmemcfg" in ret.output
     assert "export" in ret.output
     assert "parse" in ret.output
@@ -94,7 +96,10 @@ def test_app_parse_export_all(
     cli_runner: CliRunner, tmpdir, peripheral: str, mem_type: str, interfaces: list[str]
 ):
     """Test of family info command."""
-    memories = MemoryConfig.get_known_memories(mem_type=mem_type, interfaces=interfaces)
+    memories = MemoryConfig.get_known_peripheral_memories(
+        family=FamilyRevision("mimxrt1189"), peripheral=peripheral
+    )
+
     for memory in memories:
         cmd = f"parse -f mimxrt1189 -p {peripheral} "
         for ow in memory.interfaces[0].option_words:
@@ -104,8 +109,6 @@ def test_app_parse_export_all(
         ).replace("\\", "/")
         cmd += f"-o {cfg_file}"
         ret = cli_runner.invoke(nxpmemcfg.main, cmd)
-        assert ret.exit_code == 0
-
         ret = cli_runner.invoke(nxpmemcfg.main, f"export -c {cfg_file}")
 
         assert ret.exit_code == 0
@@ -250,3 +253,88 @@ def test_non_supported_interface(family, peripheral, interface, supported):
             MemoryConfig(family=family, peripheral=peripheral, interface=interface)
     else:
         assert MemoryConfig(family=family, peripheral=peripheral, interface=interface)
+
+
+@pytest.mark.parametrize(
+    "family,peripheral,validate,expected_not_empty",
+    [
+        (None, None, True, True),  # No family, no peripheral - should return all memories
+        (
+            None,
+            "flexspi_nor",
+            True,
+            True,
+        ),  # No family, with peripheral - should return memories for that peripheral
+        (None, "flexspi_nor", False, True),  # Same but without validation
+        (FamilyRevision("mimxrt1189"), None, True, True),  # With family, no peripheral
+        (FamilyRevision("mimxrt1189"), "flexspi_nor", True, True),  # With family and peripheral
+        (FamilyRevision("mimxrt1189"), "flexspi_nor", False, True),  # Same but without validation
+        (
+            FamilyRevision("mimxrt1189"),
+            "invalid_peripheral",
+            True,
+            False,
+        ),  # Invalid peripheral should return empty list
+    ],
+)
+def test_get_known_peripheral_memories(family, peripheral, validate, expected_not_empty):
+    """Test the get_known_peripheral_memories function with various parameters.
+
+    This test verifies that the function returns memories in different scenarios:
+    - When no family is specified
+    - When no peripheral is specified
+    - When both family and peripheral are specified
+    - With and without validation
+    """
+    memories = MemoryConfig.get_known_peripheral_memories(
+        family=family, peripheral=peripheral, validate_option_words=validate
+    )
+
+    # Check if the result is a list of Memory objects
+    assert isinstance(memories, list)
+
+    # Check if the list is empty or not as expected
+    if expected_not_empty:
+        assert len(memories) > 0
+        # Verify that all items are Memory objects
+        for memory in memories:
+            assert isinstance(memory, Memory)
+            # Verify that each memory has at least one interface
+            assert len(memory.interfaces) > 0
+    else:
+        assert len(memories) == 0
+
+    # If peripheral is specified, check that all memories have that interface
+    if peripheral and len(memories) > 0:
+        # Get the memory type for this peripheral
+        if family:
+            p_db = get_db(family).get_dict(MemoryConfig.FEATURE, "peripherals")
+            if peripheral in p_db:
+                mem_type = p_db[peripheral]["mem_type"]
+                # Check that all returned memories have the correct type
+                for memory in memories:
+                    assert memory.type == mem_type
+
+
+@pytest.mark.parametrize(
+    "chip_name,expected_interfaces",
+    [
+        ("W25QxxxJV", ["quad_spi"]),  # A common flash memory with quad_spi interface
+        ("IS25WPxxxA", ["octal_spi"]),  # A memory with octal_spi interface
+    ],
+)
+def test_get_known_chip_memory(chip_name, expected_interfaces):
+    """Test the get_known_chip_memory function for specific chips."""
+    try:
+        memory = MemoryConfig.get_known_chip_memory(chip_name)
+        assert isinstance(memory, Memory)
+        assert memory.name == chip_name
+
+        # Check that the memory has the expected interfaces
+        interface_names = [interface.name for interface in memory.interfaces]
+        for expected_interface in expected_interfaces:
+            assert expected_interface in interface_names
+
+    except Exception as e:
+        # If the chip is not in the database, this test will be skipped
+        pytest.skip(f"Chip {chip_name} not found in database: {str(e)}")

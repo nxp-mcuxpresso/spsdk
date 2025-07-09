@@ -10,427 +10,317 @@
                 {
                     "id": "field9D0",
                     "offset_int": "0x000",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ELS_AS_CFG0",
                     "description": "ELS AS Configuration",
-                    "reset_value_int": "0xc0255",
+                    "default_value_int": "0xc0255",
                     "bitfields": [
                         {
                             "id": "field9D0-bits0-7",
-                            "offset": "0x0",
-                            "width": "8",
+                            "width": 8,
                             "name": "CFG_LC_STATE",
                             "access": "RO",
-                            "reset_value_int": "0x55",
                             "description": "LC state configuration bit"
                         },
                         {
-                            "id": "field9D0-bit8",
-                            "offset": "0x8",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9D0-bit9",
-                            "offset": "0x9",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LVD_CORE_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "When SPC CORE LVD analog detector are turned on, and CORE LVD reset are enabled, this bit indicates state 1."
                         },
                         {
-                            "id": "field9D0-bit10",
-                            "offset": "0xa",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9D0-bit11",
-                            "offset": "0xb",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LVD_CORE_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC CORE LVD analog detector are turned on, and CORE LVD IRQ are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit12",
-                            "offset": "0xc",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_WDT0_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When WatchDog Timer 0 is activated, this bit indicates state 1"
                         },
                         {
                             "id": "field9D0-bit13",
-                            "offset": "0xd",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_CWDT0_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When Code WatchDog Timer 0 is activated, this bit indicates state 1"
                         },
                         {
                             "id": "field9D0-bit14",
-                            "offset": "0xe",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_ELS_GDET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When either GDET is enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit15",
-                            "offset": "0xf",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_ANA_GDET_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC analog glitch detect reset is enabled, this bit indicates state 1"
                         },
                         {
                             "id": "field9D0-bit16",
-                            "offset": "0x10",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_ANA_GDET_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC analog glitch detect IRQ is enabled, this bit indicates state 1"
                         },
                         {
                             "id": "field9D0-bit17",
-                            "offset": "0x11",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_TAMPER_DET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When tamper detector is enabled in TDET, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit18",
-                            "offset": "0x12",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LVD_VSYS_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "When SPC VSYS LVD analog detector are turned on and VSYS LVD reset are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit19",
-                            "offset": "0x13",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LVD_VDDIO_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "When SPC VDDIO LVD analog detector are turned on and VDDIO LVD reset are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit20",
-                            "offset": "0x14",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LVD_VSYS_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC VSYS LVD analog detector are turned on and VSYS LVD irq are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit21",
-                            "offset": "0x15",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LVD_VDDIO_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC VDDIO LVD analog detector are turned on and VDDIO LVD irq are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit22",
-                            "offset": "0x16",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_WDT1_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When WatchDog Timer 1 is activated, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit23",
-                            "offset": "0x17",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_CWDT1_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When Code WatchDog Timer 1 is activated, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit24",
-                            "offset": "0x18",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_TEMPTAMPER_DET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When temperature tamper detector is enabled in VBAT, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit25",
-                            "offset": "0x19",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_VOLTAMPER_DET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When voltage tamper detector is enabled in VBAT, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit26",
-                            "offset": "0x1a",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_LHTTAMPER_DET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When light tamper detector is enabled in VBAT, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit27",
-                            "offset": "0x1b",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_CLKTAMPER_DET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When clk tamper detector is enabled in VBAT, this bit indicates state 1."
                         },
                         {
                             "id": "field9D0-bit28",
-                            "offset": "0x1c",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_QK_DISABLE_ENROLL",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When QK PUF \"qk_disable_enroll\" input is driven 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9D0-bit29",
-                            "offset": "0x1d",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_QK_DISABLE_WRAP",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When QK PUF \"qk_disable_wrap\" input is driven 1, this bit indicates state 1"
                         },
                         {
-                            "id": "field9D0-bits30-31",
-                            "offset": "0x1e",
-                            "width": "2",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 2
                         }
                     ]
                 },
                 {
                     "id": "field9D4",
                     "offset_int": "0x004",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ELS_AS_CFG1",
                     "description": "ELS AS Configuration1",
-                    "reset_value_int": "0x140002",
+                    "default_value_int": "0x140002",
                     "bitfields": [
                         {
-                            "id": "field9D4-bit0",
-                            "offset": "0x0",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9D4-bit1",
-                            "offset": "0x1",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_DIS_STRICT_MODE",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "When CFG_SEC_ENA_SEC_CHK indicates state 0 or when DISABLE_STRICT_MODE bits in MISC_CTRL_REG and MISC_CTRL_DP_REG on the AHB secure controller are equal to 01, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit2",
-                            "offset": "0x2",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_DIS_VIOL_ABORT",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the DISABLE_VIOLATION_ABORT bits in MISC_CTRL_REG and MISC_CTRL_DP_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit3",
-                            "offset": "0x3",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_ENA_NS_PRIV_CHK",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the ENABLE_NS_PRIV_CHECK bits in MISC_CTRL_REG and MISC_CTRL_DP_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit4",
-                            "offset": "0x4",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_ENA_S_PRIV_CHK",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the ENABLE_S_PRIV_CHECK bits in MISC_CTRL_REG and MISC_CTRL_DP_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit5",
-                            "offset": "0x5",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_ENA_SEC_CHK",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the ENABLE_SECURE_CHECKING bits in MISC_CTRL_REG and MISC_CTRL_DP_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit6",
-                            "offset": "0x6",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_IDAU_ALLNS",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the IDAU_ALL_NS bits in MISC_CTRL_REG and MISC_CTRL_DP_REG on the AHB secure controller are equal to 01, this bit indicates state 1"
                         },
                         {
-                            "id": "field9D4-bit7",
-                            "offset": "0x7",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9D4-bit8",
-                            "offset": "0x8",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_LOCK_NS_MPU",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the LOCK_NS_MPU bits in CPU0_LOCK_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit9",
-                            "offset": "0x9",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_LOCK_NS_VTOR",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the LOCK_NS_VTOR bits in CPU0_LOCK_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit10",
-                            "offset": "0xa",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_LOCK_S_MPU",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the LOCK_S_MPU bits in CPU0_LOCK_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit11",
-                            "offset": "0xb",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_LOCK_S_VTAIRCR",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the LOCK_S_VTAIRCR bits in CPU0_LOCK_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bit12",
-                            "offset": "0xc",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_SEC_LOCK_SAU",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When the LOCK_SAU bits in CPU0_LOCK_REG on the AHB secure controller are not equal to 10, this bit indicates state 1"
                         },
                         {
                             "id": "field9D4-bits13-20",
-                            "offset": "0xd",
-                            "width": "8",
+                            "width": 8,
                             "name": "METAL_VERSION",
                             "access": "RO",
-                            "reset_value_int": "0xa0",
                             "description": "metal version"
                         },
                         {
                             "id": "field9D4-bits21-24",
-                            "offset": "0x15",
-                            "width": "4",
+                            "width": 4,
                             "name": "ROM_PATCH_VERSION",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "ROM patch version"
                         },
                         {
-                            "id": "field9D4-bit25",
-                            "offset": "0x19",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9D4-bit26",
-                            "offset": "0x1a",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_HVD_CORE_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC CORE HVD analog detector are turned on, and CORE HVD reset are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D4-bit27",
-                            "offset": "0x1b",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_HVD_CORE_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC CORE HVD analog detector are turned on, and CORE HVD IRQ are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D4-bit28",
-                            "offset": "0x1c",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_HVD_VSYS_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC VSYS HVD analog detector are turned on and VSYS HVD reset are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D4-bit29",
-                            "offset": "0x1d",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_HVD_VDDIO_RESET_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC VDDIO HVD analog detector are turned on and VDDIO HVD reset are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D4-bit30",
-                            "offset": "0x1e",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_HVD_VSYS_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC VSYS HVD analog detector are turned on and VSYS HVD irq are enabled, this bit indicates state 1."
                         },
                         {
                             "id": "field9D4-bit31",
-                            "offset": "0x1f",
-                            "width": "1",
+                            "width": 1,
                             "name": "CFG_HVD_VDDIO_IRQ_ENABLED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When SPC VDDIO HVD analog detector are turned on and VDDIO HVD irq are enabled, this bit indicates state 1."
                         }
                     ]
@@ -438,295 +328,230 @@
                 {
                     "id": "field9D8",
                     "offset_int": "0x008",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ELS_AS_CFG2",
                     "description": "ELS configuration command enable bit",
-                    "reset_value_int": "0xffffffff"
+                    "default_value_int": "0xffffffff"
                 },
                 {
                     "id": "field9E0",
                     "offset_int": "0x010",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ELS_AS_ST0",
                     "description": "ELS AS State Register",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field9E0-bits0-3",
-                            "offset": "0x0",
-                            "width": "4",
+                            "width": 4,
                             "name": "ST_TEMPORAL_STATE",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "TEMPORAL_STATE[3:0] in the ELS_TEMPORAL_STATE register reflects this register"
                         },
                         {
                             "id": "field9E0-bit4",
-                            "offset": "0x4",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_CPU0_DBGEN",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When CPU0 (CM33) \"dbgen\" input is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit5",
-                            "offset": "0x5",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_CPU0_NIDEN",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When CPU0 (CM33) \"niden\" input is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit6",
-                            "offset": "0x6",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_CPU0_SPIDEN",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When CPU0 (CM33) \"spiden\" input is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit7",
-                            "offset": "0x7",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_CPU0_SPNIDEN",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When CPU0 (CM33) \"spniden\" input is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit8",
-                            "offset": "0x8",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_CPU1_DBGEN",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When CPU1 (CM33) \"dbgen\" input is state 1, this bit indicates state 1."
                         },
                         {
                             "id": "field9E0-bit9",
-                            "offset": "0x9",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_CPU1_NIDEN",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When CPU1 (CM33) \"niden\" input is state 1, this bit indicates state 1."
                         },
                         {
                             "id": "field9E0-bit10",
-                            "offset": "0xa",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_DAP_ENABLE_CPU0",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When DAP to AP0 for CPU0 (CM33) debug access is allowed, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit11",
-                            "offset": "0xb",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_DAP_ENABLE_CPU1",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When DAP to AP1 for CPU1 (CM33) debug access is allowed, this bit indicates state 1."
                         },
                         {
                             "id": "field9E0-bit12",
-                            "offset": "0xc",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_DAP_ENABLE_DSP",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When DAP to AP3 for DSP (CoolFlux) debug access is allowed, this bit indicates state 1"
                         },
                         {
-                            "id": "field9E0-bit13",
-                            "offset": "0xd",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9E0-bit14",
-                            "offset": "0xe",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_ALLOW_TEST_ACCESS",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When JTAG TAP access is allowed, this bit indicates state 1."
                         },
                         {
                             "id": "field9E0-bit15",
-                            "offset": "0xf",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_XO32K_FAILED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When XO32K oscillation fail flag is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit16",
-                            "offset": "0x10",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_XO40M_FAILED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When XO40M oscillation fail flag is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bit17",
-                            "offset": "0x11",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_IFR_LOAD_FAILED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When IFR load fail flag is state 1, this bit indicates state 1"
                         },
                         {
                             "id": "field9E0-bits18-21",
-                            "offset": "0x12",
-                            "width": "4",
+                            "width": 4,
                             "name": "ST_GLITCH_DETECT_FLAG",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "GLITCH_DETECT_FLAG is state of 4-bit Glitch Ripple Counter output."
                         },
                         {
-                            "id": "field9E0-bits22-31",
-                            "offset": "0x16",
-                            "width": "10",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 10
                         }
                     ]
                 },
                 {
                     "id": "field9E4",
                     "offset_int": "0x014",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ELS_AS_ST1",
                     "description": "ELS AS State1",
-                    "reset_value_int": "0x5024f",
+                    "default_value_int": "0x5024f",
                     "bitfields": [
                         {
                             "id": "field9E4-bits0-3",
-                            "offset": "0x0",
-                            "width": "4",
+                            "width": 4,
                             "name": "ST_QK_PUF_SCORE",
                             "access": "RO",
-                            "reset_value_int": "0xf",
                             "description": "These register bits indicate the state of \"qk_puf_score[3:0]\" outputs from QK PUF block"
                         },
                         {
                             "id": "field9E4-bit4",
-                            "offset": "0x4",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_QK_ZEROIZED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This register bit indicates the state of \"qk_zeroized\" output from QK PUF block"
                         },
                         {
                             "id": "field9E4-bit5",
-                            "offset": "0x5",
-                            "width": "1",
+                            "width": 1,
                             "name": "ST_MAIN_CLK_IS_EXT",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "When MAIN_CLK is running from external clock source either XO32M, XO32K or GPIO CLKIN, this bit indicates state 1"
                         },
                         {
                             "id": "field9E4-bits6-7",
-                            "offset": "0x6",
-                            "width": "2",
+                            "width": 2,
                             "name": "ST_DCDC_VOUT",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "VOUT[1:0] setting on DCDC0 register in SPC block will reflect to this register. Default is 1.0V"
                         },
                         {
                             "id": "field9E4-bits8-9",
-                            "offset": "0x8",
-                            "width": "2",
+                            "width": 2,
                             "name": "ST_DCDC_DS",
                             "access": "RO",
-                            "reset_value_int": "0x2",
                             "description": "DCDC drive strength setting. Default is normal drive."
                         },
                         {
                             "id": "field9E4-bits10-11",
-                            "offset": "0xa",
-                            "width": "2",
+                            "width": 2,
                             "name": "ST_BOOT_MODE",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "ISP pin status during boot. By default ISP pin is pulled up. If want to enter ISP mode during boot, ISP pin should be pull down when out of reset."
                         },
                         {
                             "id": "field9E4-bits12-15",
-                            "offset": "0xc",
-                            "width": "4",
+                            "width": 4,
                             "name": "ST_BOOT_RETRY_CNT",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "BOOT_RETRY_CNT[3:0] in the ELS_BOOT_RETRY_CNT register reflects this register"
                         },
                         {
                             "id": "field9E4-bits16-17",
-                            "offset": "0x10",
-                            "width": "2",
+                            "width": 2,
                             "name": "ST_LDO_CORE_VOUT",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "VOUT[1:0] setting on LDO Core register in SPC block will reflect to this register. Default is 1.0V"
                         },
                         {
                             "id": "field9E4-bits18-19",
-                            "offset": "0x12",
-                            "width": "2",
+                            "width": 2,
                             "name": "ST_LDO_CORE_DS",
                             "access": "RO",
-                            "reset_value_int": "0x1",
                             "description": "LDO_CORE drive strength setting. Default is normal drive."
                         },
                         {
-                            "id": "field9E4-bits20-31",
-                            "offset": "0x14",
-                            "width": "12",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 12
                         }
                     ]
                 },
                 {
                     "id": "field9F8",
                     "offset_int": "0x028",
-                    "reg_width": "32",
+                    "reg_width": 32,
                     "name": "ELS_AS_FLAG0",
                     "description": "ELS AS Flag0",
-                    "reset_value_int": "0x0",
+                    "default_value_int": "0x0",
                     "bitfields": [
                         {
                             "id": "field9F8-bit0",
-                            "offset": "0x0",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_AP_ENABLE_CPU0",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when DAP enables AP0 for CPU0 (CM33) debug access. The register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_AP_ENABLE_CPU0_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_AP_ENABLE_CPU0_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -734,20 +559,18 @@
                         },
                         {
                             "id": "field9F8-bit1",
-                            "offset": "0x1",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_AP_ENABLE_CPU1",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when DAP enables AP1 for CPU1 (CM33) debug access. The register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_AP_ENABLE_CPU1_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_AP_ENABLE_CPU1_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -755,20 +578,18 @@
                         },
                         {
                             "id": "field9F8-bit2",
-                            "offset": "0x2",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_AP_ENABLE_DSP",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when DAP enables AP3 for DSP (CoolFlux) debug access. The register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_AP_ENABLE_DSP_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_AP_ENABLE_DSP_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -776,78 +597,62 @@
                         },
                         {
                             "id": "field9F8-bit3",
-                            "offset": "0x3",
-                            "width": "1",
+                            "width": 1,
                             "name": "EFUSE_ATTACK_DETECT",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "OTPC can output attack_detect signal when it detects attack when load shadow registers. The output will be cleared by reset. ELS_AS_FLAG is reset by PoR, so the status can be recorded.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_EFUSE_ATTACK_DETECT_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_EFUSE_ATTACK_DETECT_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
                             ]
                         },
                         {
-                            "id": "field9F8-bit4",
-                            "offset": "0x4",
-                            "width": "1",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 1
                         },
                         {
                             "id": "field9F8-bit5",
-                            "offset": "0x5",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_LVD_CORE_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when VDD_CORE LVD event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_CORE_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_CORE_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
                             ]
                         },
                         {
-                            "id": "field9F8-bits6-7",
-                            "offset": "0x6",
-                            "width": "2",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 2
                         },
                         {
                             "id": "field9F8-bit8",
-                            "offset": "0x8",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_WDT0_RESET_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 0 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_RESET_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_RESET_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -855,20 +660,18 @@
                         },
                         {
                             "id": "field9F8-bit9",
-                            "offset": "0x9",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CWDT0_RESET_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 0 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_RESET_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_RESET_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -876,20 +679,18 @@
                         },
                         {
                             "id": "field9F8-bit10",
-                            "offset": "0xa",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_WDT0_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 0 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT0_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -897,20 +698,18 @@
                         },
                         {
                             "id": "field9F8-bit11",
-                            "offset": "0xb",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CWDT0_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 0 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT0_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -918,20 +717,18 @@
                         },
                         {
                             "id": "field9F8-bit12",
-                            "offset": "0xc",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_QK_ERROR",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when QK_ERROR is flagged from QK PUF block. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_QK_ERROR_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_QK_ERROR_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -939,20 +736,18 @@
                         },
                         {
                             "id": "field9F8-bit13",
-                            "offset": "0xd",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_ELS_GLITCH_DETECTED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when GDET error is flagged. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_ELS_GLITCH_DETECTED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_ELS_GLITCH_DETECTED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -960,20 +755,18 @@
                         },
                         {
                             "id": "field9F8-bit14",
-                            "offset": "0xe",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_ANA_GLITCH_DETECTED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when ANALOG GDET error is flagged in SYSCON block. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_ANA_GLITCH_DETECTED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_ANA_GLITCH_DETECTED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -981,20 +774,18 @@
                         },
                         {
                             "id": "field9F8-bit15",
-                            "offset": "0xf",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_TAMPER_EVENT_DETECTED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when tamper event is flagged from TDET. This register is cleared 0 by AO domain POR or by PMC reset event, if tamper detection event is cleared by software.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_TAMPER_EVENT_DETECTED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_TAMPER_EVENT_DETECTED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1002,20 +793,18 @@
                         },
                         {
                             "id": "field9F8-bit16",
-                            "offset": "0x10",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_FLASH_ECC_INVALID",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when FLASH controller indicates ECC error. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_FLASH_ECC_INVALID_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_FLASH_ECC_INVALID_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1023,20 +812,18 @@
                         },
                         {
                             "id": "field9F8-bit17",
-                            "offset": "0x11",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_SEC_VIOL_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when security violation is indicated from FLASH sub-system or AHB bus matrix.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_SEC_VIOL_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_SEC_VIOL_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1044,20 +831,18 @@
                         },
                         {
                             "id": "field9F8-bit18",
-                            "offset": "0x12",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CPU0_NS_C_ACC_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when CPU0 (CM33) makes non-secure code transactions. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_C_ACC_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_C_ACC_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1065,20 +850,18 @@
                         },
                         {
                             "id": "field9F8-bit19",
-                            "offset": "0x13",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CPU0_NS_D_ACC_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when CPU0 (CM33) makes non-secure data transactions. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_D_ACC_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CPU0_NS_D_ACC_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1086,20 +869,18 @@
                         },
                         {
                             "id": "field9F8-bit20",
-                            "offset": "0x14",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_LVD_VSYS_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when VDD_SYS LVD event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VSYS_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VSYS_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1107,20 +888,18 @@
                         },
                         {
                             "id": "field9F8-bit21",
-                            "offset": "0x15",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_LVD_VDDIO_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag register is set 1 when VDD LVD event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VDDIO_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LVD_VDDIO_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1128,20 +907,18 @@
                         },
                         {
                             "id": "field9F8-bit22",
-                            "offset": "0x16",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_WDT1_RESET_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 1 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_RESET_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_RESET_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1149,20 +926,18 @@
                         },
                         {
                             "id": "field9F8-bit23",
-                            "offset": "0x17",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CWDT1_RESET_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 1 reset is enabled and reset event is triggered. This register is cleared 0 by AO domain POR.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_RESET_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_RESET_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1170,20 +945,18 @@
                         },
                         {
                             "id": "field9F8-bit24",
-                            "offset": "0x18",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_WDT1_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when WatchDog Timer 1 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_WDT1_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1191,20 +964,18 @@
                         },
                         {
                             "id": "field9F8-bit25",
-                            "offset": "0x19",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CWDT1_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when Code WatchDog Timer 1 IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CWDT1_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1212,20 +983,18 @@
                         },
                         {
                             "id": "field9F8-bit26",
-                            "offset": "0x1a",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_TEMPTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when temperature temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_TEMPTAMPER_DET_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_TEMPTAMPER_DET_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1233,20 +1002,18 @@
                         },
                         {
                             "id": "field9F8-bit27",
-                            "offset": "0x1b",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_VOLTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when voltage temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_VOLTAMPER_DET_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_VOLTAMPER_DET_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1254,20 +1021,18 @@
                         },
                         {
                             "id": "field9F8-bit28",
-                            "offset": "0x1c",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_LHTTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when light temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LHTTAMPER_DET_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_LHTTAMPER_DET_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
@@ -1275,32 +1040,25 @@
                         },
                         {
                             "id": "field9F8-bit29",
-                            "offset": "0x1d",
-                            "width": "1",
+                            "width": 1,
                             "name": "FLAG_CLKTAMPER_DET_IRQ_OCCURRED",
                             "access": "RO",
-                            "reset_value_int": "0x0",
                             "description": "This flag bit is set as 1 when clock temper IRQ is enabled and IRQ event is triggered. This register is cleared 0 by PMC reset event.",
                             "values": [
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CLKTAMPER_DET_IRQ_OCCURRED_DISABLE",
+                                    "name": "DISABLE",
                                     "value": 0,
                                     "description": "Not Triggered"
                                 },
                                 {
-                                    "name": "ELS_AS_FLAG0_FLAG_CLKTAMPER_DET_IRQ_OCCURRED_ENABLE",
+                                    "name": "ENABLE",
                                     "value": 1,
                                     "description": "Triggered"
                                 }
                             ]
                         },
                         {
-                            "id": "field9F8-bits30-31",
-                            "offset": "0x1e",
-                            "width": "2",
-                            "access": "RW",
-                            "reset_value_int": "0x0",
-                            "description": "N/A"
+                            "width": 2
                         }
                     ]
                 }

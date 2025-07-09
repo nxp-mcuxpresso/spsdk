@@ -623,20 +623,16 @@ class AHABImage(FeatureBaseClass):
         return ret
 
     @classmethod
-    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+    def get_image_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
+        """Get list of image validation schemas.
 
         :param family: Family for which the validation schema should be generated.
-        :return: Validation list of schemas.
+        :return: List of image validation schemas.
         """
         db = get_db(family)
-        extra_images = db.get_list(DatabaseManager.AHAB, "extra_images", [])
         container_type = db.get_list(DatabaseManager.AHAB, "container_types", [])
-        certificate_supported = "certificate_supported" in db.get_list(
-            DatabaseManager.AHAB, "sub_features", []
-        )
-        hide_force_container_type = len(container_type) <= 1
         container_type_2 = 2 in container_type
+        extra_images = db.get_list(DatabaseManager.AHAB, "extra_images", [])
         core_ids = SpsdkSoftEnum.create_from_dict(
             "AHABCoreId", db.get_dict(DatabaseManager.AHAB, "core_ids")
         )
@@ -646,30 +642,12 @@ class AHABImage(FeatureBaseClass):
             for v1 in v.values():
                 image_types.append(v1[1])
 
-        sch_family = get_schema_file("general")
         sch = get_schema_file(DatabaseManager.AHAB)
-        update_validation_schema_family(
-            sch_family["family"]["properties"], AHABImage.get_supported_families(), family
-        )
-        sch["whole_ahab_image"]["properties"]["container_version"][
-            "skip_in_template"
-        ] = hide_force_container_type
-        sch_cnt: dict[str, Any] = sch["whole_ahab_image"]["properties"]["containers"]["items"][
-            "oneOf"
-        ][1]["properties"]["container"]["properties"]
-        if not certificate_supported:
-            sch_cnt.pop("certificate")
-        if container_type_2:
-            sch_cnt["check_all_signatures"]["skip_in_template"] = False
-            sch_cnt["fast_boot"]["skip_in_template"] = False
-            sch_cnt["srk_table"]["properties"]["srk_table_#2"]["skip_in_template"] = False
-            sch_cnt["signer_#2"]["skip_in_template"] = False
-
         images = sch["whole_ahab_image"]["properties"]["containers"]["items"]["oneOf"][1][
             "properties"
         ]["container"]["properties"]["images"]["items"].pop("oneOf")
 
-        # Find general image tak the content and optionally add it to each extension without binary_image
+        # Find general image take the content and optionally add it to each extension without binary_image
         std_properties = {}
         for image in images:
             if "general_image" == image["image_identifier"]:
@@ -713,6 +691,46 @@ class AHABImage(FeatureBaseClass):
                     break
         result_images.append(org_std_properties)
 
+        return result_images
+
+    @classmethod
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
+        """Get list of validation schemas.
+
+        :param family: Family for which the validation schema should be generated.
+        :return: Validation list of schemas.
+        """
+        db = get_db(family)
+        container_type = db.get_list(DatabaseManager.AHAB, "container_types", [])
+        certificate_supported = "certificate_supported" in db.get_list(
+            DatabaseManager.AHAB, "sub_features", []
+        )
+        hide_force_container_type = len(container_type) <= 1
+        container_type_2 = 2 in container_type
+
+        sch_family = get_schema_file("general")
+        sch = get_schema_file(DatabaseManager.AHAB)
+        update_validation_schema_family(
+            sch_family["family"]["properties"], AHABImage.get_supported_families(), family
+        )
+        sch["whole_ahab_image"]["properties"]["container_version"][
+            "skip_in_template"
+        ] = hide_force_container_type
+        sch_cnt: dict[str, Any] = sch["whole_ahab_image"]["properties"]["containers"]["items"][
+            "oneOf"
+        ][1]["properties"]["container"]["properties"]
+        if not certificate_supported:
+            sch_cnt.pop("certificate")
+        if container_type_2:
+            sch_cnt["check_all_signatures"]["skip_in_template"] = False
+            sch_cnt["fast_boot"]["skip_in_template"] = False
+            sch_cnt["srk_table"]["properties"]["srk_table_#2"]["skip_in_template"] = False
+            sch_cnt["signer_#2"]["skip_in_template"] = False
+
+        # Get image schemas using the extracted function
+        result_images = cls.get_image_schemas(family)
+
+        # Update the container schema with the image schemas
         sch["whole_ahab_image"]["properties"]["containers"]["items"]["oneOf"][1]["properties"][
             "container"
         ]["properties"]["images"]["items"]["oneOf"] = result_images

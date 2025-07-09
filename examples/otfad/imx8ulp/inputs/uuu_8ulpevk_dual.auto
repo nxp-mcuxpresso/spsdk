@@ -1,0 +1,32 @@
+uuu_version 1.2.39
+
+
+# This command will be run when ROM support stream mode
+# i.MX8QXP, i.MX8QM
+SDPS: boot -f ./inputs/imx-boot-imx8ulpevk-sd.bin-flash_singleboot.bin
+
+# These commands will be run when use SPL and will be skipped if no spl
+# if (SPL support SDPV)
+# {
+SDPV: delay 1000
+SDPV: write -f ./inputs/imx-boot-imx8ulpevk-sd.bin-flash_singleboot.bin -skipspl
+SDPV: jump
+# }
+
+FB: ucmd setenv fastboot_buffer ${loadaddr}
+FB: download -f ./workspace/encrypted_full_image.bin
+FB: ucmd setenv erase_unit 1000
+FB: ucmd setexpr erase_size ${fastboot_bytes} + ${erase_unit}
+FB: ucmd setexpr erase_size ${erase_size} / ${erase_unit}
+FB: ucmd setexpr erase_size ${erase_size} * ${erase_unit}
+FB: ucmd sf probe 0:0
+FB[-t 100000]: ucmd sf erase 0 ${erase_size}
+FB[-t 40000]: ucmd sf write ${fastboot_buffer} 0 ${fastboot_bytes}
+
+FB: ucmd setenv fastboot_dev mmc
+FB: ucmd setenv mmcdev ${emmc_dev}
+FB: ucmd mmc dev ${emmc_dev}
+FB: flash bootloader ./inputs/imx-boot-imx8ulpevk-sd.bin-flash_dualboot
+FB: ucmd if env exists emmc_ack; then ; else setenv emmc_ack 0; fi;
+FB: ucmd mmc partconf ${emmc_dev} ${emmc_ack} 1 0
+FB: done

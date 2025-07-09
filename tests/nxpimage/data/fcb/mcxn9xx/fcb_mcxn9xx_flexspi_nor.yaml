@@ -29,9 +29,6 @@ fcb_settings:
   # -------------------------------------------===== version [Optional] =====-------------------------------------------
   # Description:  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix
   version: "0x56010400"
-  # ------------------------------------------===== reserved0 [Optional] =====------------------------------------------
-  # Description:  [0x008-0x00b] Reserved for future use
-  reserved0: "0x00000000"
   # --------------------------------------===== readSampleClkSrc [Optional] =====---------------------------------------
   # Description:  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
   readSampleClkSrc: "0x01"
@@ -66,9 +63,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ----------------------------------------===== deviceModeArg [Optional] =====----------------------------------------
   # Description:  [0x018-0x01b] Argument/Parameter for device configuration
   deviceModeArg: "0x00000000"
@@ -93,9 +87,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== configCmdSeqs_1 [Optional] =====---------------------------------------
   # Description:  [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq
   configCmdSeqs_1:
@@ -105,9 +96,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== configCmdSeqs_2 [Optional] =====---------------------------------------
   # Description:  [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq
   configCmdSeqs_2:
@@ -117,12 +105,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
-  # ------------------------------------------===== reserved1 [Optional] =====------------------------------------------
-  # Description:  [0x02c-0x02f] Reserved for future use
-  reserved1: "0x00000000"
   # ---------------------------------------===== configCmdArgs_0 [Optional] =====---------------------------------------
   # Description:  [0x030-0x03b] Arguments/Parameters for device Configuration commands
   configCmdArgs_0: "0x00000000"
@@ -132,9 +114,6 @@ fcb_settings:
   # ---------------------------------------===== configCmdArgs_2 [Optional] =====---------------------------------------
   # Description:  [0x030-0x03b] Arguments/Parameters for device Configuration commands
   configCmdArgs_2: "0x00000000"
-  # ------------------------------------------===== reserved2 [Optional] =====------------------------------------------
-  # Description:  [0x03c-0x03f] Reserved for future use
-  reserved2: "0x00000000"
   # ------------------------------------===== controllerMiscOption [Optional] =====-------------------------------------
   # Description:  [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for more  details
   controllerMiscOption: "0x00000010"
@@ -152,12 +131,6 @@ fcb_settings:
   # Description:  [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot  be done using 1
   # LUT sequence, currently, only applicable to HyperFLASH
   lutCustomSeqEnable: "0x00"
-  # -----------------------------------------===== reserved3_0 [Optional] =====-----------------------------------------
-  # Description:  [0x048-0x04f] Reserved for future use
-  reserved3_0: "0x00000000"
-  # -----------------------------------------===== reserved3_1 [Optional] =====-----------------------------------------
-  # Description:  [0x048-0x04f] Reserved for future use
-  reserved3_1: "0x00000000"
   # ----------------------------------------===== sflashA1Size [Optional] =====-----------------------------------------
   # Description:  [0x050-0x053] Size of Flash connected to A1
   sflashA1Size: "0x00800000"
@@ -1620,9 +1593,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_1 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_1:
@@ -1632,9 +1602,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_2 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_2:
@@ -1644,9 +1611,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_3 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_3:
@@ -1656,9 +1620,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_4 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_4:
@@ -1668,9 +1629,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_5 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_5:
@@ -1680,9 +1638,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_6 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_6:
@@ -1692,9 +1647,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_7 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_7:
@@ -1704,9 +1656,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_8 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_8:
@@ -1716,9 +1665,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_9 [Optional] =====----------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_9:
@@ -1728,9 +1674,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_10 [Optional] =====---------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_10:
@@ -1740,9 +1683,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
   # ---------------------------------------===== lutCustomSeq_11 [Optional] =====---------------------------------------
   # Description:  [0x180-0x1af] Customizable LUT Sequences
   lutCustomSeq_11:
@@ -1752,21 +1692,6 @@ fcb_settings:
     # -------------------------------------------===== seqId [Optional] =====-------------------------------------------
     # Description: Offset: 8b, Width: 8b,  Sequence Index, valid number: 0-15
     seqId: "0x00"
-    # -----------------------------------------===== reserved [Optional] =====------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
-    reserved: "0x0000"
-  # -----------------------------------------===== reserved4_0 [Optional] =====-----------------------------------------
-  # Description:  [0x1b0-0x1bf] Reserved for future use
-  reserved4_0: "0x00000000"
-  # -----------------------------------------===== reserved4_1 [Optional] =====-----------------------------------------
-  # Description:  [0x1b0-0x1bf] Reserved for future use
-  reserved4_1: "0x00000000"
-  # -----------------------------------------===== reserved4_2 [Optional] =====-----------------------------------------
-  # Description:  [0x1b0-0x1bf] Reserved for future use
-  reserved4_2: "0x00000000"
-  # -----------------------------------------===== reserved4_3 [Optional] =====-----------------------------------------
-  # Description:  [0x1b0-0x1bf] Reserved for future use
-  reserved4_3: "0x00000000"
   # ------------------------------------------===== pageSize [Optional] =====-------------------------------------------
   # Description:  Page size of Serial NOR
   pageSize: "0x00000100"
@@ -1782,9 +1707,6 @@ fcb_settings:
   # -------------------------------------===== isDataOrderSwapped [Optional] =====--------------------------------------
   # Description:  Data order (D0, D1, D2, D3) is swapped (D1,D0, D3, D2)
   isDataOrderSwapped: "0x00"
-  # -----------------------------------------===== reserved0_0 [Optional] =====-----------------------------------------
-  # Description:  Reserved for future use
-  reserved0_0: "0x00"
   # ----------------------------------------===== serialNorType [Optional] =====----------------------------------------
   # Description:  Serial NOR Flash type: 0/1/2/3
   serialNorType: "0x00"
@@ -1803,33 +1725,4 @@ fcb_settings:
   # ----------------------------------------===== flashStateCtx [Optional] =====----------------------------------------
   # Description:  Flash State Context
   flashStateCtx: "0x00000000"
-  # -----------------------------------------===== reserve2_0 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_0: "0x00000000"
-  # -----------------------------------------===== reserve2_1 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_1: "0x00000000"
-  # -----------------------------------------===== reserve2_2 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_2: "0x00000000"
-  # -----------------------------------------===== reserve2_3 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_3: "0x00000000"
-  # -----------------------------------------===== reserve2_4 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_4: "0x00000000"
-  # -----------------------------------------===== reserve2_5 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_5: "0x00000000"
-  # -----------------------------------------===== reserve2_6 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_6: "0x00000000"
-  # -----------------------------------------===== reserve2_7 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_7: "0x00000000"
-  # -----------------------------------------===== reserve2_8 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_8: "0x00000000"
-  # -----------------------------------------===== reserve2_9 [Optional] =====------------------------------------------
-  # Description:  Reserved for future use
-  reserve2_9: "0x00000000"
+  

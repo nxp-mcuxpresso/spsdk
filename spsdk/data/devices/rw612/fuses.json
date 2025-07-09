@@ -577,11 +577,6 @@
                                     "description": "Boot using UART interface using master boot mode."
                                 },
                                 {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved."
-                                },
-                                {
                                     "name": "USBHID_BOOT",
                                     "value": 8,
                                     "description": "USB-HID boot mode."
@@ -673,12 +668,12 @@
                                     "description": "Enforce preset TZM data in image manifest."
                                 },
                                 {
-                                    "name": "ENFORCE_PRESET_VALUE",
+                                    "name": "ENFORCE_PRESET_VALUE_1",
                                     "value": 2,
                                     "description": "Enforce preset TZM data in image manifest."
                                 },
                                 {
-                                    "name": "ENFORCE_PRESET_VALUE",
+                                    "name": "ENFORCE_PRESET_VALUE_2",
                                     "value": 3,
                                     "description": "Enforce preset TZM data in image manifest."
                                 }
@@ -747,7 +742,7 @@
                                     "description": "Allow non-secure images with and without CRC. Used during development."
                                 },
                                 {
-                                    "name": "DISABLED",
+                                    "name": "DISABLED_RFU",
                                     "value": 1,
                                     "description": "RFU"
                                 },
@@ -757,7 +752,7 @@
                                     "description": "Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)"
                                 },
                                 {
-                                    "name": "ENABLED",
+                                    "name": "ENABLED_1",
                                     "value": 3,
                                     "description": "Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)"
                                 }
@@ -1707,12 +1702,12 @@
                                     "description": "ECC P-384 keys."
                                 },
                                 {
-                                    "name": "P-384_KEY",
+                                    "name": "P-384_KEY_1",
                                     "value": 2,
                                     "description": "ECC P-384 keys."
                                 },
                                 {
-                                    "name": "P-384_KEY",
+                                    "name": "P-384_KEY_2",
                                     "value": 3,
                                     "description": "ECC P-384 keys."
                                 }
@@ -1921,12 +1916,12 @@
                                     "description": "Image verification is not skipped upon wake up from PM3 and PM4."
                                 },
                                 {
-                                    "name": "NO_SKIP",
+                                    "name": "NO_SKIP_1",
                                     "value": 1,
                                     "description": "Image verification is not skipped upon wake up from PM3 and PM4."
                                 },
                                 {
-                                    "name": "NO_SKIP",
+                                    "name": "NO_SKIP_2",
                                     "value": 2,
                                     "description": "Image verification is not skipped upon wake up from PM3 and PM4."
                                 },
@@ -2876,10 +2871,10 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "reset_value_int": "0"
+                            "width": 1
                         }
-                    ]
+                    ],
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "fuse33",
@@ -3317,10 +3312,10 @@
                             ]
                         },
                         {
-                            "width": 1,
-                            "reset_value_int": "0"
+                            "width": 1
                         }
-                    ]
+                    ],
+                    "default_value_int": "0x0"
                 },
                 {
                     "id": "fuse34",
@@ -3354,7 +3349,7 @@
                     "description": "Life cycle state of rw61x platform.",
                     "index_int": "0x002D",
                     "shadow_reg_offset_int": "0x00B4",
-                    "reset_value_int": "0x0303",
+                    "default_value_int": "0x0303",
                     "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse1",

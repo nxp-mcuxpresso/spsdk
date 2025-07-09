@@ -1,0 +1,8 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/bimg_template.yaml
+user_cfg: inputs/bimg.yaml
+custom_command: "%! nxpimage utils binary-image get-template -o workspace/bimg_template.yaml --force"
+
+comments:
+  binary_file: Define path to the OTFAD table (keyblob) binary file at offset 0x0, FCB at offset 0x400 and encrypted data at offset 0x1000

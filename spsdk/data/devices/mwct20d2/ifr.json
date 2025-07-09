@@ -12,7 +12,7 @@
                     "name": "CUSTOMER_DEFINED0",
                     "description": "Customer defined",
                     "offset_int": "0x00C0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -20,7 +20,7 @@
                     "name": "CUSTOMER_DEFINED1",
                     "description": "Customer defined",
                     "offset_int": "0x00C4",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -28,7 +28,7 @@
                     "name": "CUSTOMER_DEFINED2",
                     "description": "Customer defined",
                     "offset_int": "0x00C8",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -36,7 +36,7 @@
                     "name": "CUSTOMER_DEFINED3",
                     "description": "Customer defined",
                     "offset_int": "0x00CC",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -44,7 +44,7 @@
                     "name": "CUSTOMER_DEFINED4",
                     "description": "Customer defined",
                     "offset_int": "0x00D0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -52,7 +52,7 @@
                     "name": "CUSTOMER_DEFINED5",
                     "description": "Customer defined",
                     "offset_int": "0x00D4",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -60,7 +60,7 @@
                     "name": "CUSTOMER_DEFINED6",
                     "description": "Customer defined",
                     "offset_int": "0x00D8",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -68,7 +68,7 @@
                     "name": "CUSTOMER_DEFINED7",
                     "description": "Customer defined",
                     "offset_int": "0x00DC",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -76,7 +76,7 @@
                     "name": "CUSTOMER_DEFINED8",
                     "description": "Customer defined",
                     "offset_int": "0x00E0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -84,7 +84,7 @@
                     "name": "CUSTOMER_DEFINED9",
                     "description": "Customer defined",
                     "offset_int": "0x00E4",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -92,7 +92,7 @@
                     "name": "CUSTOMER_DEFINED10",
                     "description": "Customer defined",
                     "offset_int": "0x00E8",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -100,7 +100,7 @@
                     "name": "CUSTOMER_DEFINED11",
                     "description": "Customer defined",
                     "offset_int": "0x00EC",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 }
             ]
@@ -116,7 +116,7 @@
                     "name": "ISK_CERT_HASH[31:0]",
                     "description": "ISK_CERT_HASH[31:0]",
                     "offset_int": "0x00F0",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -124,7 +124,7 @@
                     "name": "ISK_CERT_HASH[63:32]",
                     "description": "ISK_CERT_HASH[63:32]",
                     "offset_int": "0x00F4",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -132,7 +132,7 @@
                     "name": "ISK_CERT_HASH[95:64]",
                     "description": "ISK_CERT_HASH[95:64]",
                     "offset_int": "0x00F8",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 },
                 {
@@ -140,7 +140,7 @@
                     "name": "ISK_CERT_HASH[127:96]",
                     "description": "ISK_CERT_HASH[127:96]",
                     "offset_int": "0x00FC",
-                    "reset_value_int": "0xFFFFFFFF",
+                    "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit"
                 }
             ]

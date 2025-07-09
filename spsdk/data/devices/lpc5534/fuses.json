@@ -12,14 +12,13 @@
                     "name": "LC_STATE[7:0]",
                     "description": "Device life cycle state.\nLife-cycle state is used to determine Code read protection (CRP) levels.",
                     "index_int": "0",
-                    "reset_value_int": "3",
+                    "default_value_int": "3",
                     "bitfields": [
                         {
                             "width": 8,
                             "id": "fuse0-bits-0-7",
                             "name": "LC_STATE[7:0]",
                             "description": "Device life cycle state LC_STATE[7:0].",
-                            "advanced": true,
                             "values": [
                                 {
                                     "name": "CRP_LEVEL0",
@@ -156,7 +155,7 @@
             ]
         },
         {
-            "group":  { 
+            "group": {
                 "name": "CUSTOMER_WORDS",
                 "description": "Customer words area."
             },

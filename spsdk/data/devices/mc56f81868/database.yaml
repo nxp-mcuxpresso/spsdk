@@ -53,6 +53,7 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
+          - Mbi_MixinBca
           - Mbi_MixinFcf
           - Mbi_ExportMixinAppBcaFcf
     images:
@@ -78,3 +79,14 @@ features:
   # ======== FCF section ========
   fcf:
     reg_spec: fcf.json
+    reg_spec_modification:
+      field000:
+        reverse: True
+        config_as_hexstring: True
+
+  # ======== PFR section ========
+  pfr:
+    sub_features: [ifr]
+    ifr:
+      address: 0x0
+      reg_spec: ifr_s.json

@@ -26,7 +26,6 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import get_key_by_val, write_file
-from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +72,17 @@ class MasterBootImage(FeatureBaseClass):
     finalize: Callable[[BinaryImage, bool], BinaryImage]
     disassemble_image: Callable[[bytes], None]
 
+    IMAGE_TYPES = [
+        "xip",
+        "load-to-ram",
+        "Internal flash (XIP)",
+        "External flash (XIP)",
+        "Internal Flash (XIP)",
+        "External Flash (XIP)",
+        "RAM",
+        "ram",
+    ]
+
     @classmethod
     def get_mbi_classes(cls, family: FamilyRevision) -> dict[str, tuple[Type[Self], str, str]]:
         """Get all Master Boot Image supported classes for chip family.
@@ -106,10 +116,13 @@ class MasterBootImage(FeatureBaseClass):
         :raises SPSDKUnsupportedImageType: The invalid configuration.
         :return: MBI Class.
         """
-        schema_cfg = get_schema_file(DatabaseManager.MBI)
-        schema_family = get_schema_file("general")["family"]
         # Validate needed configuration to recognize MBI class
-        check_config(config, [schema_cfg["image_type"], schema_family])
+        image_type = config.get("outputImageExecutionTarget", "Non-specified image type")
+        if image_type not in cls.IMAGE_TYPES:
+            raise SPSDKUnsupportedImageType(
+                f"Unsupported image type: {image_type}, cannot get MBI class."
+            )
+
         family = FamilyRevision.load_from_config(config)
         db = get_db(family)
         try:

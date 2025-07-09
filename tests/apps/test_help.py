@@ -10,17 +10,17 @@ import os
 import sys
 from unittest.mock import patch
 
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk.apps import spsdk_apps
+from spsdk.apps.spsdk_apps import main as spsdk_main
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
 from spsdk.utils.misc import load_text
 from tests.cli_runner import CliRunner
-from spsdk import SPSDK_DATA_FOLDER
-from spsdk.apps.spsdk_apps import main as spsdk_main
 
 try:
+    import ftd2xx
     import pyftdi
     import pylibftdi
-    import ftd2xx
 
     DK6_SUPPORT_INSTALLED = True
 except (ImportError, OSError):
@@ -28,7 +28,11 @@ except (ImportError, OSError):
 
 
 def run_help(cli_runner: CliRunner, command_group, help_option):
-    result = cli_runner.invoke(command_group, ["--help"] if help_option else None)
+    expected_code = cli_runner.get_help_error_code(use_help_flag=help_option)
+
+    result = cli_runner.invoke(
+        command_group, ["--help"] if help_option else None, expected_code=expected_code
+    )
     assert "Show this message and exit." in result.output
 
 

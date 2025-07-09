@@ -24,7 +24,12 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
 from spsdk.image.ahab.ahab_data import AhabTargetMemory, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
-from spsdk.image.ahab.utils import ahab_re_sign, ahab_sign_image, ahab_update_keyblob
+from spsdk.image.ahab.utils import (
+    ahab_fix_signature_block_version,
+    ahab_re_sign,
+    ahab_sign_image,
+    ahab_update_keyblob,
+)
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
@@ -418,6 +423,33 @@ def ahab_sign_command(binary: str, output: str, mem_type: str, config: Config) -
     )
     write_file(signed_image, output, "wb")
     click.echo(f"Signed image saved to {output}")
+
+
+@ahab_group.command(name="fix-signature-block-version", no_args_is_help=True)
+@spsdk_family_option(AHABImage.get_supported_families())
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary AHAB image to fix.",
+)
+@spsdk_output_option(force=True)
+def ahab_fix_signature_block_command(family: FamilyRevision, binary: str, output: str) -> None:
+    """Fix signature block version in AHAB v2 signature blocks.
+
+    imx-mkimage is known to create incorrect signature block versions, so this method
+    corrects the version to match the expected AHAB v2 signature block version. (1)
+    """
+    try:
+        fixed_data = ahab_fix_signature_block_version(
+            family=family,
+            binary=binary,
+        )
+        write_file(fixed_data, output, "wb")
+        click.echo(f"Fixed image saved to {output}")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to fix AHAB headers: {str(exc)}") from exc
 
 
 @ahab_certificate_group.command(name="export", no_args_is_help=True)

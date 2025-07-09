@@ -4,11 +4,39 @@
 .. _crypto: api/crypto.html
 .. _usb_device_identification: usage/usb.html
 .. _pfr: apps/pfr.html
+.. _blhost: apps/blhost.html
+.. _nxpcrypto: apps/nxpcrypto.html
+.. _nxpdebugmbox: apps/nxpdebugmbox.html
+.. _nxpdice: apps/nxpdice.html
+.. _nxpimage: apps/nxpimage.html
+.. _shadowregs: apps/shadowregs.html
 .. _migration guide: migration_guide.html
 
 =============
 Release Notes
 =============
+
+---------------------
+3.0.1 (27-June-2025)
+---------------------
+
+**Bugfixes**
+
+* `nxpcrypto`_: 
+    - improve serial number validation in certificate generation
+* `nxpimage`_:
+    - fix AHAB container header info display
+    - fix MBI parameter for mcxa series
+    - add input data size validation for HAB segments
+    - add hardware key mixin to NHS52S04 MBI types
+    - add load address mixin to every MBI type
+    - improve CA Flag description in AHAB schemas
+    - fix AHAB update keyblob
+    - add new Fast Boot flags to AHABContainerV2
+* :ref:`nxpmemcfg`:
+    - add missing memory types (MicronOPI_SDR, AdestoOPI_SDR)
+* update default BOOT_FLAGS value in MC56F81x68 BCA configuration
+* validate and clean up the contents of SPSDK data files
 
 --------------------
 3.0.0 (16-May-2025)
@@ -24,18 +52,18 @@ Current version introduces breaking changes, which are described in details in `
     - check UUID fuse index
 * :ref:`ifr`:
     - move into `pfr`_ application
-* :ref:`nxpcrypto`:
+* `nxpcrypto`_:
     - allow adding image key into existing PKI tree
     - remove nxpcertgen application (all functionality is now available in nxpcrypto application)
     - consolidate options ``-k/--private-key`` and ``-sp/--signature-provider`` replace with option ``-s/--signer``
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - move commands to separated groups with clearer organization
     - move parameter --family from the root command to individual command groups
     - derive test address from the family parameter
 * :ref:`nxpdevhsm`:
     - require oemRandomShare when oemEncMasterShare is defined
     - add new format for sbfile for mcxa family devices with secure installer/extended bootloader
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - generate fuse script when merging signed image
     - add unicode characters for better BinaryImage visualization
     - remove the deprecated 'image_type' key in ahab configuration and replace by 'target_memory'
@@ -64,11 +92,11 @@ Current version introduces breaking changes, which are described in details in `
 
 **Bugfixes**
 
-* :ref:`blhost`: 
+* `blhost`_: 
     - fix receive-sb-file command failures with usb
 * :ref:`el2go-host`:
     - fix family parameter issue
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix famode-image get-templates command
     - resolve debug authentication issues
     - fix general error handling
@@ -78,7 +106,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix get-info error
 * :ref:`nxpfuses`:
     - fix get-config errors
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix HAB and BIMG issues
     - fix ahab export assertion error
     - fix RT118x build IEE image failure
@@ -93,7 +121,7 @@ Current version introduces breaking changes, which are described in details in `
 * :ref:`nxpwpc`:
     - fix missing family parameter for service parameters
     - fix api key existence
-* :ref:`shadowregs`:
+* `shadowregs`_:
     - fix general error 
 * fix invalid -oc option behavior
 
@@ -126,7 +154,7 @@ Current version introduces breaking changes, which are described in details in `
 * :ref:`lpcprog`:
     - support set CRP in lpcprog
     - add optional parameter to repeat the command several times if fails
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - support BCA and FCF configuration for mcxcxxx
 * support mcxw23x
 * support i.MX943
@@ -137,7 +165,7 @@ Current version introduces breaking changes, which are described in details in `
 
 * :ref:`el2go-host`:
     - fix loading item yaml configuration
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix XMCD data for mimxrt798s
     - fix invalid scramble mechanism in OTFAD
 * :ref:`nxpmemcfg`:
@@ -164,7 +192,7 @@ Current version introduces breaking changes, which are described in details in `
 
 **Bugfixes**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix encryption in OTFAD
     - fix bootableimage creation with just one bootable image
 * :ref:`nxpdevscan`:
@@ -172,7 +200,7 @@ Current version introduces breaking changes, which are described in details in `
 
 **Known issues**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - interface mcu-link is not working on Ubuntu 24.04
 
 ------------------------
@@ -185,7 +213,7 @@ Current version introduces breaking changes, which are described in details in `
     - implement parallel download of Secure Objects using database
     - speed up repeated calls to EL2GO server
     - allow to specify scope of Secure Objects to download
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - support halt, resume commands
     - AHB access test address remove as an option and move into database
     - support for block memory transfer over debug probes
@@ -196,7 +224,7 @@ Current version introduces breaking changes, which are described in details in `
 
 * :ref:`el2go-host`:
     - fix memory buffer used for data exchange for KW45
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - allow to parse AHAB image with empty image hash for rt118x
 
 ------------------------
@@ -209,7 +237,7 @@ Current version introduces breaking changes, which are described in details in `
 
 **New features**
 
-* :ref:`blhost`:
+* `blhost`_:
     - support nIRQ pin feature
 * :ref:`el2go-host`:
     - unify subcommands for RW61x
@@ -223,19 +251,19 @@ Current version introduces breaking changes, which are described in details in `
     - erase CMPA in EdgeLock2GO indirect flow
 * :ref:`lpcprog`:
     - add programmer for LPC8xx parts
-* :ref:`nxpcrypto`:
+* `nxpcrypto`_:
     - add subcommand for creating PKI tree
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - support for MX95 revision A0/A1/B0 (PQC support)
 * :ref:`nxpdevhsm`:
     - add execute command for mcxn9xx
     - allow SB files without loading the wrapped CUST_MK_SK
     - implement oem duk certificate provisioning
-* :ref:`nxpdice`:
+* `nxpdice`_:
     - add nxpdice application
 * :ref:`nxpele`:
     - support nxpele over fastboot
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - support AHAB version 2
     - add verificator to bootable image
     - support linux image in bootable image
@@ -258,21 +286,21 @@ Current version introduces breaking changes, which are described in details in `
 * :ref:`el2go-host`:
     - fix general error when database has no blob
     - fix revision in configuration
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix get-crp command for mcxa series
     - fix template for famode-image
     - fix dat for RT1180
     - fix template for RT1180
 * :ref:`nxpele`:
     - fix get-info details
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix flag in AHAB
     - fix plain MBI for NHS52sxx
     - fix trustzone for NHS52Sxx
     - remove header form XMCD segment
 * `pfr`_:
     - fix erase-cmpa for mcxa series
-* :ref:`shadowregs`:
+* shadowregs:
     - fix fuses-script
     - fix loading shadow registers on RW61x
 
@@ -284,7 +312,7 @@ Current version introduces breaking changes, which are described in details in `
 
 * :ref:`ifr`:
     - fix read command
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix parsing bootable image without specified memory type
     - fix plain mbi for NHS52sxx
 * :ref:`nxpwpc`:
@@ -300,19 +328,19 @@ Current version introduces breaking changes, which are described in details in `
 
 **New features**
 
-* :ref:`blhost`:
+* `blhost`_:
     - add can interface
 * :ref:`el2go-host`:
     - support for mwct2x12, mwct2xd2
 * :ref:`ifr`:
     - add option to configure sector 2
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - add family and revision info into DAC config file
 * :ref:`nxpdevhsm`:
     - commands limited based on specific devices capabilities
 * :ref:`nxpele`:
     - add fuses script
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - add support for RAW image
     - add re-sign subcommand to ahab
     - support parsing FCB block with swapped bytes
@@ -329,7 +357,7 @@ Current version introduces breaking changes, which are described in details in `
 
 **Bugfixes**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix debug authentication on NHS52Sxx
     - fix generation of DC config file
     - fix dac response length on kw45xx
@@ -337,7 +365,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix timeout
     - fix verify image for i.mx93
     - fix failure in communication with uboot
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix signed-msg incorrect signature
     - fix wrong offset in FCB
     - fix xmcd generation
@@ -351,7 +379,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix generate-binary argument position
     - fix generating cmpa template for mcxa1xx
     - fix default cmpa page for mcxa1xx
-* :ref:`shadowregs`:
+* shadowregs:
     - fix shadow registers on RW61x
     - fix loadconfig command
 
@@ -361,7 +389,7 @@ Current version introduces breaking changes, which are described in details in `
 
 **New features**
 
-* :ref:`nxpcrypto`:
+* `nxpcrypto`_:
     - add RSA-PSS support
 * :ref:`nxpdevhsm`:
     - support external devhsm provisioning
@@ -374,7 +402,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix buffer address MC56
 * :ref:`nxpele`:
     - fix write fuse
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - add advanced params setting to configurations (padding, keys, timestamp, etc.)
     - fix manifest hash digest KW45/K32W1
 
@@ -384,9 +412,9 @@ Current version introduces breaking changes, which are described in details in `
 
 **New features**
 
-* :ref:`nxpcrypto`:
+* `nxpcrypto`_:
     - add signing commands (create, verify)
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - add subcommands for Fault Analysis Mode (export, parse, get-templates)
     - add printing the result of auth command
     - add dedicated plugin system
@@ -394,7 +422,7 @@ Current version introduces breaking changes, which are described in details in `
     - U-BOOT interface
     - add commit command
     - add commands related to release-container
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - enable IEE encryption for RT1180
     - add key exchange signed message
     - add signature provider for RT1xxx
@@ -407,7 +435,7 @@ Current version introduces breaking changes, which are described in details in `
 
 * :ref:`nxpele`:
     - fix get-trng state command
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix cmpa template
     - fix parsing ahab image for i.MX95
     - fix xmcd export command
@@ -417,7 +445,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix export command
 * `pfr`_:
     - fix pfr generate command
-* :ref:`shadowregs`:
+* shadowregs:
     - fix default family parameter
 
 ------------------------
@@ -428,14 +456,14 @@ Current version introduces breaking changes, which are described in details in `
 
 * :ref:`nxpele`:
     - remove temporary file
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix test memory AP address
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix detection of input file for FCB in bootable image
     - fix IEE encryption for RT1180
     - fix signed MBI for Anguilla Nano
     - fix SB21 export with yaml config
-* :ref:`shadowregs`:
+* shadowregs:
     - fix behavior of the RKTH registers
     - fix invalid names of CRC field in database
 * fix setting a register value as raw value when loading from configuration
@@ -450,13 +478,13 @@ Current version introduces breaking changes, which are described in details in `
 
 **New features**
 
-* :ref:`blhost`:
+* `blhost`_:
     - dedicated plugin system
     - check of written data length in USB Interface
-* :ref:`nxpcrypto`:
+* `nxpcrypto`_:
     - remove dependency on PyCryptodome
     - add rot command for calculating RoT hash
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - distinguish between fw version and image version
     - support YAML configuration for HAB
     - support build RT11xx image with ECC keys
@@ -475,28 +503,28 @@ Current version introduces breaking changes, which are described in details in `
     - remove devices subcommand
 * :ref:`sdpshost`:
     - connection support for iMX91 and iMX95
-* :ref:`shadowregs`:
+* shadowregs:
     - unify endianness
 * tool for converting JSON configuration into YAML with comments
 * support mcxa1xx
 * unify naming: RKTH/RKHT
-* remove nxpkeygen and nxpcertgen apps, replaced by :ref:`nxpcrypto`
-* remove elftosb app, replaced by :ref:`nxpcrypto`
-* positional arguments replaced by options for all parameters with an exception to :ref:`blhost`, :ref:`sdphost` and :ref:`dk6prog`
+* remove nxpkeygen and nxpcertgen apps, replaced by `nxpcrypto`_
+* remove elftosb app, replaced by `nxpcrypto`_
+* positional arguments replaced by options for all parameters with an exception to `blhost`_, :ref:`sdphost` and :ref:`dk6prog`
 * remove backward compatibility with command get-cfg-template, replaced fully with get-template(s)
 * unify family name within all modules
 * remove lpc55xx from family names
 
 **Bugfixes**
 
-* :ref:`blhost`:
+* `blhost`_:
     - fix error of SPI connection
 * :ref:`nxpdevhsm`:
     - add missing sdio in generate command
 * :ref:`nxpele`:
     - fix generate-keyblob IEE
     - fix issue with get-info command
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix certificate block in AHAB
     - fix signature in AHAB
     - fix some commands for SB21
@@ -532,7 +560,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - enable signature providers for AHAB image and signed messages
     - add support for rt104x in bootable-image
 * :ref:`tphost`/:ref:`tpconfig`:
@@ -545,7 +573,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
 * nxpimage:
     - fix offset on NAND memory in AHAB image
 * fix plugin error for signature Provider for sb21
@@ -558,7 +586,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 * :ref:`tphost`/:ref:`tpconfig`:
     - add support for LPC55S3x
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - add possibility to define multiple regions in OTFAD in one data blob
 
 ---------------------
@@ -567,7 +595,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - support encrypted image hab
     - support for RT11xx and RT10xx
     - improve OTFAD/IEE names generation
@@ -575,7 +603,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix XMCD load_from_config
     - fix IEE template
 * fix circular dependency in signature provider import
@@ -588,14 +616,14 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`blhost`:
+* `blhost`_:
     - add new command: ele_message
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - add command: read UUID from device
     - update PyOCD to latest version to support MCU LINK FW v3, implementing CMSIS-DAP v2.1
 * :ref:`nxpdevhsm`:
     - USER_PCK rename to CUST_MK_SK
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - add subcommand group for generate and parse certificate block
     - replace private key to signature provider in master boot image
     - OTFAD support for RT1170
@@ -606,12 +634,12 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix AP selection issue for PyOCD and PEMICRO
     - fix DAC verification when there is only 1 root key
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix MBI issue with HMAC
-* :ref:`shadowregs`:
+* shadowregs:
     - fix endianness for OTP MASTER KEY
 * drop support for Python 3.7
 
@@ -626,12 +654,12 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix Linux error on PyOCD
     - fix PyOCD and PEmicro connection for kw45xx and k32w1xx
 * :ref:`nxpdevhsm`:
     - fix buffer base address for DevHSM operations
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix handling exception when the root cert index is wrong
 * :ref:`tphost`/:ref:`tpconfig`:
     - Incorrect output in TP PG command in case of an failure
@@ -642,12 +670,12 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - add check of root of trust hash in dat authentication
     - enable debug authentication protocol on RT1180
 * :ref:`nxpdevhsm`:
     - reset target before and after DevHSM SB3 file creation
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - XMCD support
     - signed messages support for RT1180
     - add bootable image for RT10xx, RT1180, RT1170, LPC55S3x
@@ -669,11 +697,11 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - remove duplicated option --protocol for gendc command
 * :ref:`nxpdevhsm`:
     - fix skipping commands from config file
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix non working 384/521 ECC keys for signature in AHAB container
     - fix CRC mode in external flash for lpc55s3x
     - failure on start due to boot_image hook definition
@@ -685,7 +713,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Known issues**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - we do not support CMSIS-DAP version 2 (bulk pipes, https://arm-software.github.io/CMSIS_5/DAP/html/group__DAP__ConfigUSB__gr.html)
       This means sw debuggers such as MCU-Link v3 will not work (nxpdebugmbox will not detect the debugger probe)
       This issue will be resolved in next version of SPSDK
@@ -696,7 +724,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - add support for BEE
     - enable OTFAD on RT1180
 * `pfr`_:
@@ -726,19 +754,19 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - add OTFAD support for RT5xx and RT6xx devices
 * `pfr`_:
     - read command allows independent binary and yaml exports
-* :ref:`shadowregs`:
+* shadowregs:
     - new subcommand: fuses-script
 * add OEM cert size check into TPConfig
 
 **Bugfixes**
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix debug authentication for RT595
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - fix sb21 command line argument in documentation
 * fix the use of pyyaml's load in tests (use safe_load())
 
@@ -748,16 +776,16 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`nxpimage` application as replacement for elftosb
-* :ref:`nxpcrypto` application for generating and verifying keys, certificates, hash digest, converting key's format
+* `nxpimage`_ application as replacement for elftosb
+* `nxpcrypto`_ application for generating and verifying keys, certificates, hash digest, converting key's format
 * trust provisioning applications (:ref:`tphost` and :ref:`tpconfig`)
-* :ref:`blhost`:
+* `blhost`_:
     - support LifeCycleUpdate command for RT1180
     - add option to specify peripheral index of SPI/I2C for LIBUSBSIO
     - allow lowercase names in the filter for USB mboot devices
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - utility to read/write memory using debug probe
-* :ref:`nxpimage`:
+* `nxpimage`_:
     - support of Master Boot Images
     - support AHAB container for RT1180
     - support of Secure Binary 2.1 / 3.1
@@ -782,7 +810,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`blhost`:
+* `blhost`_:
     - efuse_program_once returns failure message when using 'lock' option but still the fuse is burnt
     - fix in re-scanning LIBUSBSIO devices when target MCU is not connected
     - scan_usb() should return nxp devices
@@ -793,7 +821,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
     - fix CRC bootable image on RT685 EVK
     - fix image located in FLASH executed in RAM on RT6xx
     - fix burning fuses in BD file
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
     - fix in Jlink debugger probe initialization
     - fix get-crp command
 
@@ -830,7 +858,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`blhost`:
+* `blhost`_:
     - add parameter --no-verify for efuse-program-once
     - add possibility to select USBSIO bridge device via VID:PID, USB path, serial number
     - lower the timeout during MBoot's UART Ping command
@@ -848,7 +876,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **Bugfixes**
 
-* :ref:`blhost`:
+* `blhost`_:
     - fix UART open operation for RT1176, RT1050 and LPC55S06 platforms (and probably others)
 * :ref:`elftosb`:
     - fix preset data for lpc55s0x, lpc55s1x
@@ -861,7 +889,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 **New features**
 
-* :ref:`blhost`:
+* `blhost`_:
 
   * add experimental batch mode into blhost
   * support command get property 30
@@ -877,7 +905,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
   * add support for more input file types
   * [RTxxx] HMAC_KEY is now accepted in binary form
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
 
   * move gendc into nxpdebugmbox
 
@@ -897,7 +925,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 **Bugfixes**
 
 
-* :ref:`blhost`:
+* `blhost`_:
 
   * generate-key-blob does not generate blob.bin on RT1176
   * parse_property_tag in blhost_helper converts incorrectly in some cases
@@ -918,7 +946,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
   * [rtxxx] missing plain for load-to-ram image
   * configuration validation failed in some cases
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
 
   * return code is 0 in case of fail
   * nxpdebugmbox fails on Linux
@@ -950,7 +978,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
   * blhost - extend blhost by LPCUSBSIO interface
 
-* :ref:`blhost` - following trust-provisioning  sub-commands added:
+* `blhost`_ - following trust-provisioning  sub-commands added:
 
   * :ref:`oem_get_cust_cert_dice_puk` - creates the initial trust provisioning keys
   * :ref:`oem_gen_master_share` - creates shares for initial trust provisioning keys
@@ -980,7 +1008,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
   * moved option -p from general space to gendc subcommand.
   * add new -k keygen subcommand option to specify key type to generate
 
-* :ref:`nxpdebugmbox`:
+* `nxpdebugmbox`_:
 
   * refactor DebugCredential base class so that it will be possible to pass certificates in yml config file
   * check nxpdebugmbox on LPC55S3x
@@ -1001,9 +1029,9 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * :ref:`nxpkeygen` - regenerates a key without --force
 * :ref:`elftosb` - unclear error message: No such file or directory: 'None'
 * `pfr`_: - duplicated error message: The silicon revision is not specified
-* :ref:`nxpdebugmbox` - fix Retry of AP register reads after Chip reset
-* :ref:`nxpdebugmbox` - add timeout to never ending loops in spin_read/write methods in Debug mailbox
-* :ref:`blhost` - flash-erase-region command doesn't accept the memory_id argument in hex form
+* `nxpdebugmbox`_ - fix Retry of AP register reads after Chip reset
+* `nxpdebugmbox`_ - add timeout to never ending loops in spin_read/write methods in Debug mailbox
+* `blhost`_ - flash-erase-region command doesn't accept the memory_id argument in hex form
 * :ref:`elftosb` - using kdkAccessRights = 0 in SB31 is throwing an error in KeyDerivator
 
 --------------------
@@ -1014,7 +1042,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 * version flag added for all command-line application
 * support for Python 3.9 added
-* :ref:`blhost` - following sub-commands added:
+* `blhost`_ - following sub-commands added:
     * list-memory
     * flash-program-once
     * set-property
@@ -1025,10 +1053,10 @@ Next version of spsdk (2.0) will introduce breaking changes:
     * fuse-program
     * flash-image
     * program-aeskey
-* :ref:`blhost` - memoryId clamp-down for mapped external memories added
+* `blhost`_ - memoryId clamp-down for mapped external memories added
 * :ref:`elftosb` - support for SB 2.1 added
 * :ref:`elftosb` - basic support for BD configuration file added
-* :ref:`nxpdebugmbox` - debug port enabled check added
+* `nxpdebugmbox`_ - debug port enabled check added
 * :ref:`nxpkeygen` - new sub-command added to nxpkeygen to create a template for configuration YML file for DC keys
 * :ref:`nxpkeygen` - new sub-command added to create a template for configuration YML file for DC keys
 * `pfr`_: - default JSON config file generation removed, but still accepted as an input. The preferred is the YML configuration format.
@@ -1038,15 +1066,15 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 * wrong DCD size by BootImgRT.parse
 * cmdKeyStoreBackupRestore wrong param description
-* :ref:`blhost` - typo in McuBootConnectionError exception
-* :ref:`blhost` - mcuBoot Uart doesn't close the device after failed ping command
-* :ref:`blhost` - assertion error when connection lost during fuses readout
-* :ref:`blhost` - sub-command  flash-read-resource fails when the length is not aligned
+* `blhost`_ - typo in McuBootConnectionError exception
+* `blhost`_ - mcuBoot Uart doesn't close the device after failed ping command
+* `blhost`_ - assertion error when connection lost during fuses readout
+* `blhost`_ - sub-command  flash-read-resource fails when the length is not aligned
 * `pfr`_: - incorrect keys hash computation for LPC55S3x
 * `pfr`_: - wrong LPC55S69 silicon revision
 * `pfr`_: - parse does not show PRINCE IV fields
 * :ref:`sdphost` - running spdhost --help fails
-* :ref:`shadowregs` - bad DEV_TEST_BIT in shadow registers
+* shadowregs - bad DEV_TEST_BIT in shadow registers
 
 ---------------------
 1.3.1 (29-March-2021)
@@ -1058,12 +1086,12 @@ Next version of spsdk (2.0) will introduce breaking changes:
   * user-config -> get-cfg-template
   * parse -> parse-binary
   * generate -> generate-binary
-* :ref:`blhost` - allow key names for key-provisioning commands
-* :ref:`blhost` - support for RT1170, RT1160
-* :ref:`shadowregs` - shadow registers tool is now top-level module
-* :ref:`blhost` - fix baud rate parameter
+* `blhost`_ - allow key names for key-provisioning commands
+* `blhost`_ - support for RT1170, RT1160
+* shadowregs - shadow registers tool is now top-level module
+* `blhost`_ - fix baud rate parameter
 * `pfr`_: - fix in data for LPC55S6x, LPC55S1x, LPC55S0x
-* :ref:`blhost` - communication stack breaks down on RT1170 after unsuccessful key-prov enroll command
+* `blhost`_ - communication stack breaks down on RT1170 after unsuccessful key-prov enroll command
 
 --------------------
 1.3.0 (5-March-2021)
@@ -1072,17 +1100,17 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * support creation of SB version 3.1
 * :ref:`elftosb` application based on legacy elf2sb supporting SB 3.1 support
 * :ref:`nxpdevscan` - application for connected USB, UART devices discovery
-* :ref:`shadowregs` -  application for shadow registers management using DebugProbe
+* shadowregs -  application for shadow registers management using DebugProbe
 * support USB path argument in blhost/sdphost (all supported OS)
 * :ref:`nxpcertgen` CLI application (basicConstrains, self-signed)
-* :ref:`blhost` - commands added:
+* `blhost`_ - commands added:
     * flash-erase-all
     * call
     * load-image
     * execute
     * key-provisioning
     * receive-sb-file
-* :ref:`blhost` - extend commands' options:
+* `blhost`_ - extend commands' options:
     * configure-memory now allows usage of internal memory
     * extend error code in the output
     * add parameters lock/nolock into efuse-program-once command
@@ -1127,6 +1155,6 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * connectivity to the target via UART, USB-HID.
 * support for generating, saving, loading RSA keys with different sizes
 * generation and management of certificate
-* :ref:`blhost` - CLI utility for communication with boot loader on a target
+* `blhost`_ - CLI utility for communication with boot loader on a target
 * :ref:`sdphost` - CLI utility for communication with ROM on a target
 * `pfr`_: - CLI utility for generating and parsing Protected Flash Regions - CMPA and CFPA regions

@@ -362,8 +362,8 @@ class AHABContainerBase(HeaderContainer):
         ret.add_record_enum("Flags: SRK Set", self.flag_srk_set, FlagsSrkSet)
         ret.add_record_range("Flags: SRK Selection", self.flag_used_srk_id, min_val=0, max_val=3)
         ret.add_record_bit_range("Flags: SRK Revoke mask", self.flag_srk_revoke_keys, bit_range=4)
-        ret.add_record_bit_range("SW version", self.flags, 16)
-        ret.add_record_bit_range("Fuse version", self.flags, 8)
+        ret.add_record_bit_range("SW version", self.sw_version, bit_range=16)
+        ret.add_record_bit_range("Fuse version", self.fuse_version, bit_range=8)
         ret.add_record_range("Signature Block offset", self._signature_block_offset, max_val=65535)
 
         if self.signature_block:
@@ -1116,6 +1116,10 @@ class AHABContainerV2(AHABContainer):
     FLAGS_CHECK_ALL_SIGNATURES_OFFSET = 15
     FLAGS_CHECK_ALL_SIGNATURES_SIZE = 1
 
+    # Container special flags for FastBoot:
+    FLAGS_FAST_BOOT_OFFSET = 16
+    FLAGS_FAST_BOOT_SIZE = 3
+
     class FlagsCheckAllSignatures(SpsdkEnum):
         """Flags Check all signatures."""
 
@@ -1134,6 +1138,34 @@ class AHABContainerV2(AHABContainer):
         )
         return self.FlagsCheckAllSignatures.from_tag(check_all)
 
+    class FlagsFastBoot(SpsdkEnum):
+        """Flags for Fast Boot configuration."""
+
+        Disabled = (0x00, "disabled", "Fast Boot is disabled")
+        HashAndCopy = (
+            0x01,
+            "hash_and_copy",
+            "ELE will do the hash and copy (when disabled, BootROM will do the copy)",
+        )
+        ExternalAccelerator = (
+            0x02,
+            "external_accelerator",
+            "Use external accelerator for authentication (e.g. V2X on i.MX95B0, i.MX943 and i.MX952)",
+        )
+        HashAndCopyWithExternalAccelerator = (
+            0x03,
+            "hash_and_copy_with_external_accelerator",
+            "ELE will do hash and copy, and use external accelerator for authentication",
+        )
+
+    @property
+    def flag_fast_boot(self) -> FlagsFastBoot:
+        """Fast Boot flags as enumeration."""
+        fast_boot = (self.flags >> self.FLAGS_FAST_BOOT_OFFSET) & (
+            (1 << self.FLAGS_FAST_BOOT_SIZE) - 1
+        )
+        return self.FlagsFastBoot.from_tag(fast_boot)
+
     def _create_flags_config(self) -> Config:
         """Create configuration of the AHAB container flags.
 
@@ -1141,6 +1173,7 @@ class AHABContainerV2(AHABContainer):
         """
         cfg = super()._create_flags_config()
         cfg["check_all_signatures"] = self.flag_check_all_signatures.label
+        cfg["fast_boot"] = self.flag_fast_boot.label
 
         return cfg
 
@@ -1157,6 +1190,10 @@ class AHABContainerV2(AHABContainer):
                 config.get("check_all_signatures", "default")
             ).tag
             << self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET
+        )
+        self.flags |= (
+            self.FlagsFastBoot.from_attr(config.get("fast_boot", "disabled")).tag
+            << self.FLAGS_FAST_BOOT_OFFSET
         )
 
     def create_srk_hash_fuses_script(self) -> str:

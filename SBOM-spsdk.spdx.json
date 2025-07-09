@@ -2,13 +2,13 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2025-05-16T08:13:08Z",
+    "created": "2025-07-08T09:31:23Z",
     "creators": [
       "Organization: NXP"
     ],
     "licenseListVersion": "3.20"
   },
-  "name": "spsdk-3.0.0",
+  "name": "spsdk-3.0.1",
   "dataLicense": "CC0-1.0",
   "hasExtractedLicensingInfos": [
     {
@@ -22,32 +22,32 @@
       "name": "Public Domain"
     }
   ],
-  "documentNamespace": "https://nxp.com/spdx/2afc717e-1299-4856-ba23-b80721c4d59f",
+  "documentNamespace": "https://nxp.com/spdx/9c989ea4-abdd-4154-aca5-739069fcd03c",
   "packages": [
     {
-      "SPDXID": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "SPDXID": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "name": "spsdk",
-      "versionInfo": "3.0.0",
+      "versionInfo": "3.0.1",
       "licenseConcluded": "(BSD-3-Clause)",
       "licenseDeclared": "(BSD-3-Clause)",
       "downloadLocation": "NOASSERTION",
+      "originator": "Organization: spsdk",
+      "supplier": "NOASSERTION",
       "externalRefs": [],
-      "filesAnalyzed": false,
-      "originator": "Organization: NXP",
-      "supplier": "NOASSERTION"
+      "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-f332fe69-cd8e-4b76-afd4-6bc34736e7e5",
+      "SPDXID": "SPDXRef-package-469ada50-a560-422f-b006-d19b35853966",
       "name": "spsdk_plugins_mcu_link",
-      "versionInfo": "0.6.3",
+      "versionInfo": "0.6.5",
       "licenseConcluded": "BSD-3-Clause",
-      "licenseDeclared": "(BSD-3-Clause)",
+      "licenseDeclared": "BSD-3-Clause",
       "homepage": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/main/mcu_link",
-      "downloadLocation": "https://github.com/nxp-mcuxpresso/spsdk/tree/v2.6.1",
+      "downloadLocation": "NOASSERTION",
       "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
       "externalRefs": [],
-      "filesAnalyzed": false,
-      "supplier": "NOASSERTION"
+      "filesAnalyzed": false
     },
     {
       "SPDXID": "SPDXRef-package-f6c73d2f-e044-4aba-ae8d-814f9af59d19",
@@ -311,7 +311,8 @@
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
-      "filesAnalyzed": false
+      "filesAnalyzed": false,
+      "licenseComments": "BD KB declares \"bsd3  AND  gpl3\", but the hidapi license is \"bsd3  OR  gpl3\". Case 01217520 was filled on https://community.blackduck.com/s/my-support-home ."
     },
     {
       "SPDXID": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499",
@@ -345,9 +346,21 @@
       "licenseDeclared": "Apache-2.0",
       "homepage": "https://github.com/pyocd/libusb-package",
       "downloadLocation": "NOASSERTION",
-      "externalRefs": [],
-      "filesAnalyzed": false,
-      "supplier": "NOASSERTION"
+      "originator": "Organization: pypi",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/libusb-package@1.0.26.3",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "6781f44e-1835-42a4-8b58-006e358ef632",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
     },
     {
       "SPDXID": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c",
@@ -361,14 +374,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/libusbsio@2.1.13",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "3c287145-fa30-4449-b9b7-a1ef2301786e",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/libusbsio@2.1.13",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
@@ -408,14 +421,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "32d81481-6481-45e2-af40-e65ca13958e6",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/oscrypto@1.3.0",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "32d81481-6481-45e2-af40-e65ca13958e6",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -493,53 +506,62 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-72447d58-63e8-4713-b269-2b1f2d9146d8",
+      "SPDXID": "SPDXRef-package-a52da06d-9e50-4614-ac95-e37c0e9267e6",
       "name": "psf-requests",
-      "versionInfo": "2.32.3",
+      "versionInfo": "2.32.4",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
       "homepage": "http://docs.python-requests.org",
-      "downloadLocation": "https://pypi.org/project/requests/2.32.3",
+      "downloadLocation": "https://pypi.org/project/requests/2.32.4",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:debian_package:python3-requests:2.32.3:dfsg-4:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:pypi_package:requests:2.32.4:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:debian_package:python3-requests:2.32.3:dfsg-1:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
-        },
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:alpine_package:py3-requests:2.32.3:r0:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:python:requests:2.32.4:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/requests@2.32.3",
+          "referenceLocator": "pkg:pypi/requests@2.32.4",
           "referenceType": "purl"
         },
         {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:alpine_package:py3-requests-pyc:2.32.3:r0:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
-        },
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:debian_package:python3-requests:2.32.3:dfsg-2:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
-        },
-        {
           "referenceCategory": "OTHER",
-          "referenceLocator": "422e72a8-a606-478e-be1f-56931f236aeb",
+          "referenceLocator": "df639c8a-46e0-44f7-af90-bb5c65f9abef",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-4cf5cf3a-7955-4946-b99b-5ead702797e8",
+      "name": "py3-nitrokey",
+      "versionInfo": "0.3.1",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "(Apache-2.0 OR MIT)",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: alpine",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:apk/alpine/py3-nitrokey@0.3.1-r0?arch=noarch",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "0f4fd74a-2376-4aef-95a2-3260db267486",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseComments": "According to https://github.com/Nitrokey/nitrokey-sdk-py/blob/v0.3.1/README.md#License, component is dual-licensed Apache-2.0 OR MIT.\nMIT chosen."
     },
     {
       "SPDXID": "SPDXRef-package-acacdb7f-c5f7-4849-8524-9ab53fa32dbf",
@@ -577,14 +599,9 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/cryptography@44.0.3",
-          "referenceType": "purl"
-        },
-        {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "922d1f62-343b-45ed-a0f1-e345d3334c3c",
-          "referenceType": "BlackDuck-ComponentOrigin"
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:cryptography:python-cryptography:44.0.3:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
@@ -598,18 +615,23 @@
         },
         {
           "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:pypi_package:cryptography:44.0.3:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
           "referenceLocator": "cpe:2.3:a:python-cryptography_project:python-cryptography:44.0.3:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:cryptography:python-cryptography:44.0.3:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/cryptography@44.0.3",
+          "referenceType": "purl"
         },
         {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:pypi_package:cryptography:44.0.3:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
+          "referenceCategory": "OTHER",
+          "referenceLocator": "922d1f62-343b-45ed-a0f1-e345d3334c3c",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -626,14 +648,48 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "85101a60-2c51-4ccb-aa2b-06020fa26831",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/filelock@3.18.0",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "85101a60-2c51-4ccb-aa2b-06020fa26831",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-4d242126-4913-47f9-84ff-5adbb2518159",
+      "name": "pypi/setuptools",
+      "versionInfo": "80.9.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://pypi.org/project/setuptools/",
+      "downloadLocation": "https://pypi.org/project/setuptools/80.9.0",
+      "originator": "Organization: pypi",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:pypi_package:setuptools:80.9.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/setuptools@80.9.0",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:python:setuptools:80.9.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "4c1d97fe-3531-43d6-b898-047860946fa0",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -674,14 +730,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/importlib-resources@6.5.2",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "bd8199f4-7839-477f-85c2-7bceecc1599a",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/importlib-resources@6.5.2",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
@@ -711,23 +767,23 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9b9de880-c075-4785-ad91-f79da8586fb5",
+      "SPDXID": "SPDXRef-package-da846aad-4fca-406a-bbb0-5f9f935a0fa5",
       "name": "python-typing-extensions",
-      "versionInfo": "4.13.2",
+      "versionInfo": "4.14.1",
       "licenseConcluded": "PSF-2.0",
       "licenseDeclared": "PSF-2.0",
-      "downloadLocation": "https://pypi.org/project/typing-extensions/4.13.2",
+      "downloadLocation": "https://pypi.org/project/typing-extensions/4.14.1",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/typing-extensions@4.13.2",
+          "referenceLocator": "pkg:pypi/typing-extensions@4.14.1",
           "referenceType": "purl"
         },
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "57dbac15-1179-43c7-a9e8-2fd7b4761f8e",
+          "referenceLocator": "47550aaf-483c-4779-934a-770264b3ad1e",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
@@ -745,42 +801,42 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "ba912008-9540-4d42-9fab-aaf5ac04070e",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/pyusb@1.2.1",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "ba912008-9540-4d42-9fab-aaf5ac04070e",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-eb95ee63-7e36-4dad-9e37-a3114f9ab82e",
+      "SPDXID": "SPDXRef-package-e2270c2a-198a-4162-8406-07172a3e451a",
       "name": "ruamel-yaml",
-      "versionInfo": "0.18.10",
+      "versionInfo": "0.18.11",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
       "homepage": "https://pypi.org/project/ruamel.yaml/",
-      "downloadLocation": "https://pypi.org/project/ruamel.yaml/0.18.10",
+      "downloadLocation": "https://pypi.org/project/ruamel.yaml/0.18.11",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/ruamel-yaml@0.18.10",
+          "referenceLocator": "pkg:pypi/ruamel-yaml@0.18.11",
           "referenceType": "purl"
         },
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "f18dfd4b-79fe-4078-aef0-d66a4f6bd581",
+          "referenceLocator": "c5754511-f4b9-4f5d-9b2b-1b2ba43e2310",
           "referenceType": "BlackDuck-ComponentOrigin"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:ruamel.yaml_project:ruamel.yaml:0.18.10:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:ruamel.yaml_project:ruamel.yaml:0.18.11:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         }
       ],
@@ -822,13 +878,37 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "4776705e-06c0-4634-aed6-304b7eb5c664",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/sly@0.5",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-0c5601de-6999-4215-b672-21f57dc99ee2",
+      "name": "spsdk",
+      "versionInfo": "1.10.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "https://github.com/NXPmicro/spsdk",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: alpine",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:apk/alpine/py3-spsdk@1.10.0-r0?arch=noarch",
           "referenceType": "purl"
         },
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "4776705e-06c0-4634-aed6-304b7eb5c664",
+          "referenceLocator": "d8e9ffd1-f86f-48eb-9bf5-4438f764235d",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
@@ -842,9 +922,21 @@
       "licenseDeclared": "BSD-3-Clause",
       "homepage": "https://github.com/NXPmicro/spsdk",
       "downloadLocation": "NOASSERTION",
-      "externalRefs": [],
-      "filesAnalyzed": false,
-      "supplier": "NOASSERTION"
+      "originator": "Organization: alpine",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:apk/alpine/py3-spsdk@2.1.1-r0?arch=x86_64",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "644536b3-c40f-4d57-b4e9-e80d115126bd",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
     },
     {
       "SPDXID": "SPDXRef-package-ba5e1a80-1f90-468a-bf1f-5194a1a49893",
@@ -858,14 +950,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:apk/alpine/py3-spsdk@2.2.0-r0?arch=aarch64",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "cd1fa98f-1eac-4b8c-aaa9-8879bed66e5d",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:apk/alpine/py3-spsdk@2.2.0-r0?arch=aarch64",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
@@ -882,60 +974,60 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/spsdk@2.3.0",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "a72db346-fc53-4419-aa81-61a47178d025",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/spsdk@2.3.0",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-0bfe308d-e434-4876-bef7-2067086d57f0",
+      "SPDXID": "SPDXRef-package-3aecffbc-5193-4a07-81f9-c91c49ca84d3",
       "name": "spsdk",
-      "versionInfo": "2.6.1",
+      "versionInfo": "3.0.0",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
       "homepage": "https://github.com/NXPmicro/spsdk",
-      "downloadLocation": "https://pypi.org/project/spsdk/2.6.1",
+      "downloadLocation": "https://pypi.org/project/spsdk/3.0.0",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/spsdk@2.6.1",
+          "referenceLocator": "pkg:pypi/spsdk@3.0.0",
           "referenceType": "purl"
         },
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "ad74d691-e5b6-4eed-bc02-99699f436850",
+          "referenceLocator": "672d42fb-46fd-4931-b78e-bd34e0d7bcfe",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-1956711a-c77b-4840-a1d4-15f948b1fd27",
+      "SPDXID": "SPDXRef-package-03d11c4b-7d34-4592-a9db-2c6998c36a16",
       "name": "spsdk-pyocd",
-      "versionInfo": "0.3.1",
+      "versionInfo": "0.3.2",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
-      "downloadLocation": "https://pypi.org/project/spsdk-pyocd/0.3.1",
+      "downloadLocation": "https://pypi.org/project/spsdk-pyocd/0.3.2",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "240ff8bb-b67a-42db-b13b-c4313891b019",
+          "referenceLocator": "021410ef-c581-4559-8224-4ecb16471756",
           "referenceType": "BlackDuck-ComponentOrigin"
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/spsdk-pyocd@0.3.1",
+          "referenceLocator": "pkg:pypi/spsdk-pyocd@0.3.2",
           "referenceType": "purl"
         }
       ],
@@ -983,14 +1075,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/x690@1.0.0.post1",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "7de7de65-0d66-4f36-ae2e-12ecbb65f1de",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/x690@1.0.0.post1",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
@@ -1000,202 +1092,217 @@
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
       "relationshipType": "DESCRIBES",
-      "relatedSpdxElement": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f"
+      "relatedSpdxElement": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-acacdb7f-c5f7-4849-8524-9ab53fa32dbf"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-a93c7f4b-1abe-45c6-bfdb-3c331057bf6d"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9b9de880-c075-4785-ad91-f79da8586fb5"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-f332fe69-cd8e-4b76-afd4-6bc34736e7e5"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-42d7d547-744e-40f8-b42f-e658dd7163d7"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-ba5e1a80-1f90-468a-bf1f-5194a1a49893"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-a38f0668-44bd-4a89-b4fa-9fbaab920bad"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-f1108f35-d6eb-45cc-a57e-cc3a78473285"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-18f06123-7a02-4df4-b8ba-9e818cfa1b44"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-1956711a-c77b-4840-a1d4-15f948b1fd27"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-81e2d41d-3400-4313-a586-9a7249e53f6d"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-90534279-6299-4665-ac9f-a4dfb68d0421"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-0b4a0fde-4936-4f54-9904-1ccb90ac8856"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-240f5676-15cc-4790-a68f-d24cd9f09e27"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-85e64f81-3d8c-4586-b87f-38564bb48690"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-306faa2d-67bc-404f-a46d-af90387b096f"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-2c6db3d0-b23a-47c3-992e-62536b8ada5d"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-7eba05f1-cb1e-4a10-90f4-5ac36221ec3f"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-dd82b24e-73c9-46db-86e4-84b092b65f77"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-d58a27a6-bae7-4758-a981-c7daabde9e3b"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-3172221d-a445-43f9-a10c-f1467982ef8b"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-7d983110-9a5c-4cce-ad23-632138403033"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-72447d58-63e8-4713-b269-2b1f2d9146d8"
+      "relatedSpdxElement": "SPDXRef-package-4cf5cf3a-7955-4946-b99b-5ead702797e8"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-f4046be8-5787-4f40-bd0a-50c81e4d6800"
+      "relatedSpdxElement": "SPDXRef-package-a93c7f4b-1abe-45c6-bfdb-3c331057bf6d"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-70a75646-5890-4929-86d2-fd07b2e63365"
+      "relatedSpdxElement": "SPDXRef-package-469ada50-a560-422f-b006-d19b35853966"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-0bfe308d-e434-4876-bef7-2067086d57f0"
+      "relatedSpdxElement": "SPDXRef-package-81e2d41d-3400-4313-a586-9a7249e53f6d"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-147bc36d-295e-457f-8c35-e15ce77238e9"
+      "relatedSpdxElement": "SPDXRef-package-e2270c2a-198a-4162-8406-07172a3e451a"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-3286e08b-1bcf-4d4a-9158-ed23dc34bcd0"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-0ea8e5e8-6b1a-410c-b88e-21789ebf5a2f"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-42f96553-bd96-4720-b927-0855a9cf402c"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-cb96019c-d494-4cb7-a169-081d19f1df59"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-f6c73d2f-e044-4aba-ae8d-814f9af59d19"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-1655902b-68da-427d-9929-69a877510187"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-bf874d5c-156c-4104-a801-bcd3e185ecf3"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-eb95ee63-7e36-4dad-9e37-a3114f9ab82e"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-e21582f2-a99f-4c18-a10d-639446c80973"
     },
     {
-      "spdxElementId": "SPDXRef-package-2afc717e-1299-4856-ba23-b80721c4d59f",
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-3172221d-a445-43f9-a10c-f1467982ef8b"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-d58a27a6-bae7-4758-a981-c7daabde9e3b"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-2c6db3d0-b23a-47c3-992e-62536b8ada5d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-0ea8e5e8-6b1a-410c-b88e-21789ebf5a2f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-90534279-6299-4665-ac9f-a4dfb68d0421"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-0b4a0fde-4936-4f54-9904-1ccb90ac8856"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-85e64f81-3d8c-4586-b87f-38564bb48690"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-240f5676-15cc-4790-a68f-d24cd9f09e27"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-42d7d547-744e-40f8-b42f-e658dd7163d7"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-3aecffbc-5193-4a07-81f9-c91c49ca84d3"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-0c5601de-6999-4215-b672-21f57dc99ee2"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7eba05f1-cb1e-4a10-90f4-5ac36221ec3f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-dd82b24e-73c9-46db-86e4-84b092b65f77"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-da846aad-4fca-406a-bbb0-5f9f935a0fa5"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-a38f0668-44bd-4a89-b4fa-9fbaab920bad"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-a52da06d-9e50-4614-ac95-e37c0e9267e6"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
       "relationshipType": "CONTAINS",
       "relatedSpdxElement": "SPDXRef-package-dc0a54ac-d12e-469d-9583-e78e75faa07e"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-147bc36d-295e-457f-8c35-e15ce77238e9"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-03d11c4b-7d34-4592-a9db-2c6998c36a16"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-3286e08b-1bcf-4d4a-9158-ed23dc34bcd0"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-306faa2d-67bc-404f-a46d-af90387b096f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-4d242126-4913-47f9-84ff-5adbb2518159"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-acacdb7f-c5f7-4849-8524-9ab53fa32dbf"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-f1108f35-d6eb-45cc-a57e-cc3a78473285"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-cb96019c-d494-4cb7-a169-081d19f1df59"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-f6c73d2f-e044-4aba-ae8d-814f9af59d19"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-1655902b-68da-427d-9929-69a877510187"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-bf874d5c-156c-4104-a801-bcd3e185ecf3"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-f4046be8-5787-4f40-bd0a-50c81e4d6800"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ba5e1a80-1f90-468a-bf1f-5194a1a49893"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-70a75646-5890-4929-86d2-fd07b2e63365"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-18f06123-7a02-4df4-b8ba-9e818cfa1b44"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-9c989ea4-abdd-4154-aca5-739069fcd03c",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-42f96553-bd96-4720-b927-0855a9cf402c"
     }
   ]
 }

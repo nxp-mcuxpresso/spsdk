@@ -2835,8 +2835,7 @@
                     },
                     "bitfields": [
                         {
-                            "width": 3,
-                            "access": "none"
+                            "width": 3
                         },
                         {
                             "width": 1,
@@ -2957,8 +2956,7 @@
                             ]
                         },
                         {
-                            "width": 15,
-                            "access": "none"
+                            "width": 15
                         }
                     ]
                 },
@@ -3046,8 +3044,7 @@
                     },
                     "bitfields": [
                         {
-                            "width": 3,
-                            "access": "none"
+                            "width": 3
                         },
                         {
                             "width": 1,
@@ -3168,8 +3165,7 @@
                             ]
                         },
                         {
-                            "width": 15,
-                            "access": "none"
+                            "width": 15
                         }
                     ]
                 },

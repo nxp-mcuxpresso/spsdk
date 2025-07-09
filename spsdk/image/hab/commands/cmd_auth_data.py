@@ -28,6 +28,7 @@ from spsdk.image.hab.hab_certificate import HabCertificate
 from spsdk.image.hab.hab_header import CmdHeader, Header, SegmentTag
 from spsdk.image.hab.hab_mac import MAC
 from spsdk.image.hab.hab_signature import Signature
+from spsdk.image.hab.hab_srk import SrkTable
 from spsdk.image.hab.utils import aead_nonce_len, get_header_version
 from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary
@@ -174,7 +175,7 @@ class CmdAuthData(CmdBase):
         return self._signature
 
     @cmd_data_reference.setter
-    def cmd_data_reference(self, value: SignatureOrMAC) -> None:
+    def cmd_data_reference(self, value: Union[HabCertificate, Signature, MAC, SrkTable]) -> None:
         """Setter.
 
         By default, the command does not support cmd_data_reference
@@ -183,9 +184,11 @@ class CmdAuthData(CmdBase):
         :raises SPSDKExpectedSignatureOrMACError: if unsupported data object is provided
         """
         if self.sig_format == CertFormatEnum.AEAD:
-            assert isinstance(value, MAC)
+            if not isinstance(value, MAC):
+                raise SPSDKExpectedSignatureOrMACError("Expected MAC object for AEAD format")
         elif self.sig_format == CertFormatEnum.CMS:
-            assert isinstance(value, Signature)
+            if not isinstance(value, Signature):
+                raise SPSDKExpectedSignatureOrMACError("Expected Signature object for CMS format")
         else:
             raise SPSDKExpectedSignatureOrMACError("Unsupported data object is provided")
         self._signature = value

@@ -42,6 +42,7 @@ TEST_REG_REV = False
 TEST_REG_ACCESS = Access.RW
 TEST_REG_VALUE = 0xA5A5A5A5
 
+
 TEST_BITFIELD_NAME = "TestBitfield"
 TEST_BITFIELD_BC_NAME = "TestBitfieldBc"
 TEST_BITFIELD_OFFSET = 0x0F
@@ -80,6 +81,7 @@ def create_simple_regs():
         TEST_REG_WIDTH,
         TEST_REG_UID,
         TEST_REG_DESCR,
+        TEST_REG_VALUE,
         TEST_REG_REV,
         TEST_REG_ACCESS,
     )
@@ -90,6 +92,7 @@ def create_simple_regs():
         TEST_REG_WIDTH,
         TEST_REG_UID2,
         TEST_REG_DESCR + "_2",
+        0xF0000,
         TEST_REG_REV,
         TEST_REG_ACCESS,
     )
@@ -101,7 +104,6 @@ def create_simple_regs():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -112,7 +114,6 @@ def create_simple_regs():
         1,
         TEST_BITFIELD_UID2,
         ".",
-        0,
         TEST_BITFIELD_ACCESS,
     )
     enum1 = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR, 1)
@@ -186,7 +187,6 @@ def test_register():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -334,7 +334,6 @@ def test_bitfield():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -373,7 +372,6 @@ def test_bitfield_find():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -407,7 +405,6 @@ def test_bitfields_names():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -418,7 +415,6 @@ def test_bitfields_names():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID2,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -461,7 +457,6 @@ def test_bitfield_has_enums():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -495,7 +490,6 @@ def test_bitfield_value():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        None,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -506,31 +500,6 @@ def test_bitfield_value():
 
     with pytest.raises(SPSDKError):
         bitfield.set_value(TEST_BITFIELD_OUTOFRANGEVAL)
-
-
-def test_bitfield_invalidvalue():
-    """Test bitfield INVALID value."""
-    parent_reg = Register(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_UID,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-
-    with pytest.raises(SPSDKError):
-        RegsBitField(
-            parent_reg,
-            TEST_BITFIELD_NAME,
-            TEST_BITFIELD_OFFSET,
-            TEST_BITFIELD_WIDTH,
-            TEST_BITFIELD_UID,
-            TEST_BITFIELD_DESCR,
-            "InvalidValue",
-            TEST_BITFIELD_ACCESS,
-        )
 
 
 def test_bitfield_enums():
@@ -552,7 +521,6 @@ def test_bitfield_enums():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -610,7 +578,6 @@ def test_bitfield_enums_invalid_name():
         TEST_BITFIELD_WIDTH,
         TEST_BITFIELD_UID,
         TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
         TEST_BITFIELD_ACCESS,
     )
 
@@ -873,7 +840,7 @@ def test_create_yml():
 
     assert TEST_REG_NAME in yml.keys()
     assert TEST_REG_NAME + "_2" in yml.keys()
-    assert yml[TEST_REG_NAME] == "0x00000000"
+    assert int(yml[TEST_REG_NAME], 16) == TEST_REG_VALUE
     assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"].keys()
     assert yml[TEST_REG_NAME + "_2"][TEST_BITFIELD_NAME] == "0x1E"
     assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"].keys()
@@ -1061,6 +1028,7 @@ def test_regs(
             assert reg_val == excepted_val
 
     regs.reset_values()
+
 
 def test_registers_size():
     """Test the registers size property."""

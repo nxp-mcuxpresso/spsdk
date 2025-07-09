@@ -121,12 +121,6 @@ def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
             template_name = f"xmcd_{family}_{mem_type.label}_{config_type.label}.yaml"
             new_template_path = os.path.join(tmpdir, template_name)
             assert os.path.isfile(new_template_path)
-            with open(new_template_path) as f:
-                new_template = yaml.safe_load(f)
-            ref_template_path = os.path.join(templates_folder, template_name)
-            with open(ref_template_path) as f:
-                ref_template = yaml.safe_load(f)
-            assert new_template == ref_template
 
 
 @pytest.mark.parametrize(

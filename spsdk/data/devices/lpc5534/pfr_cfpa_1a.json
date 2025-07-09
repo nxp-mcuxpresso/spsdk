@@ -1,5 +1,5 @@
 {
-    "cpu": "lpc5534",
+    "cpu": "LPC5534",
     "groups": [
         {
             "group": {
@@ -12,168 +12,147 @@
                     "name": "HEADER",
                     "description": "Header",
                     "offset_int": "0",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field004",
                     "name": "CFPA_PAGE_VERSION",
                     "description": "CFPA Page Version. Write '0xFFFF_FFFF' to auto increment current CFPA page version value (by ROM).",
                     "offset_int": "0x0004",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field008",
-                    "name": "NS_FW_Version",
+                    "name": "NS_FW_VERSION",
                     "description": "Non-Secure Firmware Version (Monotonic counter)",
                     "offset_int": "0x0008",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field00C",
                     "name": "MCTR_NXP_CTR0",
                     "description": "Monotonic counter 0",
                     "offset_int": "0x000C",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field010",
                     "name": "MFLAG_CUST_0",
                     "description": "Customer defined Monotonic flags",
                     "offset_int": "0x0010",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field014",
                     "name": "MCTR_NXP_CTR1",
                     "description": "Monotonic counter 1",
                     "offset_int": "0x0014",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field018",
                     "name": "MCTR_NXP_CTR2",
                     "description": "Monotonic counter 2",
                     "offset_int": "0x0018",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field01C",
                     "name": "MCTR_NXP_CTR3",
                     "description": "Monotonic counter 3",
                     "offset_int": "0x001C",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field020",
                     "name": "MCTR_NXP_CTR4",
                     "description": "Monotonic counter 4",
                     "offset_int": "0x0020",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field024",
                     "name": "MCTR_NXP_CTR5",
                     "description": "Monotonic counter 5",
                     "offset_int": "0x0024",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field028",
                     "name": "MCTR_NXP_CTR6",
                     "description": "Monotonic counter 6",
                     "offset_int": "0x0028",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field02C",
                     "name": "MCTR_NXP_CTR7",
                     "description": "Monotonic counter 7",
                     "offset_int": "0x002C",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field030",
                     "name": "MCTR_CUST_CTR0",
                     "description": "Customer defined Monotonic counter 0.",
                     "offset_int": "0x0030",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field034",
                     "name": "MCTR_CUST_CTR1",
                     "description": "Customer defined Monotonic counter 1.",
                     "offset_int": "0x0034",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field038",
                     "name": "MCTR_CUST_CTR2",
                     "description": "Customer defined Monotonic counter 2.",
                     "offset_int": "0x0038",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field03C",
                     "name": "MCTR_CUST_CTR3",
                     "description": "Customer defined Monotonic counter 3.",
                     "offset_int": "0x003C",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field040",
                     "name": "MCTR_CUST_CTR4",
                     "description": "Customer defined Monotonic counter 4.",
                     "offset_int": "0x0040",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field044",
                     "name": "MCTR_CUST_CTR5",
                     "description": "Customer defined Monotonic counter 5.",
                     "offset_int": "0x0044",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field048",
                     "name": "MCTR_CUST_CTR6",
                     "description": "Customer defined Monotonic counter 6.",
                     "offset_int": "0x0048",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field04C",
                     "name": "MCTR_CUST_CTR7",
                     "description": "Customer defined Monotonic counter 7.",
                     "offset_int": "0x004C",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field050",
                     "name": "MFLAG_CUST_1",
                     "description": "Customer defined Monotonic flags",
                     "offset_int": "0x0050",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00054",
@@ -181,8 +160,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0054",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00058",
@@ -190,8 +168,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0058",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0005C",
@@ -199,16 +176,14 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x005C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field060",
                     "name": "ENABLE_FA_MODE",
                     "description": "Enable FA Mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.",
                     "offset_int": "0x0060",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field064",
@@ -216,8 +191,7 @@
                     "description": "CMPA Page Programming On Going. Set this field to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.",
                     "offset_int": "0x0064",
                     "access": "RO",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 }
             ]
         },
@@ -233,8 +207,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0068",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0006C",
@@ -242,8 +215,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x006C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00070",
@@ -251,8 +223,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0070",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00074",
@@ -260,8 +231,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0074",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00078",
@@ -269,8 +239,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0078",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0007C",
@@ -278,8 +247,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x007C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00080",
@@ -287,8 +255,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0080",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00084",
@@ -296,8 +263,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0084",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00088",
@@ -305,8 +271,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0088",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0008C",
@@ -314,8 +279,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x008C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00090",
@@ -323,8 +287,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0090",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00094",
@@ -332,8 +295,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0094",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00098",
@@ -341,8 +303,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0098",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0009C",
@@ -350,8 +311,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x009C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000A0",
@@ -359,8 +319,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00A0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000A4",
@@ -368,8 +327,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00A4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000A8",
@@ -377,8 +335,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00A8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000AC",
@@ -386,8 +343,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00AC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000B0",
@@ -395,8 +351,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00B0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000B4",
@@ -404,8 +359,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00B4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000B8",
@@ -413,8 +367,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00B8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000BC",
@@ -422,8 +375,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00BC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000C0",
@@ -431,8 +383,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000C4",
@@ -440,8 +391,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000C8",
@@ -449,8 +399,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00C8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000CC",
@@ -458,8 +407,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00CC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000D0",
@@ -467,8 +415,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000D4",
@@ -476,8 +423,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000D8",
@@ -485,8 +431,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00D8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000DC",
@@ -494,8 +439,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00DC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000E0",
@@ -503,8 +447,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000E4",
@@ -512,8 +455,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000E8",
@@ -521,8 +463,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00E8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000EC",
@@ -530,8 +471,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00EC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000F0",
@@ -539,8 +479,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000F4",
@@ -548,8 +487,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000F8",
@@ -557,8 +495,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00F8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved000FC",
@@ -566,8 +503,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x00FC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00100",
@@ -575,8 +511,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0100",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00104",
@@ -584,8 +519,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0104",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00108",
@@ -593,8 +527,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0108",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0010C",
@@ -602,8 +535,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x010C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00110",
@@ -611,8 +543,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0110",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00114",
@@ -620,8 +551,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0114",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00118",
@@ -629,8 +559,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0118",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0011C",
@@ -638,8 +567,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x011C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00120",
@@ -647,8 +575,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0120",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00124",
@@ -656,8 +583,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0124",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00128",
@@ -665,8 +591,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0128",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0012C",
@@ -674,8 +599,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x012C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00130",
@@ -683,8 +607,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0130",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00134",
@@ -692,8 +615,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0134",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00138",
@@ -701,8 +623,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0138",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0013C",
@@ -710,8 +631,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x013C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00140",
@@ -719,8 +639,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0140",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00144",
@@ -728,8 +647,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0144",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00148",
@@ -737,8 +655,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0148",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0014C",
@@ -746,8 +663,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x014C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00150",
@@ -755,8 +671,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0150",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00154",
@@ -764,8 +679,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0154",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00158",
@@ -773,8 +687,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0158",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0015C",
@@ -782,8 +695,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x015C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00160",
@@ -791,8 +703,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0160",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00164",
@@ -800,8 +711,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0164",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00168",
@@ -809,8 +719,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0168",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0016C",
@@ -818,8 +727,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x016C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00170",
@@ -827,8 +735,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0170",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00174",
@@ -836,8 +743,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0174",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00178",
@@ -845,8 +751,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0178",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0017C",
@@ -854,8 +759,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x017C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00180",
@@ -863,8 +767,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0180",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00184",
@@ -872,8 +775,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0184",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00188",
@@ -881,8 +783,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0188",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0018C",
@@ -890,8 +791,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x018C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00190",
@@ -899,8 +799,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0190",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00194",
@@ -908,8 +807,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0194",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved00198",
@@ -917,8 +815,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0198",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved0019C",
@@ -926,8 +823,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x019C",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001A0",
@@ -935,8 +831,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01A0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001A4",
@@ -944,8 +839,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01A4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001A8",
@@ -953,8 +847,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01A8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001AC",
@@ -962,8 +855,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01AC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001B0",
@@ -971,8 +863,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001B4",
@@ -980,8 +871,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001B8",
@@ -989,8 +879,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01B8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001BC",
@@ -998,8 +887,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01BC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001C0",
@@ -1007,8 +895,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001C4",
@@ -1016,8 +903,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001C8",
@@ -1025,8 +911,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01C8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001CC",
@@ -1034,8 +919,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01CC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001D0",
@@ -1043,8 +927,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001D4",
@@ -1052,8 +935,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001D8",
@@ -1061,8 +943,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01D8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001DC",
@@ -1070,8 +951,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01DC",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001E0",
@@ -1079,8 +959,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E0",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001E4",
@@ -1088,8 +967,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E4",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 },
                 {
                     "id": "Reserved001E8",
@@ -1097,8 +975,7 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x01E8",
                     "is_reserved": true,
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
                 }
             ]
         },
@@ -1114,8 +991,47 @@
                     "description": "CFPA CRC32",
                     "offset_int": "0x01EC",
                     "access": "RO",
-                    "reset_value_int": "0",
-                    "individual_write_lock": "none"
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 001F0-001FC",
+                "description": "Reserved 001F0-001FC"
+            },
+            "registers": [
+                {
+                    "id": "Reserved001F0",
+                    "name": "Reserved 0x001F0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01F0",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001F4",
+                    "name": "Reserved 0x001F4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01F4",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001F8",
+                    "name": "Reserved 0x001F8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01F8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001FC",
+                    "name": "Reserved 0x001FC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01FC",
+                    "is_reserved": true,
+                    "default_value_int": "0"
                 }
             ]
         }

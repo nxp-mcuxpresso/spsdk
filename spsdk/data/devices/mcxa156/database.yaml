@@ -57,6 +57,7 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
           - Mbi_MixinImageVersion
           - Mbi_ExportMixinApp
       crc_xip:
@@ -64,6 +65,7 @@ features:
         mixins:
           - Mbi_MixinApp
           - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
           - Mbi_MixinImageVersion
           - Mbi_ExportMixinApp
           - Mbi_ExportMixinCrcSign

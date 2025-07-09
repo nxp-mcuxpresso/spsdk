@@ -307,7 +307,6 @@ def test_sdio_device_search_no_device_found():
                 "mcxc244",
                 "mcxc443",
                 "mcxc444",
-                "mcxe247",
                 "mimxrt1010",
                 "mimxrt1015",
                 "mimxrt1020",

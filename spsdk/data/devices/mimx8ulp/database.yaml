@@ -191,6 +191,15 @@ features:
   # ======== EdgeLock Enclave section ========
   ele: {}
 
+  # ======== OTFAD section ========
+  otfad:
+    keyblob_byte_swap_cnt: 0
+    sb_21_supported: False
+    has_kek_fuses: False
+    supports_key_scrambling: True
+    # TODO add fuses
+    additional_template: ["otfad_scramble"]
+
   # ======== Bootable image section ========
   bootable_image:
     mem_types:

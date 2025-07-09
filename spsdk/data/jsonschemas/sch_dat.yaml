@@ -126,7 +126,10 @@ dc_srk_ca_flag:
     flag_ca:
       type: boolean
       title: CA Flag
-      description: CA Flag is used by AHAB to indicate if the SRK is allowed to sign other keys
+      description:
+        "CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys.
+        In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
+        This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
       template_value: false
 
 main_note: "\nDebug credential file has following binary structure:\n
