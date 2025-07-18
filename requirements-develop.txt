@@ -15,7 +15,7 @@ black<26,>=24.3.0
 nxp_codecheck<1,>=0.3.1
 spsdk-pylint-plugins<1,>=0.2.0
 # pip dependency should be moved to codecheck
-pip
+pip<26
 # cli executables
 pyinstaller<7
 pyinstaller-hooks-contrib<2026

@@ -659,37 +659,37 @@ def get_property(
     26 or 'reliable-update-status'      Reliable update status
     27 or 'flash-page-size'             Flash page size, <index> is required
     28 or 'irq-notify-pin'              Interrupt notifier pin
-    29 or 'pfr-keystore_update-opt'     PFR key store update option
+    29 or 'pfr-keystore-update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
     31 or 'fuse-locked-status'          Fuse Locked Status
-    32 or 'boot status'                 Value of Boot Status Register
+    32 or 'boot-status'                 Value of Boot Status Register
     33 or 'loadable-fw-version'         LoadableFWVersion
     36 or 'she-flash-partition`         SHE: Flash Partition
     37 or 'she-boot-mode'               SHE: Boot Mode
 
     \b
-    for kw45xx/k32w1xx devices:
+    for kw45xx/k32w1xx/mcxw71x devices:
     10 or 'verify-erases'               Verify Erases flag
-    20 or 'boot status'                 Value of Boot Status Register
+    20 or 'boot-status'                 Value of Boot Status Register
     21 or 'loadable-fw-version'         LoadableFWVersion
     22 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
-    for kw47xx devices:
+    for kw47xx/mcxw72x devices:
     10 or 'verify-erases'               Verify Erases flag
-    20 or 'boot status'                 Value of Boot Status Register
+    20 or 'boot-status'                 Value of Boot Status Register
     21 or 'loadable-fw-version'         LoadableFWVersion
     34 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
-    for mcxa1xx devices:
+    for mcxaxxx/mimxrt7xx devices:
     17 or 'life-cycle'                  Life Cycle
 
     \b
     Note: Not all the properties are available for all devices.
     """
     property_tag_int = parse_property_tag(property_tag, family)
-    with McuBoot(ctx.obj["interface"]) as mboot:
+    with McuBoot(ctx.obj["interface"], family=family) as mboot:
         response = mboot.get_property(property_tag_int, index=index)
         property_text = (
             str(parse_property_value(property_tag_int, response, None, family))
@@ -728,18 +728,18 @@ def set_property(
     10 or 'verify-writes'               Verify Writes flag
     22 or 'flash-read-margin'           Read margin level of program flash
     28 or 'irq-notify-pin'              Interrupt notifier pin
-    29 or 'pfr-keystore_update-opt'     PFR key store update option
+    29 or 'pfr-keystore-update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
     36 or 'she-flash-partition`         SHE: Flash Partition
     37 or 'she-boot-mode'               SHE: Boot Mode
 
     \b
-    for kw45xx/k32w1xx devices:
+    for kw45xx/k32w1xx/mcxw71x devices:
     10 or 'verify-erases'               Verify Erases flag
     22 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
-    for kw47xx devices:
+    for kw47xx/mcxw72x devices:
     10 or 'verify-erases'               Verify Erases flag
     34 or 'fuse-program-voltage'        Fuse Program Voltage
 
@@ -747,7 +747,7 @@ def set_property(
     Note: Not all properties can be set on all devices.
     """
     property_tag_int = parse_property_tag(property_tag, family)
-    with McuBoot(ctx.obj["interface"]) as mboot:
+    with McuBoot(ctx.obj["interface"], family=family) as mboot:
         mboot.set_property(prop_tag=property_tag_int, value=value)
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 

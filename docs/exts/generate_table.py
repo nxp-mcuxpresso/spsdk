@@ -7,6 +7,7 @@
 # Script for generation of table
 import itertools
 import os
+from functools import lru_cache
 from typing import Dict, List, Optional
 
 import nbformat
@@ -86,6 +87,7 @@ def get_link(name: str, url: str, use_markdown: bool = False) -> str:
     return f"`{name} <{url}>`_"
 
 
+@lru_cache
 def is_link_accessible(url: str) -> bool:
     """Check if the link is accessible."""
     works = False

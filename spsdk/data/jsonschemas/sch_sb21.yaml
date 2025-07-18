@@ -1,6 +1,6 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2024,2025 NXP
 #
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: BSD-3-Clause
 
 common:
   type: object
@@ -11,6 +11,7 @@ common:
       title: SB2.1 SBKEK
       description: Path to SB key encryption key (AES-128). It might be provided in text file or binary file or as a hex string in the configuration.
       template_value: sbkek.txt
+      format: file-or-hex-value
     RKTHOutputPath:
       type: string
       title: Path to file where the hash of hashes will be stored

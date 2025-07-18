@@ -53,6 +53,9 @@ info:
         pid: 0x0158
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses: {}
 

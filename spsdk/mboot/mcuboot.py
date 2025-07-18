@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -48,10 +48,12 @@ from spsdk.mboot.properties import (
     PropertyTag,
     PropertyValueBase,
     Version,
+    get_properties,
     get_property_tag_label,
     parse_property_value,
 )
 from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
 
 logger = logging.getLogger(__name__)
@@ -80,7 +82,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """Return True if the device is open."""
         return self._interface.is_opened
 
-    def __init__(self, interface: MbootProtocolBase, cmd_exception: bool = False) -> None:
+    def __init__(
+        self,
+        interface: MbootProtocolBase,
+        cmd_exception: bool = False,
+        family: Optional[FamilyRevision] = None,
+    ) -> None:
         """Initialize the McuBoot object.
 
         :param interface: The instance of communication interface class
@@ -92,6 +99,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self._cmd_exception = cmd_exception
         self._status_code = StatusCode.SUCCESS.tag
         self._interface = interface
+        self.family = family
         self.reopen = False
         self.enable_data_abort = False
         self._pause_point: Optional[int] = None
@@ -318,14 +326,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises McuBootError: Property values cannot be parsed
         """
         property_list: list[PropertyValueBase] = []
-        for property_tag in PropertyTag:
+        for property_tag in get_properties(self.family):
             try:
                 values = self.get_property(property_tag)
             except McuBootCommandError:
                 continue
 
             if values:
-                prop = parse_property_value(property_tag.tag, values)
+                prop = parse_property_value(property_tag, values)
                 if prop is None:
                     raise McuBootError("Property values cannot be parsed")
                 property_list.append(prop)
@@ -356,7 +364,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             pass
 
         if values:
-            props = parse_property_value(PropertyTag.AVAILABLE_COMMANDS.tag, values)
+            props = parse_property_value(PropertyTag.AVAILABLE_COMMANDS, values)
 
         if isinstance(props, AvailableCommandsValue):
             self.available_commands_lst = [CommandTag.from_tag(tag) for tag in props.tags]
@@ -679,7 +687,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: list integers representing the property; None in case no response from device
         :raises McuBootError: If received invalid get-property response
         """
-        property_id, label = get_property_tag_label(prop_tag)
+        property_id, label = get_property_tag_label(prop_tag, self.family)
         logger.info(f"CMD: GetProperty({label}, index={index!r})")
         cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, CommandFlag.NONE.tag, property_id, index)
         cmd_response = self._process_cmd(cmd_packet)
@@ -696,7 +704,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param  value: The value of selected property
         :return: False in case of any problem; True otherwise
         """
-        property_id, label = get_property_tag_label(prop_tag)
+        property_id, label = get_property_tag_label(prop_tag, self.family)
         logger.info(f"CMD: SetProperty({label}, value=0x{value:08X})")
         cmd_packet = CmdPacket(CommandTag.SET_PROPERTY, CommandFlag.NONE.tag, property_id, value)
         cmd_response = self._process_cmd(cmd_packet)
@@ -1761,6 +1769,31 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if isinstance(cmd_response, TrustProvisioningResponse):
             return cmd_response.values[0]
         return None
+
+    def el2go_batch_tp(
+        self, data_address: int, report_address: int = 0xFFFF_FFFF, dry_run: bool = False
+    ) -> tuple[Optional[int], Optional[bytes]]:
+        """Perform Batch  Trust Provisioning.
+
+        :param data_address: Address of the Secure Objects in target
+        :param report_address: Address where to store the Provisioning Report,
+            defaults to 0xFFFF_FFFF = don't store the report
+        :param dry_run: Don't run the full operation, defaults to False
+        :return: Status code; provisioning report in case provisioning was successful
+        """
+        logger.info("CMD: Batch Trust Provisioning")
+        cmd_packet = CmdPacket(
+            CommandTag.EL2GO,
+            CommandFlag.NONE.tag,
+            EL2GOCommandGroup.EL2GO_BATCH_TP.tag,
+            data_address,
+            dry_run,
+            report_address,
+        )
+        cmd_response = self._process_cmd(cmd_packet=cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0], cmd_response.get_payload_data(offset=1)
+        return None, None
 
 
 ####################

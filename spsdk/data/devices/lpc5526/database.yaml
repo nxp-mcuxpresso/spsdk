@@ -42,6 +42,9 @@ info:
         pid: 0x0021
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== MBI section ========
   mbi:
     mbi_classes:

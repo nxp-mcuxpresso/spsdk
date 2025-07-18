@@ -78,6 +78,9 @@ info:
       non_xip_type: int_ram
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x20070000
@@ -286,9 +289,15 @@ features:
       sd:
         instances: [0, 1]
         interfaces: [instance_0, instance_1]
-      mmc:
+      emmc:
         instances: [0, 1]
         interfaces: [instance_0, instance_1]
       spi_nor:
         reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json
         instances: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+
+  # ======== Blhost section ========
+  blhost:
+    sub_features: [overridden_properties]
+    overridden_properties:
+       17: "life-cycle"

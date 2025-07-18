@@ -252,7 +252,7 @@ def pfr_export(
 @spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
 @click.option(
-    "-b",
+    "-bin",
     "--binary",
     type=click.Path(exists=True, dir_okay=False),
     help="Path to the BIN file with PFR data to write.",
@@ -299,7 +299,7 @@ def write(
         )
 
     if pfr_obj.WRITE_METHOD == "write_memory":
-        with McuBoot(interface=interface, cmd_exception=True) as mboot:
+        with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
             try:
                 mboot.write_memory(address=pfr_page_address, data=data)
             except McuBootError as exc:
@@ -349,12 +349,12 @@ def read(
     click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
 
     if pfr_obj.READ_METHOD == "read_memory":
-        with McuBoot(interface=interface) as mboot:
+        with McuBoot(interface=interface, family=family) as mboot:
             data = mboot.read_memory(address=pfr_page_address, length=pfr_page_length)
         if not data:
             raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
     elif pfr_obj.READ_METHOD == "flash_read_resource":
-        with McuBoot(interface=interface) as mboot:
+        with McuBoot(interface=interface, family=family) as mboot:
             data = mboot.flash_read_resource(
                 address=pfr_page_address, length=pfr_page_length, option=0
             )
@@ -392,7 +392,7 @@ def erase_cmpa(interface: MbootProtocolBase, family: FamilyRevision) -> None:
 
     click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")
 
-    with McuBoot(interface=interface, cmd_exception=True) as mboot:
+    with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
         try:
             if erase_method == "write_memory":
                 mboot.write_memory(address=pfr_page_address, data=pfr_obj.export())

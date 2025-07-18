@@ -1,0 +1,3 @@
+@Library('shared-lib') _
+
+doGithubDeployment("spsdk")

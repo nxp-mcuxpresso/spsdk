@@ -51,7 +51,7 @@ master_doc = "index"
 autoclass_content = "both"
 suppress_warnings = ["autosectionlabel.*", "myst.header"]
 
-autodoc_mock_imports = ["ftd2xx"]
+autodoc_mock_imports = ["ftd2xx", "spsdk-pqc"]
 
 # we don't want to execute notebooks during docs build because many of them require HW boards
 nbsphinx_execute = "never"

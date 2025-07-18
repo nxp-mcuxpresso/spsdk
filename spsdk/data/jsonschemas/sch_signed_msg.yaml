@@ -203,7 +203,7 @@ signed_message:
       description:
         "Used only for encrypted messages. Fixed size at 256 bits. If defined the encryption is used for this Signed message.
         The HEX format is accepted."
-      format: file
+      format: file-or-hex-value
       template_value: my_IV.txt
 
     message:

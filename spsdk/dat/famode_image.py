@@ -10,13 +10,16 @@
 import logging
 import os
 import struct
-from typing import Any, Type
+from inspect import isclass
+from typing import Any, Type, Union
 
 from typing_extensions import Self
 
 import spsdk
 from spsdk.exceptions import SPSDKError
+from spsdk.image.mbi import mbi_mixin
 from spsdk.image.mbi.mbi import MasterBootImage
+from spsdk.image.mbi.mbi_data import MbiImageTypeEnum
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
@@ -66,8 +69,40 @@ class FaModeImage(FeatureBaseClass):
         mbi_cls.pre_check_config(config=mbi_config)
 
     @classmethod
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
+
+        If the class doesn't behave generally, just override this implementation.
+
+        :param config: Valid configuration
+        :return: Validation schemas
+        """
+        config.check(cls.get_validation_schemas_basic())
+        return cls.get_validation_schemas(
+            FamilyRevision.load_from_config(config),
+            config.get_str("outputImageAuthenticationType"),
+        )
+
+    @staticmethod
+    def get_real_class_name(family: FamilyRevision, mbi_class_name: str) -> str:
+        """Get the real class name from famode certificate list.
+
+        :param family: The CPU family revision
+        :param mbi_class_name: The MBI class name to match
+        :return: Real class name from famode certificate list
+        """
+        db = get_db(family)
+        famode_cert = db.get_list(DatabaseManager.DAT, "famode_cert", [])
+        is_nxp = "nxp" in mbi_class_name.lower()
+
+        for real_name in famode_cert:
+            if ("nxp" in real_name.lower()) == is_nxp:
+                return real_name
+        return mbi_class_name
+
+    @classmethod
     def get_validation_schemas(
-        cls, family: FamilyRevision, mbi_class_name: str = "signed_xip"
+        cls, family: FamilyRevision, mbi_class_name: str = "famode"
     ) -> list[dict[str, Any]]:
         """Create the list of validation schemas.
 
@@ -84,9 +119,10 @@ class FaModeImage(FeatureBaseClass):
         # 1: Generate all configuration for FAMode Image
         db = get_db(family)
         famode_cfg_defaults = db.get_dict(DatabaseManager.DAT, "famode_cfg_defaults", {})
+        real_class_name = cls.get_real_class_name(family, mbi_class_name)
         mbi_classes = cls.get_famode_classes(family)
         # Get signed as a good example
-        schemas = mbi_classes[mbi_class_name].get_validation_schemas(family)
+        schemas = mbi_classes[real_class_name].get_validation_schemas(family)
         update_validation_schema_family(
             sch=schemas[0]["properties"], devices=cls.get_supported_families(), family=family
         )
@@ -128,13 +164,36 @@ class FaModeImage(FeatureBaseClass):
         :return: Dictionary with key like image name and values are Tuple with it's MBI Class
             and target and authentication type.
         """
+
+        def create_famode_class(mbi_classes: dict, cls_name: str) -> type[MasterBootImage]:
+            class_descr = mbi_classes[cls_name]
+            members = {
+                "IMAGE_TYPE": MbiImageTypeEnum.from_label(class_descr["image_type"]),
+                "IMAGE_TARGET": "xip",
+                "IMAGE_AUTHENTICATIONS": "nxp_signed" if "nxp" in cls_name else "signed",
+            }
+            # Get all objects to be mixed together
+            base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [
+                MasterBootImage
+            ]
+            for mixin in class_descr["mixins"]:
+                mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
+                if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
+                    for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
+                        if member not in members:
+                            members[member] = init_value
+                base_classes.append(mixin_cls)
+
+            return type(cls_name, tuple(base_classes), members)
+
         db = get_db(family)
         ret: dict[str, Type["MasterBootImage"]] = {}
 
         images: list[str] = db.get_list(DatabaseManager.DAT, "famode_cert")
+        mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")
 
         for cls_name in images:
-            ret[f"{cls_name}"] = MasterBootImage.create_mbi_class(cls_name, family)
+            ret[f"{cls_name}"] = create_famode_class(mbi_classes, cls_name)
 
         return ret
 
@@ -194,8 +253,16 @@ class FaModeImage(FeatureBaseClass):
         """
         modified_cfg = cls._modify_input_config(config=config)
         family = FamilyRevision.load_from_config(modified_cfg)
-        image = MasterBootImage.load_from_config(modified_cfg)
-        return cls(family=family, image=image)
+        famode_mbi_class = cls.get_famode_classes(family)[
+            cls.get_real_class_name(
+                family, modified_cfg.get_str("outputImageAuthenticationType", "signed")
+            )
+        ](family=family)
+
+        for base in famode_mbi_class._get_mixins():
+            base.mix_load_from_config(famode_mbi_class, modified_cfg)  # type: ignore
+
+        return cls(family=family, image=famode_mbi_class)
 
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the Fault Analysis image.

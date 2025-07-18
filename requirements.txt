@@ -6,7 +6,7 @@ click-option-group<1,>=0.3.0
 click!=8.1.4,<9,>=7.1
 colorama<1,>=0.4.6
 crcmod<2
-cryptography<45,>=42.0.0
+cryptography<46,>=42.0.0
 deepmerge<3
 fastjsonschema<3,>=2.15.1
 filelock<4,>=3
@@ -23,7 +23,7 @@ pyserial<4,>=3.1
 requests<3,>=2.32.3
 ruamel.yaml<1,>=0.17
 setuptools_scm<9
-setuptools>75
+setuptools<81,>75
 sly<1
 spsdk-mcu-link<1,>=0.3.2
 spsdk-pyocd<1,>=0.2.0

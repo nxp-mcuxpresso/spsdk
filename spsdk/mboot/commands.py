@@ -189,6 +189,7 @@ class EL2GOCommandGroup(SpsdkEnum):
 
     EL2GO_GET_FW_VERSION    = (0x1, "el2go_get_version", "EL2GO Get Version")
     EL2GO_CLOSE_DEVICE      = (0x2, "el2go_close_device", "EL2GO Close Device")
+    EL2GO_BATCH_TP          = (0x3, "el2go_batch_tp" , "EL2GO Batch Trust Provisioning")
 
 # fmt: on
 
@@ -497,6 +498,16 @@ class TrustProvisioningResponse(CmdResponse):
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
+
+    def get_payload_data(self, offset: int = 0) -> Optional[bytes]:
+        """Get the payload from the response.
+
+        :param offset: Offset of integer unit in data
+        """
+        if len(self.values) < 2:
+            return None
+        blocks = [x.to_bytes(length=4, byteorder="little") for x in self.values[offset:]]
+        return b"".join(blocks)
 
 
 class NoResponse(CmdResponse):

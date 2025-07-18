@@ -371,8 +371,15 @@ def famode(
         raise SPSDKAppError(f"Set fault analysis mode failed: {e}") from e
 
 
-@cmd_group.command(name="ispmode", no_args_is_help=True)
-@click.option("-m", "--mode", type=INT(), required=True)
+@cmd_group.command(name="ispmode", no_args_is_help=False)
+@click.option(
+    "-m",
+    "--mode",
+    type=INT(),
+    required=False,
+    default="1",
+    help="ISP download mode based on the ISP mode value in boot configuration register in CMPA/fuses.",
+)
 @click.pass_obj
 def ispmode_command(pass_obj: dict, mode: int) -> None:
     """Enter ISP Mode."""
@@ -1173,7 +1180,7 @@ def read_memory(
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @optgroup("Data Source", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option(
-    "-f", "--file", type=click.Path(exists=True, dir_okay=False), help="Path to file to write"
+    "--file", type=click.Path(exists=True, dir_okay=False), help="Path to file to write"
 )
 @optgroup.option("-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'")
 @click.option("-c", "--count", type=INT(), required=False, help="Number of bytes to write")

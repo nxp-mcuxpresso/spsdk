@@ -31,6 +31,7 @@ sb3:
       title: Part Common Key
       description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
       template_value: my_pck.txt
+      format: file-or-hex-value
     isNxpContainer:
       type: boolean
       title: Enable NXP Container format
@@ -167,15 +168,27 @@ sb3_commands:
                   - required: [file]
                   - required: [value]
                   - required: [values]
-                if:
-                  properties:
-                    compress:
-                      enum: [false, no, null]
-                then:
-                  required: []
-                else:
-                  required: [sectorSize]
-
+                allOf:
+                  - if:
+                      properties:
+                        compress:
+                          enum: [false, no, null]
+                    then:
+                      required: []
+                    else:
+                      required: [sectorSize]
+                  - if:
+                      properties:
+                        data:
+                          type: string
+                          # Check if it doesn't start with 0x or 0b and doesn't contain commas
+                          not:
+                            pattern: "^(0x|0b)|,|^[0-9]+$"
+                      required: [data]
+                    then:
+                      properties:
+                        data:
+                          format: file
           - type: object
             required: [execute]
             properties:

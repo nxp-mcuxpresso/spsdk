@@ -262,6 +262,13 @@ def script(ctx: click.Context, script_file: str) -> None:
     default=False,
     help="Verify first passed image (don't verify by default)",
 )
+@click.option(
+    "-d",
+    "--daemon",
+    is_flag=True,
+    default=False,
+    help="Run uuu as a daemon process",
+)
 @click.argument("arguments", type=str, nargs=-1)
 @click.pass_context
 def write(
@@ -270,6 +277,7 @@ def write(
     boot_device: Optional[str] = None,
     arguments: Optional[list[str]] = None,
     verify: bool = False,
+    daemon: bool = False,
 ) -> None:
     """Write using the in-built UUU scripts.
 
@@ -370,7 +378,7 @@ def write(
             processed_script = uuu.get_uuu_script(boot_device, family, arguments)
             logger.debug(f"Processing script:\n{processed_script}")
             uuu_op.handle_error(uuu.run_script(processed_script))
-        uuu_op.handle_error(uuu_op.uuu.wait_uuu_finish(), verbose_output=False)
+        uuu_op.handle_error(uuu_op.uuu.wait_uuu_finish(daemon=daemon), verbose_output=False)
 
 
 @main.command(no_args_is_help=False)

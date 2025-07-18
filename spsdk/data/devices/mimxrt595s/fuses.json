@@ -416,6 +416,7 @@
                     "shadow_reg_offset_int": "0x017C",
                     "default_value_int": "0",
                     "individual_write_lock": "always_lock",
+                    "default_value_int": "0",
                     "lock": {
                         "register_id": "fuse8",
                         "write_lock_int": "0x0001"
@@ -765,6 +766,7 @@
                     "shadow_reg_offset_int": "0x0190",
                     "default_value_int": "0",
                     "individual_write_lock": "always_lock",
+                    "default_value_int": "0",
                     "lock": {
                         "register_id": "fuse8",
                         "write_lock_int": "0x0002"

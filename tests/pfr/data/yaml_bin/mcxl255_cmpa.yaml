@@ -1,0 +1,1228 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================  PFR CMPA configuration template for mcxl255, Revision: latest  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxl255
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA, cmpa>
+type: CMPA
+# --------------------------------------------===== mcxl255 [Required] =====--------------------------------------------
+settings:
+  # ------------------------------------------===== BOOT_CFG [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Boot Configuration
+  BOOT_CFG:
+    # ----------------------------------------===== ISP_BOOT_IF [Optional] =====----------------------------------------
+    # Description: Offset: 4b, Width: 3b, ISP boot interface
+    # - AUTO_ISP, (0): Auto ISP
+    # - UART_ISP, (1): UART ISP
+    # - SPI_SLAVE, (2): LPSPI Slave ISP
+    # - I2C_SLAVE, (3): LPI2C slave ISP
+    # - RESERVED_0b100, (4): Reserved
+    # - RESERVED_0b101, (5): Reserved
+    # - RESERVED_0b110, (6): Reserved
+    # - RESERVED_0b111, (7): Reserved
+    # Possible options: <AUTO_ISP, UART_ISP, SPI_SLAVE, I2C_SLAVE, RESERVED_0b100, RESERVED_0b101, RESERVED_0b110,
+    # RESERVED_0b111>
+    ISP_BOOT_IF: AUTO_ISP
+    # ----------------------------------------===== BOOT_SPEED [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 2b, Core Clock
+    # - FRO_48_MHZ, (0): 48Mhz FRO @1v0
+    # - FRO_96_MHZ, (1): 96MHz FRO @1v1
+    # - RESERVED_0b10, (2): Reserved
+    # - RESERVED_0b11, (3): Reserved
+    # Possible options: <FRO_48_MHZ, FRO_96_MHZ, RESERVED_0b10, RESERVED_0b11>
+    BOOT_SPEED: FRO_48_MHZ
+    # ----------------------------------------===== AGDET_RE_EN [Optional] =====----------------------------------------
+    # Description: Offset: 14b, Width: 2b, Enablement and arming of security detectors (LVD, HVD, AGDET).
+    # - ENABLED_0b00, (0): Enable AGDET reset
+    # - DISABLED_0b01, (1): Don't enable AGDET reset
+    # - ENABLED_0b10, (2): Enable AGDET reset
+    # - ENABLED_0b11, (3): Enable AGDET reset
+    # Possible options: <ENABLED_0b00, DISABLED_0b01, ENABLED_0b10, ENABLED_0b11>
+    AGDET_RE_EN: ENABLED_0b00
+    # ------------------------------------------===== HEADER [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 16b, CMPA Header marker should be set to 0x5963
+    HEADER: 22883
+  # ------------------------------------------===== FLASH_CFG [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; Flash Configuration
+  FLASH_CFG:
+    # -------------------------------------===== FLASH_REMAP_SIZE [Optional] =====--------------------------------------
+    # Description: Offset: 0b, Width: 7b, Flash remap size.
+    # This field should be written to remap field in flash.
+    FLASH_REMAP_SIZE: 0
+    # ---------------------------------------===== ISP_PIN_ENTRY [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 2b, Disable ISP mode entry through pin assertion.
+    # - ALLOWED_0b00, (0): ISP entry allowed
+    # - DISABLED_0b01, (1): ISP entry disabled
+    # - ALLOWED_0b10, (2): ISP entry allowed
+    # - ALLOWED_0b11, (3): ISP entry allowed
+    # Possible options: <ALLOWED_0b00, DISABLED_0b01, ALLOWED_0b10, ALLOWED_0b11>
+    ISP_PIN_ENTRY: ALLOWED_0b00
+    # ---------------------------------------===== ISP_DM_ENTRY [Optional] =====----------------------------------------
+    # Description: Offset: 12b, Width: 2b, Disable ISP mode entry through debug mailbox command.
+    # - ALLOWED_0b00, (0): ISP entry allowed
+    # - DISABLED_0b01, (1): ISP entry disabled
+    # - ALLOWED_0b10, (2): ISP entry allowed
+    # - ALLOWED_0b11, (3): ISP entry allowed
+    # Possible options: <ALLOWED_0b00, DISABLED_0b01, ALLOWED_0b10, ALLOWED_0b11>
+    ISP_DM_ENTRY: ALLOWED_0b00
+  # ---------------------------------------===== BOOT_LED_STATUS [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Boot LED Status
+  BOOT_LED_STATUS:
+    # ---------------------------------------===== BOOT_FAIL_LED [Optional] =====---------------------------------------
+    # Description: Offset: 16b, Width: 8b, Assert on fatal errors during boot.
+    # ROM toggles the GPIO pin identified by this field whenever primary boot fails due to fatal errors before locking-
+    # up/reset.
+    # Note, use QUICK_SET_/CLR_GPIOx field to set the default level of pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    BOOT_FAIL_LED: 0
+  # -----------------------------------------===== BOOT_TIMERS [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000000C, Width: 32b; Boot Timers
+  BOOT_TIMERS:
+    # ----------------------------------===== POWERDOWN_TIMEOUT_SECS [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 16b, Powerdown timeout:
+    # Timeout value in seconds.
+    # When a non-zero value is programmed in this field ROM uses it as idle timeout value to enter power-down state to
+    # conserve power.
+    POWERDOWN_TIMEOUT_SECS: 0
+  # ----------------------------------------===== ISP_UART_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000010, Width: 32b; ISP UART Configuration
+  ISP_UART_CFG:
+    # ----------------------------------------===== UART_RX_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default UART RX ISP pin.
+    # Identifies the pin to be used as UART_RX pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    UART_RX_PIN: 0
+    # -------------------------------------===== UART_RX_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    UART_RX_FUNC_SLOT: 0
+    # -------------------------------------===== UART_ISP_INSTANCE [Optional] =====-------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the LPUART instance used for UART ISP mode.
+    UART_ISP_INSTANCE: 0
+    # ----------------------------------------===== UART_TX_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default UART TX ISP pin.
+    # Identifies the pin to be used as UART_TX pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    UART_TX_PIN: 0
+    # -------------------------------------===== UART_TX_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    UART_TX_FUNC_SLOT: 0
+    # --------------------------------------===== UART_BAUD_RATE [Optional] =====---------------------------------------
+    # Description: Offset: 28b, Width: 4b, UART baud rate.Baud rate configured during UART ISP mode.
+    # - AUTO_BAUD_DETECTION, (0): Auto baud detection.
+    # Possible options: <AUTO_BAUD_DETECTION>
+    UART_BAUD_RATE: AUTO_BAUD_DETECTION
+  # -----------------------------------------===== ISP_I2C_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b; ISP I2C Configuration
+  ISP_I2C_CFG:
+    # ----------------------------------------===== I2C_SCL_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default I2C SCL ISP pin.
+    # Identifies the pin to be used as I2C_SCL pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    I2C_SCL_PIN: 0
+    # -------------------------------------===== I2C_SCL_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    I2C_SCL_FUNC_SLOT: 0
+    # -------------------------------------===== I2C_ISP_INSTANCE [Optional] =====--------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the LPI2C instance used for I2C ISP mode
+    I2C_ISP_INSTANCE: 0
+    # ----------------------------------------===== I2C_SDA_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default I2C SDA ISP pin.
+    # Identifies the pin to be used as I2C_SDA pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    I2C_SDA_PIN: 0
+    # -------------------------------------===== I2C_SDA_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    I2C_SDA_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_SPI_CFG0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000001C, Width: 32b; ISP SPI Configuration 0
+  ISP_SPI_CFG0:
+    # ----------------------------------------===== SPI_SCK_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default SPI SCK ISP pin.
+    # Identifies the pin to be used as SPI_SCK pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_SCK_PIN: 0
+    # -------------------------------------===== SPI_SCK_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    SPI_SCK_FUNC_SLOT: 0
+    # -------------------------------------===== SPI_ISP_INSTANCE [Optional] =====--------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the LPSPI instance used for SPI ISP mode
+    SPI_ISP_INSTANCE: 0
+    # ---------------------------------------===== SPI_MOSI_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default SPI MOSI ISP pin.
+    # Identifies the pin to be used as SPI_MOSI pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_MOSI_PIN: 0
+    # ------------------------------------===== SPI_MOSI_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    SPI_MOSI_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_SPI_CFG1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; ISP SPI Configuration 1
+  ISP_SPI_CFG1:
+    # ---------------------------------------===== SPI_MISO_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default SPI MISO ISP pin.
+    # Identifies the pin to be used as SPI_MISO pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_MISO_PIN: 0
+    # ------------------------------------===== SPI_MISO_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    SPI_MISO_FUNC_SLOT: 0
+    # ---------------------------------------===== SPI_SSEL_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default SPI SSEL ISP pin.
+    # Identifies the pin to be used as SPI_SSEL pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_SSEL_PIN: 0
+    # ------------------------------------===== SPI_SSEL_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    SPI_SSEL_FUNC_SLOT: 0
+    # --------------------------------------===== ISP_SPI_SSEL_X [Optional] =====---------------------------------------
+    # Description: Offset: 28b, Width: 2b, SPI chip select number.
+    # FlexComm SPI interfaces supports up to four chip selects.
+    ISP_SPI_SSEL_X: 0
+  # ----------------------------------------===== ISP_MISC_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b; ISP MISC Configuration
+  ISP_MISC_CFG:
+    # ---------------------------------------===== ISP_SPI_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 25b, Width: 2b, Use customer defined SPI ISP pins.
+    # - DEFAULT_0b00, (0): Default ROM defined pins
+    # - CUST_DEFINED, (1): Customer defined.
+    # - DEFAULT_0b10, (2): Default ROM defined pins
+    # - DEFAULT_0b11, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_0b00, CUST_DEFINED, DEFAULT_0b10, DEFAULT_0b11>
+    ISP_SPI_CUST: DEFAULT_0b00
+    # ---------------------------------------===== ISP_I2C_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 27b, Width: 2b, Use customer defined I2C ISP pins.
+    # - DEFAULT_0b00, (0): Default ROM defined pins
+    # - CUST_DEFINED, (1): Customer defined.
+    # - DEFAULT_0b10, (2): Default ROM defined pins
+    # - DEFAULT_0b11, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_0b00, CUST_DEFINED, DEFAULT_0b10, DEFAULT_0b11>
+    ISP_I2C_CUST: DEFAULT_0b00
+    # ---------------------------------------===== ISP_UART_CUST [Optional] =====---------------------------------------
+    # Description: Offset: 29b, Width: 2b, Use customer defined UART ISP pins.
+    # - DEFAULT_0b00, (0): Default ROM defined pins
+    # - CUST_DEFINED, (1): Customer defined.
+    # - DEFAULT_0b10, (2): Default ROM defined pins
+    # - DEFAULT_0b11, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_0b00, CUST_DEFINED, DEFAULT_0b10, DEFAULT_0b11>
+    ISP_UART_CUST: DEFAULT_0b00
+  # ----------------------------------------===== FLASH_ACL_0_7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b; Access control for flash sector 0-7
+  FLASH_ACL_0_7:
+    # -----------------------------------------===== ACL_SEC_0 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x00_0000 - 0x00_1FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_0: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_1 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x00_2000 - 0x00_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_1: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_2 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x00_4000 - 0x00_5FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_2: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_3 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x00_6000 - 0x00_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_3: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_4 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x00_8000 - 0x00_9FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_4: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_5 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x00_A000 - 0x00_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_5: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_6 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x00_C000 - 0x00_DFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_6: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_7 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x00_E000 - 0x00_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_7: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_8_15 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000044, Width: 32b; Access control for flash sector 8-15
+  FLASH_ACL_8_15:
+    # -----------------------------------------===== ACL_SEC_8 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x01_0000 - 0x01_1FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_8: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_9 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x01_2000 - 0x01_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_9: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_10 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x01_4000 - 0x01_5FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_10: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_11 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x01_6000 - 0x01_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_11: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_12 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x01_8000 - 0x01_9FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_12: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_13 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x01_A000 - 0x01_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_13: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_14 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x01_C000 - 0x01_DFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_14: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_15 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x01_E000 - 0x01_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_15: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_16_23 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000048, Width: 32b; Access control for flash sector 16-23
+  FLASH_ACL_16_23:
+    # ----------------------------------------===== ACL_SEC_16 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x02_0000 - 0x02_1FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_16: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_17 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x02_2000 - 0x02_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_17: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_18 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x02_4000 - 0x02_5FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_18: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_19 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x02_6000 - 0x02_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_19: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_20 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x02_8000 - 0x02_9FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_20: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_21 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x02_A000 - 0x02_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_21: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_22 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x02_C000 - 0x02_DFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_22: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_23 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x02_E000 - 0x02_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_23: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_24_31 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000004C, Width: 32b; Access control for flash sector 24-31
+  FLASH_ACL_24_31:
+    # ----------------------------------------===== ACL_SEC_24 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x03_0000 - 0x03_1FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_24: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_25 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x03_2000 - 0x03_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_25: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_26 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x03_4000 - 0x03_5FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_26: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_27 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x03_6000 - 0x03_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_27: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_28 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x03_8000 - 0x03_9FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_28: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_29 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x03_A000 - 0x03_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_29: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_30 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x03_C000 - 0x03_DFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_30: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_31 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x03_E000 - 0x03_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_31: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_32_39 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000050, Width: 32b; Access control for flash sector 32-39
+  FLASH_ACL_32_39:
+    # ----------------------------------------===== ACL_SEC_32 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x08_0000 - 0x08_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_32: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_33 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x08_4000 - 0x08_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_33: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_34 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x08_8000 - 0x08_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_34: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_35 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x08_C000 - 0x08_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_35: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_36 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x09_0000 - 0x09_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_36: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_37 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x09_4000 - 0x09_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_37: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_38 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x09_8000 - 0x09_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_38: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_39 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x09_C000 - 0x09_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_39: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_40_47 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000054, Width: 32b; Access control for flash sector 40-47
+  FLASH_ACL_40_47:
+    # ----------------------------------------===== ACL_SEC_40 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x0A_0000 - 0x0A_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_40: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_41 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x0A_4000 - 0x0A_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_41: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_42 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x0A_8000 - 0x0A_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_42: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_43 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x0A_C000 - 0x0A_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_43: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_44 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x0B_0000 - 0x0B_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_44: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_45 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x0B_4000 - 0x0B_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_45: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_46 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x0B_8000 - 0x0B_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_46: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_47 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x0B_C000 - 0x0B_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_47: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_48_55 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000058, Width: 32b; Access control for flash sector 48-55
+  FLASH_ACL_48_55:
+    # ----------------------------------------===== ACL_SEC_48 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x0C_0000 - 0x0C_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_48: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_49 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x0C_4000 - 0x0C_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_49: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_50 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x0C_8000 - 0x0C_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_50: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_51 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x0C_C000 - 0x0C_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_51: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_52 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x0D_0000 - 0x0D_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_52: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_53 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x0D_4000 - 0x0D_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_53: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_54 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x0D_8000 - 0x0D_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_54: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_55 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x0D_C000 - 0x0D_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_55: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_56_63 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000005C, Width: 32b; Access control for flash sector 55-63
+  FLASH_ACL_56_63:
+    # ----------------------------------------===== ACL_SEC_56 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x0E_0000 - 0x0E_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_56: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_57 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x0E_4000 - 0x0E_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_57: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_58 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x0E_8000 - 0x0E_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_58: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_59 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector (offset range 0x0E_C000 - 0x0E_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_59: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_60 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x0F_0000 - 0x0F_3FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_60: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_61 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x0F_4000 - 0x0F_7FFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_61: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_62 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x0F_8000 - 0x0F_BFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_62: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_63 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x0F_C000 - 0x0F_FFFF).
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__)
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L)
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL)
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L)
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_)
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_)
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL)
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L)
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_63: ROM_RX_UNLOCKED
+  # --------------------------------------===== QUICK_SET_GPIO_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000060, Width: 32b; Quick Set to Drive GPIO 0 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_0: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000064, Width: 32b; Quick Clear to Drive GPIO 0 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_0: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000068, Width: 32b; Quick Set to Drive GPIO 1 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_1: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000006C, Width: 32b; Quick Clear to Drive GPIO 1 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_1: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000070, Width: 32b; Quick Set to Drive GPIO 2 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_2: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000074, Width: 32b; Quick Clear to Drive GPIO 2 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_2: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000078, Width: 32b; Quick Set to Drive GPIO 3 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_3: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000007C, Width: 32b; Quick Clear to Drive GPIO 3 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_3: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_4 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000080, Width: 32b; Quick Set to Drive GPIO 4 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_4: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_4 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000084, Width: 32b; Quick Clear to Drive GPIO 4 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_4: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_5 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000088, Width: 32b; Quick Set to Drive GPIO 5 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 5. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_5: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_5 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000008C, Width: 32b; Quick Clear to Drive GPIO 5 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 5. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_5: '0x00000000'
+  # ------------------------------------------===== ROP_STATE [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000090, Width: 32b; Read Out Protection (ROP) State value.
+  # Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE.
+  # This read out protection is a mechanism that allows user to enable different levels of protection in the system.
+  # ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the
+  # device; if match then programs it to SYSCON->ROP_STATE.
+  # Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).
+  ROP_STATE:
+    # -----------------------------------------===== ROP_STATE [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 32b, ROP_STATE[31:0]
+    # - ROP_LEVEL0, (4294967295): ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state.
+    # - ROP_LEVEL1, (4005168323): ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL2, (1228508555): ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL3, (2964043523): ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no
+    # debug mailbox commands available.
+    # Possible options: <ROP_LEVEL0, ROP_LEVEL1, ROP_LEVEL2, ROP_LEVEL3>
+    ROP_STATE: ROP_LEVEL0
+  # ------------------------------------------===== SBL_PROT [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000094, Width: 32b; Secondary Boot Loader Protection.
+  SBL_PROT: '0x00000000'
+  # ---------------------------------------===== SBL_START_ADDR [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000098, Width: 32b; Secondary Boot Loader Start Address.
+  SBL_START_ADDR: '0x00000000'
+  # ------------------------------------------===== SBL_CRC32 [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000009C, Width: 32b; Secondary Boot Loader CRC32.
+  SBL_CRC32: '0x00000000'
+  # ----------------------------------------===== ROP_STATE_DP [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000A0, Width: 32b; Read Out Protection (ROP) State duplicate value.
+  # ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the
+  # device; if match then programs it to SYSCON->ROP_STATE.
+  # Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).
+  ROP_STATE_DP:
+    # ---------------------------------------===== ROP_STATE_DP [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 32b, ROP_STATE_DP[31:0]
+    # - ROP_LEVEL0, (4294967295): ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state.
+    # - ROP_LEVEL1, (4005168323): ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL2, (1228508555): ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL3, (2964043523): ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no
+    # debug mailbox commands available.
+    # Possible options: <ROP_LEVEL0, ROP_LEVEL1, ROP_LEVEL2, ROP_LEVEL3>
+    ROP_STATE_DP: ROP_LEVEL0
+  # -----------------------------------------===== SBL_PROT_DP [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000A4, Width: 32b; Secondary Boot Loader Protection (Duplicate).
+  SBL_PROT_DP: '0x00000000'
+  # --------------------------------------===== SBL_START_ADDR_DP [Optional] =====--------------------------------------
+  # Description: Offset: 0x000000A8, Width: 32b; Secondary Boot Loader Start Address (Duplicate).
+  SBL_START_ADDR_DP: '0x00000000'
+  # ----------------------------------------===== SBL_CRC32_DP [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000AC, Width: 32b; Secondary Boot Loader CRC32 (Duplicate).
+  SBL_CRC32_DP: '0x00000000'
+  # -----------------------------------------===== WAKEUP_CRC [Optional] =====------------------------------------------
+  # Description: Offset: 0x000000B0, Width: 32b; WAKEUP_CRC[31:0]
+  WAKEUP_CRC: '0x00000000'
+  # ----------------------------------------===== ERASE_TOKEN0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000D0, Width: 32b; ERASE_TOKEN[31:0]
+  ERASE_TOKEN0: '0x00000000'
+  # ----------------------------------------===== ERASE_TOKEN1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000D4, Width: 32b; ERASE_TOKEN[63:32]
+  ERASE_TOKEN1: '0x00000000'
+  # ----------------------------------------===== ERASE_TOKEN2 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000D8, Width: 32b; ERASE_TOKEN[95:64]
+  ERASE_TOKEN2: '0x00000000'
+  # ----------------------------------------===== ERASE_TOKEN3 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000DC, Width: 32b; ERASE_TOKEN[127:96]
+  ERASE_TOKEN3: '0x00000000'
+  # --------------------------------------===== DELETE_INSTALLER [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000E0, Width: 32b; DELETE_INSTALLER
+  DELETE_INSTALLER: '0x00000000'

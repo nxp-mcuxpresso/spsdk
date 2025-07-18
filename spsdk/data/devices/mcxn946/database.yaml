@@ -80,6 +80,9 @@ info:
         pid: 0x014F
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses: {}
 

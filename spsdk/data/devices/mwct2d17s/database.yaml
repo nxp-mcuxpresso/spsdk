@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -25,8 +25,13 @@ info:
         pid: 0x0073
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
+  # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000
+
   wpc:
     id_type: computed_csr
     id_length: 136

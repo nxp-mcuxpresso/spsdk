@@ -61,7 +61,13 @@ for pkg in excluded_imports:
         datas.append((mod_path, os.path.basename(mod_path)))
 
 
-hidden_imports = {"pkg_resources", "spsdk_pyocd", "spsdk_lauterbach", "spsdk_mcu_link", "pyocd.rtos.threadx"}
+hidden_imports = {
+    "pkg_resources",
+    "spsdk_pyocd",
+    "spsdk_lauterbach",
+    "spsdk_mcu_link",
+    "pyocd.rtos.threadx",
+}
 
 
 # List of packages that should have there Distutils entrypoints included.
@@ -147,8 +153,14 @@ datas.extend([("spsdk/data", "spsdk/data")])
 # Additional PyOCD resources
 SEQUENCE_LARK = "sequences.lark"
 
-with importlib.resources.files("pyocd.debug.sequences") as package_path:
+try:
+    # Python 3.13+ approach
+    package_path = importlib.resources.files("pyocd.debug.sequences")
     resource_path = package_path / SEQUENCE_LARK
+except TypeError:
+    # Python <3.13 approach
+    with importlib.resources.files("pyocd.debug.sequences") as package_path:
+        resource_path = package_path / SEQUENCE_LARK
 
 datas.extend([(resource_path, "pyocd/debug/sequences")])
 
@@ -219,6 +231,7 @@ a_lpcprog = analyze(["spsdk/apps/lpcprog.py"])
 a_nxpdice = analyze(["spsdk/apps/nxpdice.py"])
 a_nxpfuses = analyze(["spsdk/apps/nxpfuses.py"])
 a_nxpuuu = analyze(["spsdk/apps/nxpuuu.py"])
+a_nxpshe = analyze(["spsdk/apps/nxpshe.py"])
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
 MERGE(
@@ -241,6 +254,7 @@ MERGE(
     (a_nxpdice, "nxpdice", "nxpdice"),
     (a_nxpfuses, "nxpfuses", "nxpfuses"),
     (a_nxpuuu, "nxpuuu", "nxpuuu"),
+    (a_nxpshe, "nxpshe", "nxpshe"),
 )
 
 
@@ -265,6 +279,7 @@ exe_lpcprog = executable(a_lpcprog, "lpcprog", "tools/pyinstaller/lpcprog_versio
 exe_nxpdice = executable(a_nxpdice, "nxpdice", "tools/pyinstaller/nxpdice_version_info.txt")
 exe_nxpfuses = executable(a_nxpfuses, "nxpfuses", "tools/pyinstaller/nxpfuses_version_info.txt")
 exe_nxpuuu = executable(a_nxpuuu, "nxpuuu", "tools/pyinstaller/nxpuuu_version_info.txt")
+exe_nxpshe = executable(a_nxpshe, "nxpshe", "tools/pyinstaller/nxpshe_version_info.txt")
 # fmt: on
 # collect all bundles together
 coll_apps = COLLECT(
@@ -277,6 +292,7 @@ coll_apps = COLLECT(
     exe_nxpdice,
     exe_nxpimage,
     exe_nxpuuu,
+    exe_nxpshe,
     exe_shadowregs,
     exe_nxpdevscan,
     exe_nxpcrypto,
@@ -338,6 +354,9 @@ coll_apps = COLLECT(
     a_nxpuuu.datas,
     a_nxpuuu.binaries,
     a_nxpuuu.zipfiles,
+    a_nxpshe.datas,
+    a_nxpshe.binaries,
+    a_nxpshe.zipfiles,
     strip=False,
     upx=True,
     upx_exclude=[],

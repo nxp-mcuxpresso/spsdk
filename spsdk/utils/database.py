@@ -453,6 +453,13 @@ class MemBlock:
         ret += f"  External: {self.external}"
         return ret
 
+    def __repr__(self) -> str:
+        """Return a string representation of the MemBlock object.
+
+        :return: String representation including name, base address, and size.
+        """
+        return f"MemBlock(name='{self.name}', base=0x{self.base_address:08X}, size={self.size})"
+
     @property
     def base_address(self) -> int:
         """Get the base address of the memory block.
@@ -764,7 +771,8 @@ class DeviceInfo:
             "spsdk_predecessor_name", self.spsdk_predecessor_name
         )
         self.web = config.get("web", self.web)
-        self.memory_map = MemMap.load(config.get("memory_map", self.memory_map._mem_map))
+        if "memory_map" in config:
+            self.memory_map = MemMap.load(config["memory_map"])
         self.isp.update(config.get("isp", {}))
 
 

@@ -16,6 +16,60 @@
 Release Notes
 =============
 
+------------------------
+3.1.0 (11-July-2025)
+------------------------
+
+**New features**
+
+* :ref:`el2go-host`:
+    - implement product based provissioning for RW61x
+    - improved exit code handling on error
+
+* `nxpdebugmbox`_:
+    - add `--help` parameter description for ispmode command
+    - add `-d` flag to `nxpuuu write`
+
+* `nxpimage`_:
+    - support for BCA and FCF configuration for MCX devices
+    - support for DAT protocol 3.0
+    - support for verifying MLDSA signature from DICE Hybrid CSR
+    - support for verifying PRK & PUK from DICE Alias keys
+    - support for i.MX943
+
+* add offline HSM signature provider as a plugin
+* fix offline signature provider script errors
+* implement SB3.1 data compression
+* add DICE CSR verifier
+* add support for DAT on MX943/MX95 B0
+* add support for hybrid PQC keys in PQC plugin
+* add support for MLDSA variant
+
+**Bugfixes**
+
+* :ref:`el2go-host`:
+    - fix exit code on error
+    - fix YAML configuration loading
+
+* `nxpdebugmbox`_:
+    - fix debug mailbox protocol handling
+    - fix UUID truncation in DAR message header
+
+* :ref:`nxpfuses`:
+    - fix progress bar ending prematurely
+
+* `nxpimage`_:
+    - fix invalid length in AHAB verify
+    - fix unclear error messages during export
+    - fix container verification for ATF/U-Boot image
+    - fix typo in MBI config template
+    - fix XMCD data for mimxrt798s
+
+* :ref:`nxpmemcfg`:
+    - fix wrong dictionary access
+
+* fix parsing of MLDSA private keys
+
 ---------------------
 3.0.1 (27-June-2025)
 ---------------------

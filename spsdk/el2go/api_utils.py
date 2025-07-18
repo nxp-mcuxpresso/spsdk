@@ -14,7 +14,7 @@ import math
 import struct
 import time
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 from spsdk.el2go.client import EL2GOApiResponse, EL2GOClient, SPSDKHTTPClientError
 from spsdk.el2go.interface import EL2GOInterfaceHandler
@@ -48,14 +48,45 @@ class GenStatus(list, Enum):  # type: ignore
     ]
 
 
+class JobStatus(list, Enum):  # type: ignore
+    """Provisioning job status."""
+
+    JOB_TRIGGERED = ["JOB_TRIGGERED", "Job creation started"]
+    JOB_PROCESSING = ["JOB_PROCESSING", "Job is being processed"]
+    JOB_COMPLETED = ["JOB_COMPLETED", "Job completed successfully"]
+    JOB_COMPLETED_SUCCESSFULLY = ["JOB_COMPLETED_SUCCESSFULLY", "Job completed successfully"]
+    JOB_COMPLETED_PARTIALLY = ["JOB_COMPLETED_PARTIALLY", "Job completed with partial success"]
+    JOB_FAILED = ["JOB_FAILED", "Job failed"]
+    JOB_COMPLETED_NO_PROVISIONINGS = [
+        "JOB_COMPLETED_NO_PROVISIONINGS",
+        "Job completed with no provisionings",
+    ]
+    # observed in the wild
+    COMPLETED_SUCCESSFULLY = ["COMPLETED_SUCCESSFULLY", "Provisioning completed successfully"]
+
+
 OK_STATES = [
     GenStatus.GENERATION_COMPLETED.value[0],
     GenStatus.GENERATION_ON_CONNECTION.value[0],
     GenStatus.PROVISIONING_COMPLETED.value[0],
+    JobStatus.JOB_COMPLETED.value[0],
+    JobStatus.JOB_COMPLETED_SUCCESSFULLY.value[0],
+    JobStatus.COMPLETED_SUCCESSFULLY.value[0],
 ]
-BAD_STATES = [GenStatus.GENERATION_FAILED.value[0], GenStatus.PROVISIONING_FAILED.value[0]]
-WAIT_STATES = [GenStatus.GENERATION_TRIGGERED.value[0]]
-NO_DATA_STATES = [GenStatus.GENERATION_ON_CONNECTION.value[0]]
+BAD_STATES = [
+    GenStatus.GENERATION_FAILED.value[0],
+    GenStatus.PROVISIONING_FAILED.value[0],
+    JobStatus.JOB_FAILED.value[0],
+]
+WAIT_STATES = [
+    GenStatus.GENERATION_TRIGGERED.value[0],
+    JobStatus.JOB_TRIGGERED.value[0],
+    JobStatus.JOB_PROCESSING.value[0],
+]
+NO_DATA_STATES = [
+    GenStatus.GENERATION_ON_CONNECTION.value[0],
+    JobStatus.JOB_COMPLETED_NO_PROVISIONINGS.value[0],
+]
 
 
 class ProvisioningMethod(str, Enum):
@@ -141,6 +172,7 @@ class EL2GOTPClient(EL2GOClient):
         self.linux_boot_sequence: list = kwargs.pop("linux_boot_sequence", [])  # type: ignore
 
         self.tp_data_address = value_to_int(kwargs.pop("secure_objects_address"))
+        self.prov_report_address = value_to_int(kwargs.pop("prov_report_address", 0xFFFF_FFFF))
         self.clean_method = CleanMethod(self.db.get_str(DatabaseManager.EL2GO_TP, "clean_method"))
         self.domains = self._sanitize_domains(kwargs.pop("domains", EL2GO_DOMAINS))  # type: ignore
 
@@ -461,11 +493,75 @@ class EL2GOTPClient(EL2GOClient):
     def get_job_details(self, job_id: str) -> Optional[dict]:
         """Get job details."""
         logger.info(f"Getting job details for {job_id}")
-        url = f"/api/v1/rtp/jobs/{job_id}"
+        url = f"/api/v2/rtp/jobs/{job_id}"
         response = self._handle_el2go_request(self.Method.GET, url=url)
         if response.status_code == self.Status.NOT_FOUND:
             return None
         return response.json_body
+
+    def create_secure_objects_batch(self, devices: int) -> Optional[str]:
+        """Create secure objects batch for a given number of devices.
+
+        :param devices: Number of devices to create batch for
+        :return: Job ID if successful, None if no dynamic data available only static
+        """
+        logger.info(f"Creating secure objects batch for {devices} devices")
+        url = "/api/v2/rtp/product-based-provisionings/request-batch-job"
+        data = {"nc12": self.nc12, "deviceGroupId": self.device_group_id, "batchSize": devices}
+        response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
+        if response.status_code == 400 and response.json_body["code"] == "ERR_RTP_400_20":
+            # no dynamic data are defined in this group
+            # fallback to static-only data
+            logger.info("No dynamic data available, falling back to static provisioning")
+            return None
+        self.response_handling(response, url)
+        return response.json_body["jobId"]
+
+    def download_secure_objects_batch(self, job_id: Optional[str] = None) -> dict:
+        """Download secure objects batch for a given job or static secure objects.
+
+        :param job_id: Job ID to download batch for, if None static secure objects are downloaded
+        :return: JSON response body with secure objects data
+        """
+        if not job_id:
+            logger.info("Downloading static secure objects")
+            url = "/api/v2/rtp/product-based-provisionings/download-static-provisionings"
+            params = {"nc12": self.nc12, "deviceGroupId": self.device_group_id}
+            response = self._handle_el2go_request(
+                method=self.Method.GET, url=url, param_data=params
+            )
+        else:
+            logger.info(f"Downloading secure objects batch for job {job_id}")
+            self._wait_for_job(job_id=job_id)
+            url = f"/api/v2/rtp/jobs/{job_id}/download-batch-file"
+            response = self._handle_el2go_request(method=self.Method.GET, url=url)
+        self.response_handling(response, url)
+        return response.json_body
+
+    def _wait_for_job(self, job_id: str) -> None:
+        """Wait for job completion with timeout."""
+        start_time = time.time()
+        while time.time() - start_time < self.download_timeout:
+            job_details = self.get_job_details(job_id)
+            if job_details is None:
+                raise SPSDKError(f"Job {job_id} not found")
+
+            if job_details["state"] in BAD_STATES:
+                raise SPSDKError(f"Job {job_id} failed with state {job_details['state']}")
+
+            if job_details["state"] in OK_STATES:
+                return
+
+            # wait a bit before next check to avoid overwhelming the server
+            wait_time = 5  # TODO: Consider making this configurable or dynamic
+
+            logger.info(
+                f"Job is {job_details['provisionedPercentage']}% done. "
+                f"Waiting {wait_time} seconds before next job state check"
+            )
+            time.sleep(wait_time)
+
+        raise SPSDKError(f"Job {job_id} timeout after {self.download_timeout} seconds")
 
     @classmethod
     def calculate_jobs(cls, uuid_count: int, max_job_size: int = 500) -> list[int]:
@@ -602,13 +698,17 @@ class EL2GOTPClient(EL2GOClient):
         return get_families(DatabaseManager.EL2GO_TP)
 
     @classmethod
-    def get_config_template(cls, family: FamilyRevision) -> str:  # type: ignore[override]  # pylint: disable=arguments-differ
+    def get_config_template(cls, family: FamilyRevision, mode: Literal["device", "product"] = "device") -> str:  # type: ignore[override]  # pylint: disable=arguments-differ
         """Generate configuration YAML template for given family."""
-        schema = cls.get_validation_schemas(family=family)
+        schemas = cls.get_validation_schemas(family=family)
+
+        if mode == "product":
+            schema_file = get_schema_file(DatabaseManager.EL2GO_TP)
+            schemas.append(schema_file["prov_report_address"])
 
         return super().get_config_template(
             family,
-            schemas=schema,
+            schemas=schemas,
             title=f"Configuration of EdgeLock 2GO Offline Provisioning flow for {family}",
         )
 

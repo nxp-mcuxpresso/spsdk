@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Module for local DICE attestation testing."""
 
 import os
@@ -28,7 +29,7 @@ def test_default_scenario(data_dir, tmp_path):
     common = ["-f", "lpc55s3x", "-p", "com90", "-md", models, "-db", database]
 
     with use_working_directory(tmp_path):
-        cmd = ["register-ca-puk", "-r", 32 * "12", "-s", "ca_puk.bin"] + common
+        cmd = ["register-ca-puk", "--rkth", 32 * "12", "-s", "ca_puk.bin"] + common
         run_nxpdice(cmd, expected_result=0)
 
         cmd = ["register-version"] + common

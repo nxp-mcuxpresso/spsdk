@@ -5703,67 +5703,193 @@
                 },
                 {
                     "id": "fuse178",
-                    "name": "Reserved 0xB2",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD2_KEY3",
+                    "description": "OTFAD2 key 3",
                     "index_int": "0x00B2",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    }
                 },
                 {
                     "id": "fuse179",
-                    "name": "Reserved 0xB3",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD2_KEY2",
+                    "description": "OTFAD2 key 2",
                     "index_int": "0x00B3",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    }
                 },
                 {
                     "id": "fuse180",
-                    "name": "Reserved 0xB4",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD2_KEY1",
+                    "description": "OTFAD2 key 1",
                     "index_int": "0x00B4",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    }
                 },
                 {
                     "id": "fuse181",
-                    "name": "Reserved 0xB5",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD2_KEY0",
+                    "description": "OTFAD2 key 0",
                     "index_int": "0x00B5",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    }
                 },
                 {
                     "id": "fuse182",
-                    "name": "Reserved 0xB6",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD2_CFG",
+                    "description": "Fuse 182",
                     "index_int": "0x00B6",
-                    "is_reserved": true,
                     "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
                     "bitfields": [
                         {
                             "width": 3
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse182-bit-3",
+                            "name": "OTFAD2_ENABLE",
+                            "description": "OTFAD2 enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse182-bit-4",
+                            "name": "OTFAD2_DISABLE_OVERRIDE",
+                            "description": "OTFAD2 disable override",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse182-bit-5",
+                            "name": "OTFAD2_KEY_BLOB_EN",
+                            "description": "OTFAD2 key blob enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "access": "WO",
+                            "id": "fuse182-bit-6",
+                            "name": "OTFAD2_KEY_SCRAMBLE_CRC_EN",
+                            "description": "OTFAD2 key scramble CRC enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "access": "WO",
+                            "id": "fuse182-bit-7",
+                            "name": "OTFAD2_KEY_SCRAMBLE_EN",
+                            "description": "OTFAD2 key scramble enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 8
+                            "width": 8,
+                            "access": "WO",
+                            "id": "fuse182-bits-8-15",
+                            "name": "OTFAD2_KEY_SCRAMBLE_ALIGN",
+                            "description": "OTFAD2 key scramble align, write-only"
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "access": "WO",
+                            "id": "fuse182-bit-16",
+                            "name": "OTFAD2_RESTRICT_OTFAD_IPS",
+                            "description": "OTFAD2 restrictOTFAD IPS, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 15
@@ -5772,75 +5898,207 @@
                 },
                 {
                     "id": "fuse183",
-                    "name": "Reserved 0xB7",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD2_KEY_SCRAMBLE",
+                    "description": "OTFAD2 key scramble",
                     "index_int": "0x00B7",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse6",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    }
                 },
                 {
                     "id": "fuse184",
-                    "name": "Reserved 0xB8",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD1_KEY3",
+                    "description": "OTFAD1 key 3",
                     "index_int": "0x00B8",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    }
                 },
                 {
                     "id": "fuse185",
-                    "name": "Reserved 0xB9",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD1_KEY2",
+                    "description": "OTFAD1 key 2",
                     "index_int": "0x00B9",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    }
                 },
                 {
                     "id": "fuse186",
-                    "name": "Reserved 0xBA",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD1_KEY1",
+                    "description": "OTFAD1 key 1",
                     "index_int": "0x00BA",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    }
                 },
                 {
                     "id": "fuse187",
-                    "name": "Reserved 0xBB",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD1_KEY0",
+                    "description": "OTFAD1 key 0",
                     "index_int": "0x00BB",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    }
                 },
                 {
                     "id": "fuse188",
-                    "name": "Reserved 0xBC",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD1_CFG",
+                    "description": "Fuse 188",
                     "index_int": "0x00BC",
-                    "is_reserved": true,
                     "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    },
                     "bitfields": [
                         {
                             "width": 3
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse188-bit-3",
+                            "name": "OTFAD1_ENABLE",
+                            "description": "OTFAD1 enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse188-bit-4",
+                            "name": "OTFAD1_DISABLE_OVERRIDE",
+                            "description": "OTFAD1 disable override",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "id": "fuse188-bit-5",
+                            "name": "OTFAD1_KEY_BLOB_EN",
+                            "description": "OTFAD1 key blob enable",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "access": "WO",
+                            "id": "fuse188-bit-6",
+                            "name": "OTFAD1_KEY_SCRAMBLE_CRC_EN",
+                            "description": "OTFAD1 key scramble CRC enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "access": "WO",
+                            "id": "fuse188-bit-7",
+                            "name": "OTFAD1_KEY_SCRAMBLE_EN",
+                            "description": "OTFAD1 key scramble enable, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
-                            "width": 8
+                            "width": 8,
+                            "access": "WO",
+                            "id": "fuse188-bits-8-15",
+                            "name": "OTFAD1_KEY_SCRAMBLE_ALIGN",
+                            "description": "OTFAD1 key scramble align, write-only"
                         },
                         {
-                            "width": 1
+                            "width": 1,
+                            "access": "WO",
+                            "id": "fuse188-bit-16",
+                            "name": "OTFAD1_RESTRICT_OTFAD_IPS",
+                            "description": "OTFAD1RESTRICT OTFAD IPS, write-only",
+                            "values": [
+                                {
+                                    "name": "0",
+                                    "value": 0,
+                                    "description": "Value 0."
+                                },
+                                {
+                                    "name": "1",
+                                    "value": 1,
+                                    "description": "Value 1."
+                                }
+                            ]
                         },
                         {
                             "width": 15
@@ -5849,11 +6107,17 @@
                 },
                 {
                     "id": "fuse189",
-                    "name": "Reserved 0xBD",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "name": "OTFAD1_KEY_SCRAMBLE",
+                    "description": "OTFAD1 key scramble",
                     "index_int": "0x00BD",
-                    "is_reserved": true,
-                    "individual_write_lock": "implicit"
+                    "access": "WO",
+                    "individual_write_lock": "implicit",
+                    "lock": {
+                        "register_id": "fuse2",
+                        "write_lock_int": "0x0008",
+                        "read_lock_int": "0x0020",
+                        "operation_lock_int": "0x0010"
+                    }
                 },
                 {
                     "id": "fuse190",

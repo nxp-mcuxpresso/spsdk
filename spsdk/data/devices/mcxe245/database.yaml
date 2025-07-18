@@ -30,6 +30,9 @@ info:
       interfaces: ["uart", "spi", "i2c"]
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   comm_buffer:
     address: 0x2000_0000
     size: 0x1000

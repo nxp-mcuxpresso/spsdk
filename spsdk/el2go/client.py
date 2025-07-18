@@ -15,7 +15,6 @@ from typing import Optional
 from typing_extensions import Self
 
 from spsdk.utils.config import Config
-from spsdk.utils.family import FamilyRevision
 from spsdk.utils.http_client import HTTPClientBase, SPSDKHTTPClientError
 from spsdk.utils.misc import find_file
 
@@ -127,7 +126,7 @@ class EL2GOClient(HTTPClientBase):
         if prov_fw_path:
             prov_fw_path = find_file(file_path=prov_fw_path, search_paths=config_data.search_paths)
 
-        config_data["family"] = FamilyRevision.load_from_config(config_data)
+        config_data["family"] = config_data.get_family()
         config_data.pop("revision", "")
 
         uboot_path = config_data.pop("uboot_path", None)
@@ -138,7 +137,7 @@ class EL2GOClient(HTTPClientBase):
     @classmethod
     def validate_config(cls, config_data: Config) -> None:
         """Customized configuration data validation."""
-        family = FamilyRevision.load_from_config(config_data)
+        family = config_data.get_family()
         # the upper layer is responsible for family-specific validation schema
         schema = cls.get_validation_schemas(family=family)
         config_data.check(schema, check_unknown_props=True)

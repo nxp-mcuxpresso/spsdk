@@ -78,7 +78,7 @@ class WPCTargetMBoot(WPCTarget):
         """Get the lower-level WPC ID from the target."""
         logger.info("Reading low level WPC ID")
         if self.wpc_id_type == WPCIdType.COMPUTED_CSR:
-            with McuBoot(interface=self.interface) as mboot:
+            with McuBoot(interface=self.interface, family=self.family) as mboot:
                 pre_csr_data = mboot.read_memory(
                     address=self.buffer_address,
                     length=self.id_length,
@@ -88,7 +88,7 @@ class WPCTargetMBoot(WPCTarget):
             return pre_csr_data
 
         if self.wpc_id_type == WPCIdType.RSID:
-            with McuBoot(interface=self.interface) as mboot:
+            with McuBoot(interface=self.interface, family=self.family) as mboot:
                 actual_size = mboot.wpc_get_id(
                     wpc_id_blob_addr=self.buffer_address, wpc_id_blob_size=self.id_length
                 )
@@ -108,7 +108,7 @@ class WPCTargetMBoot(WPCTarget):
     def sign(self, data: bytes) -> bytes:
         """Sign data by the target."""
         logger.info("Signing CSR-TBS data")
-        with McuBoot(interface=self.interface) as mboot:
+        with McuBoot(interface=self.interface, family=self.family) as mboot:
             if not mboot.write_memory(
                 address=self.buffer_address + 0x100,
                 data=data,
@@ -147,10 +147,10 @@ class WPCTargetMBoot(WPCTarget):
         puk_offset = cert_chain.get_puk_offset(pu_cert_only=self.insert_puc_only)
         rsid_offset = cert_chain.get_rsid_offset(pu_cert_only=self.insert_puc_only)
 
-        with McuBoot(interface=self.interface) as mboot:
+        with McuBoot(interface=self.interface, family=self.family) as mboot:
             if self.check_lifecycle:
                 logger.info("Checking lifecycle")
-                lifecycle = mboot.get_property(prop_tag=PropertyTag.from_tag(17))
+                lifecycle = mboot.get_property(prop_tag=PropertyTag.LIFE_CYCLE_STATE)
                 if lifecycle is None:
                     raise SPSDKWPCError(
                         f"Unable to get device's lifecycle. Error: {mboot.status_string}"

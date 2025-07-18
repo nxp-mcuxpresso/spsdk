@@ -38,7 +38,7 @@ class BlhostDICETarget(DICETarget):
         logger.info("Generating NXP_CUST_DICE_CA_PUK")
         buffer_address = self.database.get_int(DatabaseManager.DICE, "buffer_address")
         ca_puk_length = self.database.get_int(DatabaseManager.DICE, "ca_puk_length")
-        with McuBoot(interface=self.interface) as mboot:
+        with McuBoot(interface=self.interface, family=self.family) as mboot:
             if not mboot.write_memory(address=buffer_address, data=rkth):
                 raise SPSDKDICEError(f"Writing RKTH failed. Error: {mboot.status_string}")
             puk_length = mboot.tp_oem_get_cust_cert_dice_puk(
@@ -67,7 +67,7 @@ class BlhostDICETarget(DICETarget):
         logger.info("Generating CSR")
         csr_address = self.database.get_int(DatabaseManager.DICE, "csr_address")
         csr_length = self.database.get_int(DatabaseManager.DICE, "csr_length")
-        with McuBoot(interface=self.interface) as mboot:
+        with McuBoot(interface=self.interface, family=self.family) as mboot:
             csr = mboot.read_memory(address=csr_address, length=csr_length)
             if not csr:
                 raise SPSDKDICEError(f"Reading CSR failed. Error: {mboot.status_string}")
@@ -78,7 +78,7 @@ class BlhostDICETarget(DICETarget):
         logger.info("Generating DICE Response")
         buffer_address = self.database.get_int(DatabaseManager.DICE, "buffer_address")
         expected_length = self.database.get_int(DatabaseManager.DICE, "response_length")
-        with McuBoot(interface=self.interface) as mboot:
+        with McuBoot(interface=self.interface, family=self.family) as mboot:
             if not mboot.write_memory(address=buffer_address, data=challenge):
                 raise SPSDKDICEError(f"Writing challenge failed. Error: {mboot.status_string}")
             response_length = mboot.tp_oem_get_cust_dice_response(

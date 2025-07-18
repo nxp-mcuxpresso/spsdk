@@ -187,7 +187,7 @@ class EleMessageHandler:
         )
         interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
         interface = interface_cls.scan_single(**iface_params.get_scan_args())
-        mboot = McuBoot(interface, cmd_exception=True)
+        mboot = McuBoot(interface, cmd_exception=True, family=family)
         return EleMessageHandlerMBoot(
             device=mboot,
             family=family,

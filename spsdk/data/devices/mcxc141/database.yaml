@@ -35,6 +35,9 @@ info:
         pid: 0x0073
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000

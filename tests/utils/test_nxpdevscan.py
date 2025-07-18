@@ -327,6 +327,7 @@ def test_sdio_device_search_no_device_found():
                 "mimxrt1181",
                 "mimxrt1182",
                 "mimxrt1187",
+                "mimxrt1186",
                 "mimxrt1189",
                 "mwct2014s",
                 "mwct2015s",

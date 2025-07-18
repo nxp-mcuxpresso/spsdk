@@ -55,7 +55,7 @@ def generate(interface: MbootProtocolBase, config: Config) -> None:
     out_file = config.get_output_file_name("containerOutputFile")
 
     devhsm_cls = get_devhsm_class(FamilyRevision.load_from_config(config))
-    with McuBoot(interface) as mboot:
+    with McuBoot(interface, family=FamilyRevision.load_from_config(config)) as mboot:
         devhsm = devhsm_cls.load_from_config(config, mboot=mboot, info_print=click.echo)
         devhsm.create_sb()
         write_file(devhsm.export(), out_file, "wb")
@@ -122,7 +122,7 @@ def gen_master_share(
     """Generate OEM SHARE on target and optionally store results."""
     seed_data = DevHsm.get_oem_share_input(oem_share_input)
 
-    with McuBoot(interface=interface) as mboot:
+    with McuBoot(interface=interface, family=family) as mboot:
         if initial_reset:
             mboot.reset(timeout=500, reopen=True)
         devhsm = DevHsmSB31(
@@ -175,7 +175,7 @@ def set_master_share(
     buffer_address: int,
 ) -> None:
     """Set OEM SHARE."""
-    with McuBoot(interface=interface) as mboot:
+    with McuBoot(interface=interface, family=family) as mboot:
         devhsm = DevHsmSB31(mboot=mboot, family=family, buffer_address=buffer_address)
         devhsm.oem_set_master_share(
             oem_seed=load_binary(oem_share_input),
@@ -203,7 +203,7 @@ def wrap_cust_mk_sk(
     buffer_address: int,
 ) -> None:
     """Wrap CUST_MK_SK key."""
-    with McuBoot(interface=interface) as mboot:
+    with McuBoot(interface=interface, family=family) as mboot:
         devhsm = DevHsmSB31(mboot=mboot, family=family, buffer_address=buffer_address)
         wrapped_key = devhsm.wrap_key(load_binary(cust_mk_sk))
     write_file(wrapped_key, os.path.join(output, "CUST_MK_SK_BLOB.bin"), mode="wb")
@@ -246,11 +246,11 @@ def get_cust_fw_auth(
 
     If OEM shares are not provided, nxpdevhsm gen-master-share must be called first.
     """
-    with McuBoot(interface=interface) as mboot:
+    with McuBoot(interface=interface, family=family) as mboot:
         uuid_list = mboot.get_property(PropertyTag.UNIQUE_DEVICE_IDENT)
         if not uuid_list:
             raise SPSDKAppError(f"Unable to read UUID. Error: {mboot.status_string}")
-        uuid_obj = DeviceUidValue(PropertyTag.UNIQUE_DEVICE_IDENT.tag, uuid_list)
+        uuid_obj = DeviceUidValue(PropertyTag.UNIQUE_DEVICE_IDENT, uuid_list)
         uuid = str(uuid_obj.to_int())
 
         # allow for previously set OEM Shares

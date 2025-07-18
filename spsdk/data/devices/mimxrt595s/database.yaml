@@ -50,6 +50,9 @@ info:
         pid: 0x0023
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses:
     grouped_registers:
@@ -312,7 +315,7 @@ features:
         instances: [0, 1]
       sd:
         instances: [0, 1]
-      mmc:
+      emmc:
         instances: [0, 1]
       spi_nor:
         reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json

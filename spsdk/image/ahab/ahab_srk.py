@@ -26,7 +26,7 @@ import logging
 import math
 import os
 from struct import pack, unpack
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional, Sequence, cast
 
 from typing_extensions import Self, TypeAlias
 
@@ -129,6 +129,7 @@ class SRKRecordBase(HeaderContainerInverted):
     RSA_KEY_TYPE = {2048: 0x5, 3072: 0x6, 4096: 0x7}
     SM2_KEY_TYPE = 0x8
     DILITHIUM_KEY_TYPE = {3: 0x9, 5: 0xA}
+    MLDSA_KEY_TYPE = {65: 0x9, 87: 0xA}
 
     # Dictionary of key sizes for different algorithms.
     KEY_SIZES = {
@@ -173,6 +174,68 @@ class SRKRecordBase(HeaderContainerInverted):
         self.key_size = key_size
         self.srk_flags = srk_flags
         self.crypto_params = crypto_params
+        self._parsed_param_lengths: Optional[tuple[int, int]] = None
+
+    @property
+    def key_sizes(self) -> tuple[int, int]:
+        """Get the key parameter sizes for the current key.
+
+        This property determines the sizes of the key parameters based on the key_size attribute.
+        For RSA keys, it calculates the actual exponent size if a source key is available.
+
+        The returned tuple contains:
+
+        - For RSA keys: (modulus_size, exponent_size) in bytes
+        - For ECDSA keys: (x_coordinate_size, y_coordinate_size) in bytes
+        - For SM2 keys: (x_coordinate_size, y_coordinate_size) in bytes
+        - For Dilithium/ML-DSA keys: (raw_key_size, 0) in bytes
+
+        :raises SPSDKError: If the key_size value is not supported
+        :return: Tuple containing the sizes of the two key parameters in bytes
+        """
+        if self.key_size not in self.KEY_SIZES:
+            raise SPSDKError(f"Key size value is not supported: {self.key_size}")
+
+        # If we have parsed parameter lengths, use them
+        if self._parsed_param_lengths:
+            return self._parsed_param_lengths
+
+        key_sizes = self.KEY_SIZES[self.key_size]
+        key_size_0 = key_sizes[0]
+        key_size_1 = key_sizes[1]
+
+        # For RSA keys, check if we need to use actual exponent size
+        if self.signing_algorithm in [
+            self.SIGN_ALGORITHM_ENUM.RSA,
+            self.SIGN_ALGORITHM_ENUM.RSA_PSS,
+        ]:
+            if self.src_key:
+                assert isinstance(self.src_key, PublicKeyRsa)
+                key_size_1 = math.ceil(int(self.src_key.e).bit_length() / 8)
+                # Ensure even with src_key, the exponent size is within bounds
+                if key_size_1 > 65535:
+                    logger.warning(
+                        f"RSA exponent size {key_size_1} exceeds maximum allowed value of 65535, "
+                        f"using default size {key_sizes[1]}"
+                    )
+                    key_size_1 = key_sizes[1]
+            else:
+                # Calculate actual exponent size with bounds checking
+                if self.crypto_params and len(self.crypto_params) > key_size_0:
+                    key_size_1 = len(self.crypto_params) - key_size_0
+                    # Ensure the exponent size is within valid bounds (1-65535)
+                    if key_size_1 <= 0 or key_size_1 > 65535:
+                        logger.warning(
+                            f"Invalid calculated exponent size {key_size_1}, "
+                            f"using default size {key_sizes[1]}"
+                        )
+                        key_size_1 = key_sizes[1]
+                else:
+                    # Use default if crypto_params is too short or empty
+                    key_size_1 = key_sizes[1]
+
+        # For non-RSA keys or if we don't have crypto_params yet, use the default sizes
+        return (key_size_0, key_size_1)
 
     @property
     def parameter_lengths(self) -> bytes:
@@ -180,9 +243,7 @@ class SRKRecordBase(HeaderContainerInverted):
 
         :return: Created parameter lengths field from the key parameter
         """
-        if self.key_size not in self.KEY_SIZES:
-            raise SPSDKError(f"Key size value is not supported: {self.key_size}")
-        key_sizes = self.KEY_SIZES[self.key_size]
+        key_sizes = self.key_sizes
         return pack(LITTLE_ENDIAN + UINT16 + UINT16, key_sizes[0], key_sizes[1])
 
     @classmethod
@@ -316,11 +377,14 @@ class SRKRecordBase(HeaderContainerInverted):
                 ret.add_record("Key size", VerifierResult.SUCCEEDED, self.key_size)
 
         ret = Verifier(name, description="")
+        key_sizes = self.key_sizes
         ret.add_child(self.verify_parsed_header())
         ret.add_child(self.verify_header())
         ret.add_record_enum("Signing algorithm", self.signing_algorithm, self.SIGN_ALGORITHM_ENUM)
         ret.add_child(verify_flags())
         ret.add_record_enum("Signing hash algorithm", self.hash_algorithm, self.HASH_ALGORITHM_ENUM)
+        ret.add_record_range("Crypto parameter 1 length", key_sizes[0], 32, 2592)
+        ret.add_record_range("Crypto parameter 2 length", key_sizes[1], 0, 66)
         verify_key_size()
         return ret
 
@@ -330,11 +394,10 @@ class SRKRecordBase(HeaderContainerInverted):
         :return: Verifier object with loaded all valid verification records
         """
         ret = self._verify(name)
-        computed_length = (
-            self.fixed_length()
-            + self.KEY_SIZES[self.key_size][0]
-            + self.KEY_SIZES[self.key_size][1]
-        )
+        key_sizes = self.key_sizes
+
+        computed_length = self.fixed_length() + key_sizes[0] + key_sizes[1]
+
         if self.length != computed_length:
             ret.add_record(
                 "SRK Length",
@@ -345,11 +408,19 @@ class SRKRecordBase(HeaderContainerInverted):
         return ret
 
     @classmethod
-    def create_from_key(cls, public_key: PublicKey, srk_flags: int = 0) -> Self:
+    def create_from_key(
+        cls,
+        public_key: PublicKey,
+        srk_flags: int = 0,
+        srk_id: int = 0,
+        hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+    ) -> Self:
         """Create instance from key data.
 
         :param public_key: Loaded public key.
         :param srk_flags: SRK flags for key.
+        :param srk_id: Index of key in SRK table
+        :param hash_algorithm: Optional hash algorithm to use, if None default will be selected based on key type
         :raises SPSDKValueError: Unsupported keys size is detected.
         :raises SPSDKUnsupportedOperation: Unsupported public key
         """
@@ -360,16 +431,18 @@ class SRKRecordBase(HeaderContainerInverted):
             par_n: int = public_key.public_numbers.n
             par_e: int = public_key.public_numbers.e
             key_size = cls.RSA_KEY_TYPE[public_key.key_size]
+            # Calculate actual exponent size
+            actual_e_size = math.ceil(par_e.bit_length() / 8)
             return cls(
                 src_key=public_key,
                 signing_algorithm=cls.SIGN_ALGORITHM_ENUM.RSA_PSS,
-                hash_type=cls.HASH_ALGORITHM_ENUM.SHA256,
+                hash_type=hash_algorithm or cls.HASH_ALGORITHM_ENUM.SHA256,
                 key_size=key_size,
                 srk_flags=srk_flags,
                 crypto_params=par_n.to_bytes(
                     length=cls.KEY_SIZES[key_size][0], byteorder=Endianness.BIG.value
                 )
-                + par_e.to_bytes(length=cls.KEY_SIZES[key_size][1], byteorder=Endianness.BIG.value),
+                + par_e.to_bytes(length=actual_e_size, byteorder=Endianness.BIG.value),
             )
 
         if isinstance(public_key, PublicKeyEcc):
@@ -381,11 +454,14 @@ class SRKRecordBase(HeaderContainerInverted):
                 raise SPSDKValueError(
                     f"Unsupported ECC key for AHAB container: {public_key.key_size}"
                 )
-            hash_type = {
-                256: cls.HASH_ALGORITHM_ENUM.SHA256,
-                384: cls.HASH_ALGORITHM_ENUM.SHA384,
-                521: cls.HASH_ALGORITHM_ENUM.SHA512,
-            }[public_key.key_size]
+            if hash_algorithm:
+                hash_type = hash_algorithm
+            else:
+                hash_type = {
+                    256: cls.HASH_ALGORITHM_ENUM.SHA256,
+                    384: cls.HASH_ALGORITHM_ENUM.SHA384,
+                    521: cls.HASH_ALGORITHM_ENUM.SHA512,
+                }[public_key.key_size]
 
             return cls(
                 signing_algorithm=cls.SIGN_ALGORITHM_ENUM.ECDSA,
@@ -407,7 +483,7 @@ class SRKRecordBase(HeaderContainerInverted):
             return cls(
                 src_key=public_key,
                 signing_algorithm=cls.SIGN_ALGORITHM_ENUM.SM2,
-                hash_type=cls.HASH_ALGORITHM_ENUM.SM3,
+                hash_type=hash_algorithm or cls.HASH_ALGORITHM_ENUM.SM3,
                 key_size=key_size,
                 srk_flags=srk_flags,
                 crypto_params=param1 + param2,
@@ -439,6 +515,9 @@ class SRKRecordBase(HeaderContainerInverted):
         # the crypto param lengths may be set improperly and we may get into trouble
         # while parsing. So we need to check the lengths as well.
 
+        # Parse the actual parameter lengths
+        param_len_1, param_len_2 = unpack(LITTLE_ENDIAN + UINT16 + UINT16, parameters_len_raw)
+
         parameters_len = cls._crypto_params_length(parameters_len_raw)
         cnt_len_computed = parameters_len + cls.fixed_length()
         if parameters_len + cls.fixed_length() > container_length:
@@ -450,15 +529,36 @@ class SRKRecordBase(HeaderContainerInverted):
             )
         crypto_params = data[cls.fixed_length() : cls.fixed_length() + parameters_len]
 
-        srk_rec = cls(
-            signing_algorithm=cls.SIGN_ALGORITHM_ENUM.from_tag(signing_algo),
-            hash_type=cls.HASH_ALGORITHM_ENUM.from_tag(hash_algo),
-            key_size=key_size_curve,
-            srk_flags=srk_flags,
-            crypto_params=crypto_params,
-        )
+        # For RSA keys, determine the actual exponent size
+
+        if signing_algo in [cls.SIGN_ALGORITHM_ENUM.RSA, cls.SIGN_ALGORITHM_ENUM.RSA_PSS]:
+            modulus_size = cls.KEY_SIZES[key_size_curve][0]
+            # The exponent starts after the modulus
+            exponent_data = crypto_params[modulus_size:]
+            # Find the actual exponent size by removing any trailing zeros
+            actual_exponent_size = len(exponent_data)
+
+            # Create the SRK record with the actual exponent
+            srk_rec = cls(
+                signing_algorithm=cls.SIGN_ALGORITHM_ENUM.from_tag(signing_algo),
+                hash_type=cls.HASH_ALGORITHM_ENUM.from_tag(hash_algo),
+                key_size=key_size_curve,
+                srk_flags=srk_flags,
+                crypto_params=crypto_params[: modulus_size + actual_exponent_size],
+            )
+        else:
+            # For non-RSA keys, use the existing approach
+            srk_rec = cls(
+                signing_algorithm=cls.SIGN_ALGORITHM_ENUM.from_tag(signing_algo),
+                hash_type=cls.HASH_ALGORITHM_ENUM.from_tag(hash_algo),
+                key_size=key_size_curve,
+                srk_flags=srk_flags,
+                crypto_params=crypto_params,
+            )
+
         srk_rec.length = container_length
         srk_rec._parsed_header = HeaderContainerData.parse(binary=data, inverted=True)
+        srk_rec._parsed_param_lengths = (param_len_1, param_len_2)
         return srk_rec
 
     def get_key_name(self) -> str:
@@ -479,6 +579,11 @@ class SRKRecordBase(HeaderContainerInverted):
             and self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.DILITHIUM
         ):
             return f"dilithium{get_key_by_val(self.DILITHIUM_KEY_TYPE, self.key_size)}"
+        if (
+            self.SIGN_ALGORITHM_ENUM == AHABSignAlgorithmV2
+            and self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA
+        ):
+            return f"mldsa{get_key_by_val(self.MLDSA_KEY_TYPE, self.key_size)}"
         return "Unknown Key name!"
 
     def get_public_key(self) -> PublicKey:
@@ -549,14 +654,15 @@ class SRKRecord(SRKRecordBase):
         """
 
         def verify_param_lengths() -> None:
+            key_sizes = self.key_sizes
             if self.crypto_param1 is None:
                 ret.add_record("Crypto parameter 1", VerifierResult.ERROR, "Not exists")
 
-            elif len(self.crypto_param1) != self.KEY_SIZES[self.key_size][0]:
+            elif len(self.crypto_param1) != key_sizes[0]:
                 ret.add_record(
                     "Crypto parameter 1",
                     VerifierResult.ERROR,
-                    f"Invalid length: {len(self.crypto_param1)} != {self.KEY_SIZES[self.key_size][0]}",
+                    f"Invalid length: {len(self.crypto_param1)} != {key_sizes[0]}",
                 )
             else:
                 ret.add_record(
@@ -565,12 +671,11 @@ class SRKRecord(SRKRecordBase):
 
             if self.crypto_param2 is None:
                 ret.add_record("Crypto parameter 2", VerifierResult.ERROR, "Not exists")
-
-            elif len(self.crypto_param2) != self.KEY_SIZES[self.key_size][1]:
+            elif len(self.crypto_param2) != key_sizes[1]:
                 ret.add_record(
                     "Crypto parameter 2",
                     VerifierResult.ERROR,
-                    f"Invalid length: {len(self.crypto_param2)} != {self.KEY_SIZES[self.key_size][1]}",
+                    f"Invalid length: {len(self.crypto_param2)} != {key_sizes[1]}",
                 )
             else:
                 ret.add_record(
@@ -717,42 +822,79 @@ class SRKRecordV2(SRKRecordBase):
 
         def verify_param_lengths() -> None:
             assert isinstance(self.srk_data, SRKData)
-            crypto_param1 = self.srk_data.data[: self.KEY_SIZES[self.key_size][0]]
-            crypto_param2 = self.srk_data.data[self.KEY_SIZES[self.key_size][0] :]
-            if crypto_param1 is None:
-                ret.add_record("SRK Data Crypto parameter 1", VerifierResult.ERROR, "Not exists")
+            key_sizes = self.key_sizes
 
-            elif len(crypto_param1) != self.KEY_SIZES[self.key_size][0]:
-                ret.add_record(
-                    "SRK Data Crypto parameter 1",
-                    VerifierResult.ERROR,
-                    f"Invalid length: {len(crypto_param1)} != {self.KEY_SIZES[self.key_size][0]}",
-                )
-            else:
-                ret.add_record(
-                    "SRK Data Crypto parameter 1",
-                    VerifierResult.SUCCEEDED,
-                    bytes_to_print(crypto_param1),
-                )
+            if self.signing_algorithm in [
+                self.SIGN_ALGORITHM_ENUM.RSA,
+                self.SIGN_ALGORITHM_ENUM.RSA_PSS,
+            ]:
+                # For RSA keys, use actual sizes
+                modulus_size = key_sizes[0]
+                crypto_param1 = self.srk_data.data[:modulus_size]
+                crypto_param2 = self.srk_data.data[modulus_size:]
 
-            if self.KEY_SIZES[self.key_size][1]:
-                if crypto_param2 is None:
+                if len(crypto_param1) != modulus_size:
                     ret.add_record(
-                        "SRK Data Crypto parameter 2", VerifierResult.ERROR, "Not exists"
-                    )
-
-                elif len(crypto_param2) != self.KEY_SIZES[self.key_size][1]:
-                    ret.add_record(
-                        "SRK Data Crypto parameter 2",
+                        "SRK Data Crypto parameter 1",
                         VerifierResult.ERROR,
-                        f"Invalid length: {len(crypto_param2)} != {self.KEY_SIZES[self.key_size][1]}",
+                        f"Invalid length: {len(crypto_param1)} != {modulus_size}",
                     )
                 else:
                     ret.add_record(
-                        "SRK Data Crypto parameter 2",
+                        "SRK Data Crypto parameter 1",
                         VerifierResult.SUCCEEDED,
-                        bytes_to_print(crypto_param2),
+                        bytes_to_print(crypto_param1),
                     )
+
+                if crypto_param2:
+                    # For RSA keys, get the actual exponent
+                    actual_e_size = len(crypto_param2)
+                    ret.add_record_range(
+                        "Crypto parameter 2", min_val=1, max_val=65535, value=actual_e_size
+                    )
+                else:
+                    ret.add_record(
+                        "SRK Data Crypto parameter 2", VerifierResult.ERROR, "Not exists"
+                    )
+            else:
+                # For non-RSA keys, use fixed sizes
+                crypto_param1 = self.srk_data.data[: key_sizes[0]]
+                crypto_param2 = self.srk_data.data[key_sizes[0] :]
+
+                if crypto_param1 is None:
+                    ret.add_record(
+                        "SRK Data Crypto parameter 1", VerifierResult.ERROR, "Not exists"
+                    )
+                elif len(crypto_param1) != key_sizes[0]:
+                    ret.add_record(
+                        "SRK Data Crypto parameter 1",
+                        VerifierResult.ERROR,
+                        f"Invalid length: {len(crypto_param1)} != {key_sizes[0]}",
+                    )
+                else:
+                    ret.add_record(
+                        "SRK Data Crypto parameter 1",
+                        VerifierResult.SUCCEEDED,
+                        bytes_to_print(crypto_param1),
+                    )
+
+                if key_sizes[1]:
+                    if crypto_param2 is None:
+                        ret.add_record(
+                            "SRK Data Crypto parameter 2", VerifierResult.ERROR, "Not exists"
+                        )
+                    elif len(crypto_param2) != key_sizes[1]:
+                        ret.add_record(
+                            "SRK Data Crypto parameter 2",
+                            VerifierResult.ERROR,
+                            f"Invalid length: {len(crypto_param2)} != {key_sizes[1]}",
+                        )
+                    else:
+                        ret.add_record(
+                            "SRK Data Crypto parameter 2",
+                            VerifierResult.SUCCEEDED,
+                            bytes_to_print(crypto_param2),
+                        )
 
         ret = self._verify(name)
         ret.add_record_range(
@@ -779,14 +921,27 @@ class SRKRecordV2(SRKRecordBase):
         return ret
 
     @classmethod
-    def create_from_key(cls, public_key: PublicKey, srk_flags: int = 0, srk_id: int = 0) -> Self:
+    def create_from_key(
+        cls,
+        public_key: PublicKey,
+        srk_flags: int = 0,
+        srk_id: int = 0,
+        hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+    ) -> Self:
         """Create instance from key data.
 
         :param public_key: Loaded public key.
         :param srk_flags: SRK flags for key.
         :param srk_id: Index of key in SRK table
+        :param hash_algorithm: Optional hash algorithm to use, if None default will be selected based on key type
         :raises SPSDKValueError: Unsupported keys size is detected.
+        :raises SPSDKUnsupportedOperation: Unsupported key type or operation.
         """
+        if hash_algorithm:
+            assert isinstance(
+                hash_algorithm, AHABSignHashAlgorithmV2
+            ), "Invalid hash algorithm type"
+
         signing_algorithm = None
         hash_type = cls.HASH_ALGORITHM_ENUM.SHA256
         key_size = 0
@@ -796,7 +951,7 @@ class SRKRecordV2(SRKRecordBase):
 
         if isinstance(public_key, PublicKeyRsa):
             signing_algorithm = cls.SIGN_ALGORITHM_ENUM.RSA_PSS
-            hash_type = cls.HASH_ALGORITHM_ENUM.SHA256
+            hash_type = hash_algorithm or cls.HASH_ALGORITHM_ENUM.SHA256
             key_size = cls.RSA_KEY_TYPE[public_key.key_size]
 
         elif isinstance(public_key, PublicKeyEcc):
@@ -807,31 +962,45 @@ class SRKRecordV2(SRKRecordBase):
                 raise SPSDKValueError(
                     f"Unsupported ECC key for AHAB container: {public_key.key_size}"
                 )
-            hash_type = {
-                256: cls.HASH_ALGORITHM_ENUM.SHA256,
-                384: cls.HASH_ALGORITHM_ENUM.SHA384,
-                521: cls.HASH_ALGORITHM_ENUM.SHA512,
-            }[public_key.key_size]
+            if hash_algorithm:
+                hash_type = hash_algorithm
+            else:
+                hash_type = {
+                    256: cls.HASH_ALGORITHM_ENUM.SHA256,
+                    384: cls.HASH_ALGORITHM_ENUM.SHA384,
+                    521: cls.HASH_ALGORITHM_ENUM.SHA512,
+                }[public_key.key_size]
 
         elif IS_OSCCA_SUPPORTED and isinstance(public_key, PublicKeySM2):
             signing_algorithm = cls.SIGN_ALGORITHM_ENUM.SM2
-            hash_type = cls.HASH_ALGORITHM_ENUM.SM3
+            hash_type = hash_algorithm or cls.HASH_ALGORITHM_ENUM.SM3
             key_size = cls.SM2_KEY_TYPE
 
         elif IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyDilithium):
             signing_algorithm = cls.SIGN_ALGORITHM_ENUM.DILITHIUM
             key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
-            hash_type = {
-                3: cls.HASH_ALGORITHM_ENUM.SHA384,
-                5: cls.HASH_ALGORITHM_ENUM.SHA512,
-            }[public_key.level]
+            if hash_algorithm:
+                hash_type = hash_algorithm
+            else:
+                hash_type = {
+                    3: cls.HASH_ALGORITHM_ENUM.SHA384,
+                    5: cls.HASH_ALGORITHM_ENUM.SHA512,
+                }[public_key.level]
         elif IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyMLDSA):
             signing_algorithm = cls.SIGN_ALGORITHM_ENUM.ML_DSA
-            key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
-            hash_type = {
-                3: cls.HASH_ALGORITHM_ENUM.SHA384,
-                5: cls.HASH_ALGORITHM_ENUM.SHA512,
-            }[public_key.level]
+            try:
+                key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
+            except KeyError as exc:
+                raise SPSDKUnsupportedOperation(
+                    f"Unsupported ML-DSA key level: {public_key.level}"
+                ) from exc
+            if hash_algorithm:
+                hash_type = hash_algorithm
+            else:
+                hash_type = {
+                    3: cls.HASH_ALGORITHM_ENUM.SHA384,
+                    5: cls.HASH_ALGORITHM_ENUM.SHA512,
+                }[public_key.level]
 
         else:
             raise SPSDKValueError("Unsupported public key by AHAB SPSDK support.")
@@ -852,21 +1021,28 @@ class SRKRecordV2(SRKRecordBase):
 
         :raises SPSDKError: Unsupported public key
         """
-        # assert isinstance(self.SIGN_ALGORITHM_ENUM, AHABSignAlgorithmV2)
-
         if self.srk_data is None:
             raise SPSDKError("Cannot recreate public key due missing SRK Data")
-        crypto_param1 = self.srk_data.data[: self.KEY_SIZES[self.key_size][0]]
-        crypto_param2 = self.srk_data.data[self.KEY_SIZES[self.key_size][0] :]
-        par1 = int.from_bytes(crypto_param1, Endianness.BIG.value)
-        par2 = int.from_bytes(crypto_param2, Endianness.BIG.value)
 
         if self.signing_algorithm in [
             self.SIGN_ALGORITHM_ENUM.RSA,
             self.SIGN_ALGORITHM_ENUM.RSA_PSS,
         ]:
-            # RSA Key to store
+            # For RSA keys, we need to use the actual key sizes, not the default
+            modulus_size = self.KEY_SIZES[self.key_size][0]
+            crypto_param1 = self.srk_data.data[:modulus_size]
+            crypto_param2 = self.srk_data.data[modulus_size:]
+
+            par1 = int.from_bytes(crypto_param1, Endianness.BIG.value)
+            par2 = int.from_bytes(crypto_param2, Endianness.BIG.value)
+
             return PublicKeyRsa.recreate(modulus=par1, exponent=par2)
+
+        # For non-RSA keys, use the fixed sizes from KEY_SIZES
+        crypto_param1 = self.srk_data.data[: self.KEY_SIZES[self.key_size][0]]
+        crypto_param2 = self.srk_data.data[self.KEY_SIZES[self.key_size][0] :]
+        par1 = int.from_bytes(crypto_param1, Endianness.BIG.value)
+        par2 = int.from_bytes(crypto_param2, Endianness.BIG.value)
 
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ECDSA:
             # ECDSA Key to store
@@ -878,6 +1054,9 @@ class SRKRecordV2(SRKRecordBase):
 
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.DILITHIUM and IS_DILITHIUM_SUPPORTED:
             return PublicKeyDilithium.parse(self.srk_data.data)
+
+        if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA and IS_DILITHIUM_SUPPORTED:
+            return PublicKeyMLDSA.parse(self.srk_data.data)
 
         raise SPSDKUnsupportedOperation("Unsupported public key type")
 
@@ -1001,11 +1180,10 @@ class SRKData(HeaderContainer):
             par_n: int = public_key.public_numbers.n
             par_e: int = public_key.public_numbers.e
             key_size = SRKRecordV2.RSA_KEY_TYPE[public_key.key_size]
+            actual_e_size = math.ceil(par_e.bit_length() / 8)
             data = par_n.to_bytes(
                 length=SRKRecordV2.KEY_SIZES[key_size][0], byteorder=Endianness.BIG.value
-            ) + par_e.to_bytes(
-                length=SRKRecordV2.KEY_SIZES[key_size][1], byteorder=Endianness.BIG.value
-            )
+            ) + par_e.to_bytes(length=actual_e_size, byteorder=Endianness.BIG.value)
             return cls(src_key=public_key, srk_id=srk_id, data=data)
 
         if isinstance(public_key, PublicKeyEcc):
@@ -1088,16 +1266,13 @@ class SRKTable(HeaderContainerInverted):
     SRK_RECORDS_CNT = 4
     SRK_RECORD = SRKRecord
 
-    def __init__(
-        self, srk_records: Optional[Union[list[SRKRecord], list[SRKRecordV2]]] = None
-    ) -> None:
+    def __init__(self, srk_records: Optional[Sequence[SRKRecordBase]] = None) -> None:
         """Class object initializer.
 
         :param srk_records: list of SRK Record objects.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
-
-        self.srk_records = srk_records or []
+        self.srk_records: list[SRKRecordBase] = list(srk_records) if srk_records else []
 
     def __repr__(self) -> str:
         return f"AHAB SRK TABLE, keys count: {len(self.srk_records)}"
@@ -1115,15 +1290,26 @@ class SRKTable(HeaderContainerInverted):
         self.srk_records.clear()
         self.length = -1
 
-    def add_record(self, public_key: PublicKey, srk_flags: int = 0) -> None:
+    def add_record(
+        self,
+        public_key: PublicKey,
+        srk_flags: int = 0,
+        srk_id: int = 0,
+        hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+    ) -> None:
         """Add SRK table record.
 
         :param public_key: Loaded public key.
         :param srk_flags: SRK flags for key.
+        :param srk_id: Index of key in SRK table
+        :param hash_algorithm: Optional hash algorithm to use
         """
         self.srk_records.append(
-            self.SRK_RECORD.create_from_key(  # type:ignore
-                public_key=public_key, srk_flags=srk_flags
+            self.SRK_RECORD.create_from_key(
+                public_key=public_key,
+                srk_flags=srk_flags,
+                srk_id=srk_id,
+                hash_algorithm=hash_algorithm,
             )
         )
 
@@ -1385,6 +1571,13 @@ class SRKTableV2(SRKTable):
         flag_ca = config.get("flag_ca", False)
         if flag_ca:
             flags |= cls.SRK_RECORD.FLAGS_CA_MASK
+
+        # Get hash algorithm if specified
+        hash_algorithm = None
+        hash_algo_str = config.get("hash_algorithm")
+        if hash_algo_str and hash_algo_str != "default":
+            hash_algorithm = cls.SRK_RECORD.HASH_ALGORITHM_ENUM.from_label(hash_algo_str)
+
         srk_list = config.get_list("srk_array")
         for ix, srk_key in enumerate(srk_list):
             assert isinstance(srk_key, str)
@@ -1392,7 +1585,7 @@ class SRKTableV2(SRKTable):
             pub_key = extract_public_key(srk_key_path)
             if hasattr(pub_key, "ca"):
                 flags |= cls.SRK_RECORD.FLAGS_CA_MASK
-            srk_table.add_record(pub_key, srk_flags=flags)
+            srk_table.add_record(pub_key, srk_flags=flags, srk_id=ix, hash_algorithm=hash_algorithm)
             cast(SRKRecordV2, srk_table.srk_records[ix]).srk_data = SRKData.create_from_key(
                 pub_key, ix
             )

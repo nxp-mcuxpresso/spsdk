@@ -212,14 +212,25 @@ def cert_group() -> None:
     required=True,
     help="Path to certificate file to convert.",
 )
+@click.option(
+    "-p",
+    "--puk",
+    is_flag=True,
+    default=False,
+    help="Extract public key instead of converting certificate.",
+)
 @spsdk_output_option()
-def cert_convert(encoding: str, input_file: str, output: str) -> None:
+def cert_convert(encoding: str, input_file: str, output: str, puk: bool) -> None:
     """Convert certificate format."""
     logger.info(f"Loading certificate from: {input_file}")
     cert = Certificate.load(input_file)
     encoding_type = {"PEM": SPSDKEncoding.PEM, "DER": SPSDKEncoding.DER}[encoding]
-    cert.save(output, encoding_type)
-    click.echo(f"The certificate file has been created: {get_printable_path(output)}")
+    if puk:
+        cert.get_public_key().save(output, encoding_type)
+        click.echo(f"The public key file has been created: {get_printable_path(output)}")
+    else:
+        cert.save(output, encoding_type)
+        click.echo(f"The certificate file has been created: {get_printable_path(output)}")
 
 
 class CertificateParametersConfig:  # pylint: disable=too-few-public-methods

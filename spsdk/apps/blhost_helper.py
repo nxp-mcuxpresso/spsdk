@@ -9,7 +9,6 @@
 
 import inspect
 import json
-from copy import deepcopy
 from typing import Any, Optional, Type
 
 import click
@@ -23,9 +22,8 @@ from spsdk.mboot.commands import (
     TrustProvWrappingKeyType,
 )
 from spsdk.mboot.error_codes import stringify_status_code
-from spsdk.mboot.properties import PropertyTag
-from spsdk.utils.database import DatabaseManager
-from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.mboot.properties import PropertyTag, get_property_index
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -60,72 +58,6 @@ class OemSetMasterShareHelp(click.Command):
         click.echo(indent + "OEM_ENC_MASTER_SHARE_INPUT_SIZE")
 
 
-PROPERTIES_NAMES = {
-    0: "list-properties",
-    1: "current-version",
-    2: "available-peripherals",
-    3: "flash-start-address",
-    4: "flash-size-in-bytes",
-    5: "flash-sector-size",
-    6: "flash-block-count",
-    7: "available-commands",
-    8: "check-status",
-    9: "reserved",
-    10: "verify-writes",
-    11: "max-packet-size",
-    12: "reserved-regions",
-    13: "reserved_1",
-    14: "ram-start-address",
-    15: "ram-size-in-bytes",
-    16: "system-device-id",
-    17: "security-state",
-    18: "unique-device-id",
-    19: "flash-fac-support",
-    20: "flash-access-segment-size",
-    21: "flash-access-segment-count",
-    22: "flash-read-margin",
-    23: "qspi/otfad-init-status",
-    24: "target-version",
-    25: "external-memory-attributes",
-    26: "reliable-update-status",
-    27: "flash-page-size",
-    28: "irq-notify-pin",
-    29: "pfr-keystore_update-opt",
-    30: "byte-write-timeout-ms",
-    31: "fuse-locked-status",
-    32: "boot-status",
-    33: "loadable-fw-version",
-    34: "fuse-program-voltage",
-    36: "she-flash-partition",
-    37: "she-boot-mode",
-}
-# TODO move to database
-KW45XX = {
-    10: "verify-erase",
-    20: "boot-status",
-    21: "loadable-fw-version",
-    22: "fuse-program-voltage",
-}
-
-KW47XX = {
-    10: "verify-erase",
-    20: "boot-status",
-    21: "loadable-fw-version",
-    34: "fuse-program-voltage",
-}
-
-
-MCXA1XX = {
-    17: "life-cycle",
-}
-
-PROPERTIES_OVERRIDE = {
-    "kw45_series": KW45XX,
-    "kw47_series": KW47XX,
-    "mcxa1_series": MCXA1XX,
-}
-
-
 def parse_property_tag(property_tag: str, family: Optional[FamilyRevision] = None) -> int:
     """Convert the property as name or stringified number into integer.
 
@@ -137,18 +69,11 @@ def parse_property_tag(property_tag: str, family: Optional[FamilyRevision] = Non
         return value_to_int(property_tag)
     except SPSDKError:
         pass
-
-    properties_dict = deepcopy(PROPERTIES_NAMES)
-    if family:
-        db = get_db(family)
-        overridden_series = db.get_str(DatabaseManager().BLHOST, "overridden_properties", "")
-        if overridden_series:
-            properties_dict.update(PROPERTIES_OVERRIDE[overridden_series])
-    for key, value in properties_dict.items():
-        if value == property_tag:
-            return key
-
-    return PropertyTag.UNKNOWN.tag
+    try:
+        prop = PropertyTag.from_name(property_tag)
+        return get_property_index(prop, family)
+    except SPSDKError:
+        return get_property_index(PropertyTag.UNKNOWN, family)
 
 
 def parse_key_prov_key_type(key_type: str) -> int:

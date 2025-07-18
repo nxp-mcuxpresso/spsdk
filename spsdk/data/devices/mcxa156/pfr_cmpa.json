@@ -668,7 +668,7 @@
                 {
                     "id": "field040",
                     "name": "FLASH_ACL_0_7",
-                    "description": "Access control for flash sector 0-7",
+                    "description": "Access control for flash sector 0-7, ACL_SEC_x 3 bits represents GAC Index configuration",
                     "offset_int": "0x0040",
                     "individual_write_lock": "none",
                     "bitfields": [

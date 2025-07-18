@@ -1,7 +1,7 @@
 # fetch project dependencies
 -r ../requirements.txt
 # docs
-sphinx<8.1.4
+sphinx<8.2.4
 sphinx-book-theme
 sphinx-autodoc-annotation
 sphinx_autodoc_typehints
@@ -10,9 +10,7 @@ sphinx-click>=4.2.0
 json-schema-for-humans
 pytablewriter
 Pillow>=10.2.0
-docutils<0.21
-# pyscard package is a requirement for TP
-pyscard
+docutils<0.21.3
 # jupyter notebook requirements
 nbsphinx
 ipykernel

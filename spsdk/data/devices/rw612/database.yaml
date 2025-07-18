@@ -38,6 +38,9 @@ info:
         pid: 0x0020
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses:
     grouped_registers:
@@ -243,3 +246,4 @@ features:
     prov_method: dispatch_fw
     fw_load_address: 0x08001000
     ignored_otp_ranges: [92, 103, 104, 115]
+    use_prov_report: true

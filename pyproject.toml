@@ -234,13 +234,13 @@ checkers = [
 [tool.release-tools]
 
 [tool.release-tools.docs]
-install_hook = ['uv pip install ".[all]" -r docs/requirements.txt']
+install_hook = ['uv pip install ".[all]" -r docs/requirements.txt --force-reinstall']
 docs_directory = "docs"
 # Disable JIRA upload due to artifacts size
 disable_jira_upload = true
 
 [tool.release-tools.clr]
-install_hook = ['uv pip install ".[all]"']
+install_hook = ['uv pip install ".[all]" --force-reinstall']
 check_directories = ["spsdk", "tests", "tools", "examples"]
 excluded_files = ["spsdk/__version__.py"]
 
@@ -260,10 +260,7 @@ spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
 project_name = "spsdk"
 include_detector_types = ["pip"]
 sbom_location = "SBOM-spsdk.spdx.json"
-install_hook = [
-    'uv pip install ".[all]"',
-    'uv pip install -r requirements-develop.txt',
-]
+install_hook = ['uv pip install ".[all]" -r requirements-develop.txt --force-reinstall']
 
 [tool.release-tools.github]
 full_name = "nxp-mcuxpresso/spsdk"

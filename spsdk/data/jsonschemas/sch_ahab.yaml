@@ -566,6 +566,12 @@ whole_ahab_image:
                           In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
                           This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
                         template_value: false
+                      hash_algorithm:
+                          type: string
+                          title: Hash Algorithm
+                          description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
+                          enum: [default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3]
+                          template_value: default
                       srk_array:
                         type: array
                         title: Super Root Key (SRK) table
@@ -598,10 +604,16 @@ whole_ahab_image:
                             type: boolean
                             title: CA Flag
                             description:
-                              "CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys.
+                              "CA Flag is used by AHAB to indicate if the SRK is allowed to sign other keys.
                               In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
                               This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
                             template_value: false
+                          hash_algorithm:
+                            type: string
+                            title: Hash Algorithm
+                            description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
+                            enum: [default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3]
+                            template_value: default
                           srk_array:
                             type: array
                             title: Super Root Key (SRK) table
@@ -621,6 +633,7 @@ whole_ahab_image:
                                 - my_srk_public_key1.pub
                                 - my_srk_public_key2.pub
                                 - my_srk_public_key3.pub
+
                   certificate:
                     type: string
                     title: The AHAB certificate
@@ -656,11 +669,13 @@ whole_ahab_image:
                         title: DEK key
                         description: Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted
                         template_value: my_dek_key.txt
+                        format: file-or-hex-value
                       dek_keyblob:
                         type: string
                         title: DEK keyblob
                         description: Wrapped Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted. If NOT used, the empty keyblob is inserted into container and need to be updated later.
                         template_value: my_wrapped_key.txt
+                        format: file-or-hex-value
 
 ahab_certificate:
   type: object

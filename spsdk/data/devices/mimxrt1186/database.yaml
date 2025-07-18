@@ -1,0 +1,13 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mimxrt1189
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: False # Include this MCU in generated documentation

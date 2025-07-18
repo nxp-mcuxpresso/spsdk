@@ -21,10 +21,6 @@ info:
       start_int: 0x2000_0000
       size_int: 0x3_c000
       external: false
-    sramx:
-      start_int: 0x4000000
-      size_int: 0x4000
-      external: false
   isp:
     rom:
       protocol: mboot
@@ -34,6 +30,9 @@ info:
         pid: 0x015f
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_2000
@@ -99,7 +98,8 @@ features:
   # ======== Blhost section ========
   blhost:
     sub_features: [overridden_properties]
-    overridden_properties: mcxa1_series
+    overridden_properties:
+       17: "life-cycle"
 
   # ======== Bootable image section ========
   bootable_image:
@@ -123,4 +123,3 @@ features:
       - load
       - execute
       - loadKeyBlob
-    
