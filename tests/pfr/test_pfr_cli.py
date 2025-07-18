@@ -48,6 +48,7 @@ def test_command_line_interface(cli_runner: CliRunner):
         ("mcxn9xx", "cfpa"),
         ("nhs52sxx", "cmpa"),
         ("nhs52sxx", "cfpa"),
+        ("mcxl255", "cmpa"),
     ],
 )
 def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
@@ -234,6 +235,9 @@ def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
         ("mcxa143", "cmpa"),
         ("mcxa152", "cmpa"),
         ("mcxa153", "cmpa"),
+        ("mcxl255", "cmpa"),
+        ("mcxl254", "cmpa"),
+        ("mcxl253", "cmpa"),
     ],
 )
 def test_user_config(cli_runner: CliRunner, tmpdir, family, type):

@@ -29,7 +29,7 @@ from spsdk.utils.abstract import BaseClass
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import BinaryPattern, Endianness, align, load_binary, write_file
+from spsdk.utils.misc import BinaryPattern, Endianness, align, load_binary, value_to_int, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -215,7 +215,7 @@ class Segment(BaseClass):
             return True
         return False
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -386,7 +386,7 @@ class SegmentFcb(Segment):
             raise SPSDKSegmentNotPresent("The FCB segment is not present.")
         raise SPSDKParsingError("Parsing of FCB segment failed.")
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -447,7 +447,7 @@ class SegmentImageVersion(Segment):
         self.not_parsed = False
         self.raw_block = binary[: self.size] if self.size > 0 else binary
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -495,7 +495,7 @@ class SegmentImageVersionAntiPole(Segment):
         """Keyblob segment size."""
         return 4
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -649,7 +649,7 @@ class SegmentXmcd(Segment):
         self.xmcd = xmcd
         self.not_parsed = False
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -753,7 +753,7 @@ class SegmentMbi(Segment):
         self.mbi = mbi
         self.not_parsed = False
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -972,7 +972,7 @@ class SegmentAhab(Segment):
         """
         return AHABImage.find_offset_of_ahab(binary)
 
-    def create_config(self, output_dir: str) -> Union[str, int]:
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
         """Create configuration including store the data to specified path.
 
         :param output_dir: Path where the information should be stored
@@ -1047,6 +1047,31 @@ class SegmentSecondaryAhab(SegmentAhab):
     NAME = BootableImageSegment.SECONDARY_IMAGE_CONTAINER_SET
     OFFSET_ALIGNMENT = 1024
     INIT_SEGMENT = False
+
+    def load_config(self, config: Config) -> None:
+        """Load segment from configuration.
+
+        :param config: Configuration of Segment.
+        """
+        cfg_value = config.get(self.cfg_key())
+        if cfg_value and isinstance(cfg_value, dict):
+            if "offset" in cfg_value:
+                self._offset = value_to_int(cfg_value["offset"])
+            # Update config with just the path for parent class processing
+            config[self.cfg_key()] = cfg_value["path"]
+        super().load_config(config)
+
+    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+        """Create configuration including store the data to specified path.
+
+        :param output_dir: Path where the information should be stored
+        :returns: Value of segment to configuration file
+        """
+        ret = super().create_config(output_dir)
+        # if offset is not < 0, the segment isn't right behind the previous segment
+        if self.full_image_offset < 0:
+            return ret
+        return {"path": ret, "offset": self.full_image_offset}
 
 
 class SegmentSB21(Segment):

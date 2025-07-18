@@ -919,7 +919,7 @@
                     "description": "DCFG_CC_SOCU fuse word",
                     "index_int": "0x0025",
                     "shadow_reg_offset_int": "0x0094",
-                    "default_value_int": "0x00030003",
+                    "default_value_int": "0x00000003",
                     "lock": {
                         "register_id": "fuse3",
                         "write_lock_int": "0x0001",
@@ -1369,7 +1369,7 @@
                     "description": "DCFG_CC_SOCU_AHB fuse word",
                     "index_int": "0x008F",
                     "shadow_reg_offset_int": "0x023C",
-                    "default_value_int": "0x00030003",
+                    "default_value_int": "0x00000003",
                     "lock": {
                         "register_id": "fuse3",
                         "write_lock_int": "0x0001",

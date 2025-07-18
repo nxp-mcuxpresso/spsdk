@@ -42,6 +42,9 @@ info:
         pid: 0x0022
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_8000

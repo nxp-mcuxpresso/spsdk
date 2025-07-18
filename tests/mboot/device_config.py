@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@ import yaml
 from voluptuous import ALLOW_EXTRA, All, Any, Optional, Required, Schema
 
 from spsdk.mboot.memories import ExtMemId
-from spsdk.mboot.properties import CommandTag, PeripheryTag, PropertyTag, Version
+from spsdk.mboot.properties import CommandTag, PeripheryTag, PropertyTag, Version, get_properties, get_property_index
 
 ########################################################################################################################
 # Validator schema for configuration file
@@ -231,7 +231,7 @@ class DevConfig:
         assert "PfrKeystoreUpdateOpt" in self._props
         return self._props["PfrKeystoreUpdateOpt"]
 
-    def __init__(self, config_file):
+    def __init__(self, config_file) -> None:
         with open(config_file, "r") as f:
             dev_cfg = yaml.safe_load(f)
         validator = Schema(SCHEMA, extra=ALLOW_EXTRA)
@@ -239,29 +239,29 @@ class DevConfig:
         self._props = dev_cfg["Properties"]
         self._other = dev_cfg.get("Others", {})
 
-    def valid_cmd(self, tag):
+    def valid_cmd(self, tag) -> bool:
         assert tag in CommandTag.tags()
         return CommandTag.get_label(tag) in self._props["AvailableCommands"]
 
-    def get_properties_count(self):
+    def get_properties_count(self) -> int:
         return len(self._props)
 
-    def get_property_values(self, tag: int):
-        assert tag in PropertyTag.tags()
-        pname = PropertyTag.get_label(tag)
+    def get_property_values(self, tag: int) -> list[int]:
+        assert tag in list(get_properties().keys())
+        pname = PropertyTag.from_index(tag).label
         if pname not in self._props:
             return None
-        if tag == PropertyTag.AVAILABLE_COMMANDS:
+        if tag == get_property_index(PropertyTag.AVAILABLE_COMMANDS):
             value = 0
             for cmd_name in self._props["AvailableCommands"]:
                 value |= 1 << CommandTag.get_tag(cmd_name)
             return [value]
-        elif tag == PropertyTag.AVAILABLE_PERIPHERALS:
+        elif tag == get_property_index(PropertyTag.AVAILABLE_PERIPHERALS):
             value = 0
             for name in self._props["AvailablePeripherals"]:
                 value |= PeripheryTag.get_tag(name)
             return [value]
-        elif tag == PropertyTag.UNIQUE_DEVICE_IDENT:
+        elif tag == get_property_index(PropertyTag.UNIQUE_DEVICE_IDENT):
             return [
                 self._props["UniqueDeviceIdent"] >> 32,
                 self._props["UniqueDeviceIdent"] & 0xFFFFFFFF,

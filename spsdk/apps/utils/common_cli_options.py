@@ -575,7 +575,7 @@ def spsdk_config_option(
             cfg.search_paths = [cfg_dir]
             cfg.config_dir = cfg_dir
             for oc in override_config:
-                pair = oc.split("=")
+                pair = oc.split("=", 1)
                 cfg[pair[0]] = pair[1]
 
             if klass:
@@ -585,13 +585,6 @@ def spsdk_config_option(
             kwargs["config"] = cfg
             return func(*args, **kwargs)
 
-        wrapper = click.option(
-            "-c",
-            "--config",
-            type=click.Path(resolve_path=True, exists=True, dir_okay=False),
-            required=required,
-            help=help or "Path to the YAML/JSON configuration file.",
-        )(wrapper)
         wrapper = click.option(
             "-oc",
             "--override-config",
@@ -605,6 +598,13 @@ def spsdk_config_option(
                 f" like 'containers{Config.SEP}0{Config.SEP}binary_container=my_container.bin'."
                 " It could be used multiple times."
             ),
+        )(wrapper)
+        wrapper = click.option(
+            "-c",
+            "--config",
+            type=click.Path(resolve_path=True, exists=True, dir_okay=False),
+            required=required,
+            help=help or "Path to the YAML/JSON configuration file.",
         )(wrapper)
 
         return wrapper

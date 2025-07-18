@@ -9,15 +9,15 @@
             "registers": [
                 {
                     "id": "fuse0",
-                    "name": "LC_STATE[7:0]",
-                    "description": "Device life cycle state.\nLife-cycle state is used to determine Code read protection (CRP) levels.",
+                    "name": "LC_STATE",
+                    "description": "Device life cycle state. \nThis field is used to determine Code Read Protection (CRP) level.",
                     "index_int": "0",
-                    "default_value_int": "3",
+                    "default_value_int": "0x0003",
                     "bitfields": [
                         {
                             "width": 8,
                             "id": "fuse0-bits-0-7",
-                            "name": "LC_STATE[7:0]",
+                            "name": "LC_STATE",
                             "description": "Device life cycle state LC_STATE[7:0].",
                             "values": [
                                 {
@@ -33,17 +33,17 @@
                                 {
                                     "name": "CRP_LEVEL2_3",
                                     "value": 15,
-                                    "description": "CRP_LEVEL2 (LC_STATE = 0x0F)\nCRP_LEVEL3 (LC_STATE = 0x0F) and CMPA.ISP_mode = Disable."
+                                    "description": "CRP_LEVEL2 (LC_STATE = 0x0F), CRP_LEVEL3 (LC_STATE = 0x0F) and CMPA.ISP_mode = Disable."
                                 },
                                 {
                                     "name": "FIELD_RETURN",
                                     "value": 31,
-                                    "description": "(Field return OEM) LC_STATE = 0x1F"
+                                    "description": "Field Return OEM (LC_STATE = 0x1F)"
                                 },
                                 {
                                     "name": "FAILURE_ANALYSIS",
                                     "value": 127,
-                                    "description": "(Failure analysis NXP) LC_STATE = 0x7F"
+                                    "description": "Failure analysis NXP (LC_STATE = 0x7F)"
                                 },
                                 {
                                     "name": "CRP_LEVEL4",
@@ -67,10 +67,9 @@
             "registers": [
                 {
                     "id": "fuse1",
-                    "name": "CMPA_CRC[31:0]",
-                    "description": "CRC32 of CMPA fields.\n- Used by non-secure part during boot.",
-                    "index_int": "1",
-                    "individual_write_lock": "always_lock"
+                    "name": "CMPA_CRC",
+                    "description": "CRC32 of CMPA fields. \n- Used by non-secure part during boot.",
+                    "index_int": "0x0001"
                 }
             ]
         },
@@ -82,75 +81,42 @@
             "registers": [
                 {
                     "id": "fuse2",
-                    "name": "MFG_DATA_WORD0",
+                    "name": "MFG_DATA0",
                     "description": "CMPA MFG data value word 0.",
-                    "index_int": "2",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0002"
                 },
                 {
                     "id": "fuse3",
-                    "name": "MFG_DATA_WORD1",
+                    "name": "MFG_DATA1",
                     "description": "CMPA MFG data value word 1.",
-                    "index_int": "3",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0003"
                 },
                 {
                     "id": "fuse4",
-                    "name": "MFG_DATA_WORD2",
+                    "name": "MFG_DATA2",
                     "description": "CMPA MFG data value word 2.",
-                    "index_int": "4",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0004"
                 },
                 {
                     "id": "fuse5",
-                    "name": "MFG_DATA_WORD3",
+                    "name": "MFG_DATA3",
                     "description": "CMPA MFG data value word 3.",
-                    "index_int": "5",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0005"
                 }
             ]
         },
         {
             "group": {
-                "name": "Reserved",
-                "description": "Reserved for NXP use."
+                "name": "Reserved 0x6",
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse6",
-                    "name": "Reserved",
-                    "description": "Reserved.",
-                    "index_int": "6",
-                    "is_reserved": true,
-                    "bitfields": [
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 24
-                        }
-                    ]
+                    "name": "Reserved 0x6",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0006",
+                    "is_reserved": true
                 }
             ]
         },
@@ -164,18 +130,18 @@
                     "id": "fuse7",
                     "name": "CUSTOMER_WORD0",
                     "description": "Customer use word 0.",
-                    "index_int": "7"
+                    "index_int": "0x0007"
                 },
                 {
                     "id": "fuse8",
                     "name": "CUSTOMER_WORD1",
                     "description": "Customer use word 1, only the lowest 8 bits are valid.",
-                    "index_int": "8",
+                    "index_int": "0x0008",
                     "bitfields": [
                         {
                             "width": 8,
-                            "id": "fuse7-bits-0-7",
-                            "name": "CUSTOMER_WORD1[7:0]",
+                            "id": "fuse8-bits-0-7",
+                            "name": "CUSTOMER_WORD1",
                             "description": "Customer use word 1."
                         },
                         {
@@ -187,12 +153,12 @@
                     "id": "fuse9",
                     "name": "CUSTOMER_WORD2",
                     "description": "Customer use word 2, only the lowest 8 bits are valid.",
-                    "index_int": "9",
+                    "index_int": "0x0009",
                     "bitfields": [
                         {
                             "width": 8,
                             "id": "fuse9-bits-0-7",
-                            "name": "CUSTOMER_WORD2[7:0]",
+                            "name": "CUSTOMER_WORD2",
                             "description": "Customer use word 2."
                         },
                         {

@@ -11,7 +11,9 @@ revisions:
         cmactable:
           reg_spec: ifr_cmactable_a0.json
   a1: {}
-latest: a1
+  a2: {}
+  a2.1: {}
+latest: a2.1
 
 # General MCU information
 info:
@@ -50,7 +52,8 @@ features:
   # ======== Blhost section ========
   blhost:
     sub_features: [overridden_properties]
-    overridden_properties: kw47_series
+    overridden_properties:
+       10: "verify-erase"
 
   # ======== DAT section ========
   dat:

@@ -88,6 +88,7 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 examples/**/workspace
+examples/**/**nbqa_ipynb.py
 
 # pyenv
 .python-version

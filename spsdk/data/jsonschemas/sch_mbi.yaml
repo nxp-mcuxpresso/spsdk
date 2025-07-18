@@ -194,6 +194,7 @@ hmac:
         Could be defined as hex number and also as hex/binary file.\n
         Used algorithm by tool the get HMAC Key; AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)
       template_value: otp_master_key.bin
+      format: file-or-hex-value
 
 hmac_mandatory:
   type: object
@@ -207,6 +208,7 @@ hmac_mandatory:
         Could be defined as hex number and also as hex/binary file.\n
         Used algorithm by tool the get HMAC Key; AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)
       template_value: otp_master_key.bin
+      format: file-or-hex-value
   required: [outputImageEncryptionKeyFile]
 
 ctr_init_vector:
@@ -218,6 +220,7 @@ ctr_init_vector:
       title: The output image encryption initial vector for encryption counter
       description: The initial vector for encryption counter. Could be defined as hex number and also as hex/binary file
       template_value: "0xc3df2316fd40b15586cb5ae49483aee2"
+      format: file-or-hex-value
 
 app_table:
   type: object

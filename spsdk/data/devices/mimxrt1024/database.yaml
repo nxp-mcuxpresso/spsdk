@@ -64,6 +64,9 @@ info:
         pid: 0x0073
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses: {}
 
@@ -151,6 +154,8 @@ features:
       sd:
         instances: [1, 2]
       mmc:
+        instances: [1, 2]
+      emmc:
         instances: [1, 2]
       spi_nor:
         instances: [1, 2, 3, 4]

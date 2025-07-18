@@ -106,6 +106,9 @@ info:
         pid: 0x0073
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses:
     tool: blhost
@@ -299,7 +302,7 @@ features:
         instances: [0] # probably not supported in latest version of Flashloader
       sd:
         instances: [1, 2]
-      mmc:
+      emmc:
         instances: [1, 2]
       spi_nor:
         instances: [1, 2, 4, 5]

@@ -1,0 +1,81 @@
+# Copyright 2024-2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mx95
+revision: latest
+# --------------------------------===== Super Root Key (SRK) set [Required] =====---------------------------------
+# Description: Defines which set is used to authenticate the container.
+# Possible options: <none, oem, nxp>
+srk_set: oem
+# ---------------------------------===== Used SRK [Conditionally required] =====----------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# -------------------------------------===== SRK revoke mask [Optional] =====-------------------------------------
+# Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit
+# 1 = revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
+srk_revoke_mask: "0x00"
+# ----------------------------------===== GDET runtime behavior [Optional] =====----------------------------------
+# Description: This option defines runtime behavior of Glitch detector. Not supported by all devices and their ELE
+# firmware.
+#  - disabled:       GDET is disabled after the first OEM container has been authenticated (default behavior)
+#  - enabled_eleapi: Automatically enable GDET during all ELE API calls
+#  - enabled:        Leave GDET enabled
+# Possible options: <disabled, enabled_eleapi, enabled>
+# gdet_runtime_behavior: disabled
+# --------------------------------------===== Fuse version [Optional] =====---------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this
+# container.
+fuse_version: 0
+# ------------------------------------===== Software version [Optional] =====-------------------------------------
+# Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same
+# Fuse version field.
+sw_version: 0
+# -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
+# Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
+# must not have been revoked.
+signer: ../../_data/keys/rsa4096/srk0_rsa4096.pem
+signer_#2: ../../_data/keys/mldsa65/SRK_key0_MLDSA65.pem
+
+# ================================================================================================================
+#                                      == Configuration of AHAB SRK table ==
+# ================================================================================================================
+# ---------------------------------===== SRK Table [Conditionally required] =====---------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  hash_algorithm: sha3_256
+  # ----------------------------------------===== CA Flag [Optional] =====----------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+  flag_ca: false
+  # ------------------------------===== Super Root Key (SRK) table [Required] =====-------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing
+  # algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
+  # sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096,
+  # dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new
+  # type of AHAB container
+  srk_array:
+    - ../../_data/keys/rsa4096/srk0_rsa4096.pub
+    - ../../_data/keys/rsa4096/srk1_rsa4096.pub
+    - ../../_data/keys/rsa4096/srk2_rsa4096.pub
+    - ../../_data/keys/rsa4096/srk3_rsa4096.pub
+  srk_table_#2:
+    # ------------------------------------------===== CA Flag [Optional] =====------------------------------------------
+    # Description: CA Flag is used by AHAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag only
+    # affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing
+    # process itself. This option exists only for compatibility with systems where fuses are already programmed. In most
+    # cases, this should remain false.
+    flag_ca: false
+    # --------------------------------------===== Hash Algorithm [Optional] =====---------------------------------------
+    # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be
+    # used.
+    # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
+    hash_algorithm: sha3_256
+    # --------------------------------===== Super Root Key (SRK) table [Required] =====---------------------------------
+    # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported signing
+    # algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512. Certificate may be of
+    # Certificate Authority.
+    srk_array:
+      - ../../_data/keys/mldsa65/SRK_key0_MLDSA65.pub
+      - ../../_data/keys/mldsa65/SRK_key1_MLDSA65.pub
+      - ../../_data/keys/mldsa65/SRK_key2_MLDSA65.pub
+      - ../../_data/keys/mldsa65/SRK_key3_MLDSA65.pub

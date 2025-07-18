@@ -119,6 +119,9 @@ def _is_hex_number(param: Any) -> bool:
     :return: True if input represents a hexnumber
     """
     try:
+        if isinstance(param, str):
+            if param.startswith("0x"):
+                param = param[2:]
         bytes.fromhex(param)
         return True
     except (TypeError, ValueError):
@@ -188,6 +191,11 @@ def _print_validation_fail_reason(
         if exc.rule_definition == "file":
             message += f"; Non-existing file: {exc.value}"
             message += "; The file must exists even if the key is NOT used in configuration."
+        elif exc.rule_definition == "file-or-hex-value":
+            message += (
+                f"; Value '{exc.value}' is neither a valid hex value nor an existing file path"
+            )
+            message += "; The value must be either a valid hex string (e.g. 0x1234ABCD) or a path to an existing file."
     elif exc.rule == "anyOf":
         message += process_nested_rule(exc, extra_formatters=extra_formatters)
     elif exc.rule == "oneOf":
@@ -286,6 +294,8 @@ def check_config(
         or bool(find_file(x, search_paths=search_paths, raise_exc=False)),
         "number": _is_number,
         "hex_value": _is_hex_number,
+        "file-or-hex-value": lambda x: _is_hex_number(x)
+        or bool(find_file(x, search_paths=search_paths, raise_exc=False)),
     }
 
     config_to_check = copy.deepcopy(config)

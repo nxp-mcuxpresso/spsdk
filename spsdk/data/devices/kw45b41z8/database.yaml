@@ -71,7 +71,11 @@ features:
   # ======== Blhost section ========
   blhost:
     sub_features: [overridden_properties]
-    overridden_properties: kw45_series
+    overridden_properties:
+       10: "verify-erase"
+       20: "boot-status"
+       21: "loadable-fw-version"
+       22: "fuse-program-voltage"
 
   # ======== DAT section ========
   dat:
@@ -79,7 +83,7 @@ features:
     socc: 5 # SOCC identification
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
     dat_is_using_sha256_always: True
-    famode_cert: [signed_xip, nxp_signed_xip] # List of Fault analysis Mode certificates (names of MBI classes)
+    famode_cert: [famode, famode_nxp] # List of Fault analysis Mode certificates (names of MBI classes)
     famode_cfg_defaults: # Dictionary of default values of standard MBI members for FAmode image
       outputImageExecutionTarget: xip
       inputImageFile: generated
@@ -120,6 +124,27 @@ features:
           - Mbi_MixinLoadAddress
           - Mbi_MixinCertBlockV21
           - Mbi_MixinManifestDigest
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
+      famode:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifest
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
+      famode_nxp:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifest
+          - Mbi_MixinImageSubType
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
       nxp_signed_xip:

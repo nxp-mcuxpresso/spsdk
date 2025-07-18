@@ -265,7 +265,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         :raises McuBootConnectionError: If the ping response is not received
         :raises McuBootConnectionError: If crc does not match
         """
-        with self.ping_timeout(timeout=self.PING_TIMEOUT_MS):
+        with self.ping_timeout(timeout=max(self.PING_TIMEOUT_MS, self.device.timeout // 10)):
             ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING.tag)
 
             self._send_frame(ping, wait_for_ack=False)

@@ -29,6 +29,9 @@ info:
         pid: 0x015e
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000
@@ -47,7 +50,8 @@ features:
   # ======== Blhost section ========
   blhost:
     sub_features: [overridden_properties]
-    overridden_properties: mcxa1_series
+    overridden_properties:
+       17: "life-cycle"
 
   # ======== MBI section ========
   mbi:

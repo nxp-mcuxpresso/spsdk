@@ -50,6 +50,9 @@ info:
         pid: 0x0025
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses: {}
 

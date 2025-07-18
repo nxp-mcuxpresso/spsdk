@@ -48,7 +48,7 @@ jobs:
       - name: Install Development Dependencies
         run: |
           pip install -r requirements-develop.txt
- 
+
       - name: Run Codecheck
         run: |
           # Ignoring the 'copyright' check as the year of merge to Github may differ from the actual year when the file was updated

@@ -743,11 +743,14 @@ MCU's
 mcuboot
 mcux
 mcxa
+mcxaxxx
 Mcxa
 MCXA
 mcxc
 MCXC
 mcxe
+mcxl
+MCXL
 mcxn
 Mcxn
 MCXN
@@ -1526,3 +1529,4 @@ SELFTEST
 DLASH
 filelock
 ipywidgets
+pymboot

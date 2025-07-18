@@ -9,14 +9,15 @@
             "registers": [
                 {
                     "id": "fuse0",
-                    "name": "LC_STATE[7:0]",
-                    "description": "Device life cycle state.\nLife-cycle state provided to SYSCON block to distribute it to CSS and PUF ports to implement implicit security on the device.",
+                    "name": "LC_STATE",
+                    "description": "Device life cycle state. \nLife-cycle state provided to SYSCON block to distribute it to CSS and PUF ports to implement implicit security on the device.",
                     "index_int": "0",
+                    "default_value_int": "0x0003",
                     "bitfields": [
                         {
                             "width": 8,
                             "id": "fuse0-bits-0-7",
-                            "name": "LC_STATE[7:0]",
+                            "name": "LC_STATE",
                             "description": "OTP life cycle state LC_STATE[7:0].",
                             "values": [
                                 {
@@ -81,10 +82,9 @@
             "registers": [
                 {
                     "id": "fuse1",
-                    "name": "CMPA_CRC[31:0]",
-                    "description": "CRC32 of CMPA fields.\n- Used by non-secure part during boot.\n- For secure parts used during deep power-down wake before using the fields in CMPA area.",
-                    "index_int": "1",
-                    "individual_write_lock": "always_lock"
+                    "name": "CMPA_CRC",
+                    "description": "CRC32 of CMPA fields. \n- For secure parts used during deep power-down wake before using the fields in CMPA area.",
+                    "index_int": "0x0001"
                 }
             ]
         },
@@ -96,31 +96,27 @@
             "registers": [
                 {
                     "id": "fuse2",
-                    "name": "CMPA_CMAC_WORD0",
+                    "name": "CMPA_CMAC0",
                     "description": "CMPA CMA check value word 0.",
-                    "index_int": "2",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0002"
                 },
                 {
                     "id": "fuse3",
-                    "name": "CMPA_CMAC_WORD1",
+                    "name": "CMPA_CMAC1",
                     "description": "CMPA CMA check value word 1.",
-                    "index_int": "3",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0003"
                 },
                 {
                     "id": "fuse4",
-                    "name": "CMPA_CMAC_WORD2",
+                    "name": "CMPA_CMAC2",
                     "description": "CMPA CMA check value word 2.",
-                    "index_int": "4",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0004"
                 },
                 {
                     "id": "fuse5",
-                    "name": "CMPA_CMAC_WORD3",
+                    "name": "CMPA_CMAC3",
                     "description": "CMPA CMA check value word 3.",
-                    "index_int": "5",
-                    "individual_write_lock": "always_lock"
+                    "index_int": "0x0005"
                 }
             ]
         },
@@ -132,9 +128,9 @@
             "registers": [
                 {
                     "id": "fuse6",
-                    "name": "SECBOOT_CFG[7:0]",
+                    "name": "SECBOOT_CFG",
                     "description": "Secure boot configuration.",
-                    "index_int": "6",
+                    "index_int": "0x0006",
                     "bitfields": [
                         {
                             "width": 1,
@@ -198,18 +194,18 @@
                     "id": "fuse7",
                     "name": "CUSTOMER_WORD0",
                     "description": "Customer use word 0.",
-                    "index_int": "7"
+                    "index_int": "0x0007"
                 },
                 {
                     "id": "fuse8",
                     "name": "CUSTOMER_WORD1",
                     "description": "Customer use word 1, only the lowest 8 bits are valid.",
-                    "index_int": "8",
+                    "index_int": "0x0008",
                     "bitfields": [
                         {
                             "width": 8,
-                            "id": "fuse7-bits-0-7",
-                            "name": "CUSTOMER_WORD1[7:0]",
+                            "id": "fuse8-bits-0-7",
+                            "name": "CUSTOMER_WORD1",
                             "description": "Customer use word 1."
                         },
                         {
@@ -221,12 +217,12 @@
                     "id": "fuse9",
                     "name": "CUSTOMER_WORD2",
                     "description": "Customer use word 2, only the lowest 8 bits are valid.",
-                    "index_int": "9",
+                    "index_int": "0x0009",
                     "bitfields": [
                         {
                             "width": 8,
                             "id": "fuse9-bits-0-7",
-                            "name": "CUSTOMER_WORD2[7:0]",
+                            "name": "CUSTOMER_WORD2",
                             "description": "Customer use word 2."
                         },
                         {

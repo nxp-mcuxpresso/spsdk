@@ -1501,21 +1501,6 @@
       }
     },
     {
-      "home_page": "https://github.com/LudovicRousseau/pyscard",
-      "name": "pyscard",
-      "package": {
-        "name": "pyscard",
-        "license": "UNKNOWN"
-      },
-      "github": {
-        "project_name": "LudovicRousseau/pyscard",
-        "license": "LGPL-2.1"
-      },
-      "manual": {
-        "license": "LGPL-2.1"
-      }
-    },
-    {
       "home_page": "https://github.com/pyserial/pyserial",
       "name": "pyserial",
       "package": {
@@ -1890,12 +1875,12 @@
       "home_page": "https://github.com/exhuma/t61codec",
       "name": "t61codec",
       "package": {
-          "name": "t61codec",
-          "license": "MIT License"
+        "name": "t61codec",
+        "license": "MIT License"
       },
       "github": {
-          "project_name": "exhuma/t61codec",
-          "license": "MIT"
+        "project_name": "exhuma/t61codec",
+        "license": "MIT"
       }
     },
     {
@@ -2011,12 +1996,12 @@
       "home_page": "https://exhuma.github.io/x690/",
       "name": "x690",
       "package": {
-          "name": "x690",
-          "license": "MIT License"
+        "name": "x690",
+        "license": "MIT License"
       },
       "github": {
-          "project_name": "exhuma/x690",
-          "license": "MIT"
+        "project_name": "exhuma/x690",
+        "license": "MIT"
       }
     },
     {

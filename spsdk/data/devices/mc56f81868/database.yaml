@@ -27,6 +27,9 @@ info:
       interfaces: ["uart", "i2c", "spi"]
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x04003000

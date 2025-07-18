@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,6 +12,7 @@ from spsdk.mboot.commands import KeyProvUserKeyType
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
 from spsdk.mboot.mcuboot import CmdPacket, CommandTag, McuBoot, PropertyTag, StatusCode
+from spsdk.mboot.properties import get_properties, get_property_index
 
 
 def test_class(mcuboot: McuBoot, target, config):
@@ -111,10 +112,10 @@ def test_cmd_flash_security_disable(mcuboot: McuBoot, target):
 
 
 def test_cmd_get_property(mcuboot: McuBoot, target, config):
-    for property_tag in PropertyTag:
+    for property_tag in get_properties():
         values = mcuboot.get_property(property_tag)
         assert mcuboot.status_code == StatusCode.SUCCESS if values else StatusCode.UNKNOWN_PROPERTY
-        assert values == config.get_property_values(property_tag.tag)
+        assert values == config.get_property_values(get_property_index(property_tag))
 
 
 def test_cmd_set_property(mcuboot: McuBoot, target):

@@ -63,7 +63,7 @@ cust_mk_sk:
       title: Part Common Key
       description: Path to PCK/NPK/CUST_MK_SK/SB_KEK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
       template_value: cust_mk_sk.bin
-      format: file_name
+      format: file-or-hex-value
 
 subTitle: |
   # ================================= Minimal steps to perform DevHSM Trust Provisioning =================================

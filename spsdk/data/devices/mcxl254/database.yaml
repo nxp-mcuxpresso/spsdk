@@ -1,0 +1,27 @@
+# Copyright 2024-2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mcxl255
+
+# General MCU information
+info:
+  use_in_doc: False # Include this MCU in generated documentation
+  purpose: MCX Series
+  # Web page of MCU representative
+  web: https://www.nxp.com
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x4_0000
+      external: false
+    sram:
+      start_int: 0x2000_0000
+      size_int: 0x1_0000
+      external: false
+
+features:
+  # ======== PFR section ========
+  pfr:
+    cmpa: # CMPA description
+      address: 0x3_E000

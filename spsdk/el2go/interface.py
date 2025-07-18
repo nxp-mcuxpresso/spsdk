@@ -12,6 +12,7 @@ from types import TracebackType
 from typing import Callable, Optional, Type, Union
 
 import click
+from hexdump import hexdump
 
 from spsdk.apps.utils.interface_helper import InterfaceConfig
 from spsdk.exceptions import SPSDKError
@@ -61,6 +62,7 @@ class EL2GOInterfaceHandler:
         self.device = device
         self.family = family
         self.print_func = print_func
+        self.db = get_db(family=self.family) if self.family else None
 
     @classmethod
     def get_el2go_interface_handler(
@@ -130,7 +132,7 @@ class EL2GOInterfaceHandler:
 
         interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
         mboot_interface = interface_cls.scan_single(**interface_params.get_scan_args())
-        mboot = McuBoot(mboot_interface, cmd_exception=True)
+        mboot = McuBoot(mboot_interface, cmd_exception=True, family=family)
 
         return El2GoInterfaceHandlerMboot(device=mboot, family=family)
 
@@ -161,6 +163,22 @@ class EL2GOInterfaceHandler:
             get_db(family).get_str(DatabaseManager.EL2GO_TP, "el2go_interface")
         )
 
+    @property
+    def buffer_address(self) -> int:
+        """Get the buffer address from the database.
+
+        :return: Buffer address for the specific family
+        :raises SPSDKError: If no database context is available
+        """
+        if not self.db:
+            raise SPSDKError("No database context available")
+        return self.db.get_int(DatabaseManager.COMM_BUFFER, "buffer_address")
+
+    def write_to_buff(self, data: bytes, offset: int = 0) -> None:
+        """Write data to a buffer with optional offset."""
+        address = self.buffer_address + offset
+        self.write_memory(address=address, data=data)
+
     @abstractmethod
     def prepare(self, loader: Optional[str]) -> None:
         """Optional preparation step."""
@@ -182,7 +200,7 @@ class EL2GOInterfaceHandler:
         """Send command."""
 
     @abstractmethod
-    def reset(self) -> None:
+    def reset(self, reopen: bool = False) -> None:
         """Reset target."""
 
     @abstractmethod
@@ -199,6 +217,26 @@ class EL2GOInterfaceHandler:
         :param use_dispatch_fw: Use dispatch FW, defaults to True
         :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used.
         :param dry_run: Dry run, defaults to False
+        """
+
+    @abstractmethod
+    def run_batch_provisioning(
+        self,
+        tp_data_address: int,
+        use_dispatch_fw: bool = True,
+        prov_fw: Optional[bytes] = None,
+        prov_report_address: Optional[int] = None,
+        dry_run: bool = False,
+    ) -> Optional[bytes]:
+        """Run provisioning using Batch mode.
+
+        :param tp_data_address: TP data address for dispatch FW
+        :param use_dispatch_fw: Use dispatch FW, defaults to True, defaults to True
+        :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used., defaults to None
+        :param dry_run: Dry run, defaults to False
+        :param prov_report_address: Address where to store Provisioning Report,
+            defaults to None = don't store the report
+        :returns: Provisioning report
         """
 
     def __enter__(self) -> None:
@@ -274,12 +312,12 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         with self.device as device:
             device.write_memory(address, data)
 
-    def reset(self) -> None:
+    def reset(self, reopen: bool = False) -> None:
         """Reset target."""
         if not isinstance(self.device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
         with self.device as device:
-            device.reset(reopen=False)
+            device.reset(reopen=reopen)
 
     def send_command(self, command: str, no_exit: bool = False) -> str:
         """Send command."""
@@ -323,6 +361,54 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
                 device.receive_sb_file(prov_fw)
 
         self.print_func("Secure Objects provisioned successfully")
+
+    def run_batch_provisioning(
+        self,
+        tp_data_address: Optional[int] = True,
+        use_dispatch_fw: bool = True,
+        prov_fw: Optional[bytes] = None,
+        prov_report_address: Optional[int] = None,
+        dry_run: bool = False,
+    ) -> Optional[bytes]:
+        """Run provisioning in Batch mode.
+
+        :param tp_data_address: TP data address for dispatch FW
+        :param use_dispatch_fw: Use dispatch FW, defaults to True
+        :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used.
+        :param prov_report_address: Address where to store Provisioning Report,
+            defaults to None = don't store the report
+        :param dry_run: Dry run, defaults to False
+        :returns: Provisioning report (in case the provisioning process was executed successfully)
+        """
+        if not isinstance(self.device, McuBoot):
+            raise SPSDKError("Wrong instance of device, must be MCUBoot")
+        with self.device as device:
+            if use_dispatch_fw:
+                self.print_func("Starting provisioning process in batch mode")
+                status, report = device.el2go_batch_tp(
+                    data_address=tp_data_address or self.buffer_address,
+                    report_address=prov_report_address or 0xFFFF_FFFF,
+                    dry_run=dry_run,
+                )
+                if status is None:
+                    raise SPSDKError("Provisioning failed. No response from the firmware.")
+                if status != StatusCode.EL2GO_PROV_SUCCESS.tag:
+                    raise SPSDKError(
+                        f"Provisioning failed with status: {stringify_status_code(status)}"
+                    )
+
+                if prov_report_address is not None and prov_report_address != 0xFFFF_FFFF:
+                    self.print_func(
+                        f"Provisioning report stored at address: {hex(prov_report_address)}"
+                    )
+                self.print_func("Secure Objects provisioned successfully")
+                if report:
+                    logger.debug("Provisioning report content")
+                    logger.debug(hexdump(report))
+                    return report
+                logger.info("No report available")
+                return None
+            raise NotImplementedError("Batch mode without dispatch FW is not supported.")
 
 
 class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
@@ -402,8 +488,19 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         dry_run: bool = False,
     ) -> None:
         """Run provisioning."""
-        logger.debug("Provisioning not supported for U-Boot interface")
+        raise NotImplementedError("Provisioning not supported for U-Boot interface")
 
-    def reset(self) -> None:
+    def run_batch_provisioning(
+        self,
+        tp_data_address: int,
+        use_dispatch_fw: bool = True,
+        prov_fw: Optional[bytes] = None,
+        prov_report_address: Optional[int] = None,
+        dry_run: bool = False,
+    ) -> Optional[bytes]:
+        """Run provisioning in Batch mode."""
+        raise NotImplementedError("Batch Mode Provisioning not supported for U-Boot interface")
+
+    def reset(self, reopen: bool = False) -> None:
         """Reset the target."""
         logger.error("Reset is not supported")

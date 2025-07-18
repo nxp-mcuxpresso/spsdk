@@ -143,7 +143,6 @@ def main(log_level: int) -> int:
 @spsdk_family_option(families=get_supported_devices())
 @models_options
 @click.option(
-    "-r",
     "--rkth",
     type=str,
     required=True,
@@ -189,7 +188,6 @@ def register_ca_puk(
     help="Path where to store the NXP_CUST_DICE_CA_PUK",
 )
 @click.option(
-    "-r",
     "--rkth",
     type=str,
     required=True,
@@ -317,7 +315,6 @@ def verify(
 @spsdk_family_option(families=get_supported_devices())
 @models_options
 @click.option(
-    "-r",
     "--response",
     type=click.Path(dir_okay=False),
     required=True,

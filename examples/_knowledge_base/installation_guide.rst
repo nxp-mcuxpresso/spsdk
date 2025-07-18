@@ -8,7 +8,7 @@ Requirements
 
 - Make sure to have `Python 3.9+ <https://www.python.org>`_ installed (old version 2.x is not supported).
 - It is recommended to create and activate a virtual environment (``venv``, ``pipenv``, etc.) to avoid conflict with other packages
-- Upgrade PyPI to the latest version
+- Upgrade pip to the latest version
 - Install SPSDK
 
 .. note::
@@ -192,74 +192,156 @@ To bundle SPSDK applications into executables run the following line:
     E.g.: SPSDK_DATA_FOLDER_2_0_0
 
 
--------------------
-Trust Provisioning
--------------------
+-------------------------------
+Optional Dependencies (Extras)
+-------------------------------
 
-Extra dependencies must be installed in order to use Trust Provisioning.
-Also you will need `swig compiler <http://www.swig.org>`_ which is a requirement for pyscard
+SPSDK provides several optional dependencies that can be installed based on your specific needs. These dependencies are organized into logical groups called "extras".
+
+To install SPSDK with specific extras, use the following syntax:
+
+.. code:: bash
+
+    $ pip install "spsdk[extra_name]"
+
+For example, to install SPSDK with support for examples and CAN bus:
+
+.. code:: bash
+
+    $ pip install "spsdk[examples,can]"
+
+To install all optional dependencies:
+
+.. code:: bash
+
+    $ pip install "spsdk[all]"
+
+If you are installing from a local repository, use:
+
+.. code:: bash
+
+    $ pip install ".[extra_name]"
+
+Available Extras
+================
+
+examples
+--------
+Dependencies for running example jupyter notebooks:
+
+* flask - Web framework for building applications
+* requests - HTTP library for making requests
+* ipython - Enhanced interactive Python shell
+* notebook - Jupyter notebook environment
+* ipywidgets - Interactive widgets for Jupyter notebooks
+
+.. code:: bash
+
+    $ pip install "spsdk[examples]"
+
+dk6
+---
+Dependencies for DK6 hardware support:
+
+* pyftdi - Python interface for FTDI devices
+* pylibftdi - Another Python interface for FTDI devices
+* ftd2xx - Python interface to D2XX drivers
+
+.. code:: bash
+
+    $ pip install "spsdk[dk6]"
 
 .. note::
+    For Pyftdi backend on Linux and macOS, libusb 1.x is needed.
+    Install it with ``apt-get install libusb-1.0`` on Linux or ``brew install libusb`` on macOS.
+    On Windows, install D2XX drivers from https://ftdichip.com/drivers/d2xx-drivers/
 
-    On **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
-    (**brew install pcsc-lite swig**)
-    On **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcscd libpcsclite-dev swig**)
+oscca
+-----
+Dependencies for Office of State Commercial Cryptography Administration (OSCCA) support:
 
-.. code:: bash
-
-    $ pip install spsdk[tp]
-
-
-In case you are installing from local repository.
+* gmssl - Implementation of Chinese national cryptographic standards
 
 .. code:: bash
 
-    $ pip install ".[tp]"
+    $ pip install "spsdk[oscca]"
 
-This command will install SPSDK with Trust Provisioning support.
+can
+---
+Dependencies for CAN bus communication:
 
-
--------------------
-DK6 Tools
--------------------
-
-The command below install extra dependencies required for DK6 to work.
+* python-can - Python interface to various CAN implementations
 
 .. code:: bash
 
-    $ pip install spsdk[dk6]
-
-
-In case you are installing from local repository.
-
-.. code:: bash
-
-    $ pip install ".[dk6]"
-
+    $ pip install "spsdk[can]"
 
 .. note::
-    For Pyftdi backend Linux, macOS libusb 1.x is needed.
-    Install it with apt-get install libusb-1.0 or brew install libusb on macOS
-    On Windows install D2XX drivers https://ftdichip.com/drivers/d2xx-drivers/
+    Refer to the documentation of `python-can <https://python-can.readthedocs.io>`_ for more information about supported devices.
 
+jlink
+-----
+Dependencies for SEGGER J-Link debug probe support:
 
--------------------
-CAN Support
--------------------
-
-The command below install extra dependencies required for CAN to work.
+* spsdk-jlink - Python interface for J-Link debug probes
 
 .. code:: bash
 
-    $ pip install spsdk[can]
+    $ pip install "spsdk[jlink]"
 
+lauterbach
+----------
+Dependencies for Lauterbach debug probe support:
 
-In case you are installing from local repository.
+* spsdk-lauterbach - Python interface for Lauterbach debug probes
 
 .. code:: bash
 
-    $ pip install ".[can]"
+    $ pip install "spsdk[lauterbach]"
 
+pemicro
+-------
+Dependencies for PEMicro debug probe support:
+
+* spsdk-pemicro - Python interface for PEMicro debug probes
+
+.. code:: bash
+
+    $ pip install "spsdk[pemicro]"
+
+pqc
+---
+Dependencies for Post-Quantum Cryptography support:
+
+* spsdk-pqc - Post-quantum cryptography implementation
+
+.. code:: bash
+
+    $ pip install "spsdk[pqc]"
+
+all
+---
+Installs all optional dependencies (except pkcs11 which is currently disabled):
+
+.. code:: bash
+
+    $ pip install "spsdk[all]"
 
 .. note::
-    Refer to the documentation of `python-can <https://python-can.readthedocs.io>`_  for more information about supported devices.
+    The PKCS#11 extra is currently disabled due to Python 3.12 compatibility issues (see: https://github.com/pyauth/python-pkcs11/issues/165)
+
+
+-----------------
+SPSDK Plugins
+-----------------
+
+SPSDK allows users to install additional plugins that integrate with and extend SPSDK's core functionality. These plugins enable specialized features while keeping the core codebase clean and focused.
+
+Overview
+========
+
+The SPSDK plugins repository contains various extension modules that enhance SPSDK capabilities through a modular architecture. Each plugin follows standardized interfaces and provides specific functionality like debug probe support, cryptographic operations.
+
+* **Repository:** https://github.com/nxp-mcuxpresso/spsdk_plugins
+* **PyPI Packages:** All plugins are available on PyPI
+* **License:** BSD-3-Clause

@@ -63,7 +63,7 @@ features:
   #     26: reliable-update-status
   #     27: flash-page-size
   #     28: irq-notify-pin
-  #     29: pfr-keystore_update-opt
+  #     29: pfr-keystore-update-opt
   #     30: byte-write-timeout-ms
   #     31: fuse-locked-status
 
@@ -300,6 +300,13 @@ features:
         mem_type: sd
         interfaces: [instance_0, instance_1, instance_2, instance_3]
         instances: []
+      emmc:
+        reg_spec: ../../common/memcfg/opt_word_emmc.json
+        region_number: 0x121
+        ow_counts_rule: All
+        mem_type: sd
+        interfaces: [instance_0, instance_1, instance_2, instance_3]
+        instances: []
       sd:
         reg_spec: ../../common/memcfg/opt_word_sd.json
         region_number: 0x120
@@ -351,6 +358,7 @@ features:
     # methods are in secure_object.py:ValidationMethod
     validation_method: "none"
     uuid_fuse_index: "6 0 4"
+    use_prov_report: false
 
   # ======== LPCPROG section ========
   lpcprog:

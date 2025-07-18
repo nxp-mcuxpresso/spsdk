@@ -32,6 +32,7 @@ import pytest
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
 from spsdk.image.ahab.ahab_data import FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
@@ -951,43 +952,72 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
 
 
 @pytest.mark.parametrize(
-    "config_file",
+    "config_file,family,input_binary,hash",
     [
-        ("container_sign_config.yaml"),
-        ("container_sign_encrypted_config.yaml"),
-    ],
-)
-@pytest.mark.parametrize(
-    "input_binary",
-    [
-        ("test_img_for_sign.bin"),
-        ("ctcm_cm33_signed_img.bin"),
+        ("container_sign_config.yaml", "mx93", "test_img_for_sign.bin", "default"),
+        ("container_sign_encrypted_config.yaml", "mx93", "test_img_for_sign.bin", "default"),
+        pytest.param(
+            "container_sign_config_mx95b0_rsa4096.yaml",
+            "mx95",
+            "ahab_mx95_dilithium3.bin",
+            "sha384",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "container_sign_config_mx95b0_rsa4096_mldsa65.yaml",
+            "mx95",
+            "ahab_mx95_dilithium3.bin",
+            "sha3_256",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
     ],
 )
 def test_nxpimage_ahab_sign(
-    cli_runner: CliRunner, tmpdir: str, data_dir: str, config_file: str, input_binary: str
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    config_file: str,
+    input_binary: str,
+    family: str,
+    hash: str,
 ) -> None:
     """Test AHAB image signing functionality.
 
     Tests the 'ahab sign' command by signing a binary file with the provided configuration
     and verifying that the signed output is valid. For encrypted configurations, also tests
-    the decryption process with a test DEK key.
+    the decryption process with a test DEK key. Additionally verifies that the SRK hash
+    (SRKH) is correctly computed.
 
     :param cli_runner: Runner for executing CLI commands in tests
     :param tmpdir: Temporary directory for test output files
     :param data_dir: Directory containing test data files
     :param config_file: Name of the signing configuration file to use
     :param input_binary: Name of the binary file to be signed
+    :param family: Target family for the AHAB image (e.g., mx93, mx95)
+    :param hash: Hash algorithm, default or hash specified in config
     """
     with use_working_directory(data_dir):
-        config_file = f"{data_dir}/ahab/{config_file}"
-        binary_for_sign = f"{data_dir}/ahab/test_img_for_sign.bin"
+        config_file_path = f"{data_dir}/ahab/{config_file}"
+        binary_for_sign = f"{data_dir}/ahab/{input_binary}"
         output_file = f"{tmpdir}/signed.bin"
-        cmd = f"ahab sign -c {config_file} -b {binary_for_sign} -o {output_file}"
+
+        # Sign the binary
+        cmd = f"ahab sign -c {config_file_path} -b {binary_for_sign} -o {output_file}"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0)
+
+        # Verify output file exists
         assert os.path.exists(output_file)
+
+        # Parse the signed image
         signed_image = load_binary(output_file)
-        ahab = AHABImage.parse(signed_image, FamilyRevision("mx93"))
+        family_revision = FamilyRevision(family)
+        ahab = AHABImage.parse(signed_image, family_revision)
+
+        # Handle decryption if needed
         dek = "000102030405060708090a0b0c0d0e0f"
         if "encrypted" in config_file:
             for container in ahab.ahab_containers:
@@ -997,4 +1027,62 @@ def test_nxpimage_ahab_sign(
                             dek, container.signature_block.blob._size // 8
                         )
                         container.decrypt_data()
+
+        # Verify the signed image
         ahab.verify().validate()
+
+        # Verify SRK Hash (SRKH) is correctly computed
+        for i, container in enumerate(ahab.ahab_containers):
+            if container.signature_block and container.signature_block.srk_assets:
+                # Get the computed SRK hash from the container
+                computed_srkh = container.get_srk_hash(0)  # Get hash for SRK table 0
+
+                # Verify the hash is not empty/zero
+                assert computed_srkh != b"\x00" * len(
+                    computed_srkh
+                ), f"Container {i}: SRK hash is all zeros"
+                assert len(computed_srkh) > 0, f"Container {i}: SRK hash is empty"
+
+                # For SRKTableArray (V2), also check additional SRK tables if present
+                if hasattr(container.signature_block.srk_assets, "srk_count"):
+                    srk_count = container.signature_block.srk_assets.srk_count
+                    for srk_id in range(srk_count):
+                        srk_hash = container.get_srk_hash(srk_id)
+                        assert srk_hash != b"\x00" * len(
+                            srk_hash
+                        ), f"Container {i}, SRK {srk_id}: SRK hash is all zeros"
+                        assert len(srk_hash) > 0, f"Container {i}, SRK {srk_id}: SRK hash is empty"
+
+                        # Verify hash length matches expected algorithm
+                        if hasattr(container.signature_block.srk_assets, "_srk_tables"):
+                            # verify the hash matches
+                            if container.flag_srk_set != FlagsSrkSet.NXP and hash != "default":
+                                hash_alg = EnumHashAlgorithm.from_label(hash)
+                                assert (
+                                    container.signature_block.srk_assets._srk_tables[srk_id]
+                                    .srk_records[0]
+                                    .hash_algorithm.name
+                                    == hash_alg.name
+                                )
+
+                            # For SRKTableArray
+                            expected_hash_len = (
+                                64
+                                if container.signature_block.srk_assets._srk_tables[
+                                    srk_id
+                                ].SRK_HASH_ALGORITHM
+                                == EnumHashAlgorithm.SHA512
+                                else 32
+                            )
+                        else:
+                            # For SRKTable
+                            expected_hash_len = (
+                                32
+                                if container.signature_block.srk_assets.SRK_HASH_ALGORITHM
+                                == EnumHashAlgorithm.SHA256
+                                else 64
+                            )
+
+                        assert (
+                            len(srk_hash) == expected_hash_len
+                        ), f"Container {i}, SRK {srk_id}: length {len(srk_hash)}, expected {expected_hash_len}"

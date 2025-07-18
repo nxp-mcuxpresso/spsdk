@@ -54,6 +54,9 @@ info:
         pid: 0x0073
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== Fuses description section ========
   fuses:
     tool: blhost

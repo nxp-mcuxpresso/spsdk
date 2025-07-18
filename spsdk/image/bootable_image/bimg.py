@@ -205,6 +205,9 @@ class BootableImage(FeatureBaseClass):
                 logger.debug(f"Trying to parse segment {segment.NAME} at offset 0x{offset:08X}.")
                 try:
                     segment.parse_binary(binary[offset:])
+                    # set the actual offset, when segments are not contiguous
+                    if segment.full_image_offset < 0 and start_offset != offset:
+                        segment.full_image_offset = offset
                 except SPSDKSegmentNotPresent:
                     segment.clear()
                     continue

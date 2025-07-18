@@ -322,6 +322,15 @@ class SB21Helper:
             except (ValueError, TypeError) as exc:
                 raise SPSDKError(f"Invalid keyblob_id: {keyblob_id}, must be a number") from exc
 
+        # Ensure keyblobs is a list and keyblob_id is a Number
+        if not isinstance(keyblobs, list):
+            raise SPSDKError(f"Expected list of keyblobs, got {type(keyblobs).__name__}")
+        if not isinstance(keyblob_id, Number):
+            try:
+                keyblob_id = int(str(keyblob_id), 0)
+            except (ValueError, TypeError) as exc:
+                raise SPSDKError(f"Invalid keyblob_id: {keyblob_id}, must be a number") from exc
+
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
         except SPSDKError as exc:

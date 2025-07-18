@@ -1,0 +1,42 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =================  Bootable Image Configuration for mimx9352, Revision: latest / Serial downloader.  =================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx9352
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+memory_type: serial_downloader
+# ----------------------------------------===== Initial segment [Optional] =====----------------------------------------
+# Description: The segment name or the index of initial segment in exported image
+init_offset: 0
+# -------------------------------===== Path to directory for post export [Optional] =====-------------------------------
+# Description: Path to directory where post export artifacts like fuse scripts, keyblobs etc. will be exported
+post_export: output
+# ======================================================================================================================
+#                                      == Primary Executable Segment definition ==
+# ======================================================================================================================
+# ----------------------------------===== Primary Image Container Set [Optional] =====----------------------------------
+# Description: This is primary Image Container Set that is validated by ROM and usually contains DDR initialization and
+# SPL code. It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB. In case that
+# YAML configuration file is used, the Bootable image tool build the AHAB itself.
+primary_image_container_set: ../../../ahab/ctcm_cm33_signed_sb_mx93.yaml
+# ======================================================================================================================
+#                                     == Secondary Executable Segment definition ==
+# ======================================================================================================================
+# ---------------------------------===== Secondary Image Container Set [Optional] =====---------------------------------
+# Description: This is secondary AHAB image that is validated by SPL from primary image. It could be used as pre-
+# prepared binary form of AHAB and also YAML configuration file for AHAB. In case that YAML configuration file is used,
+# the Bootable image tool build the AHAB itself.
+secondary_image_container_set:
+  path: ../../../ahab/ctcm_cm33_signed_sb_mx93.yaml
+  offset: 0xA000

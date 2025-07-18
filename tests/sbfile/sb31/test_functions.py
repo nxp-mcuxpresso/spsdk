@@ -186,7 +186,7 @@ def test_commands_validate():
         sb3c.validate()
 
 
-def test_secure_binary3_validate(data_dir):
+def test_load_command_validation(data_dir):
     """Test of validation function for Secure Binary class."""
 
     family = FamilyRevision("lpc55s3x")
@@ -328,3 +328,57 @@ def test_load_cmd_data_from_cfg_file(temp_binary_file):
     config = Config({"file": temp_binary_file})
     result = load_cmd_data_from_cfg(config)
     assert result == load_binary(temp_binary_file)
+
+
+
+@pytest.mark.parametrize(
+    "data_value,should_pass,description",
+    [
+        ("0xB38AA899", True, "Hex value with 0x prefix"),
+        ("0b111000", True, "Binary value with 0b prefix"),
+        ("12345", True, "Plain number as string"),
+        ("0x1234, 0x5678, 0, 12345678", True, "Comma-separated list of values"),
+        ("test_binary.bin", True, "Existing file path"),
+        ("non_existing_file.bin", False, "Non-existing file path"),
+        ([1, 2, 3, 4], True, "Array of integers"),
+        (12345, True, "Single integer value"),
+    ],
+)
+def test_sb31_data_format_validation(data_dir, data_value, should_pass, description):
+    """Test validation of different data formats in SB3.1 configuration."""
+    config_data = {
+        "family": "mimxrt798s",
+        "containerOutputFile": "output.sb3",
+        "signer": "type=my_sp",
+        "certBlock": "cert_block.bin",
+        "description": "Test SB3.1 file",
+        "containerKeyBlobEncryptionKey": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+        "isNxpContainer": False,
+        "kdkAccessRights": 0,
+        "containerConfigurationWord": 0,
+        "commands": [
+            {
+                "load": {
+                    "address": 0x1000,
+                    "data": data_value
+                }
+            }
+        ]
+    }
+    cfg = Config(config_data)
+    cfg.search_paths = [data_dir]
+
+    # Get validation schemas and validate
+    try:
+        schemas = SecureBinary31.get_validation_schemas_from_cfg(cfg)
+        cfg.check(schemas, check_unknown_props=True)
+        validation_passed = True
+    except Exception as e:
+        validation_passed = False
+
+    # Assert the validation result matches expectations
+    assert validation_passed == should_pass, (
+        f"Validation {'passed' if validation_passed else 'failed'} "
+        f"but {'should have failed' if not should_pass else 'should have passed'} "
+        f"for {description}"
+    )

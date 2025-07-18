@@ -20,6 +20,8 @@ Weblink: `mc56f81646 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -30,6 +32,11 @@ Weblink: `mc56f81646 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -57,6 +64,8 @@ Weblink: `mc56f81648 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -67,6 +76,11 @@ Weblink: `mc56f81648 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -94,6 +108,8 @@ Weblink: `mc56f81666 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -104,6 +120,11 @@ Weblink: `mc56f81666 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -131,6 +152,8 @@ Weblink: `mc56f81668 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -141,6 +164,11 @@ Weblink: `mc56f81668 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -168,6 +196,8 @@ Weblink: `mc56f81746 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -178,6 +208,11 @@ Weblink: `mc56f81746 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -205,6 +240,8 @@ Weblink: `mc56f81748 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -215,6 +252,11 @@ Weblink: `mc56f81748 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -242,6 +284,8 @@ Weblink: `mc56f81766 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -252,6 +296,11 @@ Weblink: `mc56f81766 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -279,6 +328,8 @@ Weblink: `mc56f81768 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -289,6 +340,11 @@ Weblink: `mc56f81768 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -318,6 +374,8 @@ Weblink: `mc56f81866 <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`RoT`                    |vX     |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -328,6 +386,11 @@ Weblink: `mc56f81866 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -357,6 +420,8 @@ Weblink: `mc56f81868 <https://www.nxp.com/products/processors-and-microcontrolle
     +==============================+=======+
     |:ref:`RoT`                    |vX     |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -367,6 +432,11 @@ Weblink: `mc56f81868 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -398,6 +468,8 @@ Weblink: `lpc5502 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -406,6 +478,11 @@ Weblink: `lpc5502 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -438,6 +515,8 @@ Weblink: `lpc5504 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -446,6 +525,11 @@ Weblink: `lpc5504 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -478,6 +562,8 @@ Weblink: `lpc5506 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -486,6 +572,11 @@ Weblink: `lpc5506 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -518,6 +609,8 @@ Weblink: `lpc5512 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -526,6 +619,11 @@ Weblink: `lpc5512 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -558,6 +656,8 @@ Weblink: `lpc5514 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -566,6 +666,11 @@ Weblink: `lpc5514 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -598,6 +703,8 @@ Weblink: `lpc5516 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -606,6 +713,11 @@ Weblink: `lpc5516 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -638,6 +750,8 @@ Weblink: `lpc5526 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -646,6 +760,11 @@ Weblink: `lpc5526 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -678,6 +797,8 @@ Weblink: `lpc5528 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -686,6 +807,11 @@ Weblink: `lpc5528 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpmemcfg`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -718,6 +844,8 @@ Weblink: `lpc5534 <https://www.nxp.com/products/processors-and-microcontrollers/
     +----------------------------------------+-------+
     |                Feature                 |Support|
     +========================================+=======+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
     |:ref:`pfr`                              |✅     |
@@ -726,6 +854,11 @@ Weblink: `lpc5534 <https://www.nxp.com/products/processors-and-microcontrollers/
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -753,6 +886,8 @@ Weblink: `lpc5536 <https://www.nxp.com/products/processors-and-microcontrollers/
     +----------------------------------------+-------+
     |                Feature                 |Support|
     +========================================+=======+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
     +----------------------------------------+-------+
     |:ref:`pfr`                              |✅     |
@@ -761,6 +896,11 @@ Weblink: `lpc5536 <https://www.nxp.com/products/processors-and-microcontrollers/
     +----------------------------------------+-------+
     |:ref:`FlexSPI Configuration Block (FCB)`|✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -790,6 +930,8 @@ Weblink: `lpc55s04 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -804,6 +946,11 @@ Weblink: `lpc55s04 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -845,6 +992,8 @@ Weblink: `lpc55s06 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -859,6 +1008,11 @@ Weblink: `lpc55s06 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -900,6 +1054,8 @@ Weblink: `lpc55s14 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -914,6 +1070,11 @@ Weblink: `lpc55s14 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -955,6 +1116,8 @@ Weblink: `lpc55s16 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -969,6 +1132,11 @@ Weblink: `lpc55s16 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -1010,6 +1178,8 @@ Weblink: `lpc55s26 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -1022,6 +1192,11 @@ Weblink: `lpc55s26 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -1063,6 +1238,8 @@ Weblink: `lpc55s28 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -1075,6 +1252,11 @@ Weblink: `lpc55s28 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -1116,6 +1298,8 @@ Weblink: `lpc55s36 <https://www.nxp.com/products/processors-and-microcontrollers
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -1140,6 +1324,11 @@ Weblink: `lpc55s36 <https://www.nxp.com/products/processors-and-microcontrollers
 Examples for lpc55s36
 
 * `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -1192,6 +1381,8 @@ Weblink: `lpc55s66 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -1206,6 +1397,11 @@ Weblink: `lpc55s66 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -1247,6 +1443,8 @@ Weblink: `lpc55s69 <https://www.nxp.com/products/processors-and-microcontrollers
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -1261,6 +1459,11 @@ Weblink: `lpc55s69 <https://www.nxp.com/products/processors-and-microcontrollers
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -1429,16 +1632,16 @@ Weblink: `mcxa132 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1478,16 +1681,16 @@ Weblink: `mcxa133 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1527,16 +1730,16 @@ Weblink: `mcxa142 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1576,16 +1779,16 @@ Weblink: `mcxa143 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1625,16 +1828,16 @@ Weblink: `mcxa144 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1674,16 +1877,16 @@ Weblink: `mcxa145 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1723,16 +1926,16 @@ Weblink: `mcxa146 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1772,16 +1975,16 @@ Weblink: `mcxa152 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1821,16 +2024,16 @@ Weblink: `mcxa153 <https://www.nxp.com/products/processors-and-microcontrollers/
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1870,16 +2073,16 @@ Weblink: `mcxa154 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1919,16 +2122,16 @@ Weblink: `mcxa155 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1968,16 +2171,16 @@ Weblink: `mcxa156 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for dat
 
 * `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
-
-
-Similar examples for blhost
-
-* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for mbi
@@ -1992,14 +2195,14 @@ Similar examples for bootable_image
 * `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
 
 
-mcxa275
+mcxa255
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa275 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+Weblink: `mcxa255 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
 
 .. table::
 
@@ -2050,14 +2253,63 @@ Similar examples for devhsm
 * `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples\devhsm\mc56_devhsm\mc56_devhsm.ipynb>`__
 
 
-mcxa276
+mcxa256
 --------------------------
 
 Latest revision: a0
 
 All supported chip revisions: a0
 
-Weblink: `mcxa276 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+Weblink: `mcxa256 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+mcxa265
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa265 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
 
 .. table::
 
@@ -2096,6 +2348,162 @@ Similar examples for dat
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples\devhsm\mc56_devhsm\mc56_devhsm.ipynb>`__
+
+
+mcxa266
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa266 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+mcxa285
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa285 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+mcxa286
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa286 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdevhsm`              |✅     |
+    +------------------------------+-------+
+    |:ref:`Secure Binary C`        |✅     |
+    +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2132,10 +2540,6 @@ Weblink: `mcxa345 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
-    +------------------------------+-------+
-    |:ref:`Secure Binary C`        |✅     |
-    +------------------------------+-------+
 
 Similar examples for mbi
 
@@ -2159,11 +2563,6 @@ Similar examples for blhost
 Similar examples for bootable_image
 
 * `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
-
-
-Similar examples for devhsm
-
-* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples\devhsm\mc56_devhsm\mc56_devhsm.ipynb>`__
 
 
 mcxa346
@@ -2190,10 +2589,6 @@ Weblink: `mcxa346 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
-    +------------------------------+-------+
-    |:ref:`Secure Binary C`        |✅     |
-    +------------------------------+-------+
 
 Similar examples for mbi
 
@@ -2217,11 +2612,6 @@ Similar examples for blhost
 Similar examples for bootable_image
 
 * `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
-
-
-Similar examples for devhsm
-
-* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples\devhsm\mc56_devhsm\mc56_devhsm.ipynb>`__
 
 
 mcxa355
@@ -2248,10 +2638,6 @@ Weblink: `mcxa355 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
-    +------------------------------+-------+
-    |:ref:`Secure Binary C`        |✅     |
-    +------------------------------+-------+
 
 Similar examples for mbi
 
@@ -2275,11 +2661,6 @@ Similar examples for blhost
 Similar examples for bootable_image
 
 * `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
-
-
-Similar examples for devhsm
-
-* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples\devhsm\mc56_devhsm\mc56_devhsm.ipynb>`__
 
 
 mcxa356
@@ -2306,9 +2687,54 @@ Weblink: `mcxa356 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
-    |:ref:`nxpdevhsm`              |✅     |
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+mcxa365
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa365 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
     +------------------------------+-------+
-    |:ref:`Secure Binary C`        |✅     |
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
     +------------------------------+-------+
 
 Similar examples for mbi
@@ -2335,9 +2761,53 @@ Similar examples for bootable_image
 * `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
 
 
-Similar examples for devhsm
+mcxa366
+--------------------------
 
-* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples\devhsm\mc56_devhsm\mc56_devhsm.ipynb>`__
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxa366 <https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
 
 
 mcxc041
@@ -2704,12 +3174,19 @@ Weblink: `mcxe245 <https://nxp.com>`_
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpshe`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -2732,12 +3209,19 @@ Weblink: `mcxe246 <https://nxp.com>`_
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
     +------------------------------+-------+
     |:ref:`nxpshe`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -2760,6 +3244,8 @@ Weblink: `mcxe247 <https://nxp.com>`_
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`fcf`                    |✅     |
@@ -2767,11 +3253,163 @@ Weblink: `mcxe247 <https://nxp.com>`_
     |:ref:`nxpshe`                 |✅     |
     +------------------------------+-------+
 
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
 Similar examples for mbi
 
 * `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
 * `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
 * `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+mcxl253
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxl253 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+mcxl254
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxl254 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+mcxl255
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxl255 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+-------+
+    |           Feature            |Support|
+    +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
+    |:ref:`nxpdebugmbox`           |✅     |
+    +------------------------------+-------+
+    |:ref:`Master Boot Image (MBI)`|✅     |
+    +------------------------------+-------+
+    |:ref:`pfr`                    |✅     |
+    +------------------------------+-------+
+    |:ref:`Bootable image`         |✅     |
+    +------------------------------+-------+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples\mbi\kw45xx_k32w1xx_mcxw71x\kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples\mbi\lpc55sxx_secure_boot\lpc55sxx_secure_fw_update.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 mcxn235
@@ -2789,6 +3427,8 @@ Weblink: `mcxn235 <https://www.nxp.com/products/processors-and-microcontrollers/
     |           Feature            |Support|
     +==============================+=======+
     |:ref:`RoT`                    |v2.1   |
+    +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
     +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
@@ -2808,6 +3448,11 @@ Weblink: `mcxn235 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -2854,6 +3499,8 @@ Weblink: `mcxn236 <https://www.nxp.com/products/processors-and-microcontrollers/
     +==============================+=======+
     |:ref:`RoT`                    |v2.1   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -2872,6 +3519,11 @@ Weblink: `mcxn236 <https://www.nxp.com/products/processors-and-microcontrollers/
     +------------------------------+-------+
     |:ref:`nxpdevhsm`              |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -2918,6 +3570,8 @@ Weblink: `mcxn546 <https://www.nxp.com/products/processors-and-microcontrollers/
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -2945,6 +3599,11 @@ Similar examples for mcxn946
 
 * `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MCXN946 <examples/signature_provider/mcxn946_mbi/mcxn946_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -2997,6 +3656,8 @@ Weblink: `mcxn547 <https://www.nxp.com/products/processors-and-microcontrollers/
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -3024,6 +3685,11 @@ Similar examples for mcxn947
 
 * `MCXN947 Indirect chip-specific RTP flow <examples/el2go/mcxn947/mcxn947_single_shot.ipynb>`__
 * `MCXN947 Indirect chip-specific flow (using multiple commands/stages) <examples/el2go/mcxn947/mcxn947_split_command.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -3076,6 +3742,8 @@ Weblink: `mcxn946 <https://www.nxp.com/products/processors-and-microcontrollers/
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -3103,6 +3771,11 @@ Examples for mcxn946
 
 * `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MCXN946 <examples/signature_provider/mcxn946_mbi/mcxn946_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -3155,6 +3828,8 @@ Weblink: `mcxn947 <https://www.nxp.com/products/processors-and-microcontrollers/
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -3188,6 +3863,11 @@ Similar examples for mcxn946
 
 * `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MCXN946 <examples/signature_provider/mcxn946_mbi/mcxn946_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -3678,9 +4358,9 @@ Similar examples for bootable_image
 kw47b42z83
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42z83 <https://www.nxp.com>`_
 
@@ -3733,9 +4413,9 @@ Similar examples for bootable_image
 kw47b42z96
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42z96 <https://www.nxp.com>`_
 
@@ -3788,9 +4468,9 @@ Similar examples for bootable_image
 kw47b42z97
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42z97 <https://www.nxp.com>`_
 
@@ -3843,9 +4523,9 @@ Similar examples for bootable_image
 kw47b42zb2
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42zb2 <https://www.nxp.com>`_
 
@@ -3898,9 +4578,9 @@ Similar examples for bootable_image
 kw47b42zb3
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42zb3 <https://www.nxp.com>`_
 
@@ -3953,9 +4633,9 @@ Similar examples for bootable_image
 kw47b42zb6
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42zb6 <https://www.nxp.com>`_
 
@@ -4008,9 +4688,9 @@ Similar examples for bootable_image
 kw47b42zb7
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47b42zb7 <https://www.nxp.com>`_
 
@@ -4063,9 +4743,9 @@ Similar examples for bootable_image
 kw47z42082
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47z42082 <https://www.nxp.com>`_
 
@@ -4118,9 +4798,9 @@ Similar examples for bootable_image
 kw47z42092
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47z42092 <https://www.nxp.com>`_
 
@@ -4173,9 +4853,9 @@ Similar examples for bootable_image
 kw47z420b2
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47z420b2 <https://www.nxp.com>`_
 
@@ -4228,9 +4908,9 @@ Similar examples for bootable_image
 kw47z420b3
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `kw47z420b3 <https://www.nxp.com>`_
 
@@ -4296,6 +4976,8 @@ Weblink: `mcxw235 <https://www.nxp.com>`_
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -4308,6 +4990,11 @@ Weblink: `mcxw235 <https://www.nxp.com>`_
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -4344,6 +5031,8 @@ Weblink: `mcxw236 <https://www.nxp.com>`_
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -4356,6 +5045,11 @@ Weblink: `mcxw236 <https://www.nxp.com>`_
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -4505,9 +5199,9 @@ Similar examples for bootable_image
 mcxw727a
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `mcxw727a <https://www.nxp.com/products/MCX-W72X>`_
 
@@ -4560,9 +5254,9 @@ Similar examples for bootable_image
 mcxw727c
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `mcxw727c <https://www.nxp.com/products/MCX-W72X>`_
 
@@ -4615,9 +5309,9 @@ Similar examples for bootable_image
 mcxw727d
 --------------------------
 
-Latest revision: a1
+Latest revision: a2.1
 
-All supported chip revisions: a0, a1
+All supported chip revisions: a0, a1, a2, a2.1
 
 Weblink: `mcxw727d <https://www.nxp.com/products/MCX-W72X>`_
 
@@ -4683,6 +5377,8 @@ Weblink: `nhs52s04 <https://www.nxp.com/products/wireless-connectivity/bluetooth
     +==============================+=======+
     |:ref:`RoT`                    |v1.0   |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`nxpdebugmbox`           |✅     |
     +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
@@ -4695,6 +5391,11 @@ Weblink: `nhs52s04 <https://www.nxp.com/products/wireless-connectivity/bluetooth
     +------------------------------+-------+
     |:ref:`Secure Binary 2.1`      |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -4731,6 +5432,8 @@ Weblink: `rw610 <https://www.nxp.com/products/wireless-connectivity/wi-fi-plus-b
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -4757,6 +5460,11 @@ Similar examples for rw612
 * `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
 * `RW61x Dual Boot with Shadow registers <examples/shadowregs/rw61x/rw61x_dual_boot_shadowregs.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -4804,6 +5512,8 @@ Weblink: `rw612 <https://www.nxp.com/products/wireless-connectivity/wi-fi-plus-b
     +========================================+=======+
     |:ref:`RoT`                              |v2.1   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -4830,6 +5540,11 @@ Examples for rw612
 * `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
 * `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
 * `RW61x Dual Boot with Shadow registers <examples/shadowregs/rw61x/rw61x_dual_boot_shadowregs.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -4879,6 +5594,8 @@ Weblink: `mwct2012 <https://www.nxp.com/products/power-management/wireless-power
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -4891,6 +5608,11 @@ Weblink: `mwct2012 <https://www.nxp.com/products/power-management/wireless-power
     +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -4918,6 +5640,8 @@ Weblink: `mwct2012a <https://www.nxp.com/products/power-management/wireless-powe
     +------------------------------+-------+
     |           Feature            |Support|
     +==============================+=======+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -4930,6 +5654,11 @@ Weblink: `mwct2012a <https://www.nxp.com/products/power-management/wireless-powe
     +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -4957,8 +5686,15 @@ Weblink: `mwct2014s <https://www.nxp.com/products/power-management/wireless-powe
     +-------------+-------+
     |   Feature   |Support|
     +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 mwct2015s
 --------------------------
@@ -4974,8 +5710,15 @@ Weblink: `mwct2015s <https://www.nxp.com/products/power-management/wireless-powe
     +-------------+-------+
     |   Feature   |Support|
     +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 mwct2016s
 --------------------------
@@ -4991,8 +5734,15 @@ Weblink: `mwct2016s <https://www.nxp.com/products/power-management/wireless-powe
     +-------------+-------+
     |   Feature   |Support|
     +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 mwct20d2
 --------------------------
@@ -5010,6 +5760,8 @@ Weblink: `mwct20d2 <https://www.nxp.com/products/power-management/wireless-power
     +==============================+=======+
     |:ref:`RoT`                    |vX     |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -5022,6 +5774,11 @@ Weblink: `mwct20d2 <https://www.nxp.com/products/power-management/wireless-power
     +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -5051,6 +5808,8 @@ Weblink: `mwct20d2a <https://www.nxp.com/products/power-management/wireless-powe
     +==============================+=======+
     |:ref:`RoT`                    |vX     |
     +------------------------------+-------+
+    |:ref:`blhost`                 |✅     |
+    +------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`|✅     |
     +------------------------------+-------+
     |:ref:`pfr`                    |✅     |
@@ -5063,6 +5822,11 @@ Weblink: `mwct20d2a <https://www.nxp.com/products/power-management/wireless-powe
     +------------------------------+-------+
     |:ref:`nxpwpc`                 |✅     |
     +------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for mbi
 
@@ -5090,8 +5854,15 @@ Weblink: `mwct2d16s <https://www.nxp.com/products/power-management/wireless-powe
     +-------------+-------+
     |   Feature   |Support|
     +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 mwct2d17s
 --------------------------
@@ -5107,8 +5878,15 @@ Weblink: `mwct2d17s <https://www.nxp.com/products/power-management/wireless-powe
     +-------------+-------+
     |   Feature   |Support|
     +=============+=======+
+    |:ref:`blhost`|✅     |
+    +-------------+-------+
     |:ref:`nxpwpc`|✅     |
     +-------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 ========================================================
 i.MX Application Processors
@@ -5437,6 +6215,8 @@ Weblink: `mimxrt1010 <https://www.nxp.com/products/processors-and-microcontrolle
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5447,6 +6227,11 @@ Weblink: `mimxrt1010 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`hab`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5487,6 +6272,8 @@ Weblink: `mimxrt1015 <https://www.nxp.com/products/processors-and-microcontrolle
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5497,6 +6284,11 @@ Weblink: `mimxrt1015 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5531,6 +6323,8 @@ Weblink: `mimxrt1020 <https://www.nxp.com/products/processors-and-microcontrolle
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5541,6 +6335,11 @@ Weblink: `mimxrt1020 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5575,6 +6374,8 @@ Weblink: `mimxrt1024 <https://www.nxp.com/products/processors-and-microcontrolle
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5585,6 +6386,11 @@ Weblink: `mimxrt1024 <https://www.nxp.com/products/processors-and-microcontrolle
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5619,6 +6425,8 @@ Weblink: `mimxrt1040 <https://www.nxp.com/products/i.MX-RT1040>`_
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5629,6 +6437,11 @@ Weblink: `mimxrt1040 <https://www.nxp.com/products/i.MX-RT1040>`_
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5663,6 +6476,8 @@ Weblink: `mimxrt1043 <https://www.nxp.com/products/i.MX-RT1040>`_
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5673,6 +6488,11 @@ Weblink: `mimxrt1043 <https://www.nxp.com/products/i.MX-RT1040>`_
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5707,6 +6527,8 @@ Weblink: `mimxrt1046 <https://www.nxp.com/products/i.MX-RT1040>`_
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5717,6 +6539,11 @@ Weblink: `mimxrt1046 <https://www.nxp.com/products/i.MX-RT1040>`_
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5751,6 +6578,8 @@ Weblink: `mimxrt1050 <https://www.nxp.com/products/i.MX-RT1050>`_
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5765,6 +6594,11 @@ Weblink: `mimxrt1050 <https://www.nxp.com/products/i.MX-RT1050>`_
 Examples for mimxrt1050
 
 * `i.MXRT105x Flashloader <examples/hab/rt105x_flashloader/rt105x_flashloader.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for hab
@@ -5800,6 +6634,8 @@ Weblink: `mimxrt1060 <https://www.nxp.com/products/i.MX-RT1060>`_
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5810,6 +6646,11 @@ Weblink: `mimxrt1060 <https://www.nxp.com/products/i.MX-RT1060>`_
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5844,6 +6685,8 @@ Weblink: `mimxrt1064 <https://www.nxp.com/products/i.MX-RT1060>`_
     +========================================+=======+
     |:ref:`RoT`                              |SRK HAB|
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`Bootable image`                   |✅     |
     +----------------------------------------+-------+
     |:ref:`nxpmemcfg`                        |✅     |
@@ -5854,6 +6697,11 @@ Weblink: `mimxrt1064 <https://www.nxp.com/products/i.MX-RT1060>`_
     +----------------------------------------+-------+
     |:ref:`bee`                              |✅     |
     +----------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5888,6 +6736,8 @@ Weblink: `mimxrt1165 <https://www.nxp.com/products/processors-and-microcontrolle
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -5902,6 +6752,11 @@ Weblink: `mimxrt1165 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5942,6 +6797,8 @@ Weblink: `mimxrt1166 <https://www.nxp.com/products/processors-and-microcontrolle
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -5956,6 +6813,11 @@ Weblink: `mimxrt1166 <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -5996,6 +6858,8 @@ Weblink: `mimxrt1171 <https://www.nxp.com/products/i.MX-RT1170>`_
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -6010,6 +6874,11 @@ Weblink: `mimxrt1171 <https://www.nxp.com/products/i.MX-RT1170>`_
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -6050,6 +6919,8 @@ Weblink: `mimxrt1172 <https://www.nxp.com/products/i.MX-RT1170>`_
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -6064,6 +6935,11 @@ Weblink: `mimxrt1172 <https://www.nxp.com/products/i.MX-RT1170>`_
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -6104,6 +6980,8 @@ Weblink: `mimxrt1173 <https://www.nxp.com/products/i.MX-RT1170>`_
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -6118,6 +6996,11 @@ Weblink: `mimxrt1173 <https://www.nxp.com/products/i.MX-RT1170>`_
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -6158,6 +7041,8 @@ Weblink: `mimxrt1175 <https://www.nxp.com/products/i.MX-RT1170>`_
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -6172,6 +7057,11 @@ Weblink: `mimxrt1175 <https://www.nxp.com/products/i.MX-RT1170>`_
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -6212,6 +7102,8 @@ Weblink: `mimxrt1176 <https://www.nxp.com/products/i.MX-RT1170>`_
     +================================================+=======+
     |:ref:`RoT`                                      |SRK HAB|
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`Bootable image`                           |✅     |
     +------------------------------------------------+-------+
     |:ref:`nxpmemcfg`                                |✅     |
@@ -6226,6 +7118,11 @@ Weblink: `mimxrt1176 <https://www.nxp.com/products/i.MX-RT1170>`_
     +------------------------------------------------+-------+
     |:ref:`iee`                                      |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for hab
 
@@ -6266,6 +7163,8 @@ Weblink: `mimxrt1181 <https://www.nxp.com/products/i.MX-RT1180>`_
     +================================================+========+
     |:ref:`RoT`                                      |SRK AHAB|
     +------------------------------------------------+--------+
+    |:ref:`blhost`                                   |✅      |
+    +------------------------------------------------+--------+
     |:ref:`nxpdebugmbox`                             |✅      |
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
@@ -6284,6 +7183,11 @@ Weblink: `mimxrt1181 <https://www.nxp.com/products/i.MX-RT1180>`_
     +------------------------------------------------+--------+
     |:ref:`iee`                                      |✅      |
     +------------------------------------------------+--------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -6337,6 +7241,8 @@ Weblink: `mimxrt1182 <https://www.nxp.com/products/i.MX-RT1180>`_
     +================================================+========+
     |:ref:`RoT`                                      |SRK AHAB|
     +------------------------------------------------+--------+
+    |:ref:`blhost`                                   |✅      |
+    +------------------------------------------------+--------+
     |:ref:`nxpdebugmbox`                             |✅      |
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
@@ -6362,6 +7268,97 @@ Similar examples for mimxrt1189
 * `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
 * `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples\dat\mcxn9xx\mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples\dat\mimxrt1189\rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples\dat\rw612\rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for ahab
+
+* `i.MX 8ULP AHAB with U-BOOT <examples\ahab\imx8ulp\imx8ulp_ahab_uboot.ipynb>`__
+* `i.MX 93 AHAB with U-BOOT <examples\ahab\imx93\imx93_ahab_uboot.ipynb>`__
+* `i.MX 93 signed and encrypted AHAB image <examples\ahab\imx93\imx93_signed_ahab_uboot.ipynb>`__
+* `i.MX 95 AHAB Load M7 Application to TCM <examples\ahab\imx95\imx95_ahab_load_tcm.ipynb>`__
+* `i.MX 95 AHAB with U-BOOT <examples\ahab\imx95\imx95_ahab_uboot.ipynb>`__
+* `i.MX 95 signed AHAB with U-BOOT <examples\ahab\imx95\imx95_signed_ahab_uboot.ipynb>`__
+* `i.MXRT118x Signed AHAB Example <examples\ahab\rt118x_secure_boot\rt118x_secure_boot.ipynb>`__
+* `i.MXRT118x Signed Flashloader <examples\ahab\rt118x_signed_flashloader\rt118x_signed_flashloader.ipynb>`__
+* `AHAB SRK Table <examples\ahab\srk_table\srk_table.ipynb>`__
+
+
+Similar examples for otfad
+
+* `i.MX8ULP OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx8ulp\imx8ulp_otfad.ipynb>`__
+* `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples\otfad\imx93\imx93_otfad.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples\bootable_image\rw61x\rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for memcfg
+
+* `i.MX RT118x External Memory Configuration with SPSDK <examples\memcfg\mimxrt1189\rt118x_external_memory_config.ipynb>`__
+
+
+mimxrt1186
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0, b0
+
+Weblink: `mimxrt1186 <https://www.nxp.com/products/i.MX-RT1180>`_
+
+.. table::
+
+    +------------------------------------------------+--------+
+    |                    Feature                     |Support |
+    +================================================+========+
+    |:ref:`RoT`                                      |SRK AHAB|
+    +------------------------------------------------+--------+
+    |:ref:`blhost`                                   |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpdebugmbox`                             |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`Bootable image`                           |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpmemcfg`                                |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`FlexSPI Configuration Block (FCB)`        |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`ahab`                                     |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`nxpele`                                   |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`otfad`                                    |✅      |
+    +------------------------------------------------+--------+
+    |:ref:`External Memory Configuration Data (XMCD)`|✅      |
+    +------------------------------------------------+--------+
+    |:ref:`iee`                                      |✅      |
+    +------------------------------------------------+--------+
+
+Similar examples for mimxrt1189
+
+* `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
+* `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
+* `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6416,6 +7413,8 @@ Weblink: `mimxrt1187 <https://www.nxp.com/products/i.MX-RT1180>`_
     +================================================+========+
     |:ref:`RoT`                                      |SRK AHAB|
     +------------------------------------------------+--------+
+    |:ref:`blhost`                                   |✅      |
+    +------------------------------------------------+--------+
     |:ref:`nxpdebugmbox`                             |✅      |
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
@@ -6441,6 +7440,11 @@ Similar examples for mimxrt1189
 * `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
 * `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6495,6 +7499,8 @@ Weblink: `mimxrt1189 <https://www.nxp.com/products/i.MX-RT1180>`_
     +================================================+========+
     |:ref:`RoT`                                      |SRK AHAB|
     +------------------------------------------------+--------+
+    |:ref:`blhost`                                   |✅      |
+    +------------------------------------------------+--------+
     |:ref:`nxpdebugmbox`                             |✅      |
     +------------------------------------------------+--------+
     |:ref:`Bootable image`                           |✅      |
@@ -6520,6 +7526,11 @@ Examples for mimxrt1189
 * `i.MXRT118x Signed Flashloader <examples/ahab/rt118x_signed_flashloader/rt118x_signed_flashloader.ipynb>`__
 * `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
 * `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6574,6 +7585,8 @@ Weblink: `mimxrt533s <https://www.nxp.com/products/i.MX-RT500>`_
     +========================================+=======+
     |:ref:`RoT`                              |v1.0   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -6597,6 +7610,11 @@ Similar examples for mimxrt595s
 
 * `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6645,6 +7663,8 @@ Weblink: `mimxrt555s <https://www.nxp.com/products/i.MX-RT500>`_
     +========================================+=======+
     |:ref:`RoT`                              |v1.0   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -6668,6 +7688,11 @@ Similar examples for mimxrt595s
 
 * `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6716,6 +7741,8 @@ Weblink: `mimxrt595s <https://www.nxp.com/products/i.MX-RT500>`_
     +========================================+=======+
     |:ref:`RoT`                              |v1.0   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -6739,6 +7766,11 @@ Examples for mimxrt595s
 
 * `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6787,6 +7819,8 @@ Weblink: `mimxrt685s <https://www.nxp.com/products/i.MX-RT600>`_
     +========================================+=======+
     |:ref:`RoT`                              |v1.0   |
     +----------------------------------------+-------+
+    |:ref:`blhost`                           |✅     |
+    +----------------------------------------+-------+
     |:ref:`nxpdebugmbox`                     |✅     |
     +----------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`          |✅     |
@@ -6810,6 +7844,11 @@ Similar examples for mimxrt595s
 
 * `Generating Debug Certificate with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_dat/mimxrt595s_dat.ipynb>`__
 * `Generating Master Boot Image with a Signature Provider for MIMXRT595S <examples/signature_provider/mimxrt595s_mbi/mimxrt595s_mbi.ipynb>`__
+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
 
 
 Similar examples for dat
@@ -6858,6 +7897,8 @@ Weblink: `mimxrt735s <https://www.nxp.com/products/processors-and-microcontrolle
     +================================================+=======+
     |:ref:`RoT`                                      |v2.1   |
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`nxpdebugmbox`                             |✅     |
     +------------------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`                  |✅     |
@@ -6878,6 +7919,11 @@ Weblink: `mimxrt735s <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`shadowregs`                               |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -6924,6 +7970,8 @@ Weblink: `mimxrt758s <https://www.nxp.com/products/processors-and-microcontrolle
     +================================================+=======+
     |:ref:`RoT`                                      |v2.1   |
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`nxpdebugmbox`                             |✅     |
     +------------------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`                  |✅     |
@@ -6944,6 +7992,11 @@ Weblink: `mimxrt758s <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`shadowregs`                               |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 
@@ -6990,6 +8043,8 @@ Weblink: `mimxrt798s <https://www.nxp.com/products/processors-and-microcontrolle
     +================================================+=======+
     |:ref:`RoT`                                      |v2.1   |
     +------------------------------------------------+-------+
+    |:ref:`blhost`                                   |✅     |
+    +------------------------------------------------+-------+
     |:ref:`nxpdebugmbox`                             |✅     |
     +------------------------------------------------+-------+
     |:ref:`Master Boot Image (MBI)`                  |✅     |
@@ -7010,6 +8065,11 @@ Weblink: `mimxrt798s <https://www.nxp.com/products/processors-and-microcontrolle
     +------------------------------------------------+-------+
     |:ref:`shadowregs`                               |✅     |
     +------------------------------------------------+-------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples\blhost\blhost.ipynb>`__
+
 
 Similar examples for dat
 

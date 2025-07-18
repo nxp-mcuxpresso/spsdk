@@ -107,14 +107,14 @@ def get_fuse_operator(
         )
         interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
         interface = interface_cls.scan_single(**iface_params.get_scan_args())
-        return BlhostFuseOperator(McuBoot(interface))
+        return BlhostFuseOperator(McuBoot(interface, family=family))
     if operator_class == BlhostFuseOperatorLegacy:
         iface_params = load_interface_config(
             {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
         )
         interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
         interface = interface_cls.scan_single(**iface_params.get_scan_args())
-        return BlhostFuseOperatorLegacy(McuBoot(interface))
+        return BlhostFuseOperatorLegacy(McuBoot(interface, family=family))
     if operator_class == NxpeleFuseOperator:
         ele_message_handler = EleMessageHandler.get_message_handler(
             family=family,
@@ -237,7 +237,7 @@ def write(
     "-n", "--name", type=str, required=True, help="Fuse name/uid/otp_index to be written."
 )
 @click.option("-v", "--value", type=str, required=True, help="The new value of fuse in hex format.")
-@click.option("-l", "--lock", is_flag=True, default=False, help="Lock the fuse after write.")
+@click.option("--lock", is_flag=True, default=False, help="Lock the fuse after write.")
 @click.option(
     "-y",
     "--yes",
@@ -412,18 +412,20 @@ def get_config(
     )
     fuses = Fuses(family=family, fuse_operator=fuse_operator)
     try:
-        total = 0
+        total_registers = len(fuses.fuse_regs)
+        processed = 0
         with progress_bar(label="Reading fuses") as progress_callback:
+            progress_callback(0, total_registers)  # Initialize progress bar at 0%
             for reg in fuses.fuse_regs:
                 try:
                     fuses.read_single(reg.uid)
-                    progress_callback(total, len(fuses.fuse_regs))
                 except SPSDKFuseOperationFailure as e:
                     logger.warning(f"Permission error, unable to read fuse {reg.name}: {str(e)}")
                 except SPSDKError as e:
                     logger.warning(f"Error occurred, unable to read the fuse {reg.name}: {str(e)}")
                 finally:
-                    total += 1
+                    processed += 1
+                    progress_callback(processed, len(fuses.fuse_regs))
     except SPSDKError as exc:
         raise SPSDKAppError(f"Reading the fuses failed: ({str(exc)})") from exc
     write_file(fuses.get_config_yaml(diff=diff_only), output)

@@ -193,11 +193,14 @@ def finalize_file(
         main_reqs = f.readlines()
     with open(path, "w", encoding="utf-8") as f:
         for req_line in main_reqs:
-            # omit pip as pip itself is by design not shown in 'pip list'
-            if req_line.startswith(("#", "-")) or req_line.startswith("pip"):
+            if req_line.startswith(("#", "-")):
                 f.write(req_line)
                 continue
             req = RequirementsRecord.from_str(req_line=req_line)
+            # Skip updating requirements with exact versions (==)
+            if req.act_version:
+                f.write(req_line)
+                continue
             req.max_version = requirements.get_record(req.name).act_version
             f.write(req.to_str(include_max_version=True, use_next_version=use_next_version) + "\n")
 

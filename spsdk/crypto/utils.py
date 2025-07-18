@@ -73,20 +73,22 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
         if cert.ca:
             # In case of CA certificate, return the public key with the 'ca' attribute set to True
             setattr(key, "ca", True)
+
         return key
-    except SPSDKError:
-        pass
+    except SPSDKError as exc:
+        logger.debug(f"Failed to parse certificate: {exc}")
 
     try:
         return PrivateKey.parse(
             object_data, password=password if password else None
         ).get_public_key()
-    except SPSDKError:
-        pass
+    except SPSDKError as exc:
+        logger.debug(f"Failed to parse private key: {exc}")
 
     try:
         return PublicKey.parse(object_data)
     except SPSDKError as exc:
+        logger.debug(f"Failed to parse public key: {exc}")
         raise SPSDKError("Unable to load secret data.") from exc
 
 

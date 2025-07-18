@@ -239,7 +239,6 @@ class AHABImage(FeatureBaseClass):
         :raises SPSDKValueError: number of images mismatch.
         :return: bytes AHAB  Image.
         """
-        self.verify().validate()
         return self.image_info().export()
 
     def image_info(self) -> BinaryImage:

@@ -35,6 +35,9 @@ info:
       interfaces: ["uart", "spi", "i2c"]
 
 features:
+  # ======== Blhost section ========
+  blhost: {}
+
   # ======== MBI section ========
   mbi:
     mbi_classes:

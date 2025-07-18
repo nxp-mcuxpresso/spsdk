@@ -64,7 +64,7 @@ prov_fw_path:
       title: NXP EL2GO Provisioning FW path
       description: Path to NXP EL2GO Provisioning Firmware SB file. If you don't want to use the Provisioning FW, please comment out the line below
       template_value: oem_tp_fw.sb
-  required: ["prov_fw_path"]
+  required: []
 
 uboot_path:
   properties:
@@ -108,6 +108,17 @@ secure_objects_address:
         Please note, that if you're using external memory, you have to configure the memory first.
       template_value: 123456
   required: ["secure_objects_address"]
+
+prov_report_address:
+  properties:
+    prov_report_address:
+      type: number
+      title: Trust Provisioning Report address
+      description:
+        Address where to put the provisioning report. If you don't want to store TP Report in memory,
+        leave the address empty, or comment out this setting, or set to 0xFFFF_FFFF.
+      template_value: 0xFFFF_FFFF
+  required: []
 
 fatwrite:
   properties:

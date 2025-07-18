@@ -13,6 +13,7 @@ from typing import Any, Optional, TypeVar, Union
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKKeyError
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import (
     find_file,
     load_configuration,
@@ -275,6 +276,15 @@ class Config(dict):
         if not isinstance(ret, bool):
             raise SPSDKError(f"The value is not boolean at key: {key}")
         return ret
+
+    def get_family(self) -> FamilyRevision:
+        """Get the device family and revision from configuration.
+
+        :return: FamilyRevision object representing device details
+        """
+        family = self.get_str("family")
+        revision = self.get_str("revision", default="latest")
+        return FamilyRevision(family, revision)
 
     def load_symmetric_key(
         self,

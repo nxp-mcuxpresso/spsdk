@@ -220,11 +220,11 @@ def _load_der_public_key(data: bytes) -> Any:
             last_error = exc
     if IS_DILITHIUM_SUPPORTED:
         try:
-            return DilithiumPublicKey(public_data=data)
+            return DilithiumPublicKey.parse(data=data)
         except PQCError as exc:
             last_error = exc
         try:
-            return MLDSAPublicKey(public_data=data)
+            return MLDSAPublicKey.parse(data=data)
         except PQCError as exc:
             last_error = exc
 

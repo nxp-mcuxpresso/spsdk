@@ -500,3 +500,36 @@ def test_check_unknown_properties_strict_mode():
     assert "Unknown property found in configuration" in str(exc.value)
 
 
+@pytest.mark.parametrize(
+    "test_input,should_pass",
+    [
+        ("c3df2316fd40b15586cb5ae49483aee2", True),
+        ("0xc3df2316fd40b15586cb5ae49483aee2", True),
+        ("zzzz", False),
+        ("non_existent_file.bin", False),
+        ("file_with_hex_value.txt", True),
+    ],
+)
+def test_file_or_hex_value_format(data_dir, test_input, should_pass):
+    """Test the 'file-or-hex-value' format validation with different inputs."""
+    # Define a simple schema with file-or-hex-value format
+    schema = {
+        "type": "object",
+        "properties": {
+            "test_value": {
+                "type": "string",
+                "format": "file-or-hex-value"
+            }
+        }
+    }
+
+    config = {"test_value": test_input}
+    search_paths = [data_dir]
+
+    if should_pass:
+        # Should pass validation
+        check_config(config, [schema], search_paths=search_paths)
+    else:
+        # Should fail validation
+        with pytest.raises(SPSDKError):
+            check_config(config, [schema], search_paths=search_paths)

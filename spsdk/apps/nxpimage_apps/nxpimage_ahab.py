@@ -58,6 +58,7 @@ def ahab_export(config: Config) -> None:
     """Generate AHAB Image from YAML/JSON configuration."""
     ahab = AHABImage.load_from_config(config)
     ahab.update_fields()
+    ahab.verify().validate()
     ahab_data = ahab.export()
 
     ahab_output_file_path = config.get_output_file_name("output")

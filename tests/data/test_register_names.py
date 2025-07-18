@@ -8,6 +8,8 @@ import json
 import pytest
 from pathlib import Path
 
+from spsdk.exceptions import SPSDKError
+
 
 @pytest.mark.parametrize("test_path", ["../../spsdk/data/devices", "../../spsdk/data/common"])
 def test_register_names_without_reserved(test_path):
@@ -119,7 +121,10 @@ def test_register_width_and_bitfields(test_path):
                                         )
                                         missing_width = True
                                         continue
-
+                                    if not isinstance(bitfield["width"], int):
+                                        raise SPSDKError(
+                                            f"Bitfield width must be an integer: {bf_name}, register:{name}"
+                                        )
                                     total_width += bitfield["width"]
 
                                 # Only check total width if all bitfields have width defined

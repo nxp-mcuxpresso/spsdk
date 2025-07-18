@@ -31,6 +31,8 @@ MAP_IMAGE_TARGETS = {
     "targets": {
         "xip": [
             "xip",
+            "famode",
+            "famode_nxp",
             "Internal flash (XIP)",
             "External flash (XIP)",
             "Internal Flash (XIP)",
@@ -43,7 +45,7 @@ MAP_IMAGE_TARGETS = {
 MAP_AUTHENTICATIONS = {
     "plain": ["plain", "Plain"],
     "crc": ["crc", "CRC"],
-    "signed": ["signed", "Signed"],
-    "nxp_signed": ["signed-nxp", "NXP Signed", "NXP signed", "nxp_signed"],
+    "signed": ["signed", "Signed", "famode"],
+    "nxp_signed": ["signed-nxp", "NXP Signed", "NXP signed", "nxp_signed", "famode_nxp"],
     "encrypted": ["signed-encrypted", "Encrypted + Signed", "encrypted"],
 }
