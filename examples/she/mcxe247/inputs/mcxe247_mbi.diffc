@@ -1,0 +1,11 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mcxe247_xip_plain.yaml
+user_cfg: inputs/mcxe247_xip_plain.yaml
+custom_command: "%! nxpimage mbi get-templates -f mcxe247 -o workspace/ --force"
+
+comments:
+  fcf: "Not used"

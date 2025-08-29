@@ -14,7 +14,6 @@ import re
 import shutil
 from typing import Dict, List, Tuple
 
-import cmsis_pack_manager
 import jinja2
 from libusbsio import LIBUSBSIO
 from PyInstaller.building.build_main import BUNDLE, COLLECT, EXE, MERGE, PYZ, Analysis
@@ -114,11 +113,8 @@ for k, v in entries.items():
             hidden_imports.add(match[2])
 
 
-# add library for cmsis_pack_manager
-cmsis_mod_dir = os.path.dirname(cmsis_pack_manager.__file__)
-shared_binaries = [
-    (cmsis_mod_dir + "/cmsis_pack_manager/*.so", "cmsis_pack_manager/cmsis_pack_manager/")
-]
+# shared binaries
+shared_binaries = []
 
 # add library for libusbsio
 usblib = LIBUSBSIO()

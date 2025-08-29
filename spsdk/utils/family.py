@@ -92,7 +92,8 @@ def update_validation_schema_family(
         the correct list of revisions will be used for validation
     """
     family_sch = sch["family"]
-    device_names = [x.name for x in devices]
+    # remove duplicate device names as the list may contain devices with multiple revisions
+    device_names = list(set([x.name for x in devices]))
     family_sch["enum"] = device_names + list(
         DatabaseManager().quick_info.devices.get_predecessors(device_names).keys()
     )

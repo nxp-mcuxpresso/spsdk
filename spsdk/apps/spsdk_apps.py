@@ -37,7 +37,7 @@ from spsdk.apps.pfr import main as pfr_main
 from spsdk.apps.sdphost import main as sdphost_main
 from spsdk.apps.sdpshost import main as sdpshost_main
 from spsdk.apps.shadowregs import main as shadowregs_main
-from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, SpsdkClickGroup
+from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
 from spsdk.apps.utils.utils import catch_spsdk_error, make_table_from_items
 from spsdk.utils.database import DatabaseManager, FeaturesEnum
 from spsdk.utils.family import get_families, split_by_family_name
@@ -71,7 +71,7 @@ main.add_command(el2go_main, name="el2go-host")
 main.add_command(lpcprog_main, name="lpcprog")
 
 
-@main.group("utils", cls=SpsdkClickGroup)
+@main.group("utils", cls=CommandsTreeGroup)
 def utils_group() -> None:
     """Group of commands for working with various general utilities."""
 

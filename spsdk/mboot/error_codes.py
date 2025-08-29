@@ -341,10 +341,11 @@ class StatusCode(SpsdkEnum):
     TP_SHA_CHECK_CRITICAL_ERROR     = (80107, "TP_SHA_CHECK_CRITICAL_ERROR", "TP: SHA check verification failed")
 
     # IAP statuses.
+    IAP_INVALID_ARGUMENT       = (100001, "IAP_InvalidArgument", "IAP: Invalid argument detected during API execution")
     IAP_OUT_OF_MEMORY          = (100002, "IAP_OutOfMemory", "IAP: Heap Size Not Large Enough During API Execution")
     IAP_READ_DISALLOWED        = (100003, "IAP_ReadDisallowed ", "IAP: Read Memory Operation Disallowed During API Execution")
     IAP_CUMULATIVE_WRITE       = (100004, "IAP_CumulativeWrite", "IAP: Flash Memory Region To Be Programmed Is Not Empty")
-    IAP_ERASE_FAILURE         = (100005, "IAP_EraseFailure", "IAP: Erase Operation Failed")
+    IAP_ERASE_FAILURE          = (100005, "IAP_EraseFailure", "IAP: Erase Operation Failed")
     IAP_COMMAND_NOT_SUPPORTED  = (100006, "IAP_CommandNotSupported", "IAP: Specific Command Not Supported")
     IAP_MEMORY_ACCESS_DISABLED = (100007, "IAP_MemoryAccessDisabled", "IAP: Memory Access Disabled")
 

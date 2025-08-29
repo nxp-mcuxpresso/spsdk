@@ -12,7 +12,7 @@ import os
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -25,7 +25,7 @@ from spsdk.utils.misc import get_printable_path, load_binary, write_file
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="cert-block", cls=SpsdkClickGroup)
+@click.group(name="cert-block", cls=CommandsTreeGroup)
 def cert_block_group() -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to certification block."""
 

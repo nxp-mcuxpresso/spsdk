@@ -16,11 +16,18 @@ from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
-from spsdk.crypto.symmetric import aes_cbc_decrypt, aes_cbc_encrypt
+from spsdk.crypto.symmetric import aes_cbc_decrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.cert_block.cert_blocks import CertBlockV21
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, BaseCmd, CmdSectionHeader
-from spsdk.sbfile.sb31.functions import KeyDerivator
+from spsdk.sbfile.sb31.commands_validator import CommandsValidator
+from spsdk.sbfile.utils.encryption_provider import (
+    EncryptionProvider,
+    NoEncryption,
+    SB31EncryptionProvider,
+    get_encryption_provider,
+)
+from spsdk.sbfile.utils.key_derivator import LocalKeyDerivator
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
@@ -298,10 +305,8 @@ class SecureBinary31Commands(BaseClass):
         self,
         family: FamilyRevision,
         hash_type: EnumHashAlgorithm,
-        is_encrypted: bool = True,
-        pck: Optional[bytes] = None,
         timestamp: Optional[int] = None,
-        kdk_access_rights: Optional[int] = None,
+        encryption_provider: EncryptionProvider = NoEncryption(),
     ) -> None:
         """Initialize container for SB3.1 commands.
 
@@ -319,23 +324,12 @@ class SecureBinary31Commands(BaseClass):
         if hash_type.label.lower() not in [x.label.lower() for x in self.SUPPORTED_HASHES]:
             raise SPSDKValueError(f"Invalid hash type: {hash_type}")
         self.hash_type = hash_type
-        self.is_encrypted = is_encrypted
         self.block_count = 0
         self.final_hash = bytes(get_hash_length(hash_type))
         self.block1_size = 0
         self.commands: list[BaseCmd] = []
-        self.key_derivator = None
         self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
-        if is_encrypted:
-            if pck is None is None or kdk_access_rights is None:
-                raise SPSDKError("PCK or kdk_access_rights are not defined.")
-            self.key_derivator = KeyDerivator(
-                pck=pck,
-                timestamp=self.timestamp,
-                key_length=self._get_key_length(self.hash_type),
-                kdk_access_rights=kdk_access_rights,
-            )
-            logger.info(f"SB3KDK: {pck.hex()}")
+        self.encryption_provider = encryption_provider
         db = get_db(family=family)
         self.data_chunk_length = db.get_int(self.FEATURE, "commands_block_length")
         self.variable_block_length = db.get_bool(self.FEATURE, "variable_block_length")
@@ -347,6 +341,11 @@ class SecureBinary31Commands(BaseClass):
             EnumHashAlgorithm.SHA384.label.lower(): 256,
             EnumHashAlgorithm.SHA512.label.lower(): 256,
         }[hash_type.label.lower()]
+
+    @property
+    def is_encrypted(self) -> bool:
+        """Check if commands are encrypted."""
+        return self.encryption_provider.is_encrypted
 
     def add_command(self, command: Union[BaseCmd, list[BaseCmd]]) -> None:
         """Add Secure Binary command."""
@@ -407,29 +406,33 @@ class SecureBinary31Commands(BaseClass):
         cfg_timestamp = timestamp
         if "timestamp" in config:
             cfg_timestamp = config.get_int("timestamp")
+        if cfg_timestamp is None:
+            cfg_timestamp = SecureBinary31.get_current_timestamp()
 
         if load_just_commands:
             kdk_access_rights = 0
             is_encrypted = False
-            pck = None
-
         else:
             kdk_access_rights = config.get_int("kdkAccessRights", 0)
             is_encrypted = config.get("isEncrypted", True)
-            pck = None
-            if is_encrypted:
-                pck = cls.load_pck(
-                    config.get_str("containerKeyBlobEncryptionKey"),
-                    search_paths=config.search_paths,
-                )
+
+        encryption_provider = get_encryption_provider(
+            is_encrypted=is_encrypted,
+            # in this case the config file may contain path to a file or service config string
+            service_config=config.get("containerKeyBlobEncryptionKey"),
+            search_paths=config.search_paths,
+        )
+        encryption_provider.configure(
+            timestamp=cfg_timestamp,
+            kdk_access_rights=kdk_access_rights,
+            key_length=SecureBinary31Commands._get_key_length(hash_type=hash_type),
+        )
 
         ret = cls(
             family=family,
             hash_type=hash_type,
-            is_encrypted=is_encrypted,
-            pck=pck,
             timestamp=cfg_timestamp,
-            kdk_access_rights=kdk_access_rights,
+            encryption_provider=encryption_provider,
         )
 
         for cfg_cmd in config.get_list_of_configs("commands", []):
@@ -452,11 +455,17 @@ class SecureBinary31Commands(BaseClass):
         ret["timestamp"] = self.timestamp
 
         if self.is_encrypted:
-            assert self.key_derivator is not None, "Key derivator must be set for encrypted binary"
-            pck_filename = "pck.txt"
-            write_file(self.key_derivator.pck.hex(), os.path.join(data_path, pck_filename))
+            assert isinstance(self.encryption_provider, SB31EncryptionProvider)
+            ret["kdkAccessRights"] = self.encryption_provider.key_derivator.kdk_access_rights
+            if isinstance(self.encryption_provider, LocalKeyDerivator):
+                pck_filename = "pck.txt"
+                write_file(
+                    self.encryption_provider.key_derivator.kdk.hex(),
+                    os.path.join(data_path, pck_filename),
+                )
+            else:
+                pck_filename = "N/A"
             ret["containerKeyBlobEncryptionKey"] = pck_filename
-            ret["kdkAccessRights"] = self.key_derivator.kdk_access_rights
 
         if len(self.commands):
             cfg_commands = []
@@ -480,17 +489,15 @@ class SecureBinary31Commands(BaseClass):
             data_blocks[-1] = align_block(data_blocks[-1], alignment=self.data_chunk_length)
 
         self.block_count = len(data_blocks)
+        self.block1_size = len(data_blocks[0]) if data_blocks else 0
         return data_blocks
 
-    def _process_block(self, block_number: int, block_data: bytes) -> bytes:
-        """Process single block."""
-        if self.is_encrypted:
-            if not self.key_derivator:
-                raise SPSDKError("No key derivator")
-            block_key = self.key_derivator.get_block_key(block_number)
-            return aes_cbc_encrypt(block_key, block_data)
-
-        return block_data
+    def _encrypt_block(self, block_number: int, block_data: bytes) -> bytes:
+        """Encrypt single block."""
+        encrypted_block = self.encryption_provider.encrypt_block(
+            block_number=block_number, data=block_data
+        )
+        return encrypted_block
 
     def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
         """Process given data blocks for export."""
@@ -499,7 +506,7 @@ class SecureBinary31Commands(BaseClass):
 
         processed_blocks = []
         for block_number, block_data in reversed(list(enumerate(data_blocks, start=1))):
-            encrypted_block = self._process_block(block_number, block_data)
+            encrypted_block = self._encrypt_block(block_number, block_data)
 
             full_block = pack(
                 f"<L{len(next_block_hash)}s{len(encrypted_block)}s",
@@ -578,7 +585,7 @@ class SecureBinary31Commands(BaseClass):
         data: bytes,
         family: Optional[FamilyRevision] = None,
         block_size: int = 256,
-        pck: Optional[bytes] = None,
+        pck: Optional[str] = None,
         block1_hash: Optional[bytes] = None,
         hash_type: Optional[EnumHashAlgorithm] = None,
         kdk_access_rights: int = 0,
@@ -614,14 +621,22 @@ class SecureBinary31Commands(BaseClass):
 
         block_number = unpack_from("<L", data)[0]
 
+        encryption_provider = get_encryption_provider(
+            is_encrypted=bool(pck),
+            service_config=pck,
+        )
+        encryption_provider.configure(
+            timestamp=timestamp,
+            kdk_access_rights=kdk_access_rights,
+            key_length=SecureBinary31Commands._get_key_length(hash_type=hash_type),
+        )
+
         # Create commands object
         obj = cls(
             family=family,
             hash_type=hash_type,
-            is_encrypted=bool(pck),  # Determine encryption based on PCK presence
-            pck=pck,
             timestamp=timestamp,
-            kdk_access_rights=kdk_access_rights,
+            encryption_provider=encryption_provider,
         )
 
         # Process blocks in reverse order (last to first)
@@ -646,10 +661,8 @@ class SecureBinary31Commands(BaseClass):
 
             # Decrypt the block if needed
             if obj.is_encrypted:
-                assert (
-                    obj.key_derivator is not None
-                ), "Key derivator must be set for encrypted blocks"
-                block_key = obj.key_derivator.get_block_key(block_number)
+                assert isinstance(obj.encryption_provider, SB31EncryptionProvider)
+                block_key = obj.encryption_provider.key_derivator.get_block_key(block_number)
                 decrypted_block = aes_cbc_decrypt(block_key, encrypted_block)
             else:
                 decrypted_block = encrypted_block
@@ -711,8 +724,18 @@ class SecureBinary31Commands(BaseClass):
 
         :raises SPSDKError: Invalid configuration of SB3.1 commands blob class members.
         """
-        if self.is_encrypted and not self.key_derivator:
-            raise SPSDKError("Invalid key derivator")
+        self.validate_command_rules()
+
+    def validate_command_rules(self) -> None:
+        """Validate commands against device-specific rules.
+
+        :raises SPSDKError: When command validation rules are violated
+        """
+        command_rules: list[dict] = get_db(family=self.family).get_list(
+            self.FEATURE, "command_rules", []
+        )
+        validator = CommandsValidator(self.family, command_rules)
+        validator.validate_commands(self.commands)
 
 
 class SecureBinary31(FeatureBaseClass):
@@ -1028,7 +1051,7 @@ class SecureBinary31(FeatureBaseClass):
         cls,
         data: bytes,
         family: Optional[FamilyRevision] = None,
-        pck: Optional[bytes] = None,
+        pck: Optional[str] = None,
         kdk_access_rights: int = 0,
     ) -> Self:
         """Parse object from bytes array.

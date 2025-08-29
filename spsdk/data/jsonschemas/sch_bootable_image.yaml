@@ -173,7 +173,7 @@ secondary_image_container_set:
             This is secondary AHAB image that is validated by SPL from primary image.
             It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
             In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
-          template_value: primary_image_container_set.yaml
+          template_value: secondary_image_container_set.yaml
         - type: object
           title: Secondary Image Container Set with custom offset
           properties:

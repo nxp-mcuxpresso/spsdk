@@ -61,7 +61,7 @@ class DICETarget(ABC):
     """Abstract class defining DICE Target (MCU) interface."""
 
     @abstractmethod
-    def get_ca_puk(self, rkth: bytes) -> bytes:
+    def get_ca_puk(self, rkth: bytes, mldsa: bool = False) -> bytes:
         """Generate and return DICE CA PUK from the target."""
 
     @abstractmethod

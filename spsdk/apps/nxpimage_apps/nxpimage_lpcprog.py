@@ -8,13 +8,13 @@
 
 import click
 
-from spsdk.apps.utils.common_cli_options import SpsdkClickGroup, spsdk_output_option
+from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_output_option
 from spsdk.lpcprog.protocol import LPCProgCRPLevels
 from spsdk.lpcprog.utils import lpcprog_make_image_bootable, lpcprog_update_crp_value
 from spsdk.utils.misc import load_binary, write_file
 
 
-@click.group(name="lpcprog", cls=SpsdkClickGroup)
+@click.group(name="lpcprog", cls=CommandsTreeGroup)
 def lpcprog_group() -> None:
     """Group of sub-commands related to lpcprog tool."""
 

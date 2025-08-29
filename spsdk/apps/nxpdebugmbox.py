@@ -23,7 +23,7 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    SpsdkClickGroup,
+    hex_value_option,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
@@ -137,7 +137,12 @@ def _open_debugmbox(
         try:
             yield dm
         except SPSDKError as exc:
-            raise SPSDKError(f"Problem with debug mailbox occurred: {exc}") from exc
+            msg = (
+                colorama.Fore.RED + exc.description + colorama.Fore.RESET
+                if exc.description
+                else "Problem with debug mailbox occurred"
+            )
+            raise SPSDKError(msg) from exc
         finally:
             dm.close()
 
@@ -232,7 +237,7 @@ def main(
     return 0
 
 
-@main.group("cmd", cls=SpsdkClickGroup)
+@main.group("cmd", cls=CommandsTreeGroup)
 @spsdk_family_option(DebugCredentialCertificate.get_supported_families())
 @click.pass_obj
 def cmd_group(pass_obj: dict, family: FamilyRevision) -> None:
@@ -517,10 +522,10 @@ def get_crp(
     try:
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
             crp_level = dm_commands.GetCRPLevel(dm=mail_box).run()[0]
-            if dm_commands.GetCRPLevel.CMD_ID in mail_box.non_standard_statuses:
-                if crp_level in mail_box.non_standard_statuses[dm_commands.GetCRPLevel.CMD_ID]:
+            if dm_commands.GetCRPLevel.CMD.tag in mail_box.non_standard_statuses:
+                if crp_level in mail_box.non_standard_statuses[dm_commands.GetCRPLevel.CMD.tag]:
                     click.echo(
-                        f"CRP level is: {mail_box.non_standard_statuses[dm_commands.GetCRPLevel.CMD_ID][crp_level]}."
+                        f"CRP level is: {mail_box.non_standard_statuses[dm_commands.GetCRPLevel.CMD.tag][crp_level]}."
                     )
                 else:
                     click.echo(f"CRP level is: 0x{crp_level:08X}.")
@@ -798,7 +803,7 @@ def send_dar(
         raise SPSDKAppError(f"The send Debug Authentication Response failed: {str(exc)}") from exc
 
 
-@main.group("famode-image", cls=SpsdkClickGroup)
+@main.group("famode-image", cls=CommandsTreeGroup)
 def famode_image_group() -> None:
     """Group of sub-commands related to Fault Analysis Mode Image (related to some families)."""
 
@@ -873,7 +878,7 @@ def famode_image_get_templates(family: FamilyRevision, output: str) -> None:
     write_file(FaModeImage.get_config_template(family), full_file_name)
 
 
-@main.group("dat", cls=SpsdkClickGroup)
+@main.group("dat", cls=CommandsTreeGroup)
 def dat_group() -> None:
     """Group of commands for working with Debug Authentication Procedure."""
 
@@ -998,6 +1003,212 @@ def auth(
         ) from e
 
 
+@cmd_group.command(name="nxp-ssf-insert-duk", no_args_is_help=True)
+@hex_value_option(
+    "-s", "--seed", bit_length=256, help_description="The tester seed value.", required=True
+)
+@click.pass_obj
+def nxp_ssf_insert_duk_command(pass_obj: dict, seed: bytes) -> None:
+    """Create NXP PUF AC code store area as part of Self sign flow (SSF)."""
+    resp = nxp_ssf_insert_duk(
+        pass_obj["family"],
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        seed=seed,
+    )
+    click.echo(
+        "The create NXP PUF AC code store area as part of Self sign flow (SSF) succeed."
+        f"\n Seed: {resp.hex()}"
+    )
+
+
+def nxp_ssf_insert_duk(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    seed: bytes,
+) -> bytes:
+    """Create NXP PUF AC code store area as part of Self sign flow (SSF).
+
+    :param family: Device family
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
+    :param seed: The tester seed in bytes (256 bit).
+    :return: Bytes representing the response from the NXP SSF Insert DUK command.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        logger.info("Creating NXP PUF AC code store area as part of Self sign flow (SSF)")
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            seed_data = align_block(seed, alignment=4)
+            # convert bytes to list[int]
+            seed_data_words = list(struct.unpack(f"<{len(seed_data) // 4}I", seed_data))
+            seed_response = dm_commands.NxpSsfInsertDuk(dm=mail_box).run(seed_data_words)
+            logger.debug(f"Command response: {seed_response}")
+            return struct.pack(f"<{len(seed_response)}I", *seed_response)
+    except SPSDKError as exc:
+        raise SPSDKAppError(
+            f"The create NXP PUF AC code store area as part of Self sign flow (SSF) failed: {str(exc)}"
+        ) from exc
+
+
+@cmd_group.command(name="nxp-exec-prov-fw", no_args_is_help=False)
+@click.pass_obj
+def nxp_exec_prov_fw_command(pass_obj: dict) -> None:
+    """Execute NXP Provisioning Firmware."""
+    nxp_exec_prov_fw(
+        pass_obj["family"], pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"]
+    )
+    click.echo("Executing of NXP provisioning firmware succeeded")
+
+
+def nxp_exec_prov_fw(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+) -> None:
+    """Execute NXP Provisioning Firmware.
+
+    :param family: Device family
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            dm_commands.NxpExecuteProvisioningFw(dm=mail_box).run()
+    except Exception as e:
+        raise SPSDKAppError(f"Executing of NXP provisioning firmware failed: {e}") from e
+
+
+@cmd_group.command(name="nxp-ssf-insert-cert", no_args_is_help=True)
+@hex_value_option(
+    "-s", "--seed", bit_length=256, help_description="The tester seed value.", required=True
+)
+@click.option(
+    "-e", "--output-ecdsa-puk", type=click.Path(), help="Path to save the ECDSA PUK (0x60 bytes)."
+)
+@click.option(
+    "-y",
+    "--output-hybrid-puk",
+    type=click.Path(),
+    help="Path to save the Hybrid PUK (0xA80 bytes).",
+)
+@click.option(
+    "-rd",
+    "--response-delay",
+    help="Delay before reading response in seconds",
+    type=float,
+    show_default=True,
+    default=1.0,
+)
+@click.pass_obj
+def nxp_ssf_insert_cert_command(
+    pass_obj: dict,
+    seed: bytes,
+    output_ecdsa_puk: str,
+    output_hybrid_puk: str,
+    response_delay: float,
+) -> None:
+    """Command to create self-signed certificate as part of Self sign flow (SSF)."""
+    response = nxp_ssf_insert_cert(
+        pass_obj["family"],
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        seed=seed,
+        output_ecdsa_puk=output_ecdsa_puk,
+        output_hybrid_puk=output_hybrid_puk,
+        response_delay=response_delay,
+    )
+    click.echo(
+        "The self-signed certificate creation as part of Self sign flow (SSF) succeeded."
+        f"Seed response: {response.hex()}"
+    )
+    if output_ecdsa_puk:
+        click.echo(f"ECDSA PUK saved to: {output_ecdsa_puk}")
+    if output_hybrid_puk:
+        click.echo(f"Hybrid PUK saved to: {output_hybrid_puk}")
+
+
+def nxp_ssf_insert_cert(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    seed: bytes,
+    output_ecdsa_puk: Optional[str] = None,
+    output_hybrid_puk: Optional[str] = None,
+    response_delay: float = 1.0,
+) -> bytes:
+    """Command to create self-signed certificate as part of Self sign flow (SSF).
+
+    :param family: Device family
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
+    :param seed: The tester seed in bytes (256 bit).
+    :param output_ecdsa_puk: Optional path to save the ECDSA PUK (0x60 bytes).
+    :param output_hybrid_puk: Optional path to save the Hybrid PUK (0xA80 bytes).
+    :param response_delay: Delay before reading response in seconds.
+    :return: Bytes representing the response from the NXP SSF Insert Certificate command.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        logger.info("Creating self-signed certificate as part of Self sign flow (SSF)")
+
+        # Check if the device supports this feature
+        db = get_db(family)
+        features = db.get_list(DatabaseManager.DAT, "sub_features", [])
+        if "ssf_cert" not in features:
+            raise SPSDKAppError(f"The device {family} does not support SSF certificate feature")
+
+        # Get memory addresses from database
+        ecdsa_puk_address = db.get_int(DatabaseManager.DAT, ["ssf_cert", "ecdsa_puk_address"], 0)
+        ecdsa_puk_size = db.get_int(DatabaseManager.DAT, ["ssf_cert", "ecdsa_puk_size"], 0)
+        hybrid_puk_address = db.get_int(DatabaseManager.DAT, ["ssf_cert", "hybrid_puk_address"], 0)
+        hybrid_puk_size = db.get_int(DatabaseManager.DAT, ["ssf_cert", "hybrid_puk_size"], 0)
+
+        if (
+            not ecdsa_puk_address
+            or not ecdsa_puk_size
+            or not hybrid_puk_address
+            or not hybrid_puk_size
+        ):
+            raise SPSDKAppError(f"The device {family} has incomplete SSF certificate configuration")
+
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            seed_data = align_block(seed, alignment=4)
+            # convert bytes to list[int]
+            seed_data_words = list(struct.unpack(f"<{len(seed_data) // 4}I", seed_data))
+            seed_response = dm_commands.NxpSsfInsertCert(
+                dm=mail_box, resplen=0x2B8, response_delay=response_delay
+            ).run(seed_data_words)
+            logger.debug(f"Command response length: {len(seed_response)}")
+
+            seed_response_bytes = struct.pack(f"<{len(seed_response)}I", *seed_response)
+
+            # Read the PUK data from memory
+            if output_ecdsa_puk:
+                ecdsa_puk = seed_response_bytes[:ecdsa_puk_size]
+                write_file(ecdsa_puk, output_ecdsa_puk, mode="wb")
+                logger.info(f"ECDSA PUK saved to {output_ecdsa_puk}")
+
+            if output_hybrid_puk:
+                ecdsa_puk = seed_response_bytes[ecdsa_puk_size : ecdsa_puk_size * 2]
+                ecdsa_path = os.path.splitext(output_hybrid_puk)[0] + "_ecdsa.bin"
+                write_file(ecdsa_puk, ecdsa_path, mode="wb")
+                logger.info(f"Hybrid-ECC PUK saved to {ecdsa_path}")
+
+                mldsa_puk = seed_response_bytes[ecdsa_puk_size * 2 :]
+                mldsa_path = os.path.splitext(output_hybrid_puk)[0] + "_mldsa.bin"
+                write_file(mldsa_puk, mldsa_path, mode="wb")
+                logger.info(f"Hybrid-MLDSA PUK saved to {mldsa_path}")
+            return struct.pack(f"<{len(seed_response)}I", *seed_response)
+
+    except SPSDKError as exc:
+        raise SPSDKAppError(
+            f"The create self-signed certificate as part of Self sign flow (SSF) failed: {str(exc)}"
+        ) from exc
+
+
 @dat_group.command("get-template", no_args_is_help=True)
 @spsdk_family_option(DebugAuthenticateResponse.get_supported_families())
 @spsdk_output_option(force=True)
@@ -1015,7 +1226,7 @@ def dat_get_template(family: FamilyRevision, output: str) -> None:
     write_file(template, output)
 
 
-@dat_group.group("dc", cls=SpsdkClickGroup)
+@dat_group.group("dc", cls=CommandsTreeGroup)
 def dc_group() -> None:
     """Group of commands for Debug Credential binaries."""
 
@@ -1072,7 +1283,8 @@ def dc_export(
         )
         dc.sign()
         data = dc.export()
-        click.echo(f"RKTH: {dc.calculate_hash().hex()}")
+        if dc.srk_count:
+            click.echo(f"RKTH: {dc.calculate_hash().hex()}")
         logger.debug(f"Debug credential file details:\n {str(dc)}")
         logger.info(f"Saving the debug credential to a file: {output}")
         write_file(data, output, mode="wb")
@@ -1109,7 +1321,7 @@ def dc_get_template(family: FamilyRevision, output: str) -> None:
     write_file(klass.get_config_template(family), output)
 
 
-@main.group("mem-tool", cls=SpsdkClickGroup)
+@main.group("mem-tool", cls=CommandsTreeGroup)
 def mem_group() -> None:
     """Group of commands for working with target memory over debug probe."""
 
@@ -1281,7 +1493,7 @@ def test_connection(
         raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
 
 
-@main.group("tool", cls=SpsdkClickGroup)
+@main.group("tool", cls=CommandsTreeGroup)
 def tool_group() -> None:
     """Group of commands for working with various tools over debug probe."""
 

@@ -1424,6 +1424,7 @@ class CmdFwVersionCheck(BaseCmd):
         RADIO = (3, "radio")
         SNT = (4, "snt")
         BOOTLOADER = (5, "bootloader")
+        RADIO_IP = (7, "radio_ip")
 
     def __init__(self, value: int, counter_id: CounterID) -> None:
         """Constructor for command.
@@ -1507,7 +1508,7 @@ class CmdReset(BaseCmd):
         return "RESET"
 
     @classmethod
-    def parse(cls, data: bytes) -> "CmdReset":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
@@ -1540,6 +1541,98 @@ class CmdReset(BaseCmd):
         """
         # Reset command doesn't need any parameters
         return Config({})
+
+
+class CmdWriteIfr(BaseCmd):
+    """Address will be the address into the IFR region."""
+
+    CMD_TAG = EnumCmdTag.WRITE_IFR
+
+    class WriteIfrType(BuiltinEnum):
+        """Write IFR types."""
+
+        CFPA = 0
+        CFPA_AND_CMPA = 1
+
+    def __init__(self, address: int, data: bytes, ifr_type: WriteIfrType) -> None:
+        """Constructor for Command.
+
+        :param address: Input address
+        :param data: Input data as bytes array
+        """
+        super().__init__(address=address, length=len(data))
+        self.ifr_type = ifr_type
+        self.data = data
+
+    def __str__(self) -> str:
+        """Get info of command."""
+        return (
+            f"WRITE IFR: Address=0x{self.address:08X}, Length={self.length}, "
+            f"Destination address={self.ifr_type.name}"
+        )
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse command from bytes array.
+
+        :param data: Input data as bytes array
+        :return: CmdWriteIfr
+        :raises SPSDKError: Invalid padding
+        """
+        address, length = cls.header_parse(data=data)
+        ifr_type, pad0, pad1, pad2 = unpack_from("<4L", data, offset=16)
+        if pad0 != pad1 != pad2 != 0:
+            raise SPSDKError("Invalid padding")
+        offset = BaseCmd.SIZE + 16
+        ifr_data = data[offset : offset + length]
+        return cls(address=address, data=ifr_data, ifr_type=CmdWriteIfr.WriteIfrType(ifr_type))
+
+    def export(self) -> bytes:
+        """Export command as bytes."""
+        data = super().export()
+        data += pack("<4L", self.ifr_type.value, 0, 0, 0)
+        data += self.data
+        data = align_block(data, alignment=16)
+        return data
+
+    @classmethod
+    def load_from_config(cls, config: Config) -> list[Self]:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configuration.
+        """
+        data = load_cmd_data_from_cfg(config)
+        # address is always 0 as it point to the beginning of IFR region
+        return [cls(address=0, data=data, ifr_type=CmdWriteIfr.WriteIfrType[config["type"]])]
+
+    def get_config_context(self, data_path: str = "./") -> Config:
+        """Create configuration for the WRITE_IFR command.
+
+        This method generates a configuration dictionary containing the command's properties
+        and settings, including the address into the IFR region and the data to be written.
+
+        The IFR data is stored in a separate binary file for better management.
+
+        :param data_path: Path where the IFR data file will be stored
+        :return: Configuration object with command-specific settings
+        """
+        # Create base config with address
+        config_dict: dict[str, Union[str, int]] = {
+            "address": self.address,
+            "type": self.ifr_type.name,
+        }
+
+        file_name = f"ifr_data_{self.address:08x}.bin"
+        file_path = os.path.join(data_path, file_name)
+
+        # Write IFR data to the file
+        write_file(self.data, file_path, mode="wb")
+
+        # Add file reference to configuration
+        config_dict["file"] = file_name
+
+        return Config(config_dict)
 
 
 class CmdSectionHeader(BaseClass):
@@ -1601,6 +1694,7 @@ TAG_TO_CLASS: Mapping[EnumCmdTag, Type[BaseCmd]] = {
     EnumCmdTag.FILL_MEMORY: CmdFillMemory,
     EnumCmdTag.FW_VERSION_CHECK: CmdFwVersionCheck,
     EnumCmdTag.RESET: CmdReset,
+    EnumCmdTag.WRITE_IFR: CmdWriteIfr,
 }
 
 CFG_NAME_TO_CLASS: Mapping[str, Type[BaseCmd]] = {
@@ -1619,6 +1713,7 @@ CFG_NAME_TO_CLASS: Mapping[str, Type[BaseCmd]] = {
     "fillMemory": CmdFillMemory,
     "checkFwVersion": CmdFwVersionCheck,
     "reset": CmdReset,
+    "writeIFR": CmdWriteIfr,
 }
 
 

@@ -288,7 +288,7 @@ class RKHTv21(RKHT):
         hash_table = bytes()
         if len(self.rkh_list) > 1:
             hash_table = bytearray().join(self.rkh_list)
-        return hash_table
+        return bytes(hash_table)
 
     @classmethod
     def parse(cls, rkht: bytes, hash_algorithm: EnumHashAlgorithm) -> Self:

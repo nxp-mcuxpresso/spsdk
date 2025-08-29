@@ -220,276 +220,276 @@ fcb_settings:
   # Description: Offset: 0x0000007E, Width: 16b;  [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device
   # is busy, 1 - busy flag is 0 when flash device is busy
   busyBitPolarity: '0x0000'
-  # ----------------------------------------===== lookupTable_0 [Optional] =====----------------------------------------
+  # ----------------------------------------===== lookupTable_seq0_instr0 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000080, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_0: '0x471147EE'
-  # ----------------------------------------===== lookupTable_1 [Optional] =====----------------------------------------
+  lookupTable_seq0_instr0: '0x471147EE'
+  # ----------------------------------------===== lookupTable_seq0_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000084, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_1: '0x0F122B20'
-  # ----------------------------------------===== lookupTable_2 [Optional] =====----------------------------------------
+  lookupTable_seq0_instr1: '0x0F122B20'
+  # ----------------------------------------===== lookupTable_seq0_instr2 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000088, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_2: '0x3B040F02'
-  # ----------------------------------------===== lookupTable_3 [Optional] =====----------------------------------------
+  lookupTable_seq0_instr2: '0x3B040F02'
+  # ----------------------------------------===== lookupTable_seq0_instr3 [Optional] =====----------------------------------------
   # Description: Offset: 0x0000008C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_3: '0x00000300'
-  # ----------------------------------------===== lookupTable_4 [Optional] =====----------------------------------------
+  lookupTable_seq0_instr3: '0x00000300'
+  # ----------------------------------------===== lookupTable_seq0_instr4 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000090, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_4: '0x00000000'
-  # ----------------------------------------===== lookupTable_5 [Optional] =====----------------------------------------
+  lookupTable_seq0_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq1_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000094, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_5: '0x1C040405'
-  # ----------------------------------------===== lookupTable_6 [Optional] =====----------------------------------------
+  lookupTable_seq1_instr0: '0x1C040405'
+  # ----------------------------------------===== lookupTable_seq1_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000098, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_6: '0x00000000'
-  # ----------------------------------------===== lookupTable_7 [Optional] =====----------------------------------------
+  lookupTable_seq1_instr1: '0x00000000'
+  # -----------------------------------===== lookupTable_seq1_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000009C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_7: '0x00000000'
-  # ----------------------------------------===== lookupTable_8 [Optional] =====----------------------------------------
+  lookupTable_seq1_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq1_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000A0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_8: '0x00000000'
-  # ----------------------------------------===== lookupTable_9 [Optional] =====----------------------------------------
+  lookupTable_seq1_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq1_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000A4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_9: '0x00000000'
-  # ---------------------------------------===== lookupTable_10 [Optional] =====----------------------------------------
+  lookupTable_seq1_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq2_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000A8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_10: '0x47FA4705'
-  # ---------------------------------------===== lookupTable_11 [Optional] =====----------------------------------------
+  lookupTable_seq2_instr0: '0x47FA4705'
+  # ---------------------------------------===== lookupTable_seq2_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000AC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_11: '0x0F122B20'
-  # ---------------------------------------===== lookupTable_12 [Optional] =====----------------------------------------
+  lookupTable_seq2_instr1: '0x0F122B20'
+  # ---------------------------------------===== lookupTable_seq2_instr2 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000B0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_12: '0x3B040F02'
-  # ---------------------------------------===== lookupTable_13 [Optional] =====----------------------------------------
+  lookupTable_seq2_instr2: '0x3B040F02'
+  # ---------------------------------------===== lookupTable_seq2_instr3 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000B4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_13: '0x00000300'
-  # ---------------------------------------===== lookupTable_14 [Optional] =====----------------------------------------
+  lookupTable_seq2_instr3: '0x00000300'
+  # ---------------------------------------===== lookupTable_seq2_instr4 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000B8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_14: '0x00000000'
-  # ---------------------------------------===== lookupTable_15 [Optional] =====----------------------------------------
+  lookupTable_seq2_instr4: '0x00000000'
+  # ---------------------------------------===== lookupTable_seq3_instr0 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000BC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_15: '0x00040406'
-  # ---------------------------------------===== lookupTable_16 [Optional] =====----------------------------------------
+  lookupTable_seq3_instr0: '0x00040406'
+  # ---------------------------------------===== lookupTable_seq3_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000C0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_16: '0x00000000'
-  # ---------------------------------------===== lookupTable_17 [Optional] =====----------------------------------------
+  lookupTable_seq3_instr1: '0x00000000'
+  # -----------------------------------===== lookupTable_seq3_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000C4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_17: '0x00000000'
-  # ---------------------------------------===== lookupTable_18 [Optional] =====----------------------------------------
+  lookupTable_seq3_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq3_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000C8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_18: '0x00000000'
-  # ---------------------------------------===== lookupTable_19 [Optional] =====----------------------------------------
+  lookupTable_seq3_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq3_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000CC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_19: '0x00000000'
-  # ---------------------------------------===== lookupTable_20 [Optional] =====----------------------------------------
+  lookupTable_seq3_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq4_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000D0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_20: '0x47F94706'
-  # ---------------------------------------===== lookupTable_21 [Optional] =====----------------------------------------
+  lookupTable_seq4_instr0: '0x47F94706'
+  # ---------------------------------------===== lookupTable_seq4_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000D4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_21: '0x00000000'
-  # ---------------------------------------===== lookupTable_22 [Optional] =====----------------------------------------
+  lookupTable_seq4_instr1: '0x00000000'
+  # -----------------------------------===== lookupTable_seq4_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000D8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_22: '0x00000000'
-  # ---------------------------------------===== lookupTable_23 [Optional] =====----------------------------------------
+  lookupTable_seq4_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq4_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000DC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_23: '0x00000000'
-  # ---------------------------------------===== lookupTable_24 [Optional] =====----------------------------------------
+  lookupTable_seq4_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq4_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000E0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_24: '0x00000000'
-  # ---------------------------------------===== lookupTable_25 [Optional] =====----------------------------------------
+  lookupTable_seq4_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq5_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000E4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_25: '0x47DE4721'
-  # ---------------------------------------===== lookupTable_26 [Optional] =====----------------------------------------
+  lookupTable_seq5_instr0: '0x47DE4721'
+  # ---------------------------------------===== lookupTable_seq5_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000E8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_26: '0x03002B20'
+  lookupTable_seq5_instr1: '0x03002B20'
   # ---------------------------------------===== lookupTable_27 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000EC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_27: '0x00000000'
-  # ---------------------------------------===== lookupTable_28 [Optional] =====----------------------------------------
+  lookupTable_seq5_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq5_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000F0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_28: '0x00000000'
-  # ---------------------------------------===== lookupTable_29 [Optional] =====----------------------------------------
+  lookupTable_seq5_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq5_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000F4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_29: '0x00000000'
-  # ---------------------------------------===== lookupTable_30 [Optional] =====----------------------------------------
+  lookupTable_seq5_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq6_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000000F8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_30: '0x04000472'
-  # ---------------------------------------===== lookupTable_31 [Optional] =====----------------------------------------
+  lookupTable_seq6_instr0: '0x04000472'
+  # ---------------------------------------===== lookupTable_seq6_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x000000FC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_31: '0x04000400'
-  # ---------------------------------------===== lookupTable_32 [Optional] =====----------------------------------------
+  lookupTable_seq6_instr1: '0x04000400'
+  # ---------------------------------------===== lookupTable_seq6_instr2 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000100, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_32: '0x20010400'
+  lookupTable_seq6_instr2: '0x20010400'
   # ---------------------------------------===== lookupTable_33 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000104, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_33: '0x00000000'
-  # ---------------------------------------===== lookupTable_34 [Optional] =====----------------------------------------
+  lookupTable_seq6_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq6_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000108, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_34: '0x00000000'
-  # ---------------------------------------===== lookupTable_35 [Optional] =====----------------------------------------
+  lookupTable_seq6_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq7_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000010C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_35: '0x00000000'
-  # ---------------------------------------===== lookupTable_36 [Optional] =====----------------------------------------
+  lookupTable_seq7_instr0: '0x00000000'
+  # -----------------------------------===== lookupTable_seq7_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000110, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_36: '0x00000000'
-  # ---------------------------------------===== lookupTable_37 [Optional] =====----------------------------------------
+  lookupTable_seq7_instr1: '0x00000000'
+  # -----------------------------------===== lookupTable_seq7_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000114, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_37: '0x00000000'
-  # ---------------------------------------===== lookupTable_38 [Optional] =====----------------------------------------
+  lookupTable_seq7_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq7_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000118, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_38: '0x00000000'
-  # ---------------------------------------===== lookupTable_39 [Optional] =====----------------------------------------
+  lookupTable_seq7_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq7_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000011C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_39: '0x00000000'
-  # ---------------------------------------===== lookupTable_40 [Optional] =====----------------------------------------
+  lookupTable_seq7_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq8_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000120, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_40: '0x00000000'
-  # ---------------------------------------===== lookupTable_41 [Optional] =====----------------------------------------
+  lookupTable_seq8_instr0: '0x00000000'
+  # -----------------------------------===== lookupTable_seq8_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000124, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_41: '0x00000000'
-  # ---------------------------------------===== lookupTable_42 [Optional] =====----------------------------------------
+  lookupTable_seq8_instr1: '0x00000000'
+  # -----------------------------------===== lookupTable_seq8_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000128, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_42: '0x00000000'
-  # ---------------------------------------===== lookupTable_43 [Optional] =====----------------------------------------
+  lookupTable_seq8_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq8_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000012C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_43: '0x00000000'
-  # ---------------------------------------===== lookupTable_44 [Optional] =====----------------------------------------
+  lookupTable_seq8_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq8_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000130, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_44: '0x00000000'
-  # ---------------------------------------===== lookupTable_45 [Optional] =====----------------------------------------
+  lookupTable_seq8_instr4: '0x00000000'
+  # -----------------------------------===== lookupTable_seq9_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000134, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_45: '0x47ED4712'
-  # ---------------------------------------===== lookupTable_46 [Optional] =====----------------------------------------
+  lookupTable_seq9_instr0: '0x47ED4712'
+  # ---------------------------------------===== lookupTable_seq9_instr1 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000138, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_46: '0x3F042B20'
+  lookupTable_seq9_instr1: '0x3F042B20'
   # ---------------------------------------===== lookupTable_47 [Optional] =====----------------------------------------
   # Description: Offset: 0x0000013C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_47: '0x00000000'
-  # ---------------------------------------===== lookupTable_48 [Optional] =====----------------------------------------
+  lookupTable_seq9_instr2: '0x00000000'
+  # -----------------------------------===== lookupTable_seq9_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000140, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_48: '0x00000000'
-  # ---------------------------------------===== lookupTable_49 [Optional] =====----------------------------------------
+  lookupTable_seq9_instr3: '0x00000000'
+  # -----------------------------------===== lookupTable_seq9_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000144, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_49: '0x00000000'
-  # ---------------------------------------===== lookupTable_50 [Optional] =====----------------------------------------
+  lookupTable_seq9_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq10_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000148, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_50: '0x00000000'
-  # ---------------------------------------===== lookupTable_51 [Optional] =====----------------------------------------
+  lookupTable_seq10_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq10_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000014C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_51: '0x00000000'
-  # ---------------------------------------===== lookupTable_52 [Optional] =====----------------------------------------
+  lookupTable_seq10_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq10_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000150, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_52: '0x00000000'
-  # ---------------------------------------===== lookupTable_53 [Optional] =====----------------------------------------
+  lookupTable_seq10_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq10_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000154, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_53: '0x00000000'
-  # ---------------------------------------===== lookupTable_54 [Optional] =====----------------------------------------
+  lookupTable_seq10_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq10_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000158, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_54: '0x00000000'
-  # ---------------------------------------===== lookupTable_55 [Optional] =====----------------------------------------
+  lookupTable_seq10_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq11_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000015C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_55: '0x479F4760'
+  lookupTable_seq11_instr0: '0x479F4760'
   # ---------------------------------------===== lookupTable_56 [Optional] =====----------------------------------------
   # Description: Offset: 0x00000160, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_56: '0x00000000'
-  # ---------------------------------------===== lookupTable_57 [Optional] =====----------------------------------------
+  lookupTable_seq11_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq11_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000164, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_57: '0x00000000'
-  # ---------------------------------------===== lookupTable_58 [Optional] =====----------------------------------------
+  lookupTable_seq11_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq11_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000168, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_58: '0x00000000'
-  # ---------------------------------------===== lookupTable_59 [Optional] =====----------------------------------------
+  lookupTable_seq11_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq11_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000016C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_59: '0x00000000'
-  # ---------------------------------------===== lookupTable_60 [Optional] =====----------------------------------------
+  lookupTable_seq11_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq12_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000170, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_60: '0x00000000'
-  # ---------------------------------------===== lookupTable_61 [Optional] =====----------------------------------------
+  lookupTable_seq12_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq12_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000174, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_61: '0x00000000'
-  # ---------------------------------------===== lookupTable_62 [Optional] =====----------------------------------------
+  lookupTable_seq12_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq12_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000178, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_62: '0x00000000'
-  # ---------------------------------------===== lookupTable_63 [Optional] =====----------------------------------------
+  lookupTable_seq12_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq12_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000017C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_63: '0x00000000'
-  # ---------------------------------------===== lookupTable_64 [Optional] =====----------------------------------------
+  lookupTable_seq12_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq12_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000180, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_64: '0x00000000'
-  # ---------------------------------------===== lookupTable_65 [Optional] =====----------------------------------------
+  lookupTable_seq12_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq13_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000184, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_65: '0x00000000'
-  # ---------------------------------------===== lookupTable_66 [Optional] =====----------------------------------------
+  lookupTable_seq13_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq13_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000188, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_66: '0x00000000'
-  # ---------------------------------------===== lookupTable_67 [Optional] =====----------------------------------------
+  lookupTable_seq13_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq13_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000018C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_67: '0x00000000'
-  # ---------------------------------------===== lookupTable_68 [Optional] =====----------------------------------------
+  lookupTable_seq13_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq13_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000190, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_68: '0x00000000'
-  # ---------------------------------------===== lookupTable_69 [Optional] =====----------------------------------------
+  lookupTable_seq13_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq13_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000194, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_69: '0x00000000'
-  # ---------------------------------------===== lookupTable_70 [Optional] =====----------------------------------------
+  lookupTable_seq13_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq14_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x00000198, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_70: '0x00000000'
-  # ---------------------------------------===== lookupTable_71 [Optional] =====----------------------------------------
+  lookupTable_seq14_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq14_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x0000019C, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_71: '0x00000000'
-  # ---------------------------------------===== lookupTable_72 [Optional] =====----------------------------------------
+  lookupTable_seq14_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq14_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001A0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_72: '0x00000000'
-  # ---------------------------------------===== lookupTable_73 [Optional] =====----------------------------------------
+  lookupTable_seq14_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq14_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001A4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_73: '0x00000000'
-  # ---------------------------------------===== lookupTable_74 [Optional] =====----------------------------------------
+  lookupTable_seq14_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq14_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001A8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_74: '0x00000000'
-  # ---------------------------------------===== lookupTable_75 [Optional] =====----------------------------------------
+  lookupTable_seq14_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq15_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001AC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_75: '0x00000000'
-  # ---------------------------------------===== lookupTable_76 [Optional] =====----------------------------------------
+  lookupTable_seq15_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq15_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001B0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_76: '0x00000000'
-  # ---------------------------------------===== lookupTable_77 [Optional] =====----------------------------------------
+  lookupTable_seq15_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq15_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001B4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_77: '0x00000000'
-  # ---------------------------------------===== lookupTable_78 [Optional] =====----------------------------------------
+  lookupTable_seq15_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq15_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001B8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_78: '0x00000000'
-  # ---------------------------------------===== lookupTable_79 [Optional] =====----------------------------------------
+  lookupTable_seq15_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq15_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001BC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_79: '0x00000000'
-  # ---------------------------------------===== lookupTable_80 [Optional] =====----------------------------------------
+  lookupTable_seq15_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq16_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001C0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_80: '0x00000000'
-  # ---------------------------------------===== lookupTable_81 [Optional] =====----------------------------------------
+  lookupTable_seq16_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq16_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001C4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_81: '0x00000000'
-  # ---------------------------------------===== lookupTable_82 [Optional] =====----------------------------------------
+  lookupTable_seq16_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq16_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001C8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_82: '0x00000000'
-  # ---------------------------------------===== lookupTable_83 [Optional] =====----------------------------------------
+  lookupTable_seq16_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq16_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001CC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_83: '0x00000000'
-  # ---------------------------------------===== lookupTable_84 [Optional] =====----------------------------------------
+  lookupTable_seq16_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq16_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001D0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_84: '0x00000000'
-  # ---------------------------------------===== lookupTable_85 [Optional] =====----------------------------------------
+  lookupTable_seq16_instr4: '0x00000000'
+  # ----------------------------------===== lookupTable_seq17_instr0 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001D4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_85: '0x00000000'
-  # ---------------------------------------===== lookupTable_86 [Optional] =====----------------------------------------
+  lookupTable_seq17_instr0: '0x00000000'
+  # ----------------------------------===== lookupTable_seq17_instr1 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001D8, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_86: '0x00000000'
-  # ---------------------------------------===== lookupTable_87 [Optional] =====----------------------------------------
+  lookupTable_seq17_instr1: '0x00000000'
+  # ----------------------------------===== lookupTable_seq17_instr2 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001DC, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_87: '0x00000000'
-  # ---------------------------------------===== lookupTable_88 [Optional] =====----------------------------------------
+  lookupTable_seq17_instr2: '0x00000000'
+  # ----------------------------------===== lookupTable_seq17_instr3 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001E0, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_88: '0x00000000'
-  # ---------------------------------------===== lookupTable_89 [Optional] =====----------------------------------------
+  lookupTable_seq17_instr3: '0x00000000'
+  # ----------------------------------===== lookupTable_seq17_instr4 [Optional] =====-----------------------------------
   # Description: Offset: 0x000001E4, Width: 32b;  [0x080-0x1e7] Lookup table holds Flash command sequences
-  lookupTable_89: '0x00000000'
+  lookupTable_seq17_instr4: '0x00000000'
   # ---------------------------------------===== lutCustomSeq_0 [Optional] =====----------------------------------------
   # Description: Offset: 0x000001E8, Width: 32b;  [0x1e8-0x217] Customizable LUT Sequences
   lutCustomSeq_0:

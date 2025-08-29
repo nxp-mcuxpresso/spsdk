@@ -145,6 +145,7 @@ class SRKRecordBase(HeaderContainerInverted):
     }
 
     FLAGS_CA_MASK = 0x80
+    DIFF_ATTRIBUTES_VALUES = ["version", "hash_algorithm", "key_size", "srk_flags", "crypto_params"]
 
     def __init__(
         self,
@@ -154,6 +155,7 @@ class SRKRecordBase(HeaderContainerInverted):
         key_size: int = 0,
         srk_flags: int = 0,
         crypto_params: bytes = b"",
+        legacy_rsa_exponent_size: bool = False,
     ):
         """Class object initializer.
 
@@ -163,6 +165,7 @@ class SRKRecordBase(HeaderContainerInverted):
         :param key_size: key (curve) size.
         :param srk_flags: flags.
         :param crypto_params: RSA modulus (big endian) or ECDSA X (big endian) or Hash of SRK data.
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
         """
         super().__init__(
             tag=self.TAG,
@@ -174,7 +177,8 @@ class SRKRecordBase(HeaderContainerInverted):
         self.key_size = key_size
         self.srk_flags = srk_flags
         self.crypto_params = crypto_params
-        self._parsed_param_lengths: Optional[tuple[int, int]] = None
+        self.legacy_rsa_exponent_size = legacy_rsa_exponent_size
+        self._param_lengths: Optional[tuple[int, int]] = None
 
     @property
     def key_sizes(self) -> tuple[int, int]:
@@ -193,12 +197,12 @@ class SRKRecordBase(HeaderContainerInverted):
         :raises SPSDKError: If the key_size value is not supported
         :return: Tuple containing the sizes of the two key parameters in bytes
         """
+        # If we have parsed parameter lengths, use them
+        if self._param_lengths:
+            return self._param_lengths
+
         if self.key_size not in self.KEY_SIZES:
             raise SPSDKError(f"Key size value is not supported: {self.key_size}")
-
-        # If we have parsed parameter lengths, use them
-        if self._parsed_param_lengths:
-            return self._parsed_param_lengths
 
         key_sizes = self.KEY_SIZES[self.key_size]
         key_size_0 = key_sizes[0]
@@ -209,9 +213,20 @@ class SRKRecordBase(HeaderContainerInverted):
             self.SIGN_ALGORITHM_ENUM.RSA,
             self.SIGN_ALGORITHM_ENUM.RSA_PSS,
         ]:
-            if self.src_key:
+            if self.legacy_rsa_exponent_size:
+                # Use legacy 4-byte exponent size
+                key_size_1 = key_sizes[1]  # This is already 4 from KEY_SIZES
+            elif self.src_key:
                 assert isinstance(self.src_key, PublicKeyRsa)
                 key_size_1 = math.ceil(int(self.src_key.e).bit_length() / 8)
+                # Warn user about potential compatibility issues
+                if key_size_1 != 4:
+                    logger.info(
+                        f"RSA exponent size is {key_size_1} bytes (not the legacy 4 bytes). "
+                        f"If you previously used older SPSDK versions and need backward compatibility, "
+                        f"consider using the 'rsa_exponent_legacy_size: true' option in your SRK configuration."
+                    )
+
                 # Ensure even with src_key, the exponent size is within bounds
                 if key_size_1 > 65535:
                     logger.warning(
@@ -235,7 +250,8 @@ class SRKRecordBase(HeaderContainerInverted):
                     key_size_1 = key_sizes[1]
 
         # For non-RSA keys or if we don't have crypto_params yet, use the default sizes
-        return (key_size_0, key_size_1)
+        self._param_lengths = (key_size_0, key_size_1)
+        return self._param_lengths
 
     @property
     def parameter_lengths(self) -> bytes:
@@ -289,7 +305,7 @@ class SRKRecordBase(HeaderContainerInverted):
             "AHAB SRK Record:\n"
             f"  Key:                {self.get_key_name()}\n"
             f"  SRK flags:          {hex(self.srk_flags)}\n"
-            f"  Crypto param value: {self.crypto_params.hex()})\n"
+            f"  Crypto param value: {bytes_to_print(self.crypto_params)}\n"
         )
 
     @classmethod
@@ -414,6 +430,7 @@ class SRKRecordBase(HeaderContainerInverted):
         srk_flags: int = 0,
         srk_id: int = 0,
         hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+        legacy_rsa_exponent_size: bool = False,
     ) -> Self:
         """Create instance from key data.
 
@@ -421,6 +438,7 @@ class SRKRecordBase(HeaderContainerInverted):
         :param srk_flags: SRK flags for key.
         :param srk_id: Index of key in SRK table
         :param hash_algorithm: Optional hash algorithm to use, if None default will be selected based on key type
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
         :raises SPSDKValueError: Unsupported keys size is detected.
         :raises SPSDKUnsupportedOperation: Unsupported public key
         """
@@ -431,8 +449,19 @@ class SRKRecordBase(HeaderContainerInverted):
             par_n: int = public_key.public_numbers.n
             par_e: int = public_key.public_numbers.e
             key_size = cls.RSA_KEY_TYPE[public_key.key_size]
-            # Calculate actual exponent size
-            actual_e_size = math.ceil(par_e.bit_length() / 8)
+
+            # Determine exponent size based on legacy mode
+            if legacy_rsa_exponent_size:
+                actual_e_size = 4  # Use legacy 4-byte size
+                logger.info("Using legacy 4-byte RSA exponent size for backward compatibility")
+            else:
+                actual_e_size = math.ceil(par_e.bit_length() / 8)
+                if actual_e_size != 4:
+                    logger.info(
+                        f"RSA exponent size is {actual_e_size} bytes (not the legacy 4 bytes). "
+                        f"If you previously used older SPSDK versions and need backward compatibility, "
+                        f"consider using the 'rsa_exponent_legacy_size: true' option in your configuration."
+                    )
             return cls(
                 src_key=public_key,
                 signing_algorithm=cls.SIGN_ALGORITHM_ENUM.RSA_PSS,
@@ -443,6 +472,7 @@ class SRKRecordBase(HeaderContainerInverted):
                     length=cls.KEY_SIZES[key_size][0], byteorder=Endianness.BIG.value
                 )
                 + par_e.to_bytes(length=actual_e_size, byteorder=Endianness.BIG.value),
+                legacy_rsa_exponent_size=legacy_rsa_exponent_size,
             )
 
         if isinstance(public_key, PublicKeyEcc):
@@ -514,10 +544,7 @@ class SRKRecordBase(HeaderContainerInverted):
         # Although we know from the total length, that we have enough bytes,
         # the crypto param lengths may be set improperly and we may get into trouble
         # while parsing. So we need to check the lengths as well.
-
-        # Parse the actual parameter lengths
-        param_len_1, param_len_2 = unpack(LITTLE_ENDIAN + UINT16 + UINT16, parameters_len_raw)
-
+        parameters_sizes = unpack(LITTLE_ENDIAN + UINT16 + UINT16, parameters_len_raw)
         parameters_len = cls._crypto_params_length(parameters_len_raw)
         cnt_len_computed = parameters_len + cls.fixed_length()
         if parameters_len + cls.fixed_length() > container_length:
@@ -557,8 +584,8 @@ class SRKRecordBase(HeaderContainerInverted):
             )
 
         srk_rec.length = container_length
+        srk_rec._param_lengths = parameters_sizes
         srk_rec._parsed_header = HeaderContainerData.parse(binary=data, inverted=True)
-        srk_rec._parsed_param_lengths = (param_len_1, param_len_2)
         return srk_rec
 
     def get_key_name(self) -> str:
@@ -574,16 +601,12 @@ class SRKRecordBase(HeaderContainerInverted):
             return get_key_by_val(self.ECC_KEY_TYPE, self.key_size)
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.SM2:
             return "sm2"
-        if (
-            self.SIGN_ALGORITHM_ENUM == AHABSignAlgorithmV2
-            and self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.DILITHIUM
-        ):
-            return f"dilithium{get_key_by_val(self.DILITHIUM_KEY_TYPE, self.key_size)}"
-        if (
-            self.SIGN_ALGORITHM_ENUM == AHABSignAlgorithmV2
-            and self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA
-        ):
-            return f"mldsa{get_key_by_val(self.MLDSA_KEY_TYPE, self.key_size)}"
+        if self.SIGN_ALGORITHM_ENUM == AHABSignAlgorithmV2:
+            if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.DILITHIUM:
+                return f"dilithium{get_key_by_val(self.DILITHIUM_KEY_TYPE, self.key_size)}"
+            if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA:
+                return f"mldsa{get_key_by_val(self.MLDSA_KEY_TYPE, self.key_size)}"
+
         return "Unknown Key name!"
 
     def get_public_key(self) -> PublicKey:
@@ -633,8 +656,8 @@ class SRKRecord(SRKRecordBase):
 
     def __str__(self) -> str:
         return super().__str__() + (
-            f"  Param 1 value:      {self.crypto_param1.hex()})\n"
-            f"  Param 2 value:      {self.crypto_param2.hex()})\n"
+            f"  Param 1 value:      {bytes_to_print(self.crypto_param1)})\n"
+            f"  Param 2 value:      {bytes_to_print(self.crypto_param2)})\n"
         )
 
     @property
@@ -743,6 +766,7 @@ class SRKRecordV2(SRKRecordBase):
     """
 
     CRYPTO_PARAMS_LEN = 64
+    DIFF_ATTRIBUTES_OBJECTS = ["srk_data"]
 
     def __init__(
         self,
@@ -752,6 +776,7 @@ class SRKRecordV2(SRKRecordBase):
         key_size: int = 0,
         srk_flags: int = 0,
         crypto_params: bytes = b"",
+        legacy_rsa_exponent_size: bool = False,
     ):
         """Class object initializer.
 
@@ -762,7 +787,15 @@ class SRKRecordV2(SRKRecordBase):
         :param srk_flags: flags.
         :param crypto_params: RSA modulus (big endian) or ECDSA X (big endian) or Hash of SRK data.
         """
-        super().__init__(src_key, signing_algorithm, hash_type, key_size, srk_flags, crypto_params)
+        super().__init__(
+            src_key,
+            signing_algorithm,
+            hash_type,
+            key_size,
+            srk_flags,
+            crypto_params,
+            legacy_rsa_exponent_size,
+        )
         self.srk_data: Optional[SRKData] = None
 
     def __eq__(self, other: object) -> bool:
@@ -773,7 +806,7 @@ class SRKRecordV2(SRKRecordBase):
         return False
 
     def __str__(self) -> str:
-        return super().__str__() + f"  SRK Data Hash:      {self.crypto_params.hex()})\n"
+        return super().__str__() + f"  SRK Data Hash:      {bytes_to_print(self.crypto_params)}\n"
 
     @property
     def srk_data_hash(self) -> bytes:
@@ -927,6 +960,7 @@ class SRKRecordV2(SRKRecordBase):
         srk_flags: int = 0,
         srk_id: int = 0,
         hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+        legacy_rsa_exponent_size: bool = False,
     ) -> Self:
         """Create instance from key data.
 
@@ -934,6 +968,7 @@ class SRKRecordV2(SRKRecordBase):
         :param srk_flags: SRK flags for key.
         :param srk_id: Index of key in SRK table
         :param hash_algorithm: Optional hash algorithm to use, if None default will be selected based on key type
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
         :raises SPSDKValueError: Unsupported keys size is detected.
         :raises SPSDKUnsupportedOperation: Unsupported key type or operation.
         """
@@ -1011,8 +1046,11 @@ class SRKRecordV2(SRKRecordBase):
             hash_type=hash_type,
             key_size=key_size,
             srk_flags=srk_flags,
+            legacy_rsa_exponent_size=legacy_rsa_exponent_size,
         )
-        ret.srk_data = SRKData.create_from_key(public_key=public_key, srk_id=srk_id)
+        ret.srk_data = SRKData.create_from_key(
+            public_key=public_key, srk_id=srk_id, legacy_rsa_exponent_size=legacy_rsa_exponent_size
+        )
 
         return ret
 
@@ -1054,6 +1092,14 @@ class SRKRecordV2(SRKRecordBase):
 
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.DILITHIUM and IS_DILITHIUM_SUPPORTED:
             return PublicKeyDilithium.parse(self.srk_data.data)
+        if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA and IS_DILITHIUM_SUPPORTED:
+            return PublicKeyMLDSA.parse(self.srk_data.data)
+
+        if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA and IS_DILITHIUM_SUPPORTED:
+            return PublicKeyMLDSA.parse(self.srk_data.data)
+
+        if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA and IS_DILITHIUM_SUPPORTED:
+            return PublicKeyMLDSA.parse(self.srk_data.data)
 
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.ML_DSA and IS_DILITHIUM_SUPPORTED:
             return PublicKeyMLDSA.parse(self.srk_data.data)
@@ -1085,6 +1131,7 @@ class SRKData(HeaderContainer):
 
     TAG = AHABTags.SRK_DATA.tag
     VERSION = 0
+    DIFF_ATTRIBUTES_VALUES = ["srk_id", "data"]
 
     def __init__(self, srk_id: int, src_key: Optional[PublicKey] = None, data: bytes = b""):
         """Class object initializer.
@@ -1169,18 +1216,25 @@ class SRKData(HeaderContainer):
         return ret
 
     @classmethod
-    def create_from_key(cls, public_key: PublicKey, srk_id: int) -> Self:
+    def create_from_key(
+        cls, public_key: PublicKey, srk_id: int, legacy_rsa_exponent_size: bool = False
+    ) -> Self:
         """Create instance from public key.
 
         :param public_key: Loaded public key.
         :param srk_id: SRK Identification 0-3.
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
         :raises SPSDKValueError: Unsupported keys size is detected.
         """
         if isinstance(public_key, PublicKeyRsa):
             par_n: int = public_key.public_numbers.n
             par_e: int = public_key.public_numbers.e
             key_size = SRKRecordV2.RSA_KEY_TYPE[public_key.key_size]
-            actual_e_size = math.ceil(par_e.bit_length() / 8)
+            if legacy_rsa_exponent_size:
+                actual_e_size = 4
+                logger.info("Using legacy 4-byte RSA exponent size for SRK data")
+            else:
+                actual_e_size = math.ceil(par_e.bit_length() / 8)
             data = par_n.to_bytes(
                 length=SRKRecordV2.KEY_SIZES[key_size][0], byteorder=Endianness.BIG.value
             ) + par_e.to_bytes(length=actual_e_size, byteorder=Endianness.BIG.value)
@@ -1265,6 +1319,7 @@ class SRKTable(HeaderContainerInverted):
     SRK_HASH_ALGORITHM = EnumHashAlgorithm.SHA256
     SRK_RECORDS_CNT = 4
     SRK_RECORD = SRKRecord
+    DIFF_ATTRIBUTES_OBJECTS = ["srk_records"]
 
     def __init__(self, srk_records: Optional[Sequence[SRKRecordBase]] = None) -> None:
         """Class object initializer.
@@ -1296,6 +1351,7 @@ class SRKTable(HeaderContainerInverted):
         srk_flags: int = 0,
         srk_id: int = 0,
         hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+        legacy_rsa_exponent_size: bool = False,
     ) -> None:
         """Add SRK table record.
 
@@ -1303,6 +1359,7 @@ class SRKTable(HeaderContainerInverted):
         :param srk_flags: SRK flags for key.
         :param srk_id: Index of key in SRK table
         :param hash_algorithm: Optional hash algorithm to use
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
         """
         self.srk_records.append(
             self.SRK_RECORD.create_from_key(
@@ -1310,6 +1367,7 @@ class SRKTable(HeaderContainerInverted):
                 srk_flags=srk_flags,
                 srk_id=srk_id,
                 hash_algorithm=hash_algorithm,
+                legacy_rsa_exponent_size=legacy_rsa_exponent_size,
             )
         )
 
@@ -1518,6 +1576,16 @@ class SRKTable(HeaderContainerInverted):
         flag_ca = config.get("flag_ca", False)
         if flag_ca:
             flags |= cls.SRK_RECORD.FLAGS_CA_MASK
+
+        # Get hash algorithm if specified
+        hash_algorithm = None
+        hash_algo_str = config.get("hash_algorithm")
+        if hash_algo_str and hash_algo_str != "default":
+            hash_algorithm = cls.SRK_RECORD.HASH_ALGORITHM_ENUM.from_label(hash_algo_str)
+
+        # Get the legacy RSA exponent size option from config
+        legacy_rsa_exponent_size = config.get("rsa_exponent_legacy_size", False)
+
         srk_list = config.get_list("srk_array")
         for srk_key in srk_list:
             assert isinstance(srk_key, str)
@@ -1525,7 +1593,12 @@ class SRKTable(HeaderContainerInverted):
             pub_key = extract_public_key(srk_key_path)
             if hasattr(pub_key, "ca"):
                 flags |= cls.SRK_RECORD.FLAGS_CA_MASK
-            srk_table.add_record(pub_key, srk_flags=flags)
+            srk_table.add_record(
+                pub_key,
+                srk_flags=flags,
+                hash_algorithm=hash_algorithm,
+                legacy_rsa_exponent_size=legacy_rsa_exponent_size,
+            )
         return srk_table
 
 
@@ -1578,6 +1651,9 @@ class SRKTableV2(SRKTable):
         if hash_algo_str and hash_algo_str != "default":
             hash_algorithm = cls.SRK_RECORD.HASH_ALGORITHM_ENUM.from_label(hash_algo_str)
 
+        # Get the legacy RSA exponent size option from config
+        legacy_rsa_exponent_size = config.get("rsa_exponent_legacy_size", False)
+
         srk_list = config.get_list("srk_array")
         for ix, srk_key in enumerate(srk_list):
             assert isinstance(srk_key, str)
@@ -1585,7 +1661,13 @@ class SRKTableV2(SRKTable):
             pub_key = extract_public_key(srk_key_path)
             if hasattr(pub_key, "ca"):
                 flags |= cls.SRK_RECORD.FLAGS_CA_MASK
-            srk_table.add_record(pub_key, srk_flags=flags, srk_id=ix, hash_algorithm=hash_algorithm)
+            srk_table.add_record(
+                pub_key,
+                srk_flags=flags,
+                srk_id=ix,
+                hash_algorithm=hash_algorithm,
+                legacy_rsa_exponent_size=legacy_rsa_exponent_size,
+            )
             cast(SRKRecordV2, srk_table.srk_records[ix]).srk_data = SRKData.create_from_key(
                 pub_key, ix
             )
@@ -1649,6 +1731,7 @@ class SRKTableArray(HeaderContainer):
     VERSION = 0x00
     SRK_TABLE_MIN_CNT = 1
     SRK_TABLE_MAX_CNT = 2
+    DIFF_ATTRIBUTES_OBJECTS = ["_srk_tables"]
 
     def __init__(
         self, chip_config: AhabChipContainerConfig, srk_tables: Optional[list[SRKTableV2]] = None
@@ -1673,7 +1756,7 @@ class SRKTableArray(HeaderContainer):
             f"SRK_0 table HASH:       {self.compute_srk_hash(0).hex()}"
         )
         if len(self._srk_tables) > 1:
-            ret += f"SRK_1 table HASH:       {self.compute_srk_hash(1).hex()}"
+            ret += f"\nSRK_1 table HASH:       {self.compute_srk_hash(1).hex()}"
 
         return ret
 

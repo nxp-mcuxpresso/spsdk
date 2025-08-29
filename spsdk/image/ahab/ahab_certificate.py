@@ -9,7 +9,7 @@
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Optional, cast
+from typing import Any, Optional, Type, cast
 
 from typing_extensions import Self
 
@@ -18,14 +18,28 @@ from spsdk.crypto.signature_provider import SignatureProvider, get_signature_pro
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_data import RESERVED, UINT8, UINT16, AHABTags, FlagsSrkSet
+from spsdk.image.ahab.ahab_data import (
+    RESERVED,
+    UINT8,
+    UINT16,
+    UINT32,
+    AHABSignHashAlgorithmV2,
+    AHABTags,
+    FlagsSrkSet,
+)
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2, SRKTableArray
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.family import FamilyRevision, update_validation_schema_family
-from spsdk.utils.misc import bytes_to_print, extend_block, value_to_bytes, write_file
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
+from spsdk.utils.misc import (
+    bytes_to_print,
+    extend_block,
+    load_hex_string,
+    value_to_bytes,
+    write_file,
+)
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -89,14 +103,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     VERSION = 0x02
     PERM_NXP = {
         "container": 0x01,
-        "debug": 0x02,
+        "debug": 0x04,
         "secure_fuse": 0x08,
         "return_life_cycle": 0x10,
         "patch_fuses": 0x40,
     }
     PERM_OEM = {
         "container": 0x01,
-        "debug": 0x02,
+        "debug": 0x04,
         "secure_fuse": 0x08,
         "return_life_cycle": 0x10,
         "patch_fuses": 0x40,
@@ -105,6 +119,17 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     FUSE_VERSION_BIT_SIZE = 8
     PERMISSION_DATA_SIZE = 12
     UUID_SIZE = 16
+
+    DIFF_ATTRIBUTES_VALUES = [
+        "_permissions",
+        "permission_data",
+        "signature_offset",
+        "_uuid",
+        "public_key_0",
+        "signature_0",
+        "public_key_1",
+        "signature_1",
+    ]
 
     def __init__(
         self,
@@ -151,7 +176,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         )
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, AhabCertificate):
+        if isinstance(other, self.__class__):
             if (
                 super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
                 and self._permissions == other._permissions
@@ -217,8 +242,8 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             ret += len(self.public_key_1) + len(self.public_key_1.srk_data) + len(self.signature_1)
         return ret
 
-    @staticmethod
-    def create_permissions(permissions: list[str]) -> int:
+    @classmethod
+    def create_permissions(cls, permissions: list[str]) -> int:
         """Create integer representation of permission field.
 
         :param permissions: List of string permissions.
@@ -226,8 +251,8 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         """
         ret = 0
         permission_map = {}
-        permission_map.update(AhabCertificate.PERM_NXP)
-        permission_map.update(AhabCertificate.PERM_OEM)
+        permission_map.update(cls.PERM_NXP)
+        permission_map.update(cls.PERM_OEM)
         for permission in permissions:
             ret |= permission_map[permission]
 
@@ -260,17 +285,10 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
         return ret
 
-    def get_signature_data(self) -> bytes:
-        """Return binary data to be signed.
-
-        The certificate block must be properly initialized, so the data are valid for
-        signing. There is signed whole certificate block without signature part.
-
-        :raises SPSDKValueError: If Signature Block or SRK Table is missing.
-        :return: Bytes representing data to be signed.
-        """
-        assert isinstance(self.public_key_0, SRKRecordV2)
-        cert_data_to_sign = pack(
+    @property
+    def _cert_data_to_sign(self) -> bytes:
+        """Internal method to prepare certificate data for signing."""
+        return pack(
             self.format(),
             self.version,
             self.length,
@@ -285,6 +303,17 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             extend_block(self._uuid or b"", self.UUID_SIZE, padding=RESERVED),
         )
 
+    def get_signature_data(self) -> bytes:
+        """Return binary data to be signed.
+
+        The certificate block must be properly initialized, so the data are valid for
+        signing. There is signed whole certificate block without signature part.
+
+        :raises SPSDKValueError: If Signature Block or SRK Table is missing.
+        :return: Bytes representing data to be signed.
+        """
+        assert isinstance(self.public_key_0, SRKRecordV2)
+        cert_data_to_sign = self._cert_data_to_sign
         cert_data_to_sign += self.public_key_0.export()
         assert isinstance(self.public_key_0.srk_data, SRKData)
         cert_data_to_sign += self.public_key_0.srk_data.export()
@@ -402,7 +431,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
                 f"Revoked keys mask: {hex(revoked_keys)}, Used SRK key: {used_srk_id}",
             )
 
-            srk_table_cnt = len(srk._srk_tables)
+            srk_table_cnt = srk.srk_count
 
             def check_key_type(ix: int, srk_key: SRKRecordV2, key: Optional[SRKRecordV2]) -> None:
                 pub_key_ver = Verifier(f"Public key {ix}")
@@ -503,20 +532,19 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
-        """Parse input binary chunk to the container object.
+    def _parse_header(cls, data: bytes) -> tuple[int, int, int, int, bytes, int, bytes]:
+        """Parse the header of the certificate from binary data.
 
-        :param data: Binary data with Certificate block to parse.
-        :param family: Family revision of the device.
-        :raises SPSDKValueError: Certificate permissions are invalid.
-        :raises SPSDKParsingError: Certificate parsing error.
-        :return: Object recreated from the binary data.
+        :param data: Binary data containing the certificate header.
+        :return: Tuple containing:
+            - container_length: Total length of the certificate container
+            - signature_offset: Offset to the signature data
+            - inverted_permissions: Inverted permissions byte
+            - permissions: Permissions byte
+            - permission_data: Permission data bytes
+            - fuse_version: Fuse version value
+            - uuid: UUID bytes
         """
-        if family is None:
-            raise SPSDKValueError("Missing family parameter")
-        AhabCertificate.check_container_head(data).validate()
-        certificate_data_offset = AhabCertificate.fixed_length()
-        image_format = AhabCertificate.format()
         (
             _,  # version
             container_length,
@@ -529,7 +557,40 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             _,  # RESERVED,
             _,  # RESERVED,
             uuid,
-        ) = unpack(image_format, data[:certificate_data_offset])
+        ) = unpack(cls.format(), data)
+        return (
+            container_length,
+            signature_offset,
+            inverted_permissions,
+            permissions,
+            permission_data,
+            fuse_version,
+            uuid,
+        )
+
+    @classmethod
+    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+        """Parse input binary chunk to the container object.
+
+        :param data: Binary data with Certificate block to parse.
+        :param family: Family revision of the device.
+        :raises SPSDKValueError: Certificate permissions are invalid.
+        :raises SPSDKParsingError: Certificate parsing error.
+        :return: Object recreated from the binary data.
+        """
+        if family is None:
+            raise SPSDKValueError("Missing family parameter")
+        cls.check_container_head(data).validate()
+        certificate_data_offset = cls.fixed_length()
+        (
+            container_length,
+            signature_offset,
+            inverted_permissions,
+            permissions,
+            permission_data,
+            fuse_version,
+            uuid,
+        ) = cls._parse_header(data[:certificate_data_offset])
 
         if inverted_permissions != ~permissions & 0xFF:
             raise SPSDKValueError("Certificate parser: Invalid permissions record.")
@@ -589,6 +650,8 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         :return: Configuration dictionary.
         """
         ret_cfg = Config()
+        ret_cfg["family"] = self.family.name
+        ret_cfg["revision"] = self.family.revision
         assert isinstance(self.public_key_0, SRKRecordV2)
         ret_cfg["permissions"] = self.create_config_permissions(srk_set)
         if self.permission_data:
@@ -636,29 +699,54 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
         cert_permissions_list = config.get_list("permissions", [])
         cert_uuid_raw = config.get("uuid")
-        cert_uuid = value_to_bytes(cert_uuid_raw) if cert_uuid_raw else None
+        cert_uuid = (
+            load_hex_string(
+                cert_uuid_raw, expected_size=16, search_paths=config.search_paths, name="UUID"
+            )
+            if cert_uuid_raw
+            else None
+        )
         cert_permission_data_raw = config.get("permission_data")
         cert_permission_data = (
             value_to_bytes(cert_permission_data_raw) if cert_permission_data_raw else None
         )
         cert_fuse_version = config.get_int("fuse_version", 0)
-        cert_public_key0 = SRKRecordV2.create_from_key(
-            extract_public_key(config.get_input_file_name("public_key_0"))
+
+        cert_hash0_str: str = config.get("hash_algorithm_0", "default")
+        cert_hash0 = (
+            None
+            if cert_hash0_str == "default"
+            else AHABSignHashAlgorithmV2.from_label(cert_hash0_str.upper())
         )
-        cert_signature_provider0 = get_signature_provider(config, "signer_0", pss_padding=True)
+        cert_public_key0 = SRKRecordV2.create_from_key(
+            extract_public_key(config.get_input_file_name("public_key_0")),
+            hash_algorithm=cert_hash0,
+        )
+        cert_signature_provider0 = get_signature_provider(
+            config, "signer_0", pss_padding=True, hash_alg=cert_public_key0.hash_algorithm
+        )
 
         cert_public_key1 = None
         cert_signature_provider1 = None
         if "public_key_1" in config:
+            cert_hash1_str: str = config.get("hash_algorithm_1", "default")
+            cert_hash1 = (
+                None
+                if cert_hash1_str == "default"
+                else AHABSignHashAlgorithmV2.from_label(cert_hash1_str.upper())
+            )
             cert_public_key1_path = config.get_input_file_name("public_key_1")
             cert_public_key1 = SRKRecordV2.create_from_key(
-                extract_public_key(cert_public_key1_path)
+                extract_public_key(cert_public_key1_path),
+                hash_algorithm=cert_hash1,
             )
-            cert_signature_provider1 = get_signature_provider(config, "signer_1", pss_padding=True)
+            cert_signature_provider1 = get_signature_provider(
+                config, "signer_1", pss_padding=True, hash_alg=cert_public_key1.hash_algorithm
+            )
 
         return cls(
             family=family,
-            permissions=AhabCertificate.create_permissions(cert_permissions_list),
+            permissions=cls.create_permissions(cert_permissions_list),
             permissions_data=cert_permission_data or b"",
             fuse_version=cert_fuse_version,
             uuid=cert_uuid,
@@ -681,3 +769,119 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             sch_family["properties"], cls.get_supported_families(), family
         )
         return [sch_family, sch["ahab_certificate"]]
+
+
+class AhabCertificateMcuPqc(AhabCertificate):
+    """Represents certificate in the AHAB container as part of the signature block this version is for MCU PQC.
+
+    The difference against the standard certificate is 32 bit width Fuse Version.
+
+    Certificate format::
+
+        +-----+--------------+--------------+----------------+----------------+
+        |Off  |    Byte 3    |    Byte 2    |      Byte 1    |     Byte 0     |
+        +-----+--------------+--------------+----------------+----------------+
+        |0x00 |    Tag       | Length (MSB) | Length (LSB)   |     Version    |
+        +-----+--------------+--------------+----------------+----------------+
+        |0x04 | Permissions  | Perm (invert)|      Signature offset           |
+        +-----+--------------+--------------+---------------------------------+
+        |0x08 |                Permission data - 96bits                       |
+        +-----+---------------------------------------------------------------+
+        |0x14 |              Fuse Version / Vendor Usage                      |
+        +-----+---------------------------------------------------------------+
+        |0x18 |                      UUID - 128bits                           |
+        +-----+---------------------------------------------------------------+
+        |...  |                        SRK Record 0                           |
+        +-----+---------------------------------------------------------------+
+        |...  |                         SRK Data 0                            |
+        +-----+---------------------------------------------------------------+
+        |...  |                        SRK Record 1                           |
+        +-----+---------------------------------------------------------------+
+        |...  |                         SRK Data 1                            |
+        +-----+---------------------------------------------------------------+
+        |...  |                        Signature 0                            |
+        +-----+---------------------------------------------------------------+
+        |...  |                        Signature 1                            |
+        +-----+---------------------------------------------------------------+
+
+    """
+
+    FUSE_VERSION_BIT_SIZE = 32  # 32-bit width for Fuse Version in MCU PQC variant
+
+    def __repr__(self) -> str:
+        return "AHAB Certificate with 32-bit fuse version"
+
+    @classmethod
+    def format(cls) -> str:
+        """Format of binary representation."""
+        return (
+            HeaderContainer.format()  # endianness, header: version, length, tag
+            + UINT16  # signature offset
+            + UINT8  # inverted permissions
+            + UINT8  # permissions
+            + f"{cls.PERMISSION_DATA_SIZE}s"  # permission data
+            + UINT32  # fuse_version alias vendor usage
+            + f"{cls.UUID_SIZE}s"  # UUID
+        )
+
+    @property
+    def _cert_data_to_sign(self) -> bytes:
+        """Internal method to prepare certificate data for signing."""
+        return pack(
+            self.format(),
+            self.version,
+            self.length,
+            self.tag,
+            self.signature_offset,
+            ~self._permissions & 0xFF,
+            self._permissions,
+            extend_block(self.permission_data, self.PERMISSION_DATA_SIZE, padding=RESERVED),
+            self.fuse_version,
+            extend_block(self._uuid or b"", self.UUID_SIZE, padding=RESERVED),
+        )
+
+    @classmethod
+    def _parse_header(cls, data: bytes) -> tuple[int, int, int, int, bytes, int, bytes]:
+        """Parse the header of the certificate from binary data.
+
+        :param data: Binary data containing the certificate header.
+        :return: Tuple containing:
+            - container_length: Total length of the certificate container
+            - signature_offset: Offset to the signature data
+            - inverted_permissions: Inverted permissions byte
+            - permissions: Permissions byte
+            - permission_data: Permission data bytes
+            - fuse_version: Fuse version value
+            - uuid: UUID bytes
+        """
+        (
+            _,  # version
+            container_length,
+            _,  # tag
+            signature_offset,
+            inverted_permissions,
+            permissions,
+            permission_data,
+            fuse_version,
+            uuid,
+        ) = unpack(cls.format(), data)
+        return (
+            container_length,
+            signature_offset,
+            inverted_permissions,
+            permissions,
+            permission_data,
+            fuse_version,
+            uuid,
+        )
+
+
+def get_ahab_certificate_class(family: FamilyRevision) -> Type[AhabCertificate]:
+    """Get the appropriate AHAB certificate class based on the MCU family revision.
+
+    :param family: MCU family revision
+    :return: Appropriate AHAB certificate class
+    """
+    certificate_classes = {"standard": AhabCertificate, "32bit_fuse_version": AhabCertificateMcuPqc}
+    certificate_type = get_db(family).get_str(DatabaseManager.AHAB, "certificate_type", "standard")
+    return certificate_classes[certificate_type]

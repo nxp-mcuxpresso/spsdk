@@ -16,6 +16,9 @@ revisions:
         fuses_1:
           _name: "AHAB SRKH PQC"
           pqc_srkh: "__srk_hash1" # SRK PQC hash fuse
+        # B0 revision requires dummy image for OEI DDR
+        oei_ddr_gap_after_image: 0
+        oei_ddr_qb_data_dummy: True
       # ======== Certificate block section ========
       cert_block:
         rot_type: "srk_table_ahab_v2"
@@ -225,7 +228,7 @@ features:
 
   # ======== Communication buffer section ========
   comm_buffer:
-    address: 0x204b_0000
+    address: 0x9280_0000
     size: 0x30000
 
   # ======== Certificate block section ========
@@ -238,6 +241,7 @@ features:
     socc: 0x4D58005F # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
+    auth_beacon_length: 4 # The length in bytes of authentication beacon
     ele_cnt_version: 1
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]
@@ -250,11 +254,11 @@ features:
 
   # ======== AHAB section ========
   ahab:
-
     containers_max_cnt: 3
     valid_offset_minimal_alignment: 0x400
     container_types: [1] # Supported container types
     core_ids:
+      DUMMY_CORE: [0, "dummy", "Virtual dummy core (used for data)"]
       CORTEX_M33: [1, "cortex-m33", "Cortex M33 - Boot core"]
       CORTEX_A55: [2, "cortex-a55", "Cortex A55"]
       ELE: [6, "ele", "EdgeLock Enclave"]
@@ -274,6 +278,7 @@ features:
         PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
         EXECUTABLE_FAST_BOOT_IMAGE:
           [0x0A, executable_fast_boot_image, Executable fast boot Image]
+        OEI_DDR: [0x0D, oei_ddr, Executable boot Image]
         V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
 
       ele:

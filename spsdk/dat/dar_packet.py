@@ -7,6 +7,7 @@
 
 """Module with Debug Authentication Response (DAR) Packet."""
 
+import logging
 from struct import pack
 from typing import Any, Optional, Type
 
@@ -25,7 +26,9 @@ from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import load_binary, value_to_int
+
+logger = logging.getLogger(__name__)
 
 
 class DebugAuthenticateResponse(FeatureBaseClass):
@@ -50,6 +53,9 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         :param path_dck_private: the path, where the dck private key is store
         """
         self.debug_credential = debug_credential
+        if auth_beacon > 0xFFFF:
+            logger.warning(f"Authentication beacon value {hex(auth_beacon)} truncated to 16 bits")
+            auth_beacon = auth_beacon & 0xFFFF
         self.auth_beacon = auth_beacon
         self.dac = dac
         self.family = family
@@ -62,7 +68,7 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         """String representation of DebugAuthenticateResponse."""
         msg = f"DAC:\n{str(self.dac)}\n"
         msg += f"DC:\n{str(self.debug_credential)}\n"
-        msg += f"Authentication Beacon: {self.auth_beacon}\n"
+        msg += f"Authentication Beacon: {hex(self.auth_beacon)}\n"
         return msg
 
     def _get_data_for_signature(self) -> bytes:
@@ -270,7 +276,6 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         :return: the exported bytes from object
         """
         self.sign_message.update_fields()
-        self.sign_message.verify().validate()
         return self.sign_message.export()
 
     @classmethod
@@ -288,15 +293,17 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         if dac is None:
             raise SPSDKValueError("DAC object must be specified for proper DAR creating response.")
         family = FamilyRevision.load_from_config(config)
-        auth_beacon = config.get("beacon", 0)
+        db = get_db(family=family)
+        use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+        auth_beacon = value_to_int(config.pop("beacon", 0)) if use_beacon else 0
         dc = DebugCredentialEdgeLockEnclaveV2.parse(
             load_binary(config.get_input_file_name("certificate")), family=family
         )
         # add missing parts to config from DC & DAC
-        config["fuse_version"] = dc.certificate.fuse_version
-        config["sw_version"] = 0
+        config["fuse_version"] = config.get_int("fuse_version", 0)
+        config["sw_version"] = config.get_int("sw_version", 0)
         message = {
-            "uuid": dc.uuid.hex(),
+            "uuid": dac.uuid.hex(),
             "command": {
                 "DAT_AUTHENTICATION_REQ": {
                     "challenge_vector": dac.challenge.hex(),
@@ -328,20 +335,24 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         update_validation_schema_family(
             sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
         )
+
         schemas_smsg = SignedMessage.get_validation_schemas(family)[1]
         schemas_smsg["required"].remove("output")
         schemas_smsg["required"].remove("fuse_version")
         schemas_smsg["required"].remove("sw_version")
         schemas_smsg["required"].remove("message")
-        schemas_smsg["required"].append("certificate")
         schemas_smsg["properties"].pop("output")
-        schemas_smsg["properties"].pop("fuse_version")
-        schemas_smsg["properties"].pop("sw_version")
         schemas_smsg["properties"].pop("check_all_signatures")
         schemas_smsg["properties"].pop("iv_path")
         schemas_smsg["properties"].pop("message")
+        schemas_smsg["properties"].pop("certificate")
 
-        return [family_schema, schemas_smsg]
+        ahab_dc_schema = get_schema_file(DatabaseManager.DAT)["ahab_debug_certificate"]
+
+        ret = [family_schema, schemas_smsg, ahab_dc_schema]
+        if get_db(family).get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False):
+            ret.append(get_schema_file(DatabaseManager.DAT)["ele_auth_beacon"])
+        return ret
 
 
 _version_mapping = {
@@ -350,4 +361,6 @@ _version_mapping = {
     "2.0": DebugAuthenticateResponseECC_256,
     "2.1": DebugAuthenticateResponseECC_384,
     "2.2": DebugAuthenticateResponseECC_521,
+    "3.1": DebugAuthenticateResponseECC_256,
+    "3.2": DebugAuthenticateResponseEdgelockEnclaveV2,
 }

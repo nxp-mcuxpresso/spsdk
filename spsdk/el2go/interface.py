@@ -184,6 +184,16 @@ class EL2GOInterfaceHandler:
         """Optional preparation step."""
 
     @abstractmethod
+    def prepare_dispatch(
+        self,
+        secure_objects: bytes,
+        secure_objects_address: int,
+        prov_fw: Optional[bytes] = None,
+        prov_fw_address: Optional[int] = None,
+    ) -> None:
+        """Prepare device to run NXP Provisioning Firmware."""
+
+    @abstractmethod
     def get_version(self) -> str:
         """Return EdgeLock 2GO NXP Provisioning Firmware's version."""
 
@@ -327,6 +337,38 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
     def prepare(self, loader: Optional[str]) -> None:
         """Prepare device for provisioning."""
         logger.debug("Prepare method is not implemented")
+
+    def prepare_dispatch(
+        self,
+        secure_objects: bytes,
+        secure_objects_address: int,
+        prov_fw: Optional[bytes] = None,
+        prov_fw_address: Optional[int] = None,
+    ) -> None:
+        """Prepare device to run NXP Provisioning Firmware."""
+        if not isinstance(self.device, McuBoot):
+            raise SPSDKError("Wrong instance of device, must be MCUBoot")
+        with self.device as device:
+            result = device.flash_erase_region(secure_objects_address, len(secure_objects))
+            if not result:
+                raise SPSDKError(
+                    f"Failed to erase secure objects region. Error: {device.status_string}"
+                )
+            result = device.write_memory(secure_objects_address, secure_objects)
+            if not result:
+                raise SPSDKError(f"Failed to write secure objects. Error: {device.status_string}")
+            if prov_fw is not None and prov_fw_address is not None:
+                result = device.flash_erase_region(prov_fw_address, len(prov_fw))
+                if not result:
+                    raise SPSDKError(
+                        f"Failed to erase  provisioning firmware region. Error: {device.status_string}"
+                    )
+                result = device.write_memory(prov_fw_address, prov_fw)
+                if not result:
+                    raise SPSDKError(
+                        f"Failed to write provisioning firmware. Error: {device.status_string}"
+                    )
+            device.reset(reopen=False)
 
     def run_provisioning(
         self,
@@ -504,3 +546,13 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
     def reset(self, reopen: bool = False) -> None:
         """Reset the target."""
         logger.error("Reset is not supported")
+
+    def prepare_dispatch(
+        self,
+        secure_objects: bytes,
+        secure_objects_address: int,
+        prov_fw: Optional[bytes] = None,
+        prov_fw_address: Optional[int] = None,
+    ) -> None:
+        """Prepare device to run NXP Provisioning Firmware."""
+        raise NotImplementedError("Provisioning not supported for U-Boot interface")

@@ -31,6 +31,8 @@ class PluginType(SpsdkEnum):
     DEVICE_INTERFACE = (1, "spsdk.device.interface", "Device interface")
     DEBUG_PROBE = (2, "spsdk.debug_probe", "Debug Probe")
     WPC_SERVICE = (3, "spsdk.wpc.service", "WPC Service")
+    SB31_KEY_DERIVATOR = (4, "spsdk.sb31kdp", "Key Derivator for SB31 encryption")
+    PUBLIC_KEY_PROVIDER = (5, "spsdk.pkp", "Public Key Provider")
 
 
 class PluginsManager(metaclass=SingletonMeta):
@@ -67,9 +69,9 @@ class PluginsManager(metaclass=SingletonMeta):
             except (ModuleNotFoundError, ImportError) as exc:
                 logger.warning(f"Module {ep.module} could not be loaded: {exc}")
                 continue
-            logger.info(f"Plugin {ep.name} has been loaded.")
-            self.register(plugin)
-            count += 1
+            if self.register(plugin):
+                logger.info(f"Plugin {ep.name}-{ep.group} has been loaded.")
+                count += 1
         return count
 
     def load_from_source_file(self, source_file: str, module_name: Optional[str] = None) -> None:
@@ -118,17 +120,19 @@ class PluginsManager(metaclass=SingletonMeta):
             raise SPSDKError(f"Failed to load module spec {spec.name}: {e}") from e
         return module
 
-    def register(self, plugin: ModuleType) -> None:
+    def register(self, plugin: ModuleType) -> bool:
         """Register a plugin with the given name.
 
         :param plugin: Plugin as a module
+        :return: True if plugin was successfully registered, False if plugin is already registered
         """
         plugin_name = self.get_plugin_name(plugin)
         if plugin_name in self.plugins:
             logger.debug(f"Plugin {plugin_name} has been already registered.")
-            return
+            return False
         self.plugins[plugin_name] = plugin
         logger.debug(f"A plugin {plugin_name} has been registered.")
+        return True
 
     def get_plugin(self, name: str) -> Optional[ModuleType]:
         """Return a plugin for the given name.

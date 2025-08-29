@@ -325,8 +325,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
             test_address = value_to_int(
                 self.options.get("test_address", DEFAULT_TEST_MEM_AP_ADDRESS)
             )
-
             if self.mem_ap_ix < 0:
+                logger.debug(f"Trying MEM AP on address {hex(test_address)}")
                 # Try to find MEM AP
                 for i in POSSIBLE_MEM_AP_IX:
                     try:

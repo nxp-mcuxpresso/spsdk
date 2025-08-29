@@ -60,6 +60,8 @@ class TestFuseOperator(FuseOperator):
 class TestBlhostFuseOperator(FuseOperator):
     """Test blhost fuse operator using class attributes."""
 
+    __test__ = False
+
     NAME = "blhost"
     ACTIONS: list[FuseAction] = []
     RETURN_VALUES: dict = {}
@@ -76,7 +78,10 @@ class TestBlhostFuseOperator(FuseOperator):
         :return: Fuse value
         """
         self.ACTIONS.append(FuseAction(action_type="read", fuse_index=index))
-        return self.RETURN_VALUES.get(index) or self.registers.get_by_otp_index(index).get_reset_value()
+        return (
+            self.RETURN_VALUES.get(index)
+            or self.registers.get_by_otp_index(index).get_reset_value()
+        )
 
     def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
         self.RETURN_VALUES[index] = value

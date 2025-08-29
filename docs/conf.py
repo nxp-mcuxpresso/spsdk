@@ -124,3 +124,7 @@ html_extra_path = ["html_schemas"]
 myst_enable_extensions = ["html_image"]
 
 rediraffe_redirects = {"usage/installation": "examples/_knowledge_base/installation_guide"}
+
+# decrease logging verbosity for markdown_it to prevent excessive output
+markdown_it_logger = logging.getLogger("markdown_it")
+markdown_it_logger.setLevel(logging.WARNING)

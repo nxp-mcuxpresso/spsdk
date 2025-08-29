@@ -16,7 +16,7 @@ def test_secure_binary_c_creation():
         firmware_version=1, description="Test SBC file", timestamp=12345678
     )
     sbc = SecureBinaryC(
-        family=FamilyRevision("mcxa286"),
+        family=FamilyRevision("mcxa366"),
         firmware_version=1,
         description="Test SBC file",
         timestamp=12345678,
@@ -42,10 +42,8 @@ def test_secure_binary_c_max_timestamp():
 
 # Test basic creation and validation
 def test_secure_binary_c_creation():
-    family = FamilyRevision("mcxa286")
-    commands = SecureBinaryCCommands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    family = FamilyRevision("mcxa366")
+    commands = SecureBinaryCCommands(family=family, hash_type=EnumHashAlgorithm.SHA256)
     sbc = SecureBinaryC(
         family=family,
         firmware_version=1,
@@ -58,10 +56,8 @@ def test_secure_binary_c_creation():
 
 # Test exporting functionality
 def test_secure_binary_c_export():
-    family = FamilyRevision("mcxa286")
-    commands = SecureBinaryCCommands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    family = FamilyRevision("mcxa366")
+    commands = SecureBinaryCCommands(family=family, hash_type=EnumHashAlgorithm.SHA256)
     sbc = SecureBinaryC(
         family=family,
         firmware_version=1,
@@ -92,10 +88,8 @@ def test_secure_binary_c_firmware_version_boundaries():
 
 def test_secure_binary_c_equality():
     """Test equality comparison of SBC objects."""
-    family = FamilyRevision("mcxa286")
-    commands = SecureBinaryCCommands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    family = FamilyRevision("mcxa366")
+    commands = SecureBinaryCCommands(family=family, hash_type=EnumHashAlgorithm.SHA256)
 
     sbc1 = SecureBinaryC(
         family=family,

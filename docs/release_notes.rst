@@ -17,6 +17,52 @@ Release Notes
 =============
 
 ------------------------
+3.2.0 (29-August-2025)
+------------------------
+
+**Rapid blhost**
+
+Introducing RAPID BLHOST - a high-performance version of our blhost application written in Rust for significantly faster startup times and improved overall performance compared to the Python-based implementation.
+Available on `GitHub <https://github.com/nxp-mcuxpresso/rblhost>`_, `Crates <https://crates.io/crates/rblhost>`_, and `PyPI <https://pypi.org/project/pymboot-rs/>`_.
+
+**New features**
+
+* `nxpimage`_:
+    - implement MBI PQC
+    - support configurable hash algorithms in ahab certificate
+    - add SHAKE hash algorithms to SPSDK and AHAB container
+
+* :ref:`el2go-host`:
+    - add API/command to get stats of db file with product-based secure objects
+    - add prepare-device command to prod command group
+
+* :ref:`nxpdevhsm`:
+    - add new format for sbfile for mcxa family devices with secure installer/extended bootloader
+
+* support mcxe24 
+* support mcxn556s
+* add S19 to binary converter
+* update CLI apps to display subgroups as trees
+* update way how SVN's are handled in the template for DICE
+
+**Bugfixes**
+
+* :ref:`el2go-host`:
+    - fix parameter "--secure-objects-file" for prod prepare-device
+    - fix get-next-so fails with static-only database
+
+* :ref:`nxpdevhsm`:
+    - fix final reset jump out of ISP for mcxa series
+    - fix invalid OEM ENC MASTER SHARE size for mcxn556s
+* `nxpimage`_:
+    - fix container offset in verbose is incorrect
+    - fix SB31 export issue with plain encryption key
+    - fix AHAB certificate confusing comments in DAT template
+
+* `pfr`_:
+    - fix pfr for mcxa, mcxal series
+
+------------------------
 3.1.0 (11-July-2025)
 ------------------------
 
@@ -76,7 +122,7 @@ Release Notes
 
 **Bugfixes**
 
-* `nxpcrypto`_: 
+* `nxpcrypto`_:
     - improve serial number validation in certificate generation
 * `nxpimage`_:
     - fix AHAB container header info display
@@ -126,7 +172,7 @@ Current version introduces breaking changes, which are described in details in `
     - remove 'mainCertChainId' key in cert-block configuration by 'mainRootCertId'
     - replace hab export /parse commands with unified configuration approach
     - implement SB3.1 data compression
-    - add parser of SB3.1 
+    - add parser of SB3.1
     - consolidate all keys for data of SB3.1 load command into one
     - simplify load command configuration
     - simplify input data values
@@ -139,14 +185,14 @@ Current version introduces breaking changes, which are described in details in `
 * :ref:`tphost`/:ref:`tpconfig`:
     - remove applications
 * remove family option from main top command to individual subcommands
-* remove '--plugin' as optional parameter 
+* remove '--plugin' as optional parameter
 * rename merge commands to export
-* improve displaying of --help 
+* improve displaying of --help
 * all applications that support the ``--config`` option now also support the ``-oc/--override-config`` option
 
 **Bugfixes**
 
-* `blhost`_: 
+* `blhost`_:
     - fix receive-sb-file command failures with usb
 * :ref:`el2go-host`:
     - fix family parameter issue
@@ -176,7 +222,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix missing family parameter for service parameters
     - fix api key existence
 * `shadowregs`_:
-    - fix general error 
+    - fix general error
 * fix invalid -oc option behavior
 
 ------------------------

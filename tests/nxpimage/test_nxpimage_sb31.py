@@ -7,6 +7,7 @@
 
 """Test SecureBinary part of nxpimage app."""
 import json
+import jsonschema
 import os
 
 import pytest
@@ -20,6 +21,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
+from tools.convert_cfg import DatabaseManager
 
 
 def process_config_file(config_path: str, destination: str):
@@ -235,3 +237,28 @@ def test_nxpimage_sb31_parse(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, c
         assert parsed_config_obj.get("containerVersion") == orig_config.get(
             "containerVersion"
         ), "Container version doesn't match"
+
+
+@pytest.mark.parametrize(
+    "config, passed",
+    [
+        ({"isEncrypted": True}, False),
+        ({}, False),
+        ({"isEncrypted": False}, True),
+        ({"isEncrypted": True, "containerKeyBlobEncryptionKey": "path/to/key.txt"}, True),
+        ({"containerKeyBlobEncryptionKey": "path/to/key.txt"}, True),
+        ({"isEncrypted": False, "containerKeyBlobEncryptionKey": "path/to/key.txt"}, True),
+    ],
+)
+def test_isEncrypted_requires_containerKeyBlobEncryptionKey(config, passed):
+    """Test that when isEncrypted is true, containerKeyBlobEncryptionKey is required."""
+    sb31_schema = DatabaseManager.get_db().get_schema_file("sb31")["sb3"]
+    if passed:
+        # Should pass validation
+        jsonschema.validate(instance=config, schema=sb31_schema)
+    else:
+        # Should fail validation with expected error
+        with pytest.raises(jsonschema.exceptions.ValidationError) as excinfo:
+            jsonschema.validate(instance=config, schema=sb31_schema)
+        assert "containerKeyBlobEncryptionKey" in str(excinfo.value)
+        assert "required property" in str(excinfo.value)

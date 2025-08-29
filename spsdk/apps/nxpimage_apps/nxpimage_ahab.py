@@ -13,7 +13,7 @@ from typing import Optional
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -21,7 +21,7 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import INT, SPSDKAppError, print_files, print_verifier_to_console
 from spsdk.crypto.signature_provider import get_signature_provider_from_config_str
 from spsdk.exceptions import SPSDKError
-from spsdk.image.ahab.ahab_certificate import AhabCertificate
+from spsdk.image.ahab.ahab_certificate import AhabCertificate, get_ahab_certificate_class
 from spsdk.image.ahab.ahab_data import AhabTargetMemory, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.utils import (
@@ -39,7 +39,7 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="ahab", cls=SpsdkClickGroup)
+@click.group(name="ahab", cls=CommandsTreeGroup)
 def ahab_group() -> None:
     """Group of sub-commands related to AHAB."""
 
@@ -310,7 +310,7 @@ def ahab_get_sign_template(family: FamilyRevision, output: str) -> None:
     write_file(AHABImage.get_signing_template(family), output)
 
 
-@ahab_group.group(name="certificate", cls=SpsdkClickGroup)
+@ahab_group.group(name="certificate", cls=CommandsTreeGroup)
 def ahab_certificate_group() -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to AHAB certificate blob."""
 
@@ -326,7 +326,7 @@ def ahab_cert_block_get_template_command(family: FamilyRevision, output: str) ->
 def ahab_cert_block_get_template(family: FamilyRevision, output: str) -> None:
     """Create template of configuration in YAML format."""
     click.echo(f"Creating {get_printable_path(output)} template file.")
-    write_file(AhabCertificate.get_config_template(family), output)
+    write_file(get_ahab_certificate_class(family).get_config_template(family), output)
 
 
 @ahab_group.command(name="re-sign", no_args_is_help=True)
@@ -415,15 +415,42 @@ def ahab_re_sign_command(
     required=False,
     help="Select memory type.",
 )
-def ahab_sign_command(binary: str, output: str, mem_type: str, config: Config) -> None:
+@click.option(
+    "-fs",
+    "--fuse-scripts",
+    type=click.Path(file_okay=False, dir_okay=True, resolve_path=True),
+    required=False,
+    help="Directory path where fuse script files will be exported.",
+)
+def ahab_sign_command(
+    binary: str, output: str, mem_type: str, config: Config, fuse_scripts: Optional[str]
+) -> None:
     """Sign all non-NXP AHAB containers and optionally encrypt them."""
-    signed_image = ahab_sign_image(
+    signed_image, bimg = ahab_sign_image(
         image_path=binary,
         config=config,
         mem_type=mem_type,
     )
     write_file(signed_image, output, "wb")
     click.echo(f"Signed image saved to {output}")
+
+    # Handle post_export actions for fuse scripts if requested
+    if fuse_scripts:
+        # Create the directory if it doesn't exist
+        os.makedirs(fuse_scripts, exist_ok=True)
+
+        post_export_files = []
+        for segment in bimg.segments:
+            if hasattr(segment, "ahab") and hasattr(segment.ahab, "post_export"):
+                segment_post_export_files = segment.ahab.post_export(fuse_scripts)
+                if segment_post_export_files:
+                    post_export_files.extend(segment_post_export_files)
+
+        if post_export_files:
+            click.echo(f"Exporting AHAB fuses to {get_printable_path(fuse_scripts)}.")
+            print_files(post_export_files)
+        else:
+            click.echo("No fuse scripts were generated.")
 
 
 @ahab_group.command(name="fix-signature-block-version", no_args_is_help=True)
@@ -466,7 +493,8 @@ def ahab_cert_block_export_command(config: Config, output: str) -> None:
 
 def ahab_cert_block_export(config: Config, output: str, plugin: Optional[str] = None) -> None:
     """Generate AHAB Certificate Blob from YAML/JSON configuration."""
-    cert_block = AhabCertificate.load_from_config(config)
+    family = FamilyRevision.load_from_config(config)
+    cert_block = get_ahab_certificate_class(family).load_from_config(config)
     # Sign the certificate blob
     cert_block.update_fields()
     cert_data = cert_block.export()
@@ -502,7 +530,7 @@ def ahab_cert_block_parse_command(
 
 def ahab_cert_block_parse(family: FamilyRevision, binary: str, srk_set: str, output: str) -> None:
     """Parse AHAB Certificate Blob."""
-    cert_block = AhabCertificate.parse(load_binary(binary), family)
+    cert_block = get_ahab_certificate_class(family).parse(load_binary(binary), family)
     logger.info(str(cert_block))
     write_file(
         cert_block.get_config_yaml(output, index=0, srk_set=FlagsSrkSet.from_attr(srk_set)),
@@ -535,13 +563,13 @@ def ahab_cert_block_verify_command(family: FamilyRevision, binary: str, problems
 def ahab_cert_block_verify(family: FamilyRevision, binary: str, problems: bool) -> None:
     """Verify AHAB Image."""
     data = load_binary(binary)
-    # preparsed = AHABCertificate.pre_parse_verify(data)
+    # preparsed = AhabCertificate.pre_parse_verify(data)
     # if preparsed.has_errors:
     #     click.echo("The image bases has error, it doesn't passed pre-parse check:")
     #     print_verifier_to_console(preparsed)
     #     raise SPSDKAppError("Pre-parsed check failed")
 
-    ahab_certificate = AhabCertificate.parse(data, family)
+    ahab_certificate = get_ahab_certificate_class(family).parse(data, family)
     ver = ahab_certificate.verify()
 
     results = None

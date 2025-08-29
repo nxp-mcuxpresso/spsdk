@@ -10,6 +10,7 @@ import logging
 from typing import Type, Union
 
 from spsdk.exceptions import SPSDKError
+from spsdk.sbfile.sb4.devhsm import DevHsmSB4
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sbc.devhsm import DevHsmSBc
 from spsdk.sbfile.sbx.devhsm import DevHsmSBx
@@ -19,7 +20,9 @@ from spsdk.utils.family import FamilyRevision, get_db
 logger = logging.getLogger(__name__)
 
 
-def get_devhsm_class(family: FamilyRevision) -> Type[Union["DevHsmSB31", "DevHsmSBx", "DevHsmSBc"]]:
+def get_devhsm_class(
+    family: FamilyRevision,
+) -> Type[Union["DevHsmSB4", "DevHsmSB31", "DevHsmSBx", "DevHsmSBc"]]:
     """Get name of DevHsm class based on family.
 
     :param family: name of the family
@@ -27,6 +30,8 @@ def get_devhsm_class(family: FamilyRevision) -> Type[Union["DevHsmSB31", "DevHsm
     :return: name of the class that supports given family
     """
     devhsm_sub_features = get_db(family).get_list(DatabaseManager.DEVHSM, "sub_features")
+    if "DevHsmSB4" in devhsm_sub_features:
+        return DevHsmSB4
     if "DevHsmSB31" in devhsm_sub_features:
         return DevHsmSB31
     if "DevHsmSBx" in devhsm_sub_features:

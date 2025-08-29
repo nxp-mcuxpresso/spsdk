@@ -14,17 +14,12 @@ Each concrete signature provider needs to implement:
 """
 
 import abc
-import inspect
-import json
 import logging
 import os
-from types import ModuleType
-from typing import Any, Optional, Type, Union, cast
+from typing import Any, Optional, Union, cast
 
-import requests
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
-from spsdk import __version__ as spsdk_version
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.exceptions import SPSDKKeysNotMatchingError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_algorithm
@@ -38,36 +33,23 @@ from spsdk.crypto.keys import (
     SPSDKKeyPassphraseMissing,
     prompt_for_passphrase,
 )
-from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKUnsupportedOperation, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
 from spsdk.utils.config import Config
+from spsdk.utils.http_client import HTTPClientBase
 from spsdk.utils.misc import find_file, load_secret
-from spsdk.utils.plugins import PluginsManager, PluginType
+from spsdk.utils.service_provider import ServiceProvider
 
 logger = logging.getLogger(__name__)
 
 
-class SignatureProvider(abc.ABC):
+class SignatureProvider(ServiceProvider):
     """Abstract class (Interface) for all signature providers."""
 
     # Subclasses override the following signature provider type
     identifier = "INVALID"
     reserved_keys = ["type", "identifier", "search_paths"]
     legacy_identifier_name = "sp_type"
-
-    def __init_subclass__(cls) -> None:
-        if not inspect.isabstract(cls) and hasattr(cls, cls.legacy_identifier_name):
-            identifier = getattr(cls, cls.legacy_identifier_name)
-            logger.warning(
-                (
-                    f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = {identifier}', "
-                    f"please use 'identifier = {identifier}' instead"
-                )
-            )
-            setattr(cls, "identifier", identifier)
-
-        if not inspect.isabstract(cls) and not hasattr(cls, "identifier"):
-            raise SPSDKError(f"{cls.__name__}.identifier is not set")
-        return super().__init_subclass__()
+    plugin_identifier = "spsdk.sp"
 
     @abc.abstractmethod
     def sign(self, data: bytes) -> bytes:
@@ -119,88 +101,6 @@ class SignatureProvider(abc.ABC):
                 f"Signature has unexpected length: {len(signature)}. Expected length: {self.signature_length}"
             )
         return signature
-
-    def info(self) -> str:
-        """Provide information about the Signature provider."""
-        return self.__class__.__name__
-
-    @staticmethod
-    def convert_params(params: str) -> dict[str, str]:
-        """Coverts creation params from string into dictionary.
-
-        e.g.: "type=file;file_path=some_path" -> {'type': 'file', 'file_path': 'some_path'}
-        :param params: Params in the mentioned format.
-        :raises: SPSDKKeyError: Duplicate key found.
-        :raises: SPSDKValueError: Parameter must meet the following pattern: type=file;file_path=some_path.
-        :return: Converted dictionary of parameters.
-        """
-        result: dict[str, str] = {}
-        try:
-            for p in params.split(";"):
-                key, value = p.split("=")
-
-                # Check for duplicate keys
-                if key in result:
-                    raise SPSDKKeyError(f"Duplicate key found: {key}")
-
-                result[key] = value
-
-        except ValueError as e:
-            raise SPSDKValueError(
-                "Parameter must meet the following pattern: type=file;file_path=some_path"
-            ) from e
-
-        return result
-
-    @classmethod
-    def get_types(cls) -> list[str]:
-        """Returns a list of all available signature provider types."""
-        return [sub_class.identifier for sub_class in cls.__subclasses__()]
-
-    @classmethod
-    def filter_params(cls, klass: Any, params: dict[str, str]) -> dict[str, str]:
-        """Remove unused parameters from the given dictionary based on the class constructor.
-
-        :param klass: Signature provider class.
-        :param params: Dictionary of parameters.
-        :return: Filtered dictionary of parameters.
-        """
-        unused_params = set(params) - set(klass.__init__.__code__.co_varnames)
-        for key in cls.reserved_keys:
-            if key in unused_params:
-                del params[key]
-        return params
-
-    @classmethod
-    def create(cls, params: Union[str, dict]) -> Optional["SignatureProvider"]:
-        """Creates an concrete instance of signature provider."""
-        load_plugins()
-        if isinstance(params, str):
-            params = cls.convert_params(params)
-        sp_classes = cls.get_all_signature_providers()
-        for klass in sp_classes:  # pragma: no branch  # there always be at least one subclass
-            if klass.identifier == params["type"]:
-                klass.filter_params(klass, params)
-                return klass(**params)
-
-        logger.info(f"Signature provider of type {params['type']} was not found.")
-        return None
-
-    @staticmethod
-    def get_all_signature_providers() -> list[Type["SignatureProvider"]]:
-        """Get list of all available signature providers."""
-
-        def get_subclasses(
-            base_class: Type,
-        ) -> list[Type["SignatureProvider"]]:
-            """Recursively find all subclasses."""
-            subclasses = []
-            for subclass in base_class.__subclasses__():
-                subclasses.append(subclass)
-                subclasses.extend(get_subclasses(subclass))
-            return subclasses
-
-        return get_subclasses(SignatureProvider)
 
 
 class PlainFileSP(SignatureProvider):
@@ -330,7 +230,7 @@ class InteractivePlainFileSP(PlainFileSP):
             )
 
 
-class HttpProxySP(SignatureProvider):
+class HttpProxySP(HTTPClientBase, SignatureProvider):
     """Signature Provider implementation that delegates all operations to a proxy server."""
 
     identifier = "proxy"
@@ -344,7 +244,7 @@ class HttpProxySP(SignatureProvider):
         url_prefix: str = "api",
         timeout: int = 60,
         prehash: Optional[str] = None,
-        **kwargs: str,
+        **kwargs: Union[str, int, bool],
     ) -> None:
         """Initialize Http Proxy Signature Provider.
 
@@ -354,91 +254,51 @@ class HttpProxySP(SignatureProvider):
         :param timeout: REST API timeout in seconds, defaults to 60
         :param prehash: Name of the hashing algorithm to pre-hash data before sending to signing service
         """
-        self.base_url = f"http://{host}:{port}/"
-        self.base_url += f"{url_prefix}/" if url_prefix else ""
-        self.kwargs = kwargs
-        self.timeout = timeout
-        self.prehash = prehash
-        self.headers = {"spsdk-version": spsdk_version, "spsdk-api-version": self.api_version}
-
-    def _handle_request(self, url: str, data: Optional[dict] = None) -> dict:
-        """Handle REST API request.
-
-        :param url: REST API endpoint URL
-        :param data: JSON payload data, defaults to None
-        :raises SPSDKError: HTTP Error during API request
-        :raises SPSDKError: Invalid response data (not a valid dictionary)
-        :return: REST API data response as dictionary
-        """
-        json_payload = data or {}
-        json_payload.update(self.kwargs)
-        full_url = self.base_url + url
-        logger.info(f"Requesting: {full_url}")
-        response = requests.get(
-            url=full_url, json=json_payload, headers=self.headers, timeout=self.timeout
+        super().__init__(
+            host=host,
+            port=int(port),
+            url_prefix=url_prefix,
+            timeout=timeout,
+            use_ssl=False,
+            raise_exceptions=True,
+            **kwargs,
         )
-        logger.info(f"Response: {response}")
-        if not response.ok:
-            try:
-                extra_message = response.json()
-            except json.JSONDecodeError:
-                extra_message = "N/A"
-            raise SPSDKError(
-                f"Error {response.status_code} ({response.reason}) occurred when calling {full_url}\n"
-                f"Extra response data: {extra_message}"
-            )
-        try:
-            return response.json()
-        except json.JSONDecodeError as e:
-            raise SPSDKError("Response is not a valid JSON object") from e
-
-    def _check_response(self, response: dict, names_types: list[tuple[str, Type]]) -> None:
-        """Check if the response contains required data.
-
-        :param response: Response to check
-        :param names_types: Name and type of required response members
-        :raises SPSDKError: Response doesn't contain required member
-        :raises SPSDKError: Responses' member has incorrect type
-        """
-        for name, typ in names_types:
-            if name not in response:
-                raise SPSDKError(f"Response object doesn't contain member '{name}'")
-            if not isinstance(response[name], typ):
-                raise SPSDKError(
-                    f"Response member '{name}' is not a instance of '{typ}' but '{type(response[name])}'"
-                )
+        self.prehash = prehash
 
     def sign(self, data: bytes) -> bytes:
         """Return signature for data."""
         if self.prehash:
             data = get_hash(data=data, algorithm=EnumHashAlgorithm.from_label(self.prehash))
         response = self._handle_request(
-            "sign",
-            {"data": data.hex(), "prehashed": self.prehash},
+            method=self.Method.GET,
+            url="/sign",
+            json_data={
+                "data": data.hex(),
+                "prehashed": self.prehash,
+            },
         )
-        self._check_response(response=response, names_types=[("data", str)])
-        return bytes.fromhex(response["data"])
+        response_data = self._check_response(response=response, names_types=[("data", str)])
+        return bytes.fromhex(response_data["data"])
 
     @property
     def signature_length(self) -> int:
         """Return length of the signature."""
-        response = self._handle_request(
-            "signature_length",
-        )
-        self._check_response(response=response, names_types=[("data", int)])
-        return int(response["data"])
+        response = self._handle_request(method=self.Method.GET, url="/signature_length")
+        response_data = self._check_response(response=response, names_types=[("data", int)])
+        return int(response_data["data"])
 
     def verify_public_key(self, public_key: PublicKey) -> bool:
         """Verify if given public key matches private key."""
         response = self._handle_request(
-            "verify_public_key",
-            {
+            method=self.Method.GET,
+            url="/verify_public_key",
+            json_data={
                 "data": public_key.export(encoding=SPSDKEncoding.PEM).decode("utf-8"),
                 "encoding": "pem",
             },
         )
-        self._check_response(response=response, names_types=[("data", bool)])
-        return response["data"]
+        response_data = self._check_response(response=response, names_types=[("data", bool)])
+        return response_data["data"]
 
 
 def get_signature_provider(config: Config, key: str = "signer", **kwargs: Any) -> SignatureProvider:
@@ -490,8 +350,10 @@ def get_signature_provider_from_config_str(config_str: str, **kwargs: Any) -> Si
     return get_signature_provider(config, **kwargs)
 
 
-def load_plugins() -> dict[str, ModuleType]:
-    """Load all installed signature provider plugins."""
-    plugins_manager = PluginsManager()
-    plugins_manager.load_from_entrypoints(PluginType.SIGNATURE_PROVIDER.label)
-    return plugins_manager.plugins
+def try_to_verify_public_key(signature_provider: SignatureProvider, public_key_data: bytes) -> None:
+    """Verify public key by signature provider if verify method is implemented."""
+    logger.warning(
+        "Function `try_to_verify_public_key` is deprecated and will be removed. "
+        "Please use `SignatureProvider.try_to_verify_public_key` instead."
+    )
+    signature_provider.try_to_verify_public_key(public_key_data)

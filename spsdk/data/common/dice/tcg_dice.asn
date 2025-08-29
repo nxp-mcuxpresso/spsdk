@@ -1,0 +1,65 @@
+TCG DEFINITIONS ::= BEGIN
+
+    tcg OBJECT IDENTIFIER ::= { 2 23 133 }
+    tcg-dice OBJECT IDENTIFIER ::= { tcg platformClass(5) 4 }
+
+    FWID ::= SEQUENCE {
+        hashAlg OBJECT IDENTIFIER,
+        digest OCTET STRING
+    }
+
+    FWIDLIST ::= SEQUENCE SIZE (1..10) OF FWID
+
+    OperationalFlags ::= BIT STRING {
+        notConfigured (0),
+        notSecure (1),
+        recovery (2),
+        debug (3),
+        notReplayProtected (4),
+        notIntegrityProtected (5),
+        notRuntimeMeasured (6),
+        notImmutable (7),
+        notTcb (8),
+        fixedWidth (31)
+    }
+
+    OperationalFlagsMask ::= BIT STRING {
+        notConfigured (0),
+        notSecure (1),
+        recovery (2),
+        debug (3),
+        notReplayProtected (4),
+        notIntegrityProtected (5),
+        notRuntimeMeasured (6),
+        notImmutable (7),
+        notTcb (8),
+        fixedWidth (31)
+    }
+
+    tcg-dice-TcbInfo OBJECT IDENTIFIER ::= { tcg-dice 1 }
+
+    DiceTcbInfo ::= SEQUENCE {
+        vendor      [0] IMPLICIT UTF8String OPTIONAL,
+        model       [1] IMPLICIT UTF8String OPTIONAL,
+        version     [2] IMPLICIT UTF8String OPTIONAL,
+        svn         [3] IMPLICIT INTEGER OPTIONAL,
+        layer       [4] IMPLICIT INTEGER OPTIONAL,
+        index       [5] IMPLICIT INTEGER OPTIONAL,
+        fwids       [6] IMPLICIT FWIDLIST OPTIONAL,
+        flags       [7] IMPLICIT OperationalFlags OPTIONAL,
+        vendorInfo  [8] IMPLICIT OCTET STRING OPTIONAL,
+        type        [9] IMPLICIT OCTET STRING OPTIONAL,
+        flagsMask   [10]IMPLICIT OperationalFlagsMask OPTIONAL
+    }
+
+    tcg-dice-MultiTcbInfo OBJECT IDENTIFIER ::= { tcg-dice 5 }
+
+    DiceTcbInfoSeq ::= SEQUENCE SIZE (1..3) OF DiceTcbInfo
+
+    tcg-dice-Ueid OBJECT IDENTIFIER ::= { tcg-dice 4 }
+
+    TcgUeid ::= SEQUENCE {
+        ueid OCTET STRING
+    }
+
+END

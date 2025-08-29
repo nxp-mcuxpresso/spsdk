@@ -36,22 +36,7 @@
                             "width": 1
                         },
                         {
-                            "width": 1,
-                            "id": "fuse5-bit-2",
-                            "name": "READ_PROTECTION",
-                            "description": "Read protection for CUST_PROD_OEMFW_AUTH_PUK[255:0]. When read protection is blown, it protects the fuses against reading.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable read protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable read protection lock."
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 5
@@ -87,22 +72,7 @@
                             "width": 1
                         },
                         {
-                            "width": 1,
-                            "id": "fuse6-bit-2",
-                            "name": "READ_PROTECTION",
-                            "description": "Read protection for CUST_PROD_OEMFW_ENC_SK[255:0]. When read protection is blown, it protects the fuses against reading.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable read protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable read protection lock."
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 5
@@ -138,22 +108,7 @@
                             "width": 1
                         },
                         {
-                            "width": 1,
-                            "id": "fuse8-bit-2",
-                            "name": "READ_PROTECTION",
-                            "description": "Read protection for DCFG_CC_SOCU_L1. When read protection is blown, it protects the fuses against reading.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable read protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable read protection lock."
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 5
@@ -189,22 +144,7 @@
                             "width": 1
                         },
                         {
-                            "width": 1,
-                            "id": "fuse9-bit-2",
-                            "name": "READ_PROTECTION",
-                            "description": "Read protection for DCFG_CC_SOCU_L2. When read protection is blown, it protects the fuses against reading.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable read protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable read protection lock."
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 5
@@ -504,14 +444,14 @@
                 {
                     "id": "fuse21",
                     "name": "DBG_AUTH_VU",
-                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0015",
                     "reg_width": 16
                 },
                 {
                     "id": "fuse22",
                     "name": "IMG_KEY_REVOKE",
-                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0016",
                     "reg_width": 16
                 }
@@ -1319,70 +1259,91 @@
                 {
                     "id": "fuse37",
                     "name": "CM33_S_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0025",
                     "reg_width": 64
                 },
                 {
                     "id": "fuse38",
                     "name": "CM33_NS_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0026",
                     "reg_width": 256
                 },
                 {
                     "id": "fuse39",
                     "name": "RADIO_VER_CNT",
-                    "description": "Monotonic counter indicating the minimal radio firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimal radio firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0027",
                     "reg_width": 128
                 },
                 {
                     "id": "fuse40",
                     "name": "SNT_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum ELE loadable firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimum ELE loadable firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0028"
                 },
                 {
                     "id": "fuse41",
                     "name": "CM33_BOOTLOADER_VER_CNT",
-                    "description": "Monotonic counter indicating the minimal CM33 bootloader version. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimal CM33 bootloader version. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0029",
                     "reg_width": 16
                 },
                 {
                     "id": "fuse42",
                     "name": "CM33_S_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_S_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "description": "Virtual counter indicating the secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_S_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
                     "index_int": "0x002A",
-                    "reg_width": 64
+                    "calculated": {
+                        "method": "virtual_counter",
+                        "src_register_id": "fuse37"
+                    },
+                    "reg_width": 8
                 },
                 {
                     "id": "fuse43",
                     "name": "CM33_NS_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the non-secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_NS_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "description": "Virtual counter indicating the non-secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_NS_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
                     "index_int": "0x002B",
-                    "reg_width": 256
+                    "calculated": {
+                        "method": "virtual_counter",
+                        "src_register_id": "fuse38"
+                    },
+                    "reg_width": 16
                 },
                 {
                     "id": "fuse44",
                     "name": "RADIO_VER_CNT_VIRTUAL",
-                    "description": "virtual counter indicating the radio firmware version. The integer value of this field indicates the number of set bits in RADIO_VER_CNT and that number equals the version number.Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "description": "Virtual counter indicating the radio firmware version. The integer value of this field indicates the number of set bits in RADIO_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
                     "index_int": "0x002C",
-                    "reg_width": 128
+                    "calculated": {
+                        "method": "virtual_counter",
+                        "src_register_id": "fuse39"
+                    },
+                    "reg_width": 8
                 },
                 {
                     "id": "fuse45",
                     "name": "SNT_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the ELE loadable firmware version. The integer value of this field indicates the number of set bits in SNT_VER_CNT and that number equals the version number.Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
-                    "index_int": "0x002D"
+                    "description": "Virtual counter indicating the ELE loadable firmware version. The integer value of this field indicates the number of set bits in SNT_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
+                    "index_int": "0x002D",
+                    "calculated": {
+                        "method": "virtual_counter",
+                        "src_register_id": "fuse40"
+                    },
+                    "reg_width": 8
                 },
                 {
                     "id": "fuse46",
                     "name": "CM33_BOOTLOADER_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the minimal version of the CM33 bootloader. Integer value equivalent to number of set fuse bits. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "description": "Virtual counter indicating the minimal version of the CM33 bootloader. Integer value equivalent to number of set fuse bits Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
                     "index_int": "0x002E",
-                    "reg_width": 16
+                    "calculated": {
+                        "method": "virtual_counter",
+                        "src_register_id": "fuse41"
+                    },
+                    "reg_width": 8
                 }
             ]
         },
@@ -1395,7 +1356,7 @@
                 {
                     "id": "fuse51",
                     "name": "NBU_SEC_BOOT_EN",
-                    "description": "NBU Secure Boot Enable",
+                    "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set. See the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
                     "index_int": "0x0033",
                     "reg_width": 8,
                     "bitfields": [
@@ -1403,17 +1364,17 @@
                             "width": 1,
                             "id": "fuse51-bit-0",
                             "name": "NBU_SEC_BOOT_EN",
-                            "description": "NBU secure boot enable fuse.",
+                            "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set. See the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
                             "values": [
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "NBU secure boot is disabled."
+                                    "description": "NBU image doesn't need to be authenticated (default)."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "NBU secure boot is enabled."
+                                    "description": "NBU image must be authenticated to boot."
                                 }
                             ]
                         },
@@ -1425,7 +1386,7 @@
                 {
                     "id": "fuse53",
                     "name": "OEM_SEC_BOOT_EN",
-                    "description": "OEM Secure Boot Enable",
+                    "description": "Main core secure boot enable boot enable fuse, boot image must be authenticated successfully to boot if this fuse field is set to 0xA. See the Security Reference Manual for the value of this fuse reflected in bits 24-27 of SMSCM_LIFECYCLE register.",
                     "index_int": "0x0035",
                     "reg_width": 8,
                     "bitfields": [
@@ -1433,17 +1394,17 @@
                             "width": 4,
                             "id": "fuse53-bits-0-3",
                             "name": "OEM_SEC_BOOT_EN",
-                            "description": "OEM Secure Boot Enable.",
+                            "description": "Main core secure boot enable boot enable fuse, boot image must be authenticated successfully to boot if this fuse field is set to 0xA. See the Security Reference Manual for the value of this fuse reflected in bits 24-27 of SMSCM_LIFECYCLE register.",
                             "values": [
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "OEM secure boot is disabled."
+                                    "description": "Boot image doesn't need to be authenticated to boot (default)."
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 10,
-                                    "description": "OEM secure boot is enabled."
+                                    "description": "Boot image must be authenticated to boot."
                                 }
                             ]
                         },
@@ -1463,16 +1424,17 @@
                 {
                     "id": "fuse56",
                     "name": "SECURE_STORAGE_VER_CNT",
-                    "description": "Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0038",
                     "reg_width": 96
                 },
                 {
                     "id": "fuse57",
                     "name": "SECURE_STORAGE_VER_CNT_VIRTUAL",
-                    "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc",
+                    "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0039",
-                    "reg_width": 96
+                    "access": "none",
+                    "reg_width": 8
                 }
             ]
         }

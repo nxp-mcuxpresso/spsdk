@@ -195,10 +195,11 @@ features:
 
   # ======== DAT section ========
   dat:
-    socc: 0x4D58005E # SOCC identification
+    socc: 0x4D5803AF # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     ele_cnt_version: 2 # DAT container is based on New AHAB container version 2
     dac_version_is_swapped: True
+    auth_beacon_length: 4 # The length in bytes of authentication beacon
     sub_features: ["ele_pqc"]
     test_address: 0x2048_0000
     dmbox_ap_ix: 0
@@ -266,6 +267,12 @@ features:
     oei_ddr_qb_data_mandatory: True
     # oei_ddr_gap_after_image: 0x10000
 
+    oei_tcm_load_address: 0x1ffc0000
+    oei_tcm_entry_point: 0x1ffc0001
+    oei_tcm_core_id: cortex-m33
+    oei_tcm_image_type: oei
+    oei_tcm_image_size_alignment: 0x400
+
     system_manager_load_address: 0x1ffc0000
     system_manager_entry_point: 0x1ffc0000
     system_manager_core_id: cortex-m33
@@ -313,6 +320,7 @@ features:
       [
         double_authentication,
         oei_ddr,
+        oei_tcm,
         system_manager,
         cortex_m7_app,
         cortex_m7_2_app,

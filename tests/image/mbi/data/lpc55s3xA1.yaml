@@ -24,23 +24,23 @@ trustZonePreset:
   # Description: Preset for Start of block (tzm_magic)
   Start of block (tzm_magic): '0x4d2d5a54'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure vector table address  (cm33_vtor_addr)
-  Secure vector table address  (cm33_vtor_addr): '0xc000feee'
+  # Description: Preset for Secure vector table address (cm33_vtor_addr)
+  Secure vector table address (cm33_vtor_addr): '0xc000feee'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Non-secure vector table address  (cm33_vtor_ns_addr)
-  Non-secure vector table address  (cm33_vtor_ns_addr): '0x0'
+  # Description: Preset for Non-secure vector table address (cm33_vtor_ns_addr)
+  Non-secure vector table address (cm33_vtor_ns_addr): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Interrupt target non-secure register 0  (cm33_nvic_itns0)
-  Interrupt target non-secure register 0  (cm33_nvic_itns0): '0x0'
+  # Description: Preset for Interrupt target non-secure register 0 (cm33_nvic_itns0)
+  Interrupt target non-secure register 0 (cm33_nvic_itns0): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Interrupt target non-secure register 1  (cm33_nvic_itns1)
-  Interrupt target non-secure register 1  (cm33_nvic_itns1): '0x0'
+  # Description: Preset for Interrupt target non-secure register 1 (cm33_nvic_itns1)
+  Interrupt target non-secure register 1 (cm33_nvic_itns1): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Interrupt target non-secure register 2  (cm33_nvic_itns2)
-  Interrupt target non-secure register 2  (cm33_nvic_itns2): '0x0'
+  Interrupt target non-secure register 2 (cm33_nvic_itns2): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Interrupt target non-secure register 3  (cm33_nvic_itns3)
-  Interrupt target non-secure register 3  (cm33_nvic_itns3): '0x0'
+  Interrupt target non-secure register 3 (cm33_nvic_itns3): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Miscellaneous CM33 settings (cm33_misc_ctrl)
   Miscellaneous CM33 settings (cm33_misc_ctrl): '0x0'
@@ -207,8 +207,8 @@ trustZonePreset:
   # Description: Preset for SAU Region 5 Limit Address Register (sau_rlar5)
   SAU Region 5 Limit Address Register (sau_rlar5): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for SAU Region 6 Base Address Register  (sau_rbar6)
-  SAU Region 6 Base Address Register  (sau_rbar6): '0x0'
+  # Description: Preset for SAU Region 6 Base Address Register (sau_rbar6)
+  SAU Region 6 Base Address Register (sau_rbar6): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for SAU Region 6 Limit Address Register (sau_rlar6)
   SAU Region 6 Limit Address Register (sau_rlar6): '0x0'
@@ -300,8 +300,8 @@ trustZonePreset:
   # Description: Preset for RAM4 Memory Rule Register (ram4_mem_rule)
   RAM4 Memory Rule Register (ram4_mem_rule): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for APB Bridge  Slave Rule Register (apb_bridge_slave_rule)
-  APB Bridge  Slave Rule Register (apb_bridge_slave_rule): '0x0'
+  # Description: Preset for APB Bridge Slave Rule Register (apb_bridge_slave_rule)
+  APB Bridge Slave Rule Register (apb_bridge_slave_rule): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for APB Bridge 0 Memory Control Register 0 (apb_bridge0_mem_ctrl0)
   APB Bridge 0 Memory Control Register 0 (apb_bridge0_mem_ctrl0): '0x0'
@@ -357,50 +357,50 @@ trustZonePreset:
   # Description: Preset for AHB3 Peripherals 0 Slave Rule Register 0 (ahb3_0_slave_rule)
   AHB3 Peripherals 0 Slave Rule Register 0 (ahb3_0_slave_rule): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for AIPS BRIDGE 0 Peripherals  Memory Rule Register 0 (aips_bridge0_mem_rule0)
-  AIPS BRIDGE 0 Peripherals  Memory Rule Register 0 (aips_bridge0_mem_rule0): '0x0'
+  # Description: Preset for AIPS BRIDGE 0 Peripherals Memory Rule Register 0 (aips_bridge0_mem_rule0)
+  AIPS BRIDGE 0 Peripherals Memory Rule Register 0 (aips_bridge0_mem_rule0): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for AIPS BRIDGE 0 Peripherals  Memory Rule Register 1 (aips_bridge0_mem_rule1)
-  AIPS BRIDGE 0 Peripherals  Memory Rule Register 1 (aips_bridge0_mem_rule1): '0x0'
+  # Description: Preset for AIPS BRIDGE 0 Peripherals Memory Rule Register 1 (aips_bridge0_mem_rule1)
+  AIPS BRIDGE 0 Peripherals Memory Rule Register 1 (aips_bridge0_mem_rule1): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for AHB4 Peripherals 0 Slave Rule Register 0 (ahb4_0_slave_rule)
   AHB4 Peripherals 0 Slave Rule Register 0 (ahb4_0_slave_rule): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for AIPS BRIDGE 0 Peripherals  Memory Rule Register 0 (aips_bridge1_mem_rule0)
-  AIPS BRIDGE 0 Peripherals  Memory Rule Register 0 (aips_bridge1_mem_rule0): '0x0'
+  # Description: Preset for AIPS BRIDGE 0 Peripherals Memory Rule Register 0 (aips_bridge1_mem_rule0)
+  AIPS BRIDGE 0 Peripherals Memory Rule Register 0 (aips_bridge1_mem_rule0): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for AIPS BRIDGE 0 Peripherals  Memory Rule Register 1 (aips_bridge1_mem_rule1)
-  AIPS BRIDGE 0 Peripherals  Memory Rule Register 1 (aips_bridge1_mem_rule1): '0x0'
+  # Description: Preset for AIPS BRIDGE 0 Peripherals Memory Rule Register 1 (aips_bridge1_mem_rule1)
+  AIPS BRIDGE 0 Peripherals Memory Rule Register 1 (aips_bridge1_mem_rule1): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure GPIO Register 0  (sec_gp_reg0)
-  Secure GPIO Register 0  (sec_gp_reg0): '0xffffffff'
+  # Description: Preset for Secure GPIO Register 0 (sec_gp_reg0)
+  Secure GPIO Register 0 (sec_gp_reg0): '0xffffffff'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure GPIO Register 1  (sec_gp_reg1)
-  Secure GPIO Register 1  (sec_gp_reg1): '0xffffffff'
+  # Description: Preset for Secure GPIO Register 1 (sec_gp_reg1)
+  Secure GPIO Register 1 (sec_gp_reg1): '0xffffffff'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure GPIO Register 2  (sec_gp_reg2)
-  Secure GPIO Register 2  (sec_gp_reg2): '0xffffffff'
+  # Description: Preset for Secure GPIO Register 2 (sec_gp_reg2)
+  Secure GPIO Register 2 (sec_gp_reg2): '0xffffffff'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure GPIO Register 3  (sec_gp_reg3)
-  Secure GPIO Register 3  (sec_gp_reg3): '0x0000007f'
+  # Description: Preset for Secure GPIO Register 3 (sec_gp_reg3)
+  Secure GPIO Register 3 (sec_gp_reg3): '0x0000007f'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for Secure GPIO Lock Register  (sec_gp_reg_lock)
-  Secure GPIO Lock Register  (sec_gp_reg_lock): '0x000000AA'
+  Secure GPIO Lock Register (sec_gp_reg_lock): '0x000000AA'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Master Secure Level Register  (master_sec_reg)
-  Master Secure Level Register  (master_sec_reg): '0x80000000'
+  # Description: Preset for Master Secure Level Register (master_sec_reg)
+  Master Secure Level Register (master_sec_reg): '0x80000000'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Master Secure Level Anti-pole Register  (master_sec_anti_pol_reg)
-  Master Secure Level Anti-pole Register  (master_sec_anti_pol_reg): '0xBFFFFFFF'
+  # Description: Preset for Master Secure Level Anti-pole Register (master_sec_anti_pol_reg)
+  Master Secure Level Anti-pole Register (master_sec_anti_pol_reg): '0xBFFFFFFF'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for CM33 Lock Control Register  (cm33_lock_reg)
-  CM33 Lock Control Register  (cm33_lock_reg): '0x800002AA'
+  # Description: Preset for CM33 Lock Control Register (cm33_lock_reg)
+  CM33 Lock Control Register (cm33_lock_reg): '0x800002AA'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure Control Duplicate Register  (misc_ctrl_dp_reg)
-  Secure Control Duplicate Register  (misc_ctrl_dp_reg): '0x00008AAA'
+  # Description: Preset for Secure Control Duplicate Register (misc_ctrl_dp_reg)
+  Secure Control Duplicate Register (misc_ctrl_dp_reg): '0x00008AAA'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
-  # Description: Preset for Secure Control Register  (misc_ctrl_reg)
-  Secure Control Register  (misc_ctrl_reg): '0x00008AAA'
+  # Description: Preset for Secure Control Register (misc_ctrl_reg)
+  Secure Control Register (misc_ctrl_reg): '0x00008AAA'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for ITRC IRQ Trigger Source Selector Register 0 (itrc_irq_out0_sel0)
   ITRC IRQ Trigger Source Selector Register 0 (itrc_irq_out0_sel0): '0xA02AAAAA'

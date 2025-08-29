@@ -36,7 +36,6 @@ class DevHsm(FeatureBaseClass):
     DEVBUFF_HSM_GENKEY_KEYBLOB_SIZE = 48
     DEVBUFF_HSM_GENKEY_KEYBLOB_PUK_SIZE = 64
     DEVBUFF_CUST_MK_SK_KEY_SIZE = 32
-    DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE = 48
     DEVBUFF_DATA_BLOCK_SIZE = 256
     DEVBUFF_SB_SIGNATURE_SIZE = 64
 
@@ -55,7 +54,7 @@ class DevHsm(FeatureBaseClass):
         self.devbuff_base = self.database.get_int(self.F_BUFFER, "address")
 
         if self.workspace and not os.path.isdir(self.workspace):
-            os.mkdir(self.workspace)
+            os.makedirs(self.workspace)
 
     @abc.abstractmethod
     def create_sb(self) -> None:
@@ -114,6 +113,13 @@ class DevHsm(FeatureBaseClass):
     def get_keyblob_position(self) -> int:
         """Get keyblob position from database."""
         return self.database.get_int(self.F_DEVHSM, "key_blob_command_position")
+
+    def get_devbuff_wrapped_cust_mk_sk_key_size(self) -> int:
+        """Get the size of wrapped customer master key SK.
+
+        :return: Size of wrapped customer master key SK.
+        """
+        return self.database.get_int(self.F_DEVHSM, "devbuff_wrapped_cust_mk_sk_key_size")
 
     @staticmethod
     def get_oem_share_input(

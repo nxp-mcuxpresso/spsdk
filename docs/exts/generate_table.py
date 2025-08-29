@@ -61,6 +61,7 @@ NXPIMAGE_FEATURES_MAPPING = {
     "xmcd": "External Memory Configuration Data (XMCD)",
     "sb21": "Secure Binary 2.1",
     "sb31": "Secure Binary 3.1",
+    "sb40": "Secure Binary 4.0",
     "sbc": "Secure Binary C",
 }
 OTHER_FEATURES_MAPPING = {
@@ -294,6 +295,7 @@ def generate_feature_table(
     ]
 
     value_matrix = []
+    db = get_db(FamilyRevision(device.name))
 
     for feature in feature_list:
         feature_reference = create_internal_reference(
@@ -302,7 +304,6 @@ def generate_feature_table(
         )
         if feature in device.get_features():
             if feature == DatabaseManager.CERT_BLOCK:
-                db = get_db(FamilyRevision(device.name))
                 rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
                 value_matrix.append(
                     [
@@ -471,6 +472,23 @@ def get_jupyters_for_feature(feature: str) -> List[str]:
     return jupyters
 
 
+def get_filtered_features(device: Device) -> List[str]:
+    """Get list of features for the device.
+
+    :param device: Device
+    :return: list of features
+    """
+    result = []
+    features: dict = device.revisions.get().features
+    for feature in features:
+        if feature == DatabaseManager.AHAB:
+            sub_features = features[feature]["sub_features"]
+            if "ahab_image" not in sub_features:
+                continue
+        result.append(feature)
+    return sorted(result)
+
+
 def generate_devices_list(
     output_file: str,
 ):
@@ -509,10 +527,13 @@ def generate_devices_list(
         )
         devices = sorted(devices)
         for device in devices:
+
+            device_full = DatabaseManager().db.devices.get(device)
+            features = get_filtered_features(device_full)
+
             lines.append(f"\n{device}\n")
             lines.append("--------------------------\n")
             # lines.append(f"\nDevice category: {device.info.purpose}\n")
-            device_full = DatabaseManager().db.devices.get(device)
             lines.append(f"\nLatest revision: {device_full.latest_rev}\n")
             lines.append(
                 f"\nAll supported chip revisions: {', '.join(device_full.revisions.revision_names())}\n"
@@ -521,7 +542,7 @@ def generate_devices_list(
             lines.append(
                 generate_feature_table(
                     device_full,
-                    DatabaseManager().quick_info.features_data.get_all_features,
+                    features,
                     "",
                     ALL_FEATURES_MAPPING,
                     use_markdown=False,
@@ -558,7 +579,7 @@ def generate_devices_list(
                 lines.append("\n")
 
             # Jupyters for features
-            for feature in device_full.get_features():
+            for feature in features:
                 jupyters = get_jupyters_for_feature(feature)
 
                 if jupyters:

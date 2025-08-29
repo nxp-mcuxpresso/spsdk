@@ -61,14 +61,9 @@ def test_sb31_commands_errors():
     with pytest.raises(SPSDKError):
         SecureBinary31Commands.parse(bytes(100))
 
-    with pytest.raises(SPSDKError):
-        SecureBinary31Commands(family=lpc_family, hash_type=EnumHashAlgorithm.SHA384)
-
 
 def test_sb31_commands_add():
-    sc = SecureBinary31Commands(
-        family=lpc_family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    sc = SecureBinary31Commands(family=lpc_family, hash_type=EnumHashAlgorithm.SHA256)
     sc.add_command(commands.CmdCall(0x100))
     assert len(sc.commands) == 1
     info = str(sc)
@@ -76,29 +71,12 @@ def test_sb31_commands_add():
 
 
 def test_sb31_commands_insert():
-    sc = SecureBinary31Commands(
-        family=lpc_family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    sc = SecureBinary31Commands(family=lpc_family, hash_type=EnumHashAlgorithm.SHA256)
     sc.insert_command(0, commands.CmdCall(0x100))
     sc.insert_command(-1, commands.CmdExecute(0x100))
     assert len(sc.commands) == 2
     assert "CALL:" in str(sc.commands[0])
     assert "EXECUTE:" in str(sc.commands[1])
-
-
-def test_sb31_commands_no_key_derivator():
-    sc = SecureBinary31Commands(
-        family=lpc_family,
-        hash_type=EnumHashAlgorithm.SHA256,
-        is_encrypted=True,
-        pck=bytes(16),
-        timestamp=5,
-        kdk_access_rights=3,
-    )
-    sc.add_command(commands.CmdCall(0x100))
-    sc.key_derivator = None
-    with pytest.raises(SPSDKError, match="No key derivator"):
-        sc.export()
 
 
 def test_sb31_parse(data_dir):

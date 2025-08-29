@@ -1,0 +1,17 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: mcxa346
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: MCX Series
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES
+  memory_map: # Memory map basic info
+    internal-flash:
+      start_int: 0x0
+      size_int: 0x10_0000
+      external: false

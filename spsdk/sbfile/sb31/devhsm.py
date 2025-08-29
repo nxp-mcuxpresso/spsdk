@@ -44,7 +44,7 @@ class DevHsmSB31(DevHsm):
         oem_share_input: Optional[bytes] = None,
         oem_enc_master_share_input: Optional[bytes] = None,
         cust_mk_sk: Optional[bytes] = None,
-        additional_commands: Optional[list[BaseCmd]] = None,
+        commands: Optional[list[BaseCmd]] = None,
         workspace: Optional[str] = None,
         initial_reset: Optional[bool] = False,
         final_reset: Optional[bool] = True,
@@ -58,7 +58,7 @@ class DevHsmSB31(DevHsm):
         :param oem_share_input: OEM share input data (if None a random input will be generated).
         :param oem_enc_master_share_input: Used for setting the OEM share (recreating security session)
         :param cust_mk_sk: Customer Master Key Symmetric Key.
-        :param additional_commands: Optional user list of SB commands.
+        :param commands: Optional user list of SB commands.
         :param workspace: Optional folder to store middle results.
         :param initial_reset: Reset device before DevHSM creation of SB3 file.
         :param final_reset: Reset device after DevHSM creation of SB3 file.
@@ -77,7 +77,7 @@ class DevHsmSB31(DevHsm):
         # Check the configuration file and options to update by user config
         self.sb3_fw_ver = 0
         self.sb3_descr = "SB 3.1"
-        self.additional_commands = additional_commands
+        self.additional_commands = commands
         self.timestamp: Optional[int] = None
 
         # Override the default buffer address
@@ -237,16 +237,10 @@ class DevHsmSB31(DevHsm):
 
         # 5.2: Create SB3 file un-encrypted data part
         self.info_print(" 5.2: Creating un-encrypted SB3 data.")
-        sb3_data = SecureBinary31Commands(
-            family=self.family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-        )
+        sb3_data = SecureBinary31Commands(family=self.family, hash_type=EnumHashAlgorithm.SHA256)
         if self.additional_commands:
             for cmd in self.additional_commands:
                 sb3_data.add_command(cmd)
-
-        key_blob_command_position = self.database.get_int(
-            self.F_DEVHSM, "key_blob_command_position"
-        )
 
         cust_mk_sk_blob_found = False
         self.info_print(" 5.3 Looking for plaintext keys to wrap")
@@ -268,7 +262,7 @@ class DevHsmSB31(DevHsm):
             self.wrapped_cust_mk_sk = self.wrap_key(self.cust_mk_sk)
             self.info_print(" 5.4.3: Adding wrapped CUST_MK_SK LoadKeyBlob command into SB file.")
             sb3_data.insert_command(
-                index=key_blob_command_position,
+                index=self.get_keyblob_position(),
                 command=CmdLoadKeyBlob(
                     offset=self.get_keyblob_offset(),
                     data=self.wrapped_cust_mk_sk,
@@ -541,12 +535,14 @@ class DevHsmSB31(DevHsm):
         if not hsm_store_key_res:
             raise SPSDKError(f"HSM Store Key command failed. Error: {self.mboot.status_string}")
 
-        if hsm_store_key_res[1] != self.DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE:
+        wrapped_key_size = self.get_devbuff_wrapped_cust_mk_sk_key_size()
+
+        if hsm_store_key_res[1] != wrapped_key_size:
             raise SPSDKError("HSM Store Key command has invalid results.")
 
         wrapped_cust_mk_sk = self.mboot.read_memory(
             self.get_devbuff_base_address(1),
-            self.DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE,
+            wrapped_key_size,
         )
 
         if not wrapped_cust_mk_sk:
@@ -710,7 +706,6 @@ class DevHsmSB31(DevHsm):
         sb3_data = SecureBinary31Commands.load_from_config(
             config, hash_type=EnumHashAlgorithm.SHA256, load_just_commands=True
         )
-        sb3_data.is_encrypted = False
 
         return cls(
             mboot=mboot,
@@ -718,7 +713,7 @@ class DevHsmSB31(DevHsm):
             oem_share_input=oem_share_in,
             oem_enc_master_share_input=enc_oem_master_share_in,
             cust_mk_sk=cust_mk_sk,
-            additional_commands=sb3_data.commands,
+            commands=sb3_data.commands,
             workspace=config.get_output_file_name("workspace") if "workspace" in config else None,
             initial_reset=config.get("initialReset", False),
             final_reset=config.get("finalReset", True),

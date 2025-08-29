@@ -11,6 +11,7 @@ import base64
 import datetime
 import logging
 import sqlite3
+from dataclasses import dataclass
 from types import TracebackType
 from typing import Optional, Type, Union
 
@@ -339,6 +340,25 @@ class RemoteSecureObjectsDB(HTTPClientBase, SecureObjectsDB):
         """Close the database connection."""
 
 
+@dataclass
+class ProdDBStats:
+    """Dataclass for tracking product-based provisioning database statistics."""
+
+    has_dynamic_records: int = 0
+    used_dynamic_records: int = 0
+    free_dynamic_records: int = 0
+    reports: int = 0
+
+    def __str__(self) -> str:
+        msgs = [
+            f"Has Dynamic Records: {'Yes' if self.has_dynamic_records else 'No'}",
+            f"Used Dynamic Records: {self.used_dynamic_records}",
+            f"Free Dynamic Records: {self.free_dynamic_records}",
+            f"Total Reports: {self.reports}",
+        ]
+        return "\n".join(msgs)
+
+
 class LocalProductBasedBatchDB(LocalDB):
     """Batch processing for local database connection."""
 
@@ -436,7 +456,7 @@ class LocalProductBasedBatchDB(LocalDB):
         # Get secure_object from static table
         cursor.execute("SELECT has_dynamic, secure_object FROM static LIMIT 1")
         static_record = cursor.fetchone()
-        if not static_record or not static_record[0]:
+        if not static_record or not static_record[1]:
             raise SPSDKError("No valid static record found")
 
         has_dynamic, static_so = static_record
@@ -460,6 +480,29 @@ class LocalProductBasedBatchDB(LocalDB):
 
         logger.info(f"Retrieved and marked as used: virtual_uuid={virtual_uuid}")
         return combined_so
+
+    def get_stats(self) -> ProdDBStats:
+        """Retrieve database statistics and usage information."""
+        cursor = self._sanitize_cursor()
+
+        cursor.execute("SELECT has_dynamic FROM static")
+        has_dynamic_records = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM dynamic WHERE used = 0")
+        free_dynamic_records = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM dynamic WHERE used = 1")
+        used_dynamic_records = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM report")
+        reports = cursor.fetchone()[0]
+
+        return ProdDBStats(
+            has_dynamic_records=has_dynamic_records,
+            used_dynamic_records=used_dynamic_records,
+            free_dynamic_records=free_dynamic_records,
+            reports=reports,
+        )
 
     def process(self, data: dict) -> None:
         """Process EL2GO response data."""
@@ -512,3 +555,18 @@ class RemoteProductBasedBatchDB(HTTPClientBase):
         if not secure_object_hex:
             raise SPSDKError("No secure object found in response")
         return bytes.fromhex(secure_object_hex)
+
+    def get_stats(self) -> ProdDBStats:
+        """Retrieve remote database statistics."""
+        logger.info("Requesting database statistics from remote database")
+        response = self._handle_request(self.Method.GET, "/stats")
+        if not response.ok:
+            raise SPSDKError(f"Failed to retrieve database statistics: {response.text}")
+
+        stats = response.json()
+        return ProdDBStats(
+            has_dynamic_records=stats.get("has_dynamic_records", 0),
+            used_dynamic_records=stats.get("used_dynamic_records", 0),
+            free_dynamic_records=stats.get("free_dynamic_records", 0),
+            reports=stats.get("reports", 0),
+        )

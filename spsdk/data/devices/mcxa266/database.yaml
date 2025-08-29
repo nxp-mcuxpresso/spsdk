@@ -22,3 +22,9 @@ info:
       usb:
         vid: 0x1FC9
         pid: 0x015f
+
+features:
+  # ======== PFR section ========
+  pfr:
+    cmpa: # CMPA description
+      address: 0xF_e000

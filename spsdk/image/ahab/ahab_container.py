@@ -94,6 +94,9 @@ class AHABContainerBase(HeaderContainer):
     FLAGS_SRK_REVOKE_MASK_OFFSET = 8
     FLAGS_SRK_REVOKE_MASK_SIZE = 4
 
+    DIFF_ATTRIBUTES_VALUES = ["flags", "fuse_version", "sw_version"]
+    DIFF_ATTRIBUTES_OBJECTS = ["signature_block"]
+
     def __init__(
         self,
         chip_config: AhabChipConfig,
@@ -149,6 +152,11 @@ class AHABContainerBase(HeaderContainer):
         flags |= used_srk_id << 4
         flags |= srk_revoke_mask << 8
         self.flags = flags
+
+        # Update also chip configuration accordingly
+        self.chip_config.srk_set = FlagsSrkSet.from_attr(srk_set.lower())
+        self.chip_config.srk_revoke_keys = srk_revoke_mask
+        self.chip_config.used_srk_id = used_srk_id
 
     @property
     def flag_srk_set(self) -> FlagsSrkSet:
@@ -314,14 +322,10 @@ class AHABContainerBase(HeaderContainer):
 
         :return: bytes representing data to be signed.
         """
-        if (
-            not self.signature_block
-            or not self.signature_block.signature
-            or not self.signature_block.srk_assets
-        ):
+        if not self.signature_block or not self.signature_block.signature:
             return bytes()  # Its OK to return just empty data - the verifier catch this issue
 
-        signature_offset = self._signature_block_offset + self.signature_block.signature_offset
+        signature_offset = self._signature_block_offset + self.signature_block._signature_offset
         return self._export()[:signature_offset]
 
     def sign_itself(self) -> None:
@@ -743,7 +747,7 @@ class AHABContainer(AHABContainerBase):
         :return: List of generated file paths
         """
         generated_files: list[str] = []
-        if self.flag_srk_set == FlagsSrkSet.NXP:
+        if self.flag_srk_set in (FlagsSrkSet.NXP, FlagsSrkSet.DEVHSM):
             logger.debug("Skipping generating hashes for NXP container")
             return generated_files
         if self.image_array_len > 0 and self.image_array[0].flags_core_id_name == "v2x-1":
@@ -831,7 +835,7 @@ class AHABContainer(AHABContainerBase):
                                         "Decrypted data HASH doesn't match IV vector.",
                                     )
                         else:
-                            if self.flag_srk_set == FlagsSrkSet.NXP:
+                            if self.flag_srk_set in (FlagsSrkSet.NXP, FlagsSrkSet.DEVHSM):
                                 ver_enc.add_record(
                                     "Decrypted data",
                                     VerifierResult.WARNING,
@@ -853,7 +857,7 @@ class AHABContainer(AHABContainerBase):
 
         def verify_authenticity() -> None:
             ret.add_record_enum("Container authenticity", self.flag_srk_set, FlagsSrkSet)
-            if self.flag_srk_set != "none":
+            if self.flag_srk_set != FlagsSrkSet.NONE:
                 if self.signature_block is None:
                     ret.add_record("Signature block", VerifierResult.ERROR, "Missing")
                 else:

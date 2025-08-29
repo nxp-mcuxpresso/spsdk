@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ==========================  Advanced High-Assurance Boot Configuration template for mimx9596.  ===========================
 
 # ======================================================================================================================
@@ -13,7 +14,7 @@
 family: mimx9596
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
-revision: a0
+revision: b0
 # ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
 # Description: Target memory for AHAB container
 # Possible options: <serial_downloader, standard, nand_2k, nand_4k>
@@ -29,7 +30,7 @@ containers:
     binary_container:
       # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
       # Description: The binary file that contains AHAB "my_binary_container.bin
-      path: mx95a0-ahab-container.img
+      path: mx95b0-ahab-container.img
 
   - # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
     # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
@@ -59,16 +60,16 @@ containers:
           # hash_type:                     SHA384
           # -----------------------------===== LPDDR memory FW in 1D mode [Required] =====------------------------------
           # Description: Firmware for LPDDR4/5 memory in 1D mode.
-          lpddr_imem: lpddr5_imem_v202311.bin
+          lpddr_imem: lpddr5_imem_v202409.bin
           # -----------------------------===== LPDDR memory FW in 2D mode [Required] =====------------------------------
           # Description: Firmware for LPDDR4/5 memory in 2D mode.
-          lpddr_imem_qb: lpddr5_imem_qb_v202311.bin
+          lpddr_imem_qb: lpddr5_imem_qb_v202409.bin
           # ----------------------------===== LPDDR memory data in 1D mode [Required] =====-----------------------------
           # Description: Data for LPDDR4/5 memory in 1D mode.
-          lpddr_dmem: lpddr5_dmem_v202311.bin
+          lpddr_dmem: lpddr5_dmem_v202409.bin
           # ----------------------------===== LPDDR memory data in 2D mode [Required] =====-----------------------------
           # Description: Data for LPDDR4/5 memory in 2D mode.
-          lpddr_dmem_qb: lpddr5_dmem_qb_v202311.bin
+          lpddr_dmem_qb: lpddr5_dmem_qb_v202409.bin
           # -----------------------------------------===== OEI [Required] =====-----------------------------------------
           # Description: OEI - Optional Executable Image firmware
           oei_ddr: oei-m33-ddr.bin
@@ -104,7 +105,7 @@ containers:
           # hash_type:                     SHA384
           # --------------------------===== Cortex M7 additional application [Required] =====---------------------------
           # Description: Cortex M7 additional application
-          cortex_m7_app: hello_world_sm_cm7.bin
+          cortex_m7_app: hello_world.bin
 
         - # U-Boot SPL (Secondary program loader)
           # Image array default settings. Can be override by defines that are hidden in template:
@@ -115,7 +116,7 @@ containers:
           # hash_type:                     SHA384
           # -----------------------------------------===== SPL [Required] =====-----------------------------------------
           # Description: SPL firmware
-          spl: u-boot-spl.bin-imx95-19x19-lpddr5-evk-sd
+          spl: u-boot-spl_mx95_19x19.bin
 
         - # V2X dummy image container definition
           # Image array default settings. Can be override by defines that are hidden in template:

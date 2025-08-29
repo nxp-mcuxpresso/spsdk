@@ -13,7 +13,7 @@ from typing import Optional
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -33,7 +33,7 @@ from spsdk.utils.verifier import Verifier
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="bootable-image", cls=SpsdkClickGroup)
+@click.group(name="bootable-image", cls=CommandsTreeGroup)
 def bootable_image_group() -> None:
     """Group of bootable image utilities."""
 
@@ -218,7 +218,7 @@ def bootable_image_verify(
         raise SPSDKAppError("Verify failed")
 
 
-@bootable_image_group.group(name="fcb", cls=SpsdkClickGroup)
+@bootable_image_group.group(name="fcb", cls=CommandsTreeGroup)
 def fcb() -> None:  # pylint: disable=unused-argument
     """FCB (Flash Configuration Block) utilities."""
 
@@ -321,7 +321,7 @@ def fcb_get_templates(family: FamilyRevision, output_folder: str) -> None:
         write_file(FCB.get_config_template(family, mem_type), output)
 
 
-@bootable_image_group.group(name="xmcd", cls=SpsdkClickGroup)
+@bootable_image_group.group(name="xmcd", cls=CommandsTreeGroup)
 def xmcd() -> None:  # pylint: disable=unused-argument
     """XMCD (External Memory Configuration Data) utilities."""
 
@@ -468,7 +468,7 @@ def xmcd_crc_fuses_script_command(family: FamilyRevision, binary: str, output: s
     click.echo(f"Success. (Created fuses script: {output} )")
 
 
-@bootable_image_group.group(name="wic", cls=SpsdkClickGroup)
+@bootable_image_group.group(name="wic", cls=CommandsTreeGroup)
 def wic() -> None:  # pylint: disable=unused-argument
     """WIC (Whole Image Creator) Yocto Linux image format."""
 

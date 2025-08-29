@@ -18,5 +18,143 @@ tz:
       title: Customization of standard preset values
       description: Trust Zone preset dictionary, with trust zone configuration.
 
+tz_v2:
+  type: object
+  required: [tzpOutputFile, trustZoneRecords]
+  properties:
+    tzpOutputFile:
+      type: string
+      title: Optional name of output file for TZ binary
+      description: The name of output binary file with Trust Zone data.
+      format: file_name
+      template_value: my_tz_file.bin
+
+    trustZoneRecords:
+      type: array
+      title: List of Trust Zone configuration Records
+      description: >
+        Trust Zone preset dictionary, with trust zone configuration.
+
+        The ROM executes following read/write sequence for every data record:
+
+        1.  Reads DATA from ADDRESS
+
+        2.  Calculates RESULT = (DATA AND ~MASK) OR (VALUE AND MASK)
+
+        3.  Writes Result/Value into Address
+
+        4.  Reads DATA from ADDRESS
+
+        5.  Compare values (DATA AND MASK) and (VALUE AND MASK)
+
+        6.  Repeats steps 4 and 5
+
+        7.  If compared values are not equal, the boot process fails
+
+
+        Many peripherals have registers, which combines control and status bits. In some cases these registers requires specific handling. For example registers, where reading register can delete some status bits or read value is different from value, which was written. In this case user can skip some steps in the sequence above (steps 1-7) to avoid unwanted behavior.
+        32-bit platforms have peripheral registers address aligned to word boundary (bits bit1:bit0 are always zero). Therefore, these two bits together with mask value can be utilized to define, which steps will be skipped during memory address/register modification.
+        There are three ways how user can modify read/write data sequence:
+
+
+        Modification of read/write Data Sequence:
+
+        Mask = 0:  If Mask is set to 0, the read and mask with all zero bits, prior to value is modified, doesn't make any sense because all bits are cleared. Therefore, these steps are skipped (steps 1-2) and Value is directly written into destination address.
+
+        b0 = 1:  If bit0 in address is set to "1", the readback operation is skipped (steps 4-7)
+
+        b1 = 1:  If bit1 in address is set to "1", the write operation is skipped (steps 1-3)
+
+        All possible combinations are summarized in Table below:
+
+
+        | Mode               | skip_write | skip_readback | mask     | Operations with register | Skipped steps |
+
+        |--------------------|------------|---------------|----------|--------------------------|---------------|
+
+        | read-modify-write  | False      | False         | non-zero | read+write+read+read     | none          |
+
+        |  + readback        |            |               |          |                          |               |
+
+        | write + readback   | False      | False         | 0x0      | write+read+read          | 1-2           |
+
+        | read-modify-write  | False      | True          | non-zero | read+write               | 4-7           |
+
+        | write              | False      | True          | 0x0      | write                    | 3-7           |
+
+
+        Usage Examples
+        --------------
+        Read-modify-write + Readback Sequence
+
+          This sequence is standard sequence and can be used to modify part or whole register/memory address.
+          For example, set SAU->RNR (0xE000EDD8) to 0x7 the TZ-M preset data is:
+
+          Address     Mask  Value
+          0xE000EDD8  0xFF  0x7
+
+
+        Write+Readback Sequence
+
+          In case user wants to configure whole register/memory address the mask can be set to 0x0. In this case steps 1-2 are skipped, and value is directly written into register. Following readback verifies that register/memory address contains desired value.
+          Let consider the same example as above. Then preset data is
+
+          Address     Mask   Value
+          0xE000EDD8  0x0    0x7
+
+
+        Configuring special peripheral/core register
+
+          Let’s consider setting bit3 in SCB->AIRCR (0xE000ED0C) register. This register contains specific bitfield VECTKEY/VECTKEYSTAT (bits 31-16). When register is read, this bitfield contains value 0xFA05 while when register is written, this bitfield needs to be set to 0x05FA. This fact doesn’t allow to use standard read-modify-write + readback sequence. But this register can be modified by read-modify-write sequence:
+
+          Address     Mask        Value
+          0xE000ED0D  0xFFFF0008  0x05FA0008
+
+
+          If validation of written value is required, it can be done by additional read only sequence:
+
+          Address     Mask        Value
+          0xE000ED0E  0xFFFF0008  0xFA050008
+
+          This complex example shows that TZ-M preset data can be used not only to configure some registers or memory addresses, but it can be also used to verify that certain register or memory address contains desired value.
+
+      minItems: 1
+      items:
+        type: object
+        required: [address, value]
+        properties:
+          address:
+            type: [number, string]
+            title: Memory or Register Address
+            description: Hexadecimal or decimal address of register for Trust Zone configuration
+            format: number
+            template_value: "0xE000EDD8"
+          mask:
+            type: [number, string]
+            title: Mask for register write/read operation
+            description: Bit mask to control which bits of the register will be modified during Trust Zone configuration
+            format: number
+            template_value: "0xFFFFFFFF"
+          value:
+            type: [number, string]
+            title: Value for register write/read operation
+            description: Value to be written to the specified address with the given mask
+            format: number
+            template_value: "0xFFFFFFFF"
+          skip_write:
+            type: boolean
+            title: Skip Write Operation
+            description: Flag to control whether write operation (steps 1-3) should be skipped during Trust Zone configuration
+            default: false
+            template_value: false
+          skip_readback:
+            type: boolean
+            title: Skip Readback Operation
+            description: Flag to control whether readback verification (steps 4-7) should be skipped during Trust Zone configuration
+            default: false
+            template_value: false
+
+
+
 
 

@@ -59,8 +59,8 @@ features:
     sub_features: [cmpa]
     cmpa: # CMPA description
       erase_method: flash_erase
-      address: 0xf_e000
-      size: 512
+      address: 0x7_e000
+      size: 256
       reg_spec: pfr_cmpa.json
       grouped_registers:
         - name: ERASE_TOKEN

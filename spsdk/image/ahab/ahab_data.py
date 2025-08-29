@@ -131,14 +131,14 @@ class AHABSignHashAlgorithmV2(AHABSignHashAlgorithm):
     SHA3_256 = (4, "SHA3_256", "Secure Hash Algorithm 3 - 256")
     SHA3_384 = (5, "SHA3_384", "Secure Hash Algorithm 3 - 384")
     SHA3_512 = (6, "SHA3_512", "Secure Hash Algorithm 3 - 512")
-    SHAKE_128_OUTPUT_256 = (
+    SHAKE_128_256 = (
         8,
-        "SHAKE_128_OUTPUT_256",
+        "SHAKE_128_256",
         "Secure Hash Algorithm Shake 128 - with 256 bits output",
     )
-    SHAKE_256_OUTPUT_512 = (
+    SHAKE_256_512 = (
         9,
-        "SHAKE_256_OUTPUT_512",
+        "SHAKE_256_512",
         "Secure Hash Algorithm Shake 256 - with 512 bits output",
     )
 
@@ -149,6 +149,18 @@ class FlagsSrkSet(SpsdkSoftEnum):
     NONE = (0x00, "none", "Image is not signed")
     NXP = (0x01, "nxp", "Signed by NXP keys")
     OEM = (0x02, "oem", "Signed by OEM keys")
+    DEVHSM = (0x05, "devhsm", "Device HSM key set")
+
+
+class SignatureType(SpsdkEnum):
+    """Signature types for AHAB container."""
+
+    SRK_TABLE = (
+        0x0,
+        "SRK table",
+        "Signature type defined by SRK table (SRK table must be present)",
+    )
+    CMAC = (0x10, "CMAC", "CMAC signature")
 
 
 class DummyEnum(SpsdkSoftEnum):

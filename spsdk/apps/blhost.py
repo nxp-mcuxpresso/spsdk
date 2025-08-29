@@ -26,7 +26,6 @@ from spsdk.apps.blhost_helper import (
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    SpsdkClickGroup,
     spsdk_apps_common_options,
     spsdk_family_option,
     spsdk_mboot_interface,
@@ -953,7 +952,7 @@ def generate_key_blob(
         )
 
 
-@main.group(cls=SpsdkClickGroup)
+@main.group(cls=CommandsTreeGroup)
 @click.pass_context
 def key_provisioning(ctx: click.Context) -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to key provisioning."""
@@ -1153,7 +1152,7 @@ def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
         )
 
 
-@main.group(cls=SpsdkClickGroup)
+@main.group(cls=CommandsTreeGroup)
 @click.pass_context
 def trust_provisioning(ctx: click.Context) -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to trust provisioning."""

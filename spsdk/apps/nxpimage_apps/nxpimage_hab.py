@@ -11,7 +11,7 @@ import os
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -26,7 +26,7 @@ from spsdk.utils.misc import get_printable_path, load_binary, load_text, write_f
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 
-@click.group(name="hab", no_args_is_help=True, cls=SpsdkClickGroup)
+@click.group(name="hab", no_args_is_help=True, cls=CommandsTreeGroup)
 def hab_group() -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to HAB container."""
 

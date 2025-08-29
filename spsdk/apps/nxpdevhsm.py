@@ -9,6 +9,7 @@
 
 import os
 import sys
+from typing import Type, Union
 
 import click
 
@@ -28,10 +29,16 @@ from spsdk.mboot.properties import DeviceUidValue, PropertyTag
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.devhsm.utils import get_devhsm_class
+from spsdk.sbfile.sb4.devhsm import DevHsmSB4
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file
+
+SB31_SB4_FAMILIES = list(
+    set(DevHsmSB31.get_supported_families() + DevHsmSB4.get_supported_families())
+)
+SB31_SB4_FAMILIES.sort()
 
 
 @click.group(name="nxpdevhsm", cls=CommandsTreeGroup)
@@ -82,9 +89,18 @@ def get_template(family: FamilyRevision, output: str) -> None:
     )
 
 
+def get_devhsm_class_sb3_sb4(family: FamilyRevision) -> Union[Type[DevHsmSB31], Type[DevHsmSB4]]:
+    """Get DevHsm class for SB3.1 and SB4 families."""
+    if family in DevHsmSB31.get_supported_families():
+        return DevHsmSB31
+    if family in DevHsmSB4.get_supported_families():
+        return DevHsmSB4
+    raise SPSDKAppError(f"Unsupported family for DevHSM: {family}")
+
+
 @main.command(name="gen-master-share", no_args_is_help=True)
 @spsdk_mboot_interface(identify_by_family=True)
-@spsdk_family_option(families=DevHsmSB31.get_supported_families())
+@spsdk_family_option(families=SB31_SB4_FAMILIES)
 @click.option(
     "-i",
     "--oem-share-input",
@@ -125,11 +141,13 @@ def gen_master_share(
     with McuBoot(interface=interface, family=family) as mboot:
         if initial_reset:
             mboot.reset(timeout=500, reopen=True)
-        devhsm = DevHsmSB31(
+
+        devhsm = get_devhsm_class_sb3_sb4(family)(
             mboot=mboot,
             oem_share_input=seed_data,
             initial_reset=True,
             family=family,
+            commands=[],
             buffer_address=buffer_address,
         )
         enc_oem_share, enc_oem_master_share, oem_cert = devhsm.oem_generate_master_share()
@@ -140,13 +158,15 @@ def gen_master_share(
         write_file(
             enc_oem_master_share, os.path.join(output, "ENC_OEM_MASTER_SHARE.bin"), mode="wb"
         )
-        write_file(oem_cert, os.path.join(output, "NXP_CUST_CA_PUK.bin"), mode="wb")
+        if len(oem_cert):
+            write_file(oem_cert, os.path.join(output, "NXP_CUST_CA_PUK.bin"), mode="wb")
+
     click.echo("OEM MASTER SHARE successfully generated.")
 
 
 @main.command(name="set-master-share", no_args_is_help=True)
 @spsdk_mboot_interface(identify_by_family=True)
-@spsdk_family_option(families=DevHsmSB31.get_supported_families())
+@spsdk_family_option(families=SB31_SB4_FAMILIES)
 @click.option(
     "-i",
     "--oem-share-input",
@@ -176,7 +196,9 @@ def set_master_share(
 ) -> None:
     """Set OEM SHARE."""
     with McuBoot(interface=interface, family=family) as mboot:
-        devhsm = DevHsmSB31(mboot=mboot, family=family, buffer_address=buffer_address)
+        devhsm = get_devhsm_class_sb3_sb4(family)(
+            mboot=mboot, family=family, commands=[], buffer_address=buffer_address
+        )
         devhsm.oem_set_master_share(
             oem_seed=load_binary(oem_share_input),
             enc_oem_share=load_binary(enc_oem_master_share),

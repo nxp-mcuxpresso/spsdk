@@ -18,18 +18,10 @@ It is delivered in a form of python library with functionality presented as CLI 
 """
 import os
 import sys
+from typing import Optional, Union
 
+from packaging.version import Version, parse
 from platformdirs import PlatformDirs
-
-from spsdk.utils.misc import get_spsdk_version, value_to_bool
-
-version = get_spsdk_version()
-
-__author__ = "NXP"
-__contact__ = "michal.starecek@nxp.com"
-__license__ = "BSD-3-Clause"
-__version__ = str(version)
-__release__ = "beta"
 
 
 class SPSDKPlatformDirs(PlatformDirs):
@@ -47,6 +39,33 @@ class SPSDKPlatformDirs(PlatformDirs):
         path = os.path.join(self.user_data_dir, "Cache")
         self._optionally_create_directory(path)
         return path
+
+
+def get_spsdk_version() -> Version:
+    """Get SPSDK's version. Either from (already generated) __version__ or dynamically via setuptools_scm."""
+    try:
+        from .__version__ import __version__ as spsdk_version
+    except ImportError:
+        from setuptools_scm import get_version
+
+        spsdk_version = get_version()
+    return parse(spsdk_version)
+
+
+def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
+    """Function decode bool value from various formats."""
+    if isinstance(value, str):
+        return value in ("True", "true", "T", "1")
+    return bool(value)
+
+
+version = get_spsdk_version()
+
+__author__ = "NXP"
+__contact__ = "spsdk@nxp.com"
+__license__ = "BSD-3-Clause"
+__version__ = str(version)
+__release__ = "beta"
 
 
 # The SPSDK behavior settings
@@ -110,3 +129,7 @@ SPSDK_DEBUG_LOG_FILE = os.environ.get(
     "SPSDK_DEBUG_LOG_FILE", os.path.join(SPSDK_PLATFORM_DIRS.user_log_dir, "debug.log")
 )
 SPSDK_SCHEMA_STRICT = value_to_bool(os.environ.get("SPSDK_SCHEMA_STRICT"))
+
+SPSDK_SECRETS_PATH = os.environ.get(
+    "SPSDK_SECRETS_PATH", os.path.expanduser("~/.spsdk/secrets.yaml")
+)

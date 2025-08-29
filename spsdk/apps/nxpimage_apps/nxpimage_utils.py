@@ -13,7 +13,7 @@ from typing import Optional
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_output_option,
 )
@@ -36,12 +36,12 @@ from spsdk.utils.misc import (
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="utils", cls=SpsdkClickGroup)
+@click.group(name="utils", cls=CommandsTreeGroup)
 def nxpimage_utils_group() -> None:
     """Group of utilities."""
 
 
-@nxpimage_utils_group.group(name="binary-image", cls=SpsdkClickGroup)
+@nxpimage_utils_group.group(name="binary-image", cls=CommandsTreeGroup)
 def bin_image_group() -> None:
     """Binary Image utilities."""
 
@@ -232,7 +232,7 @@ def binary_convert(
 ) -> None:
     """Convert input data file into selected format."""
     image = BinaryImage.load_binary_image(input_file)
-    if not keep_padding:
+    if not keep_padding and not split_image:
         image.update_offsets()
         if image.offset:
             image.offset = 0
@@ -244,7 +244,8 @@ def binary_convert(
         if len(image.sub_images) > 1:
             logger.info(f"Image contains {len(image.sub_images)} sub images.")
             for sub_img in image.sub_images:
-                sub_img_path = _update_path_with_address(output, sub_img.offset)
+                sub_img_path = _update_path_with_address(output, sub_img.absolute_address)
+                sub_img.offset = 0  # Reset offset for individual sub-images
                 sub_img.save_binary_image(sub_img_path, file_format=output_format)
                 click.echo(
                     f"Success. (Converted sub-image: {get_printable_path(sub_img_path)} created.)"
@@ -399,7 +400,7 @@ def binary_pad(
     )
 
 
-@nxpimage_utils_group.group(name="convert", cls=SpsdkClickGroup)
+@nxpimage_utils_group.group(name="convert", cls=CommandsTreeGroup)
 def convert() -> None:  # pylint: disable=unused-argument
     """Conversion utilities."""
 
@@ -427,7 +428,9 @@ def convert_hex2bin_command(input_file: str, reverse: bool, output: str) -> None
 def convert_hex2bin(input_file: str, reverse: bool, output: str) -> None:
     """Convert file with hexadecimal string into binary file with optional reverse order of stored bytes."""
     try:
-        value = bytearray.fromhex(load_text(input_file))
+        text_data = load_text(input_file)
+        text_data = text_data.replace("\n", "").replace("\t", "").replace(" ", "")
+        value = bytearray.fromhex(text_data)
     except (SPSDKError, ValueError) as e:
         raise SPSDKAppError(f"Failed loading hexadecimal value from: {input_file}") from e
     if reverse:
@@ -455,18 +458,38 @@ def convert_hex2bin(input_file: str, reverse: bool, output: str) -> None:
     is_flag=True,
     help="The result binary bytes will be stored in reverse order (for example SBKEK in elftosb this required).",
 )
+@click.option(
+    "-bpl",
+    "--bytes-per-line",
+    type=int,
+    required=False,
+    help="Format the output to have this many bytes per line",
+)
 @spsdk_output_option()
-def convert_bin2hex_command(input_file: str, reverse: bool, output: str) -> None:
+def convert_bin2hex_command(
+    input_file: str, reverse: bool, output: str, bytes_per_line: int
+) -> None:
     """Convert binary file into hexadecimal text file with optional reverse order of stored bytes."""
-    convert_bin2hex(input_file, reverse, output)
+    convert_bin2hex(input_file, reverse, output, bytes_per_line)
 
 
-def convert_bin2hex(input_file: str, reverse: bool, output: str) -> None:
+def convert_bin2hex(
+    input_file: str, reverse: bool, output: str, bytes_per_line: Optional[int]
+) -> None:
     """Convert binary file into hexadecimal text file with optional reverse order of stored bytes."""
     value = bytearray(load_binary(input_file))
     if reverse:
         value.reverse()
-    write_file(value.hex(), output, mode="w")
+    if bytes_per_line is None:
+        data = value.hex()
+    else:
+        lines = []
+        for offset in range(0, len(value), bytes_per_line):
+            chunk = value[offset : offset + bytes_per_line]
+            line = " ".join(f"{c:02X}" for c in chunk)
+            lines.append(line)
+        data = "\n".join(lines)
+    write_file(data, output, mode="w")
     click.echo(f"Success. Converted file: {output}")
 
 

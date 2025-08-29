@@ -18,7 +18,11 @@ from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKUnsupportedOperation
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_blob import AhabBlob
-from spsdk.image.ahab.ahab_certificate import AhabCertificate
+from spsdk.image.ahab.ahab_certificate import (
+    AhabCertificate,
+    AhabCertificateMcuPqc,
+    get_ahab_certificate_class,
+)
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
     RESERVED,
@@ -26,6 +30,8 @@ from spsdk.image.ahab.ahab_data import (
     UINT32,
     AhabChipContainerConfig,
     AHABTags,
+    FlagsSrkSet,
+    SignatureType,
 )
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecordV2, SRKTable, SRKTableArray
@@ -73,6 +79,14 @@ class SignatureBlock(HeaderContainer):
     VERSION = 0x00
     SUPPORTED_SIGNATURES_CNT = 1
 
+    DIFF_ATTRIBUTES_VALUES = [
+        "_srk_assets_offset",
+        "_certificate_offset",
+        "_blob_offset",
+        "_signature_offset",
+    ]
+    DIFF_ATTRIBUTES_OBJECTS = ["srk_assets", "signature", "certificate", "blob"]
+
     def __init__(
         self,
         chip_config: AhabChipContainerConfig,
@@ -93,7 +107,7 @@ class SignatureBlock(HeaderContainer):
         self._srk_assets_offset = 0
         self._certificate_offset = 0
         self._blob_offset = 0
-        self.signature_offset = 0
+        self._signature_offset = 0
         self.srk_assets = srk_assets
         self.signature = container_signature
         self.certificate = certificate
@@ -112,7 +126,7 @@ class SignatureBlock(HeaderContainer):
                 and self._srk_assets_offset == other._srk_assets_offset
                 and self._certificate_offset == other._certificate_offset
                 and self._blob_offset == other._blob_offset
-                and self.signature_offset == other.signature_offset
+                and self._signature_offset == other._signature_offset
                 and self.srk_assets == other.srk_assets
                 and self.signature == other.signature
                 and self.certificate == other.certificate
@@ -184,12 +198,12 @@ class SignatureBlock(HeaderContainer):
         # 2: Update Signature (at least length)
         # Nothing to do with Signature - in this time , it MUST be ready
         if self.signature:
-            last_offset = self.signature_offset = align(
+            last_offset = self._signature_offset = align(
                 last_offset + last_block_size, CONTAINER_ALIGNMENT
             )
             last_block_size = len(self.signature)
         else:
-            self.signature_offset = 0
+            self._signature_offset = 0
         # 3: Optionally update Certificate
         if self.certificate:
             self.certificate.update_fields()
@@ -219,7 +233,8 @@ class SignatureBlock(HeaderContainer):
         """
         if not self.signature:
             raise SPSDKError("Cannot sign because the Signature container is missing.")
-        self.signature.sign(data_to_sign)
+        if self.signature.signature_type == SignatureType.SRK_TABLE:
+            self.signature.sign(data_to_sign)
 
     def export(self) -> bytes:
         """Export signature block as binary data.
@@ -234,7 +249,7 @@ class SignatureBlock(HeaderContainer):
             self.tag,
             self._certificate_offset,
             self._srk_assets_offset,
-            self.signature_offset,
+            self._signature_offset,
             self._blob_offset,
             self.blob.key_identifier if self.blob else RESERVED,
         )
@@ -246,9 +261,9 @@ class SignatureBlock(HeaderContainer):
                 self._srk_assets_offset : self._srk_assets_offset + len(self.srk_assets)
             ] = self.srk_assets.export()
         if self.signature:
-            signature_block[self.signature_offset : self.signature_offset + len(self.signature)] = (
-                self.signature.export()
-            )
+            signature_block[
+                self._signature_offset : self._signature_offset + len(self.signature)
+            ] = self.signature.export()
         if self.certificate:
             signature_block[
                 self._certificate_offset : self._certificate_offset + len(self.certificate)
@@ -303,7 +318,7 @@ class SignatureBlock(HeaderContainer):
             else:
                 ver.add_record_bit_range("Offset", offset, 16)
 
-            if isinstance(obj, AhabCertificate):
+            if isinstance(obj, (AhabCertificate, AhabCertificateMcuPqc)):
                 ver.add_child(obj.verify(verify_data))
             else:
                 ver.add_child(obj.verify())
@@ -319,9 +334,9 @@ class SignatureBlock(HeaderContainer):
         )
         if self.srk_assets:
             min_offset = self._srk_assets_offset + len(self.srk_assets)
-        ret.add_child(verify_block("Signature", self.signature, min_offset, self.signature_offset))
+        ret.add_child(verify_block("Signature", self.signature, min_offset, self._signature_offset))
         if self.signature:
-            min_offset = self.signature_offset + len(self.signature)
+            min_offset = self._signature_offset + len(self.signature)
         ret.add_child(
             verify_block(
                 "Certificate",
@@ -348,7 +363,11 @@ class SignatureBlock(HeaderContainer):
 
         def verify_signature() -> None:
             # Verify signature
-            if not self.srk_assets:
+            # Check if we're using DEVHSM with CMAC signature type
+            is_devhsm = self.chip_config.srk_set == FlagsSrkSet.DEVHSM
+
+            # For DEVHSM with CMAC, SRK assets are not required
+            if not self.srk_assets and not is_devhsm:
                 ver_sign.add_record("Signature", VerifierResult.ERROR, "Missing SRK table")
             elif used_image_key and not self.certificate:
                 ver_sign.add_record("Signature", VerifierResult.ERROR, "Missing Certificate")
@@ -362,10 +381,27 @@ class SignatureBlock(HeaderContainer):
                 )
             elif not self.signature.signature_data:
                 ver_sign.add_record("Signature", VerifierResult.ERROR, "Missing Signature data")
+            # Add verification for DEVHSM with CMAC case
+            elif is_devhsm:
+                if self.signature.signature_type == SignatureType.SRK_TABLE:
+                    ver_sign.add_record(
+                        "Signature type for Device HSM",
+                        VerifierResult.ERROR,
+                        "Signature block has incorrect signature type for Device HSM",
+                    )
+                else:
+                    ver_sign.add_record(
+                        "Signature type for Device HSM",
+                        VerifierResult.SUCCEEDED,
+                        "Signature block has valid signature type for Device HSM",
+                    )
             else:
+                assert self.srk_assets
                 try:
                     if used_image_key:
-                        assert isinstance(self.certificate, AhabCertificate)
+                        assert isinstance(
+                            self.certificate, (AhabCertificate, AhabCertificateMcuPqc)
+                        )
                         assert isinstance(self.certificate.public_key_0, SRKRecordV2)
                         public_key = self.certificate.public_key_0.get_public_key()
 
@@ -396,6 +432,9 @@ class SignatureBlock(HeaderContainer):
                     sign_ok = public_key.verify_signature(
                         self.signature.signature_data,
                         data_to_sign,
+                        algorithm=EnumHashAlgorithm.from_label(
+                            self.srk_assets.srk_records[0].hash_algorithm.label
+                        ),
                         pss_padding=True,
                     )
                     ver_sign.add_record(
@@ -464,7 +503,7 @@ class SignatureBlock(HeaderContainer):
         signature_block = cls(chip_config=chip_config)
         signature_block.length = container_length
         signature_block._srk_assets_offset = srk_table_offset
-        signature_block.signature_offset = signature_offset
+        signature_block._signature_offset = signature_offset
         signature_block._certificate_offset = certificate_offset
         signature_block._blob_offset = blob_offset
         try:
@@ -475,7 +514,9 @@ class SignatureBlock(HeaderContainer):
             signature_block.srk_assets = None
         try:
             signature_block.certificate = (
-                AhabCertificate.parse(data[certificate_offset:], chip_config.base.family)
+                get_ahab_certificate_class(chip_config.base.family).parse(
+                    data[certificate_offset:], chip_config.base.family
+                )
                 if certificate_offset
                 else None
             )
@@ -600,13 +641,19 @@ class SignatureBlock(HeaderContainer):
             try:
                 cert_cfg = config.load_sub_config("certificate")
                 cert_cfg.check(
-                    AhabCertificate.get_validation_schemas(family=chip_config.base.family),
+                    get_ahab_certificate_class(chip_config.base.family).get_validation_schemas(
+                        family=chip_config.base.family
+                    ),
                     check_unknown_props=True,
                 )
-                signature_block.certificate = AhabCertificate.load_from_config(cert_cfg)
+                signature_block.certificate = get_ahab_certificate_class(
+                    chip_config.base.family
+                ).load_from_config(cert_cfg)
             except SPSDKError:
                 # this could be pre-exported binary certificate :-)
-                signature_block.certificate = AhabCertificate.parse(
+                signature_block.certificate = get_ahab_certificate_class(
+                    chip_config.base.family
+                ).parse(
                     load_binary(config.get_input_file_name("certificate")), chip_config.base.family
                 )
 
@@ -678,6 +725,13 @@ class SignatureBlockV2(HeaderContainer):
     VERSION = 0x01
 
     SUPPORTED_SIGNATURES_CNT = 2
+    # DIFF_ATTRIBUTES_VALUES = [
+    #     "_srk_assets_offset",
+    #     "_certificate_offset",
+    #     "_blob_offset",
+    #     "_signature_offset",
+    # ]
+    DIFF_ATTRIBUTES_OBJECTS = ["srk_assets", "signature", "signature_2", "certificate", "blob"]
 
     def __init__(
         self,
@@ -702,7 +756,7 @@ class SignatureBlockV2(HeaderContainer):
         self._srk_assets_offset = 0
         self._certificate_offset = 0
         self._blob_offset = 0
-        self.signature_offset = 0
+        self._signature_offset = 0
         self.srk_assets = srk_assets
         self.signature = container_signature
         self.signature_2 = container_signature_2
@@ -722,7 +776,7 @@ class SignatureBlockV2(HeaderContainer):
                 and self._srk_assets_offset == other._srk_assets_offset
                 and self._certificate_offset == other._certificate_offset
                 and self._blob_offset == other._blob_offset
-                and self.signature_offset == other.signature_offset
+                and self._signature_offset == other._signature_offset
                 and self.srk_assets == other.srk_assets
                 and self.signature == other.signature
                 and self.signature_2 == other.signature_2
@@ -778,12 +832,12 @@ class SignatureBlockV2(HeaderContainer):
         # 2: Update Signature (at least length)
         # Nothing to do with Signature - in this time , it MUST be ready
         if self.signature:
-            last_offset = self.signature_offset = last_offset + last_block_size
+            last_offset = self._signature_offset = last_offset + last_block_size
             last_block_size = len(self.signature)
             if self.signature_2:
                 last_block_size += len(self.signature_2)
         else:
-            self.signature_offset = 0
+            self._signature_offset = 0
         # 3: Optionally update Certificate
         if self.certificate:
             self.certificate.update_fields()
@@ -811,6 +865,9 @@ class SignatureBlockV2(HeaderContainer):
         """
         if not self.signature:
             raise SPSDKError("Cannot sign because the Signature container is missing.")
+        if self.signature.signature_type == SignatureType.CMAC:
+            logger.debug("Skipping signature for CMAC type")
+            return
         if not self.srk_assets:
             raise SPSDKError("Cannot sign because the SRK table array container is missing.")
 
@@ -833,7 +890,7 @@ class SignatureBlockV2(HeaderContainer):
             self.tag,
             self._certificate_offset,
             self._srk_assets_offset,
-            self.signature_offset,
+            self._signature_offset,
             self._blob_offset,
             self.blob.key_identifier if self.blob else RESERVED,
         )
@@ -846,11 +903,11 @@ class SignatureBlockV2(HeaderContainer):
             ] = self.srk_assets.export()
 
         if self.signature:
-            signature_block[self.signature_offset : self.signature_offset + len(self.signature)] = (
-                self.signature.export()
-            )
+            signature_block[
+                self._signature_offset : self._signature_offset + len(self.signature)
+            ] = self.signature.export()
             if self.signature_2:
-                signature_offset_2 = self.signature_offset + len(self.signature)
+                signature_offset_2 = self._signature_offset + len(self.signature)
                 signature_block[signature_offset_2 : signature_offset_2 + len(self.signature_2)] = (
                     self.signature_2.export()
                 )
@@ -903,7 +960,7 @@ class SignatureBlockV2(HeaderContainer):
             else:
                 ver.add_record_bit_range("Offset", offset, 16)
 
-            if isinstance(obj, AhabCertificate):
+            if isinstance(obj, (AhabCertificate, AhabCertificateMcuPqc)):
                 ver.add_child(obj.verify(verify_data))
             else:
                 ver.add_child(obj.verify())
@@ -919,9 +976,9 @@ class SignatureBlockV2(HeaderContainer):
         )
         if self.srk_assets:
             min_offset = self._srk_assets_offset + len(self.srk_assets)
-        ret.add_child(verify_block("Signature", self.signature, min_offset, self.signature_offset))
+        ret.add_child(verify_block("Signature", self.signature, min_offset, self._signature_offset))
         if self.signature:
-            min_offset = self.signature_offset + len(self.signature)
+            min_offset = self._signature_offset + len(self.signature)
 
         signature_cnt = 0
         if self.srk_assets:
@@ -972,19 +1029,27 @@ class SignatureBlockV2(HeaderContainer):
         :param data_to_sign: Data to sign provided by container.
         :return: Verifier object with result.
         """
+        # Define used_image_key at the beginning
+        used_image_key = False
 
         def verify_signature(ix: int) -> Verifier:
             # Verify signature
             ver_sign = Verifier(f"Signature #{ix}")
             signature_container = self.signature if ix == 0 else self.signature_2
-            if not self.srk_assets:
+            # Check if we're using DEVHSM with CMAC signature type
+            is_devhsm = self.chip_config.srk_set == FlagsSrkSet.DEVHSM
+
+            # For DEVHSM with CMAC, SRK assets are not required
+            if not self.srk_assets and not is_devhsm:
                 ver_sign.add_record("Signature", VerifierResult.ERROR, "Missing SRK table array")
-            elif len(self.srk_assets._srk_tables) < (ix + 1):
+            elif not is_devhsm and len(self.srk_assets._srk_tables) < (ix + 1):  # type: ignore
+                assert self.srk_assets
                 ver_sign.add_record("Signature", VerifierResult.ERROR, f"Missing SRK table {ix}")
-            elif used_image_key and not self.certificate:
+            elif not is_devhsm and used_image_key and not self.certificate:
                 ver_sign.add_record("Signature", VerifierResult.ERROR, "Missing Certificate")
             elif (
-                used_image_key
+                not is_devhsm
+                and used_image_key
                 and self.certificate
                 and self.certificate.verify(self.srk_assets).has_errors
             ):
@@ -995,11 +1060,28 @@ class SignatureBlockV2(HeaderContainer):
                 )
             elif not signature_container.signature_data:
                 ver_sign.add_record("Signature", VerifierResult.ERROR, "Missing Signature data")
+            # Add verification for DEVHSM with CMAC case
+            elif is_devhsm:
+                if signature_container.signature_type == SignatureType.SRK_TABLE:
+                    ver_sign.add_record(
+                        "Signature type for Device HSM",
+                        VerifierResult.ERROR,
+                        "Signature block has incorrect signature type for Device HSM",
+                    )
+                else:
+                    ver_sign.add_record(
+                        "Signature type for Device HSM",
+                        VerifierResult.SUCCEEDED,
+                        "Signature block has valid signature type for Device HSM",
+                    )
             else:
                 public_key = None
+                assert self.srk_assets
                 try:
                     if used_image_key:
-                        assert isinstance(self.certificate, AhabCertificate)
+                        assert isinstance(
+                            self.certificate, (AhabCertificate, AhabCertificateMcuPqc)
+                        )
                         if ix == 0:
                             assert isinstance(self.certificate.public_key_0, SRKRecordV2)
                             public_key = self.certificate.public_key_0.get_public_key()
@@ -1009,7 +1091,7 @@ class SignatureBlockV2(HeaderContainer):
 
                     else:
                         public_key = (
-                            self.srk_assets._srk_tables[i]
+                            self.srk_assets._srk_tables[ix]
                             .srk_records[self.chip_config.used_srk_id]
                             .get_public_key()
                         )
@@ -1040,7 +1122,7 @@ class SignatureBlockV2(HeaderContainer):
                         signature_container.signature_data,
                         data_to_sign,
                         algorithm=EnumHashAlgorithm.from_label(
-                            self.srk_assets._srk_tables[i].srk_records[0].hash_algorithm.label
+                            self.srk_assets._srk_tables[ix].srk_records[0].hash_algorithm.label
                         ),
                         pss_padding=True,
                     )
@@ -1053,42 +1135,52 @@ class SignatureBlockV2(HeaderContainer):
             return ver_sign
 
         ret = Verifier("Container signing")
-        assert isinstance(self.srk_assets, SRKTableArray)
-        # Show revoke keys
-        if self.chip_config.srk_revoke_keys:
-            msg = ""
-            for x in range(4):
-                if (self.chip_config.srk_revoke_keys >> x) & 0x01:
-                    msg += f"SRK{x}"
-            ret.add_record("Revoke keys", VerifierResult.SUCCEEDED, msg)
+        if self.chip_config.srk_set == FlagsSrkSet.DEVHSM:
+            sign_count = 1  # in case of devhsm there is just only ony symmetrical signature
         else:
-            ret.add_record("Revoke keys", VerifierResult.SUCCEEDED, "No SRK key is revoked")
-        # Check the SRK ID against revoke keys
-        if (1 << self.chip_config.used_srk_id) & self.chip_config.srk_revoke_keys:
-            ret.add_record(
-                "Used SRK key ID",
-                VerifierResult.ERROR,
-                f"SRK ID {self.chip_config.used_srk_id} is revoked",
-            )
-        else:
-            ret.add_record(
-                "Used SRK key ID",
-                VerifierResult.SUCCEEDED,
-                f"SRK ID {self.chip_config.used_srk_id}",
-            )
+            # Show revoke keys
+            if self.chip_config.srk_revoke_keys:
+                msg = ""
+                for x in range(4):
+                    if (self.chip_config.srk_revoke_keys >> x) & 0x01:
+                        msg += f"SRK{x}"
+                ret.add_record("Revoke keys", VerifierResult.SUCCEEDED, msg)
+            else:
+                ret.add_record("Revoke keys", VerifierResult.SUCCEEDED, "No SRK key is revoked")
+            # Check the SRK ID against revoke keys
+            if (1 << self.chip_config.used_srk_id) & self.chip_config.srk_revoke_keys:
+                ret.add_record(
+                    "Used SRK key ID",
+                    VerifierResult.ERROR,
+                    f"SRK ID {self.chip_config.used_srk_id} is revoked",
+                )
+            else:
+                ret.add_record(
+                    "Used SRK key ID",
+                    VerifierResult.SUCCEEDED,
+                    f"SRK ID {self.chip_config.used_srk_id}",
+                )
+            if self.signature and self.signature.signature_type == SignatureType.SRK_TABLE:
+                assert self.srk_assets
+                ret.add_record(
+                    "SRK Table & Signature block presence", bool(self.srk_assets and self.signature)
+                )
+                used_image_key = bool(
+                    self.certificate and self.certificate.permission_to_sign_container
+                )
+                ret.add_record(
+                    "Signed source", True, "Certificate image key" if used_image_key else "SRK key"
+                )
+                sign_count = len(self.srk_assets._srk_tables)
+                ret.add_record_range("Signature counts", value=sign_count, min_val=1, max_val=2)
 
-        ret.add_record(
-            "SRK Table & Signature block presence", bool(self.srk_assets and self.signature)
-        )
-        used_image_key = bool(self.certificate and self.certificate.permission_to_sign_container)
-        ret.add_record(
-            "Signed source", True, "Certificate image key" if used_image_key else "SRK key"
-        )
-        sign_count = len(self.srk_assets._srk_tables)
-        ret.add_record_range("Signature counts", value=sign_count, min_val=1, max_val=2)
-
-        for i in range(sign_count):
-            ret.add_child(verify_signature(i))
+                for i in range(sign_count):
+                    ret.add_child(verify_signature(i))
+            else:
+                ret.add_record("SRK Table block presence", not bool(self.srk_assets))
+                ret.add_record("Certificate block presence", not bool(self.certificate))
+                ret.add_record("Signature 2 block presence", not bool(self.signature_2))
+                ret.add_child(verify_signature(0))
 
         return ret
 
@@ -1116,7 +1208,7 @@ class SignatureBlockV2(HeaderContainer):
         signature_block = cls(chip_config=chip_config)
         signature_block.length = container_length
         signature_block._srk_assets_offset = srk_assets_offset
-        signature_block.signature_offset = signature_offset
+        signature_block._signature_offset = signature_offset
         signature_block._certificate_offset = certificate_offset
         signature_block._blob_offset = blob_offset
         try:
@@ -1130,7 +1222,9 @@ class SignatureBlockV2(HeaderContainer):
 
         try:
             signature_block.certificate = (
-                AhabCertificate.parse(data[certificate_offset:], chip_config.base.family)
+                get_ahab_certificate_class(chip_config.base.family).parse(
+                    data[certificate_offset:], chip_config.base.family
+                )
                 if certificate_offset
                 else None
             )
@@ -1141,9 +1235,8 @@ class SignatureBlockV2(HeaderContainer):
             signature_block.signature = None
             signature_block.signature_2 = None
             if signature_offset:
-                assert isinstance(signature_block.srk_assets, SRKTableArray)
                 signature_block.signature = ContainerSignature.parse(data[signature_offset:])
-                if len(signature_block.srk_assets._srk_tables) == 2:
+                if signature_block.srk_assets and len(signature_block.srk_assets._srk_tables) == 2:
                     signature_block.signature_2 = ContainerSignature.parse(
                         data[signature_offset + len(signature_block.signature) :]
                     )
@@ -1271,13 +1364,19 @@ class SignatureBlockV2(HeaderContainer):
             try:
                 cert_cfg = config.load_sub_config("certificate")
                 cert_cfg.check(
-                    AhabCertificate.get_validation_schemas(family=chip_config.base.family),
+                    get_ahab_certificate_class(chip_config.base.family).get_validation_schemas(
+                        family=chip_config.base.family
+                    ),
                     check_unknown_props=True,
                 )
-                signature_block.certificate = AhabCertificate.load_from_config(cert_cfg)
+                signature_block.certificate = get_ahab_certificate_class(
+                    chip_config.base.family
+                ).load_from_config(cert_cfg)
             except SPSDKError:
                 # this could be pre-exported binary certificate :-)
-                signature_block.certificate = AhabCertificate.parse(
+                signature_block.certificate = get_ahab_certificate_class(
+                    chip_config.base.family
+                ).parse(
                     load_binary(config.get_input_file_name("certificate")), chip_config.base.family
                 )
 

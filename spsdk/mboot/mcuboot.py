@@ -1122,6 +1122,33 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises McuBootError: Invalid input parameters
         :return: True if prove_genuinity operation is successfully completed
         """
+        return self._tp_prove_genuinity(
+            address=address, buffer_size=buffer_size, opcode=TrustProvOperation.PROVE_GENUINITY.tag
+        )
+
+    def tp_prove_genuinity_hybrid(self, address: int, buffer_size: int) -> Optional[int]:
+        """Start the process of proving genuinity.
+
+        :param address: Address where to prove genuinity request (challenge) container
+        :param buffer_size: Maximum size of the response package (limit 0xFFFF)
+        :raises McuBootError: Invalid input parameters
+        :return: True if prove_genuinity operation is successfully completed
+        """
+        return self._tp_prove_genuinity(
+            address=address,
+            buffer_size=buffer_size,
+            opcode=TrustProvOperation.PROVE_GENUINITY_HYBRID.tag,
+        )
+
+    def _tp_prove_genuinity(self, address: int, buffer_size: int, opcode: int) -> Optional[int]:
+        """Internal method to prove genuinity with configurable operation code.
+
+        :param address: Address where to prove genuinity request (challenge) container
+        :param buffer_size: Maximum size of the response package (limit 0xFFFF)
+        :param opcode: Operation code for trust provisioning
+        :raises McuBootError: Invalid input parameters
+        :return: Response value or None if operation fails
+        """
         logger.info(
             f"CMD: [TrustProvisioning] ProveGenuinity(address={hex(address)}, "
             f"buffer_size={buffer_size})"
@@ -1130,16 +1157,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             raise McuBootError("buffer_size must be less than 0xFFFF")
         address_msb = (address >> 32) & 0xFFFF_FFFF
         address_lsb = address & 0xFFFF_FFFF
-        sentinel_cmd = _tp_sentinel_frame(
-            TrustProvOperation.PROVE_GENUINITY.tag, args=[address_msb, address_lsb, buffer_size]
-        )
+        sentinel_cmd = _tp_sentinel_frame(opcode, args=[address_msb, address_lsb, buffer_size])
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING, CommandFlag.NONE.tag, data=sentinel_cmd
         )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             assert isinstance(cmd_response, TrustProvisioningResponse)
-            return cmd_response.values[0]
+            if len(cmd_response.values) > 0:
+                return cmd_response.values[0]
+            raise McuBootError("Command response doesn't contain value for PG response size")
         return None
 
     def tp_set_wrapped_data(self, address: int, stage: int = 0x4B, control: int = 1) -> bool:
@@ -1368,6 +1395,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_rkth_input_size: int,
         oem_cust_cert_dice_puk_output_addr: int,
         oem_cust_cert_dice_puk_output_size: int,
+        mldsa: bool = False,
     ) -> Optional[int]:
         """Creates the initial DICE CA keys.
 
@@ -1376,13 +1404,19 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param oem_cust_cert_dice_puk_output_addr: The output buffer address where ROM writes the OEM Customer
             Certificate Public Key for DICE to
         :param oem_cust_cert_dice_puk_output_size: The output buffer size in byte
+        :param mldsa: Flag to indicate MLDSA operation, defaults to False
         :return: The byte count of the OEM Customer Certificate Public Key for DICE
         """
         logger.info("CMD: [TrustProvisioning] Creates the initial DICE CA keys")
+        operation_tag = (
+            TrustProvOperation.OEM_GET_CUST_DICE_RESPONSE.tag
+            if mldsa
+            else TrustProvOperation.OEM_GET_CUST_CERT_DICE_PUK.tag
+        )
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
             CommandFlag.NONE.tag,
-            TrustProvOperation.OEM_GET_CUST_CERT_DICE_PUK.tag,
+            operation_tag,
             oem_rkth_input_addr,
             oem_rkth_input_size,
             oem_cust_cert_dice_puk_output_addr,

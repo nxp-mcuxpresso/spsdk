@@ -12,8 +12,8 @@ Secure binary is a binary output file that contains the user's application image
 The output file is known as a "Secure Binary" or SB file for short.
 These files typically have an .sb extension.
 
-This format has a long history, the latest version is 3.1. (2022).
-SPSDK nxpimage tool supports SB 2.1 (2.0) and SB 3.1.
+This format has a long history, the latest version is 4.0. (2025).
+SPSDK nxpimage tool supports SB 2.1 (2.0), SB 3.1 and SB 4.0.
 
 .. toctree::
     :caption: Secure Binary
@@ -21,4 +21,5 @@ SPSDK nxpimage tool supports SB 2.1 (2.0) and SB 3.1.
 
     sb2
     sb3
+    sb4
     sbc

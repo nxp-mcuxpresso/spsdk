@@ -34,6 +34,7 @@ AHBSC
 ahoj
 aips
 AIPS
+AIRCR
 ALIGNMENTERROR
 aliqua
 aliquam
@@ -173,6 +174,7 @@ cachier
 CADDR
 calcsize
 CALIB
+Caliptra
 capa
 Capa
 capabank
@@ -335,6 +337,7 @@ Devattest
 DEVATTEST
 devbuff
 DEVBUFF
+DEVCFG
 developement
 devhsm
 DEVHSM
@@ -358,6 +361,7 @@ Dilithium
 DILITHIUM
 DISBL
 DISP
+DLASH
 dlla
 DLLA
 dllb
@@ -371,9 +375,9 @@ docutils
 dolore
 donwloading
 downto
+DPROT
 DRBG
 DROM
-DPROT
 DSASS
 DSPEN
 dtcm
@@ -456,6 +460,7 @@ FDET
 FDPROT
 Felis
 FEPROT
+filelock
 filesize
 fileutil
 filevers
@@ -501,6 +506,9 @@ FTDI
 FTFA
 Fusemap
 FUSEV
+FWID
+FWIDLIST
+fwids
 FWUPD
 fwversioncheck
 Fxxx
@@ -574,6 +582,7 @@ icnp
 icns
 idau
 IDAU
+IDEVID
 idlecommand
 idna
 ifile
@@ -613,6 +622,7 @@ IPED
 ipykernel
 ipynb
 ipython
+ipywidgets
 ISBC
 isfile
 isinstance
@@ -650,6 +660,7 @@ KEYBLOB
 keyblobs
 Keyblobs
 KEYEN
+KEYFLUSH
 keygen
 keysource
 keystream
@@ -711,6 +722,7 @@ lpddr
 LPDDR
 LPSPI
 LPUART
+LSPI
 lsusb
 luctus
 LUPART
@@ -743,9 +755,9 @@ MCU's
 mcuboot
 mcux
 mcxa
-mcxaxxx
 Mcxa
 MCXA
+mcxaxxx
 mcxc
 MCXC
 mcxe
@@ -808,6 +820,7 @@ myapp
 mystnb
 mywpc
 namedtype
+namedval
 nand
 NAND
 nandbcb
@@ -826,6 +839,7 @@ nbsphinx
 neque
 newcommands
 NFCB
+NFPA
 niden
 NIDEN
 nirq
@@ -852,6 +866,7 @@ numberify
 numbytes
 nums
 nunc
+NVAL
 nvic
 NVIC
 nvme
@@ -1014,6 +1029,7 @@ PVTS
 PWRDN
 PWRMODE
 Pxxx
+pyasn
 pycache
 pycparser
 pycryptodome
@@ -1026,6 +1042,7 @@ pylibftdi
 PYLIBFTDI
 pylink
 pylint
+pymboot
 pyocd
 pyparsing
 pypemicro
@@ -1040,6 +1057,7 @@ pytest
 PYTHONIOENCODING
 pyusb
 pyyaml
+QFLASH
 QIAUTH
 qospi
 qspi
@@ -1072,6 +1090,7 @@ ramx
 RAMX
 rawlist
 rbar
+rblhost
 RCVRY
 rdrw
 Readback
@@ -1187,6 +1206,7 @@ SDPU
 SDPV
 SDXC
 SECBOOT
+SECCON
 secho
 seco
 secp
@@ -1200,6 +1220,7 @@ segfcb
 Segger
 selfref
 selfsign
+SELFTEST
 semc
 Semc
 SEMC
@@ -1234,6 +1255,7 @@ smartcard
 SMARTCARD
 SMODE
 SMPR
+SMSCM
 smsg
 sniden
 snvs
@@ -1257,6 +1279,7 @@ spinand
 SPINAND
 SPINOR
 SPINORSFDP
+spki
 SPLDDR
 SPNIDEN
 spreg
@@ -1298,6 +1321,7 @@ STACKPOINTER
 startaddress
 staticmethod
 statusregister
+STEC
 STEN
 STICKYCMP
 STICKYERR
@@ -1379,6 +1403,8 @@ Txxxx
 TYPECLASS
 typehints
 typesp
+TZME
+TZMS
 tztest
 u'blhost
 u'ifr
@@ -1406,6 +1432,7 @@ Uboot
 UCMD
 udev
 udevadm
+ueid
 ugprade
 uids
 Ukropec
@@ -1433,6 +1460,7 @@ usbsio
 Usbsio
 USBSIO
 usbt
+USBX
 USDHC
 userkek
 USERKEK
@@ -1449,6 +1477,8 @@ VDDIO
 VDDMAIN
 VDET
 VECT
+VECTKEY
+VECTKEYSTAT
 velit
 venenatis
 venv
@@ -1524,9 +1554,3 @@ Zeroize
 ZEROIZE
 zeroized
 zipp
-pyasn
-SELFTEST
-DLASH
-filelock
-ipywidgets
-pymboot

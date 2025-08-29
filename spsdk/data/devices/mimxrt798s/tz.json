@@ -259,7 +259,7 @@
                     "id": "field07C",
                     "offset_int": "0x7c",
                     "reg_width": 32,
-                    "name": "CORE0 Non-secure MPU Control Register.*/(cm33_mpu_ctrl_ns)",
+                    "name": "CORE0 Non-secure MPU Control Register (cm33_mpu_ctrl_ns)",
                     "description": "TrustZone register - CORE0 Non-secure MPU Control Register.*/(cm33_mpu_ctrl_ns)",
                     "default_value_int": "0x0"
                 },
@@ -1883,7 +1883,7 @@
                     "id": "field3A8",
                     "offset_int": "0x3a8",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 0  (apb_slave_group0_rule0)",
+                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 0 (apb_slave_group0_rule0)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 0 Rule 0  (apb_slave_group0_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -1891,7 +1891,7 @@
                     "id": "field3AC",
                     "offset_int": "0x3ac",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 1  (apb_slave_group0_rule1)",
+                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 1 (apb_slave_group0_rule1)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 0 Rule 1  (apb_slave_group0_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -1899,7 +1899,7 @@
                     "id": "field3B0",
                     "offset_int": "0x3b0",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 2  (apb_slave_group0_rule2)",
+                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 2 (apb_slave_group0_rule2)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 0 Rule 2  (apb_slave_group0_rule2)",
                     "default_value_int": "0x33333333"
                 },
@@ -1907,7 +1907,7 @@
                     "id": "field3B4",
                     "offset_int": "0x3b4",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 3  (apb_slave_group0_rule3)",
+                    "name": "COMPUTE APB Bridge Peripheral 0 Rule 3 (apb_slave_group0_rule3)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 0 Rule 3  (apb_slave_group0_rule3)",
                     "default_value_int": "0x33333333"
                 },
@@ -1915,7 +1915,7 @@
                     "id": "field3B8",
                     "offset_int": "0x3b8",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 0  (apb_slave_group1_rule0)",
+                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 0 (apb_slave_group1_rule0)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 1 Rule 0  (apb_slave_group1_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -1923,7 +1923,7 @@
                     "id": "field3BC",
                     "offset_int": "0x3bc",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 1  (apb_slave_group1_rule1)",
+                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 1 (apb_slave_group1_rule1)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 1 Rule 1  (apb_slave_group1_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -1931,7 +1931,7 @@
                     "id": "field3C0",
                     "offset_int": "0x3c0",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 2  (apb_slave_group1_rule2)",
+                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 2 (apb_slave_group1_rule2)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 1 Rule 2  (apb_slave_group1_rule2)",
                     "default_value_int": "0x33333333"
                 },
@@ -1939,7 +1939,7 @@
                     "id": "field3C4",
                     "offset_int": "0x3c4",
                     "reg_width": 32,
-                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 3  (apb_slave_group1_rule3)",
+                    "name": "COMPUTE APB Bridge Peripheral 1 Rule 3 (apb_slave_group1_rule3)",
                     "description": "TrustZone register - COMPUTE APB Bridge Peripheral 1 Rule 3  (apb_slave_group1_rule3)",
                     "default_value_int": "0x33333333"
                 },
@@ -1947,7 +1947,7 @@
                     "id": "field3C8",
                     "offset_int": "0x3c8",
                     "reg_width": 32,
-                    "name": "COMPUTE Shared APB Bridge Peripheral 0 Rule 0  (shared_apb_slave_group0_rule0)",
+                    "name": "COMPUTE Shared APB Bridge Peripheral 0 Rule 0 (shared_apb_slave_group0_rule0)",
                     "description": "TrustZone register - COMPUTE Shared APB Bridge Peripheral 0 Rule 0  (shared_apb_slave_group0_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -1955,7 +1955,7 @@
                     "id": "field3CC",
                     "offset_int": "0x3cc",
                     "reg_width": 32,
-                    "name": "COMPUTE Shared APB Bridge Peripheral 0 Rule 1  (shared_apb_slave_group0_rule1)",
+                    "name": "COMPUTE Shared APB Bridge Peripheral 0 Rule 1 (shared_apb_slave_group0_rule1)",
                     "description": "TrustZone register - COMPUTE Shared APB Bridge Peripheral 0 Rule 1  (shared_apb_slave_group0_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -3203,7 +3203,7 @@
                     "id": "field63C",
                     "offset_int": "0x63c",
                     "reg_width": 32,
-                    "name": "SENSE APB Bridge Peripheral 0 Rule 0  (sense_apb_slave_group0_rule0)",
+                    "name": "SENSE APB Bridge Peripheral 0 Rule 0 (sense_apb_slave_group0_rule0)",
                     "description": "TrustZone register - SENSE APB Bridge Peripheral 0 Rule 0  (sense_apb_slave_group0_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -3211,7 +3211,7 @@
                     "id": "field640",
                     "offset_int": "0x640",
                     "reg_width": 32,
-                    "name": "SENSE APB Bridge Peripheral 0 Rule 1  (sense_apb_slave_group0_rule1)",
+                    "name": "SENSE APB Bridge Peripheral 0 Rule 1 (sense_apb_slave_group0_rule1)",
                     "description": "TrustZone register - SENSE APB Bridge Peripheral 0 Rule 1  (sense_apb_slave_group0_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -3219,7 +3219,7 @@
                     "id": "field644",
                     "offset_int": "0x644",
                     "reg_width": 32,
-                    "name": "SENSE APB Bridge Peripheral 0 Rule 2  (sense_apb_slave_group0_rule2)",
+                    "name": "SENSE APB Bridge Peripheral 0 Rule 2 (sense_apb_slave_group0_rule2)",
                     "description": "TrustZone register - SENSE APB Bridge Peripheral 0 Rule 2  (sense_apb_slave_group0_rule2)",
                     "default_value_int": "0x33333333"
                 },
@@ -3227,7 +3227,7 @@
                     "id": "field648",
                     "offset_int": "0x648",
                     "reg_width": 32,
-                    "name": "SENSE Shared APB Bridge Peripheral 0 Rule 0  (shared_apb_slave_group0_rule0)",
+                    "name": "SENSE Shared APB Bridge Peripheral 0 Rule 0 (shared_apb_slave_group0_rule0)",
                     "description": "TrustZone register - SENSE Shared APB Bridge Peripheral 0 Rule 0  (shared_apb_slave_group0_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -3235,7 +3235,7 @@
                     "id": "field64C",
                     "offset_int": "0x64c",
                     "reg_width": 32,
-                    "name": "SENSE Shared APB Bridge Peripheral 0 Rule 1  (shared_apb_slave_group0_rule1)",
+                    "name": "SENSE Shared APB Bridge Peripheral 0 Rule 1 (shared_apb_slave_group0_rule1)",
                     "description": "TrustZone register - SENSE Shared APB Bridge Peripheral 0 Rule 1  (shared_apb_slave_group0_rule1)",
                     "default_value_int": "0x33333333"
                 },

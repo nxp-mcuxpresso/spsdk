@@ -19,3 +19,13 @@ pfr_settings:
     settings:
       type: object
       title: Configuration area Settings
+
+pfr_additional_data:
+  type: object
+  properties:
+    additional_data:
+      type: string
+      title: Customer defined data
+      description: Custom configuration area for customer-specific data. If not specified, the data won't be added to the binary.
+      template_value: customer-data.bin
+      format: file-or-hex-value

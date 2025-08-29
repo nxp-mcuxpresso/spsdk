@@ -332,7 +332,6 @@ def test_nxpimage_binary_export_with_min_offset_log(cli_runner: CliRunner, tmpdi
         config_file = os.path.join(tmpdir, "image_config.yaml")
         write_file(config_content, config_file, "w")
 
-
         output_file = os.path.join(tmpdir, "adjusted_image.bin")
         cmd = f"utils binary-image export -c {config_file} -o {output_file}"
         cli_runner.invoke(nxpimage.main, cmd.split())
@@ -373,6 +372,7 @@ def test_nxpimage_binary_create_sizes(cli_runner: CliRunner, tmpdir):
                 elif pattern == "0xA5" and size > 0:
                     assert all(b == 0xA5 for b in data)
 
+
 @pytest.mark.parametrize(
     "input_file, split_image, output_files",
     [
@@ -380,9 +380,12 @@ def test_nxpimage_binary_create_sizes(cli_runner: CliRunner, tmpdir):
         ("distinct_segments.s19", True, ["output_0x0.bin", "output_0x12.bin", "output_0x24.bin"]),
         ("evkmimxrt595_hello_world_s.s19", True, ["output.bin"]),
         ("evkmimxrt595_hello_world_s.s19", True, ["output.bin"]),
+        ("two_segments_offset.srec", True, ["output_0x100.bin", "output_0x400.bin"]),
     ],
 )
-def test_nxpimage_binary_convert_split_image(cli_runner: CliRunner, tmpdir, data_dir, input_file, split_image, output_files):
+def test_nxpimage_binary_convert_split_image(
+    cli_runner: CliRunner, tmpdir, data_dir, input_file, split_image, output_files
+):
     with use_working_directory(os.path.join(data_dir, "utils", "binary")):
         out_file = os.path.join(tmpdir, "output.bin")
         cmd = f"utils binary-image convert -i {input_file} -f BIN -o {out_file}"

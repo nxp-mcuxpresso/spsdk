@@ -141,6 +141,8 @@ All products, including those with advanced security features, may be subject to
     examples/sb/index
     examples/sdp/index
     examples/shadowregs/index
+    examples/she/index
     examples/signature_provider/index
+    examples/encryption_provider/index
     examples/wpc_provisioning/index
 

@@ -246,6 +246,9 @@ class BinaryImage:
             ret += self.description + "\n"
         return ret
 
+    def __repr__(self) -> str:
+        return f"<BinaryImage {self.name} ({len(self)} B) at 0x{self.absolute_address:08X}>"
+
     def validate(self) -> None:
         """Validate if the images doesn't overlaps each other."""
         if self.offset < 0:
@@ -465,11 +468,16 @@ class BinaryImage:
             ret[: len(self.binary)] = binary_view
 
         for image in self.sub_images:
-            image_data = image.export()
-            ret_slice = memoryview(ret)[image.offset : image.offset + len(image_data)]
-            image_data_view = memoryview(image_data)
-            ret_slice[:] = image_data_view
-
+            try:
+                image_data = image.export()
+                ret_slice = memoryview(ret)[image.offset : image.offset + len(image_data)]
+                image_data_view = memoryview(image_data)
+                ret_slice[:] = image_data_view
+            except ValueError as e:
+                # Catch memoryview assignment errors and provide a more helpful message
+                raise SPSDKValueError(
+                    f"Cannot merge sub-image '{image.name}' into parent image '{self.name}'."
+                ) from e
         return align_block(ret, self.alignment, self.pattern)
 
     def post_export(self, output_path: str) -> list[str]:

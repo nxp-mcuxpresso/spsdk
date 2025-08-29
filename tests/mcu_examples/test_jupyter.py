@@ -26,7 +26,9 @@ for notebook in GENERAL_NOTEBOOKS:
 
 
 @pytest.mark.parametrize("notebook_path", notebook_paths)
-@pytest.mark.skipif(sys.platform == "darwin", reason="jupyter produces different results on macOS")
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="Test notebooks only on Linux due to performance"
+)
 def test_general_notebooks(notebook_path):
     fixture = NBRegressionFixture(
         exec_timeout=60,

@@ -1,0 +1,33 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxe247, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe247
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain>
+outputImageAuthenticationType: plain
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: ../workspace/mcxe247_mbi_led_blinky.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: led_blinky.bin

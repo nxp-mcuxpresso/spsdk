@@ -29,6 +29,9 @@ from spsdk.utils.misc import (
     value_to_int,
 )
 from spsdk.utils.registers import Access, Registers, RegsBitField, RegsEnum, Register
+from spsdk.utils import database
+from spsdk.utils import family
+from spsdk.utils.database import Database, QuickDatabase
 
 TEST_DEVICE_NAME = "TestDevice1"
 TEST_REG_NAME = "TestReg"
@@ -1078,3 +1081,74 @@ def test_registers_size():
     )
     regs.add_register(reg_at_zero)
     assert regs.size == 64 // 8
+
+
+class SPSDK_TestDatabase:
+    """Mock SPSDK database for testing."""
+
+    _instance = None
+    _db = None
+    _quick_info = None
+
+    @property
+    def db(self) -> Database:
+        """Get Database."""
+        db = type(self)._db
+        assert isinstance(db, Database)
+        return db
+
+    @property
+    def quick_info(self) -> QuickDatabase:
+        """Get quick info Database."""
+        quick_info = type(self)._quick_info
+        assert isinstance(quick_info, QuickDatabase)
+        return quick_info
+
+
+@pytest.fixture
+def mock_test_database(monkeypatch, data_dir):
+    """Set up a mock database for testing."""
+    SPSDK_TestDatabase._db = Database(os.path.join(data_dir, "test_db"), complete_load=True)
+    SPSDK_TestDatabase._quick_info = QuickDatabase.create(SPSDK_TestDatabase._db)
+    SPSDK_TestDatabase._instance = SPSDK_TestDatabase()
+    monkeypatch.setattr(database, "DatabaseManager", SPSDK_TestDatabase)
+    monkeypatch.setattr(family, "DatabaseManager", SPSDK_TestDatabase)
+
+
+def test_register_deprecated_names(mock_test_database):
+    """Test register deprecated names functionality."""
+    # Create a register with deprecated names
+    # Create registers container
+    regs = Registers(
+        family=FamilyRevision("dev1"),  # Use a device that exists in the mock database
+        feature="feature4",
+        do_not_raise_exception=True
+    )
+    # Test finding register by current name
+    found_reg = regs.find_reg("REG1")
+    assert found_reg
+
+    # Test finding register by deprecated names
+    found_reg_old = regs.find_reg("REG1_OLD")
+    assert found_reg == found_reg_old
+
+
+def test_register_deprecated_bitfields(mock_test_database):
+    """Test register deprecated names functionality."""
+    # Create a register with deprecated names
+    # Create registers container
+    regs = Registers(
+        family=FamilyRevision("dev1"),  # Use a device that exists in the mock database
+        feature="feature4",
+        do_not_raise_exception=True
+    )
+    # Test finding register by current name
+    found_reg = regs.find_reg("REG1")
+    assert found_reg
+
+    bf = found_reg.find_bitfield("REG1_BF2")
+    assert bf
+    bf_old = found_reg.find_bitfield("REG1_BF2_OLD")
+    assert bf ==bf_old
+    bf_old =found_reg.find_bitfield("REG1_BF2_SUPEROLD")
+    assert bf ==bf_old

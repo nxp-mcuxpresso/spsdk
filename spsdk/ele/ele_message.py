@@ -303,15 +303,24 @@ class EleMessagePing(EleMessage):
 
 
 class EleMessageDumpDebugBuffer(EleMessage):
-    """ELE Message Dump Debug buffer."""
+    """ELE Message Dump Debug buffer.
+
+    EdgeLock Secure Enclave have a logging mechanism for debugging purposes.
+    Logs are sent over MU with maximum 20 logs per exchange. If ELE has more than
+    20 logs in buffer, this API must be called multiple times.
+    EdgeLock Secure Enclave internal buffer log size is approximately 2kB.
+    """
 
     CMD = MessageIDs.ELE_DUMP_DEBUG_BUFFER_REQ.tag
-    RESPONSE_PAYLOAD_WORDS_COUNT = 21
+    RESPONSE_PAYLOAD_WORDS_COUNT = 21  # Maximum response length
+    ELE_DEBUG_LOG_MAX_RSP_LENGTH = 0x17  # Maximum response length constant
 
     def __init__(self) -> None:
         """Class object initialized."""
         super().__init__()
-        self.debug_words: list[int] = [0] * 20
+        self.debug_words: list[int] = []
+        self.nb_logs = 0
+        self.has_more_logs = False
 
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
@@ -320,18 +329,85 @@ class EleMessageDumpDebugBuffer(EleMessage):
         :raises SPSDKParsingError: Response parse detect some error.
         """
         super().decode_response(response)
-        *self.debug_words, crc = unpack(LITTLE_ENDIAN + "20L4s", response[8:92])
-        crc_computed = self.get_msg_crc(response[0:88])
-        if crc != crc_computed:
-            raise SPSDKParsingError("Invalid message CRC for dump debug buffer")
+
+        # Get response length from MU header (size field)
+        rsp_length = (int.from_bytes(response[0:4], "little") & 0xFF00) >> 8
+
+        # Calculate number of logs: remove header (2 words) and response indicator (0 words for payload calculation)
+        self.nb_logs = rsp_length - 2
+
+        # Check if CRC is present (response length > 4 words means CRC is included)
+        has_crc = rsp_length > 4
+        if has_crc:
+            self.nb_logs -= 1  # Remove CRC word from log count
+
+        # Check if there are more logs to fetch
+        self.has_more_logs = rsp_length == self.ELE_DEBUG_LOG_MAX_RSP_LENGTH
+
+        # Extract debug words (maximum 20 logs)
+        max_debug_words = min(self.nb_logs, 20)
+        if max_debug_words > 0:
+            debug_data_end = 8 + (max_debug_words * 4)
+            if has_crc:
+                # Extract debug words and CRC
+                *self.debug_words, crc = unpack(
+                    LITTLE_ENDIAN + f"{max_debug_words}L4s", response[8 : debug_data_end + 4]
+                )
+                # Verify CRC
+                crc_computed = self.get_msg_crc(response[0:debug_data_end])
+                if crc != crc_computed:
+                    raise SPSDKParsingError("Invalid message CRC for dump debug buffer")
+            else:
+                # Extract debug words without CRC
+                self.debug_words = list(
+                    unpack(LITTLE_ENDIAN + f"{max_debug_words}L", response[8:debug_data_end])
+                )
+        else:
+            self.debug_words = []
 
     def response_info(self) -> str:
-        """Print Dumped data of debug buffer."""
-        ret = ""
-        for i, dump_data in enumerate(self.debug_words):
-            ret += f"Dump debug word[{i}]: {dump_data:08X}\n"
+        """Print Dumped data of debug buffer in STEC team format."""
+        if not self.debug_words:
+            return "No debug logs available\n"
+
+        ret = f"Number of logs: {self.nb_logs}\n"
+        ret += f"More logs available: {'Yes' if self.has_more_logs else 'No'}\n"
+        ret += "Debug logs (STEC format):\n"
+
+        # Dump MU logs 2 by 2 as specified in the C example
+        for i in range(0, len(self.debug_words), 2):
+            if i + 1 < len(self.debug_words):
+                # Print pair of logs in STEC format
+                ret += f"S40X: 0x{self.debug_words[i]:x} 0x{self.debug_words[i + 1]:x}\n"
+            else:
+                # Handle odd number of logs
+                ret += f"S40X: 0x{self.debug_words[i]:x}\n"
+
+        if self.has_more_logs:
+            ret += "\nNote: More logs available. Call dump-debug-buffer again to retrieve remaining logs.\n"
 
         return ret
+
+    def get_debug_logs(self) -> list[int]:
+        """Get the debug log words.
+
+        :return: List of debug log words.
+        """
+        return self.debug_words.copy()
+
+    def has_more_logs_available(self) -> bool:
+        """Check if more logs are available to fetch.
+
+        :return: True if more logs are available, False otherwise.
+        """
+        return self.has_more_logs
+
+    def get_log_count(self) -> int:
+        """Get the number of logs in current response.
+
+        :return: Number of logs.
+        """
+        return self.nb_logs
 
 
 class EleMessageReset(EleMessage):
@@ -810,6 +886,7 @@ class EleMessageGetInfo(EleMessage):
         self.info_soc_id = 0
         self.info_life_cycle = 0
         self.info_sssm_state = 0
+        self.info_attest_api_version = 0
         self.info_uuid = bytes()
         self.info_sha256_rom_patch = bytes()
         self.info_sha256_fw = bytes()
@@ -839,64 +916,84 @@ class EleMessageGetInfo(EleMessage):
         :note: The response data are specific per command.
         :param response_data: Data of response.
         """
-        (self.info_cmd, self.info_version, self.info_length) = unpack(
-            LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response_data[:4]
-        )
-
-        (self.info_soc_id, self.info_soc_rev) = unpack(
-            LITTLE_ENDIAN + UINT16 + UINT16, response_data[4:8]
-        )
-        (self.info_life_cycle, self.info_sssm_state, _) = unpack(
-            LITTLE_ENDIAN + UINT16 + UINT8 + UINT8, response_data[8:12]
-        )
+        # Word 0: Length(31-24), Version(23-16), Command(15-8), Reserved(7-0)
+        word0 = unpack(LITTLE_ENDIAN + UINT32, response_data[0:4])[0]
+        self.info_cmd = word0 & 0xFF
+        self.info_version = (word0 >> 8) & 0xFF
+        self.info_length = (word0 >> 16) & 0xFFFF
+        # Word 1: Soc_rev(31-16), Soc_id(15-0)
+        word1 = unpack(LITTLE_ENDIAN + UINT32, response_data[4:8])[0]
+        self.info_soc_id = word1 & 0xFFFF
+        self.info_soc_rev = (word1 >> 16) & 0xFFFF
+        # Word 2: Attest API version(31-24), sssm_state(23-16), Lifecycle(15-0)
+        word2 = unpack(LITTLE_ENDIAN + UINT32, response_data[8:12])[0]
+        self.info_life_cycle = word2 & 0xFFFF
+        self.info_sssm_state = (word2 >> 16) & 0xFF
+        self.info_attest_api_version = (word2 >> 24) & 0xFF
+        # Words 3-6: UID (128 bits / 16 bytes)
         self.info_uuid = response_data[12:28]
+        # Words 7-14: Sha256 rom patch (256 bits / 32 bytes)
         self.info_sha256_rom_patch = response_data[28:60]
+        # Words 15-22: Sha fw (256 bits / 32 bytes)
         self.info_sha256_fw = response_data[60:92]
-        if self.info_version == 0x02:
-            self.info_oem_srkh = response_data[92:124]  # SRKH for AHAB devices is SHA-256
-            (self.info_trng_state, self.info_csal_state, self.info_imem_state, _) = unpack(
-                LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8, response_data[156:160]
-            )
-
-        self.info_oem_pqc_srkh = response_data[160:224]  # PQC SRKH
+        # Words 23-38: OEM SRKH (512 bits / 64 bytes)
+        self.info_oem_srkh = response_data[92:156]
+        # Word 39: Reserved(31-16), IMEM state (23-16), CSAL state(15-8), TRNG state(7-0)
+        word39 = unpack(LITTLE_ENDIAN + UINT32, response_data[156:160])[0]
+        self.info_trng_state = word39 & 0xFF
+        self.info_csal_state = (word39 >> 8) & 0xFF
+        self.info_imem_state = (word39 >> 16) & 0xFF
+        # Reserved bits 31-16 can be stored if needed
+        # Words 40-55: OEM PQC SRKH (512 bits / 64 bytes)
+        if len(response_data) > 160:
+            self.info_oem_pqc_srkh = response_data[160:224]
+        else:
+            self.info_oem_pqc_srkh = bytes()
 
     def response_info(self) -> str:
         """Print specific information of ELE.
 
         :return: Information about the ELE.
         """
-        ret = f"Command:          {hex(self.info_cmd)}\n"
-        ret += f"Version:          {self.info_version}\n"
-        ret += f"Length:           {self.info_length}\n"
-        ret += f"SoC ID:           {SocId.get_label(self.info_soc_id)} - 0x{self.info_soc_id:04X}\n"
-        ret += f"SoC version:      {self.info_soc_rev:04X}\n"
-        ret += f"Life Cycle:       {LifeCycle.get_label(self.info_life_cycle)} - 0x{self.info_life_cycle:04X}\n"
-        ret += f"SSSM state:       {self.info_sssm_state}\n"
-        ret += f"UUID:             {self.info_uuid.hex()}\n"
-        ret += f"SHA256 ROM PATCH: {self.info_sha256_rom_patch.hex()}\n"
-        ret += f"SHA256 FW:        {self.info_sha256_fw.hex()}\n"
-        if self.info_version == 0x02:
-            ret += "Advanced information:\n"
-            ret += f"  OEM SRKH:       {self.info_oem_srkh.hex()}\n"
+        ret = f"Command:              {hex(self.info_cmd)}\n"
+        ret += f"Version:              {self.info_version}\n"
+        ret += f"Length:               {self.info_length}\n"
+        ret += f"SoC ID:               {SocId.get_label(self.info_soc_id)} - 0x{self.info_soc_id:04X}\n"
+        ret += f"SoC version:          {self.info_soc_rev:04X}\n"
+        ret += f"Life Cycle:           {LifeCycle.get_label(self.info_life_cycle)} - 0x{self.info_life_cycle:04X}\n"
+        ret += f"SSSM state:           {self.info_sssm_state}\n"
+        ret += f"Attest API version:   {self.info_attest_api_version}\n"
+
+        ret += f"UUID:                 {self.info_uuid.hex()}\n"
+        ret += f"SHA256 ROM PATCH:     {self.info_sha256_rom_patch.hex()}\n"
+        ret += f"SHA256 FW:            {self.info_sha256_fw.hex()}\n"
+
+        ret += "Advanced information:\n"
+
+        if self.info_oem_srkh[32:] == b"\x00" * 32:
+            ret += f"  OEM SRKH:           {self.info_oem_srkh[:32].hex()}\n"
+        else:
+            ret += f"  OEM SRKH:           {self.info_oem_srkh.hex()}\n"
+        if self.info_version <= 0x02:
             ret += (
-                f"  IMEM state:     "
+                f"  IMEM state:         "
                 f"{EleImemState.get_description(self.info_imem_state, str(self.info_imem_state))}"
                 f" - 0x{self.info_imem_state:02X}\n"
             )
-            ret += (
-                f"  CSAL state:     "
-                f"{EleCsalState.get_description(self.info_csal_state, str(self.info_csal_state))}"
-                f" - 0x{self.info_csal_state:02X}\n"
-            )
-            ret += (
-                f"  TRNG state:     "
-                f"{EleTrngState.get_description(self.info_trng_state, str(self.info_trng_state))}"
-                f" - 0x{self.info_trng_state:02X}\n"
-            )
-            if (
-                SocId.from_tag(self.info_soc_id) == SocId.MX95
-            ):  # PQC only applicable for MX95 at the moment
-                ret += f"  OEM PQC SRKH:  {self.info_oem_pqc_srkh.hex()}\n"
+        ret += (
+            f"  CSAL state:         "
+            f"{EleCsalState.get_description(self.info_csal_state, str(self.info_csal_state))}"
+            f" - 0x{self.info_csal_state:02X}\n"
+        )
+        ret += (
+            f"  TRNG state:         "
+            f"{EleTrngState.get_description(self.info_trng_state, str(self.info_trng_state))}"
+            f" - 0x{self.info_trng_state:02X}\n"
+        )
+
+        if self.info_version >= 0x03:
+            if self.info_oem_pqc_srkh:
+                ret += f"  OEM PQC SRKH:       {self.info_oem_pqc_srkh.hex()}\n"
 
         return ret
 
@@ -978,10 +1075,11 @@ class EleMessageSigned(EleMessage):
         """
         super().__init__()
         self.signed_msg_binary = signed_msg
-        # Get the command inside the signed message
-        self.signed_msg = SignedMessage(family=family)
-        self.signed_msg.parse(signed_msg)
+
+        # Parse the signed message
+        self.signed_msg = SignedMessage.parse(data=signed_msg, family=family)
         self.signed_msg.verify().validate()
+
         if not (
             self.signed_msg.signed_msg_container and self.signed_msg.signed_msg_container.message
         ):

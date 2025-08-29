@@ -1,0 +1,40 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  she_scec Configuration template for mcxe247, Revision: latest.  ==========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+# Possible options: <mcxe245, mcxe246, mcxe247>
+family: mcxe247
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+revision: latest
+# ======================================================================================================================
+#                                         == SHE Configuration for using SCEc ==
+# ======================================================================================================================
+# ------------------------------------===== Key for SCEc operation [Required] =====-------------------------------------
+# Description: Cryptographic key used in SHE (Secure Hardware Extension) SCEc operation
+key: ../keys/mac_key.hex
+# ----------------------------------------===== Key Identifier [Required] =====-----------------------------------------
+# Description: Unique identifier for the SCEc key slot
+# Possible options: <MASTER_ECU_KEY, BOOT_MAC_KEY, BOOT_MAC, RAM_KEY, USER_KEY_1, USER_KEY_2, USER_KEY_3, USER_KEY_4,
+# USER_KEY_5, USER_KEY_6, USER_KEY_7, USER_KEY_8, USER_KEY_9, USER_KEY_10>
+key_id: BOOT_MAC_KEY
+# # -------------------------------------===== SHE Unique Identifier [Optional] =====-------------------------------------
+# # Description: Unique identifier for the SHE device
+# uid: 305419896
+# # --------------------------------------===== Authentication Key [Optional] =====---------------------------------------
+# # Description: Authentication key for SHE (Secure Hardware Extension) SCEc operation
+auth_key: ../keys/master_key.hex
+# # ---------------------------------===== Authentication Key Identifier [Optional] =====---------------------------------
+# # Description: Unique identifier for the authentication key in SHE SCEc operation
+# # Possible options: <MASTER_ECU_KEY, BOOT_MAC_KEY>
+auth_key_id: MASTER_ECU_KEY
+# # -----------------------------------------===== Counter Value [Optional] =====-----------------------------------------
+# # Description: Counter used in SHE (Secure Hardware Extension) SCEc operation
+counter: 1

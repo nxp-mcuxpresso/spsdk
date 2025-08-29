@@ -13,7 +13,6 @@
                     "description": "Fuse LOCKS",
                     "offset_int": "0x0400",
                     "index_int": "0",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 2,
@@ -402,7 +401,6 @@
                     "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID",
                     "offset_int": "0x0410",
                     "index_int": "0x0001",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -423,7 +421,6 @@
                     "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID",
                     "offset_int": "0x0420",
                     "index_int": "0x0002",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -462,7 +459,6 @@
                     "description": "Fuse SI_REV[3:0]",
                     "offset_int": "0x0430",
                     "index_int": "0x0003",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -525,7 +521,6 @@
                     "description": "Fuse TESTER_CFG",
                     "offset_int": "0x0440",
                     "index_int": "0x0004",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -641,7 +636,6 @@
                     "description": "Fuse BOOT_CFG0",
                     "offset_int": "0x0450",
                     "index_int": "0x0005",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0004",
@@ -670,7 +664,7 @@
                             "width": 1,
                             "id": "fuse5-bit-1",
                             "name": "EncryptedXIP",
-                            "description": "EncryptedXIP",
+                            "description": "Support for the encrypted bootable image. It is applied only if BT_FUSE_SEL fuse bit is set. Otherwise the value is retrieved from the pins.",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -826,7 +820,6 @@
                     "description": "Fuse BOOT_CFG1",
                     "offset_int": "0x0460",
                     "index_int": "0x0006",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0004",
@@ -1239,7 +1232,6 @@
                     "description": "Fuse BOOT_CFG2",
                     "offset_int": "0x0470",
                     "index_int": "0x0007",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0004",
@@ -1620,17 +1612,16 @@
         {
             "group": {
                 "name": "Reserved 0x480-0x4E0",
-                "description": "Reserved registers"
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse8",
                     "name": "Reserved 0x480",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0480",
                     "index_int": "0x0008",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 6
@@ -1664,11 +1655,10 @@
                 {
                     "id": "fuse9",
                     "name": "Reserved 0x490",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0490",
                     "index_int": "0x0009",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 10
@@ -1693,11 +1683,10 @@
                 {
                     "id": "fuse10",
                     "name": "Reserved 0x4A0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x04A0",
                     "index_int": "0x000A",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 8
@@ -1710,11 +1699,10 @@
                 {
                     "id": "fuse11",
                     "name": "Reserved 0x4B0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x04B0",
                     "index_int": "0x000B",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1724,11 +1712,10 @@
                 {
                     "id": "fuse12",
                     "name": "Reserved 0x4C0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x04C0",
                     "index_int": "0x000C",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 20
@@ -1741,11 +1728,10 @@
                 {
                     "id": "fuse13",
                     "name": "Reserved 0x4D0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x04D0",
                     "index_int": "0x000D",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1755,11 +1741,10 @@
                 {
                     "id": "fuse14",
                     "name": "Reserved 0x4E0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x04E0",
                     "index_int": "0x000E",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1780,7 +1765,6 @@
                     "description": "Fuse USB_ID",
                     "offset_int": "0x04F0",
                     "index_int": "0x000F",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x00040000",
@@ -1806,17 +1790,16 @@
         {
             "group": {
                 "name": "Reserved 0x500-0x570",
-                "description": "Reserved registers"
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse16",
                     "name": "Reserved 0x500",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0500",
                     "index_int": "0x0010",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1826,11 +1809,10 @@
                 {
                     "id": "fuse17",
                     "name": "Reserved 0x510",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0510",
                     "index_int": "0x0011",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1840,11 +1822,10 @@
                 {
                     "id": "fuse18",
                     "name": "Reserved 0x520",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0520",
                     "index_int": "0x0012",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1854,11 +1835,10 @@
                 {
                     "id": "fuse19",
                     "name": "Reserved 0x530",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0530",
                     "index_int": "0x0013",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1868,11 +1848,10 @@
                 {
                     "id": "fuse20",
                     "name": "Reserved 0x540",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0540",
                     "index_int": "0x0014",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1882,11 +1861,10 @@
                 {
                     "id": "fuse21",
                     "name": "Reserved 0x550",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0550",
                     "index_int": "0x0015",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1896,11 +1874,10 @@
                 {
                     "id": "fuse22",
                     "name": "Reserved 0x560",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0560",
                     "index_int": "0x0016",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1910,11 +1887,10 @@
                 {
                     "id": "fuse23",
                     "name": "Reserved 0x570",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0570",
                     "index_int": "0x0017",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -1935,7 +1911,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0580",
                     "index_int": "0x0018",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -1951,7 +1926,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0590",
                     "index_int": "0x0019",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -1967,7 +1941,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05A0",
                     "index_int": "0x001A",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -1983,7 +1956,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05B0",
                     "index_int": "0x001B",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -1999,7 +1971,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05C0",
                     "index_int": "0x001C",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -2015,7 +1986,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05D0",
                     "index_int": "0x001D",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -2031,7 +2001,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05E0",
                     "index_int": "0x001E",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -2047,7 +2016,6 @@
                     "description": "SRK key, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x05F0",
                     "index_int": "0x001F",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32,
@@ -2071,7 +2039,6 @@
                     "description": "Response reference value for the secure JTAG controller",
                     "offset_int": "0x0600",
                     "index_int": "0x0020",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0040",
@@ -2093,7 +2060,6 @@
                     "description": "Response reference value for the secure JTAG controller",
                     "offset_int": "0x0610",
                     "index_int": "0x0021",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0040",
@@ -2126,7 +2092,6 @@
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0620",
                     "index_int": "0x0022",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0100",
@@ -2147,7 +2112,6 @@
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0630",
                     "index_int": "0x0023",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0100",
@@ -2174,7 +2138,6 @@
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0640",
                     "index_int": "0x0024",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0100",
@@ -2194,17 +2157,16 @@
         {
             "group": {
                 "name": "Reserved 0x650",
-                "description": "Reserved registers"
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse37",
                     "name": "Reserved 0x650",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0650",
                     "index_int": "0x0025",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2225,7 +2187,6 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x0660",
                     "index_int": "0x0026",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0400",
@@ -2246,7 +2207,6 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x0670",
                     "index_int": "0x0027",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x1000",
@@ -2275,7 +2235,6 @@
                     "description": "SW general purpose key",
                     "offset_int": "0x0680",
                     "index_int": "0x0028",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x00010000",
@@ -2297,7 +2256,6 @@
                     "description": "SW general purpose key",
                     "offset_int": "0x0690",
                     "index_int": "0x0029",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x00200000",
@@ -2319,7 +2277,6 @@
                     "description": "SW general purpose key",
                     "offset_int": "0x06A0",
                     "index_int": "0x002A",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x00200000",
@@ -2341,7 +2298,6 @@
                     "description": "SW general purpose key",
                     "offset_int": "0x06B0",
                     "index_int": "0x002B",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x00200000",
@@ -2363,7 +2319,6 @@
                     "description": "SW general purpose key",
                     "offset_int": "0x06C0",
                     "index_int": "0x002C",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x00200000",
@@ -2393,7 +2348,6 @@
                     "description": "Fuse MISC_CONF0",
                     "offset_int": "0x06D0",
                     "index_int": "0x002D",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "read_lock_int": "0x00400000"
@@ -2643,7 +2597,6 @@
                     "description": "Fuse MISC_CONF1",
                     "offset_int": "0x06E0",
                     "index_int": "0x002E",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "read_lock_int": "0x00400000"
@@ -2681,7 +2634,6 @@
                     "description": "Fuse SRK_REVOKE",
                     "offset_int": "0x06F0",
                     "index_int": "0x002F",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 1,
@@ -2771,17 +2723,16 @@
         {
             "group": {
                 "name": "Reserved 0x800-0x870",
-                "description": "Reserved registers"
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse48",
                     "name": "Reserved 0x800",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0800",
                     "index_int": "0x0030",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2791,11 +2742,10 @@
                 {
                     "id": "fuse49",
                     "name": "Reserved 0x810",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0810",
                     "index_int": "0x0031",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2805,11 +2755,10 @@
                 {
                     "id": "fuse50",
                     "name": "Reserved 0x820",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0820",
                     "index_int": "0x0032",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2819,11 +2768,10 @@
                 {
                     "id": "fuse51",
                     "name": "Reserved 0x830",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0830",
                     "index_int": "0x0033",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2833,11 +2781,10 @@
                 {
                     "id": "fuse52",
                     "name": "Reserved 0x840",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0840",
                     "index_int": "0x0034",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2847,11 +2794,10 @@
                 {
                     "id": "fuse53",
                     "name": "Reserved 0x850",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0850",
                     "index_int": "0x0035",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2861,11 +2807,10 @@
                 {
                     "id": "fuse54",
                     "name": "Reserved 0x860",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0860",
                     "index_int": "0x0036",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2875,11 +2820,10 @@
                 {
                     "id": "fuse55",
                     "name": "Reserved 0x870",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0870",
                     "index_int": "0x0037",
                     "is_reserved": true,
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 32
@@ -2900,7 +2844,6 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x0880",
                     "index_int": "0x0038",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x04000000",
@@ -2921,7 +2864,6 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x0890",
                     "index_int": "0x0039",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x04000000",
@@ -2942,7 +2884,6 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x08A0",
                     "index_int": "0x003A",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x04000000",
@@ -2963,7 +2904,6 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x08B0",
                     "index_int": "0x003B",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x04000000",
@@ -2992,7 +2932,6 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x08C0",
                     "index_int": "0x003C",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x01000000",
@@ -3014,7 +2953,6 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x08D0",
                     "index_int": "0x003D",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x01000000",
@@ -3036,7 +2974,6 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x08E0",
                     "index_int": "0x003E",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x01000000",
@@ -3058,7 +2995,6 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x08F0",
                     "index_int": "0x003F",
-                    "individual_write_lock": "none",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x01000000",

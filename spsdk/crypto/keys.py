@@ -1683,6 +1683,14 @@ if IS_DILITHIUM_SUPPORTED:
         def __repr__(self) -> str:
             return f"{self.key.algorithm.value} Public key"
 
+        def __eq__(self, obj: Any) -> bool:
+            # since we can't distinguish between Dilithium and MLDSA public keys
+            # we compare the public data directly and don't care about the specific type
+            # this shall be rectified soon to avoid problems in the future
+            if not isinstance(obj, PQCPublicKey):
+                return False
+            return self.key.public_data == obj.key.public_data
+
     class PQCPrivateKey(PQCKey, PrivateKey):
         """Generic base class for PQC private keys."""
 

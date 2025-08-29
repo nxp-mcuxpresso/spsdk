@@ -306,6 +306,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         config: dict[str, Any],
         grouped_regs: Optional[list[dict]] = None,
         reg_spec_modifications: Optional[dict[str, dict]] = None,
+        deprecated_regs: Optional[dict[str, dict[str, Any]]] = None,
     ) -> None:
         """Load registers from specification.
 
@@ -313,7 +314,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         :param grouped_regs: List of register groups
         :param reg_spec_modifications: Dictionary with additional register specifications
         """
-        super()._load_from_spec(config, grouped_regs, reg_spec_modifications)
+        super()._load_from_spec(config, grouped_regs, reg_spec_modifications, deprecated_regs)
         if "shadow_reg_base_addr_int" in config:
             self.shadow_reg_base_addr = value_to_int(config["shadow_reg_base_addr_int"])
             for reg in self._registers:

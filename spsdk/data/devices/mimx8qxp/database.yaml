@@ -1,0 +1,103 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: i.MX Application Processors
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/i.MX8
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x8380_0000 # comm buffer in DDR
+    size: 0x20000
+
+  # ======== Certificate block section ========
+  cert_block:
+    sub_features: [based_on_srk]
+    rot_type: "srk_table_ahab"
+
+  # ======== AHAB section ========
+  ahab:
+    valid_offset_minimal_alignment: 0x400
+    containers_max_cnt: 3
+    oem_images_max_cnt: 8
+    container_types: [1] # Supported container types
+    core_ids:
+      CORTEX_M4: [1, "cortex-m4", "Cortex M4"]
+      CORTEX_A35: [2, "cortex-a35", "Cortex A35"]
+    image_types:
+      application:
+        EXECUTABLE: [0x03, executable, Executable Image]
+        DATA: [0x04, data, Data Image]
+        DCD: [0x05, dcd, DCD Image]
+        SECO: [0x06, seco, SECO Image]
+        PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
+        DEK_VALIDATION: [0x08, dek_validation, DEK validation Image]
+        PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+
+    image_types_mapping:
+      seco: [6]
+
+    # AHAB extra images
+    ddr_alignments: [0x8000, 0x4000, 0x8000, 0]
+    ddr_fw_alignment: 0x4
+
+    spl_ddr_load_address: 0x80000000
+    spl_ddr_core_id: cortex-a35
+    spl_ddr_meta_data_start_cpu_id: 2
+
+    atf_load_address: 0x80000000
+    atf_core_id: cortex-a35
+    atf_meta_data_start_cpu_id: 2
+
+    uboot_load_address: 0x80020000
+    uboot_core_id: cortex-a35
+    uboot_meta_data_start_cpu_id: 2
+
+    tee_load_address: 0x96000000
+    tee_core_id: cortex-a35
+    tee_meta_data_start_cpu_id: 2
+
+    extra_images: ["spl_ddr", "atf", "uboot", "tee"]
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      serial_downloader:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          primary_image_container_set: 0x1_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      sd:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+
+  # ======== Misc signing section ========
+  signing:
+    pss_padding: true
+
+  # ======== Fastboot ========
+  fastboot:
+    address: 0x8280_0000
+    size: 0x2000_0000
+
+  # ======== nxpuuu ==========
+  nxpuuu: {}

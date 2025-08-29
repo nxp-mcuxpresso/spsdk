@@ -49,6 +49,15 @@ sb3:
       description: Flag value in SB3.1 manifest, not used by silicons with LPC55S3x ROM. Value can be kept 0, or it can be removed from the configuration file.
       format: number
       template_value: 0x0
+  allOf:
+    - if:
+        properties:
+          isEncrypted:
+            enum: [true, null]
+      then:
+        required: [containerKeyBlobEncryptionKey]
+      else:
+        required: []
 
 sb3_test:
   type: object
@@ -71,7 +80,7 @@ sb3_test:
 
 sb3_commands:
   type: object
-  title: Secure Binary v3.1 Commands Settings
+  title: Secure Binary v3.1 / v4.0 Commands Settings
   required: [commands]
   properties:
     commands:
@@ -282,6 +291,45 @@ sb3_commands:
                 required: [address]
 
           - type: object
+            required: [writeIFR]
+            properties:
+              writeIFR:
+                type: object
+                title: Write IFR
+                description: The startAddress will be the address into the IFR region, length will be in number of bytes to write to IFR region. The data to write to IFR region at the given address will immediately follow the header
+                properties:
+                  type:
+                    type: [string, number]
+                    title: IFR type
+                    description: IFR type to be written.
+                    enum: [CFPA, CFPA_AND_CMPA]
+                    template_value: CFPA
+                  file:
+                    type: string
+                    title: Binary file.
+                    format: file
+                    skip_in_template: True
+                  values:
+                    type: [string, number, array]
+                    title: 32-bit binary values delimited by comma to be programmed or a list with multiple values as integer or 32-bit binary values.
+                    skip_in_template: True
+                  value:
+                    type: [string, number]
+                    title: Binary value
+                    skip_in_template: True
+                  data:
+                    type: [string, number, array]
+                    title: Data to be loaded
+                    description: >
+                      The data to be loaded, it could be defined in following formats:
+                        - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+                        - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in little endian format. Example: 0x1234, 0x5678, 0, 12345678
+                        - List of integers passed as an array.
+                        - Path to binary file. Example: my_binary.bin
+                    template_value: ifr_data.bin
+                required: [type]
+
+          - type: object
             required: [loadCMAC]
             properties:
               loadCMAC:
@@ -479,6 +527,24 @@ sb3_commands:
                     type: string
                     title: Counter ID
                     description: ID of FW counter to be checked.
-                    enum: [none, nonsecure, secure, radio, snt, bootloader]
+                    enum:
+                      [
+                        none,
+                        nonsecure,
+                        secure,
+                        radio,
+                        snt,
+                        bootloader,
+                        radio_ip,
+                      ]
                     template_value: secure
                 required: [value, counterId]
+
+          - type: object
+            required: [reset]
+            properties:
+              reset:
+                type: object
+                title: Reset
+                description: Resets the target
+                properties: {}

@@ -22,7 +22,7 @@ from spsdk.dat.debug_credential import (
 )
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.config import Config
-from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from spsdk.utils.misc import load_binary, use_working_directory
 from spsdk.utils.family import FamilyRevision
 
 
@@ -34,7 +34,9 @@ from spsdk.utils.family import FamilyRevision
         ("2.0", False, False),
         ("2.1", False, False),
         ("2.2", False, False),
-        ("3.2", False, True),
+        ("3.1", False, False),
+        ("3.2", False, False),
+        ("4.2", False, True),
         ("Invalid", False, True),
     ],
 )

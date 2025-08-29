@@ -18,11 +18,6 @@ common:
       title: Initial device reset
       description: Reset the device before starting the DevHSM operation
       template_value: false
-    finalReset:
-      type: boolean
-      title: Final device reset
-      description: Reset the device after the DevHSM operation
-      template_value: false
     workspace:
       type: string
       title: Development/debug workspace

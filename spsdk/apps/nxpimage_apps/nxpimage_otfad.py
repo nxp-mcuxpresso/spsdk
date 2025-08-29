@@ -13,7 +13,7 @@ from typing import Optional
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -28,7 +28,7 @@ from spsdk.utils.misc import get_printable_path, load_hex_string, write_file
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="otfad", cls=SpsdkClickGroup)
+@click.group(name="otfad", cls=CommandsTreeGroup)
 def otfad_group() -> None:
     """Group of sub-commands related to OTFAD."""
 

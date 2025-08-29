@@ -11,7 +11,7 @@ import logging
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -25,7 +25,7 @@ from spsdk.utils.misc import write_file
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="iee", cls=SpsdkClickGroup)
+@click.group(name="iee", cls=CommandsTreeGroup)
 def iee_group() -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to IEE."""
 

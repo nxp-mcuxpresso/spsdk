@@ -3,3 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 alias: mcxn946
+
+info:
+  spsdk_predecessor_name: mcxn54x

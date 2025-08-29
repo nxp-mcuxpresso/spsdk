@@ -4,13 +4,13 @@
         {
             "group": {
                 "name": "Reserved 0x800-0x830",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse0",
                     "name": "Reserved 0x800",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0800",
                     "index_int": "0",
                     "is_reserved": true,
@@ -26,7 +26,7 @@
                 {
                     "id": "fuse1",
                     "name": "Reserved 0x810",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0810",
                     "index_int": "0x0001",
                     "is_reserved": true,
@@ -42,7 +42,7 @@
                 {
                     "id": "fuse2",
                     "name": "Reserved 0x820",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0820",
                     "index_int": "0x0002",
                     "is_reserved": true,
@@ -58,7 +58,7 @@
                 {
                     "id": "fuse3",
                     "name": "Reserved 0x830",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0830",
                     "index_int": "0x0003",
                     "is_reserved": true,
@@ -188,7 +188,7 @@
                 {
                     "id": "fuse5",
                     "name": "Reserved 0x850",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0850",
                     "index_int": "0x0005",
                     "is_reserved": true,
@@ -715,13 +715,13 @@
         {
             "group": {
                 "name": "Reserved 0x8A0-0x8C0",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse10",
                     "name": "Reserved 0x8A0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x08A0",
                     "index_int": "0x000A",
                     "is_reserved": true,
@@ -737,7 +737,7 @@
                 {
                     "id": "fuse11",
                     "name": "Reserved 0x8B0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x08B0",
                     "index_int": "0x000B",
                     "is_reserved": true,
@@ -753,7 +753,7 @@
                 {
                     "id": "fuse12",
                     "name": "Reserved 0x8C0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x08C0",
                     "index_int": "0x000C",
                     "is_reserved": true,
@@ -1057,13 +1057,13 @@
         {
             "group": {
                 "name": "Reserved 0x8F0",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse15",
                     "name": "Reserved 0x8F0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x08F0",
                     "index_int": "0x000F",
                     "is_reserved": true,
@@ -2249,13 +2249,13 @@
         {
             "group": {
                 "name": "Reserved 0x9C0-0xA70",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse28",
                     "name": "Reserved 0x9C0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x09C0",
                     "index_int": "0x001C",
                     "is_reserved": true,
@@ -2268,7 +2268,7 @@
                 {
                     "id": "fuse29",
                     "name": "Reserved 0x9D0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x09D0",
                     "index_int": "0x001D",
                     "is_reserved": true,
@@ -2281,7 +2281,7 @@
                 {
                     "id": "fuse30",
                     "name": "Reserved 0x9E0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x09E0",
                     "index_int": "0x001E",
                     "is_reserved": true,
@@ -2294,7 +2294,7 @@
                 {
                     "id": "fuse31",
                     "name": "Reserved 0x9F0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x09F0",
                     "index_int": "0x001F",
                     "is_reserved": true,
@@ -2307,7 +2307,7 @@
                 {
                     "id": "fuse32",
                     "name": "Reserved 0xA00",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A00",
                     "index_int": "0x0020",
                     "is_reserved": true,
@@ -2320,7 +2320,7 @@
                 {
                     "id": "fuse33",
                     "name": "Reserved 0xA10",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A10",
                     "index_int": "0x0021",
                     "is_reserved": true,
@@ -2333,7 +2333,7 @@
                 {
                     "id": "fuse34",
                     "name": "Reserved 0xA20",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A20",
                     "index_int": "0x0022",
                     "is_reserved": true,
@@ -2346,7 +2346,7 @@
                 {
                     "id": "fuse35",
                     "name": "Reserved 0xA30",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A30",
                     "index_int": "0x0023",
                     "is_reserved": true,
@@ -2359,7 +2359,7 @@
                 {
                     "id": "fuse36",
                     "name": "Reserved 0xA40",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A40",
                     "index_int": "0x0024",
                     "is_reserved": true,
@@ -2372,7 +2372,7 @@
                 {
                     "id": "fuse37",
                     "name": "Reserved 0xA50",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A50",
                     "index_int": "0x0025",
                     "is_reserved": true,
@@ -2385,7 +2385,7 @@
                 {
                     "id": "fuse38",
                     "name": "Reserved 0xA60",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A60",
                     "index_int": "0x0026",
                     "is_reserved": true,
@@ -2398,7 +2398,7 @@
                 {
                     "id": "fuse39",
                     "name": "Reserved 0xA70",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0A70",
                     "index_int": "0x0027",
                     "is_reserved": true,
@@ -2556,13 +2556,13 @@
         {
             "group": {
                 "name": "Reserved 0xAF0",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse47",
                     "name": "Reserved 0xAF0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0AF0",
                     "index_int": "0x002F",
                     "is_reserved": true,
@@ -2852,13 +2852,13 @@
         {
             "group": {
                 "name": "Reserved 0xC00-0xC60",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse64",
                     "name": "Reserved 0xC00",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C00",
                     "index_int": "0x0040",
                     "is_reserved": true,
@@ -2871,7 +2871,7 @@
                 {
                     "id": "fuse65",
                     "name": "Reserved 0xC10",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C10",
                     "index_int": "0x0041",
                     "is_reserved": true,
@@ -2884,7 +2884,7 @@
                 {
                     "id": "fuse66",
                     "name": "Reserved 0xC20",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C20",
                     "index_int": "0x0042",
                     "is_reserved": true,
@@ -2897,7 +2897,7 @@
                 {
                     "id": "fuse67",
                     "name": "Reserved 0xC30",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C30",
                     "index_int": "0x0043",
                     "is_reserved": true,
@@ -2910,7 +2910,7 @@
                 {
                     "id": "fuse68",
                     "name": "Reserved 0xC40",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C40",
                     "index_int": "0x0044",
                     "is_reserved": true,
@@ -2923,7 +2923,7 @@
                 {
                     "id": "fuse69",
                     "name": "Reserved 0xC50",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C50",
                     "index_int": "0x0045",
                     "is_reserved": true,
@@ -2936,7 +2936,7 @@
                 {
                     "id": "fuse70",
                     "name": "Reserved 0xC60",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0C60",
                     "index_int": "0x0046",
                     "is_reserved": true,
@@ -3191,13 +3191,13 @@
         {
             "group": {
                 "name": "Reserved 0xCF0-0xDF0",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse79",
                     "name": "Reserved 0xCF0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0CF0",
                     "index_int": "0x004F",
                     "is_reserved": true,
@@ -3216,7 +3216,7 @@
                 {
                     "id": "fuse80",
                     "name": "Reserved 0xD00",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D00",
                     "index_int": "0x0050",
                     "is_reserved": true,
@@ -3229,7 +3229,7 @@
                 {
                     "id": "fuse81",
                     "name": "Reserved 0xD10",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D10",
                     "index_int": "0x0051",
                     "is_reserved": true,
@@ -3242,7 +3242,7 @@
                 {
                     "id": "fuse82",
                     "name": "Reserved 0xD20",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D20",
                     "index_int": "0x0052",
                     "is_reserved": true,
@@ -3255,7 +3255,7 @@
                 {
                     "id": "fuse83",
                     "name": "Reserved 0xD30",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D30",
                     "index_int": "0x0053",
                     "is_reserved": true,
@@ -3268,7 +3268,7 @@
                 {
                     "id": "fuse84",
                     "name": "Reserved 0xD40",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D40",
                     "index_int": "0x0054",
                     "is_reserved": true,
@@ -3281,7 +3281,7 @@
                 {
                     "id": "fuse85",
                     "name": "Reserved 0xD50",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D50",
                     "index_int": "0x0055",
                     "is_reserved": true,
@@ -3294,7 +3294,7 @@
                 {
                     "id": "fuse86",
                     "name": "Reserved 0xD60",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D60",
                     "index_int": "0x0056",
                     "is_reserved": true,
@@ -3307,7 +3307,7 @@
                 {
                     "id": "fuse87",
                     "name": "Reserved 0xD70",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D70",
                     "index_int": "0x0057",
                     "is_reserved": true,
@@ -3320,7 +3320,7 @@
                 {
                     "id": "fuse88",
                     "name": "Reserved 0xD80",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D80",
                     "index_int": "0x0058",
                     "is_reserved": true,
@@ -3333,7 +3333,7 @@
                 {
                     "id": "fuse89",
                     "name": "Reserved 0xD90",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0D90",
                     "index_int": "0x0059",
                     "is_reserved": true,
@@ -3346,7 +3346,7 @@
                 {
                     "id": "fuse90",
                     "name": "Reserved 0xDA0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0DA0",
                     "index_int": "0x005A",
                     "is_reserved": true,
@@ -3359,7 +3359,7 @@
                 {
                     "id": "fuse91",
                     "name": "Reserved 0xDB0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0DB0",
                     "index_int": "0x005B",
                     "is_reserved": true,
@@ -3372,7 +3372,7 @@
                 {
                     "id": "fuse92",
                     "name": "Reserved 0xDC0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0DC0",
                     "index_int": "0x005C",
                     "is_reserved": true,
@@ -3385,7 +3385,7 @@
                 {
                     "id": "fuse93",
                     "name": "Reserved 0xDD0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0DD0",
                     "index_int": "0x005D",
                     "is_reserved": true,
@@ -3398,7 +3398,7 @@
                 {
                     "id": "fuse94",
                     "name": "Reserved 0xDE0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0DE0",
                     "index_int": "0x005E",
                     "is_reserved": true,
@@ -3411,7 +3411,7 @@
                 {
                     "id": "fuse95",
                     "name": "Reserved 0xDF0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x0DF0",
                     "index_int": "0x005F",
                     "is_reserved": true,
@@ -4234,13 +4234,13 @@
         {
             "group": {
                 "name": "Reserved 0x1080-0x12F0",
-                "description": "Reserved for NXP use."
+                "description": "Reserved for future use."
             },
             "registers": [
                 {
                     "id": "fuse136",
                     "name": "Reserved 0x1080",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1080",
                     "index_int": "0x0088",
                     "is_reserved": true,
@@ -4253,7 +4253,7 @@
                 {
                     "id": "fuse137",
                     "name": "Reserved 0x1090",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1090",
                     "index_int": "0x0089",
                     "is_reserved": true,
@@ -4266,7 +4266,7 @@
                 {
                     "id": "fuse138",
                     "name": "Reserved 0x10A0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x10A0",
                     "index_int": "0x008A",
                     "is_reserved": true,
@@ -4279,7 +4279,7 @@
                 {
                     "id": "fuse139",
                     "name": "Reserved 0x10B0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x10B0",
                     "index_int": "0x008B",
                     "is_reserved": true,
@@ -4292,7 +4292,7 @@
                 {
                     "id": "fuse140",
                     "name": "Reserved 0x10C0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x10C0",
                     "index_int": "0x008C",
                     "is_reserved": true,
@@ -4305,7 +4305,7 @@
                 {
                     "id": "fuse141",
                     "name": "Reserved 0x10D0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x10D0",
                     "index_int": "0x008D",
                     "is_reserved": true,
@@ -4318,7 +4318,7 @@
                 {
                     "id": "fuse142",
                     "name": "Reserved 0x10E0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x10E0",
                     "index_int": "0x008E",
                     "is_reserved": true,
@@ -4331,7 +4331,7 @@
                 {
                     "id": "fuse143",
                     "name": "Reserved 0x10F0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x10F0",
                     "index_int": "0x008F",
                     "is_reserved": true,
@@ -4344,7 +4344,7 @@
                 {
                     "id": "fuse144",
                     "name": "Reserved 0x1100",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1100",
                     "index_int": "0x0090",
                     "is_reserved": true,
@@ -4357,7 +4357,7 @@
                 {
                     "id": "fuse145",
                     "name": "Reserved 0x1110",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1110",
                     "index_int": "0x0091",
                     "is_reserved": true,
@@ -4370,7 +4370,7 @@
                 {
                     "id": "fuse146",
                     "name": "Reserved 0x1120",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1120",
                     "index_int": "0x0092",
                     "is_reserved": true,
@@ -4383,7 +4383,7 @@
                 {
                     "id": "fuse147",
                     "name": "Reserved 0x1130",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1130",
                     "index_int": "0x0093",
                     "is_reserved": true,
@@ -4396,7 +4396,7 @@
                 {
                     "id": "fuse148",
                     "name": "Reserved 0x1140",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1140",
                     "index_int": "0x0094",
                     "is_reserved": true,
@@ -4409,7 +4409,7 @@
                 {
                     "id": "fuse149",
                     "name": "Reserved 0x1150",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1150",
                     "index_int": "0x0095",
                     "is_reserved": true,
@@ -4422,7 +4422,7 @@
                 {
                     "id": "fuse150",
                     "name": "Reserved 0x1160",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1160",
                     "index_int": "0x0096",
                     "is_reserved": true,
@@ -4435,7 +4435,7 @@
                 {
                     "id": "fuse151",
                     "name": "Reserved 0x1170",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1170",
                     "index_int": "0x0097",
                     "is_reserved": true,
@@ -4448,7 +4448,7 @@
                 {
                     "id": "fuse152",
                     "name": "Reserved 0x1180",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1180",
                     "index_int": "0x0098",
                     "is_reserved": true,
@@ -4461,7 +4461,7 @@
                 {
                     "id": "fuse153",
                     "name": "Reserved 0x1190",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1190",
                     "index_int": "0x0099",
                     "is_reserved": true,
@@ -4474,7 +4474,7 @@
                 {
                     "id": "fuse154",
                     "name": "Reserved 0x11A0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x11A0",
                     "index_int": "0x009A",
                     "is_reserved": true,
@@ -4487,7 +4487,7 @@
                 {
                     "id": "fuse155",
                     "name": "Reserved 0x11B0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x11B0",
                     "index_int": "0x009B",
                     "is_reserved": true,
@@ -4500,7 +4500,7 @@
                 {
                     "id": "fuse156",
                     "name": "Reserved 0x11C0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x11C0",
                     "index_int": "0x009C",
                     "is_reserved": true,
@@ -4513,7 +4513,7 @@
                 {
                     "id": "fuse157",
                     "name": "Reserved 0x11D0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x11D0",
                     "index_int": "0x009D",
                     "is_reserved": true,
@@ -4526,7 +4526,7 @@
                 {
                     "id": "fuse158",
                     "name": "Reserved 0x11E0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x11E0",
                     "index_int": "0x009E",
                     "is_reserved": true,
@@ -4539,7 +4539,7 @@
                 {
                     "id": "fuse159",
                     "name": "Reserved 0x11F0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x11F0",
                     "index_int": "0x009F",
                     "is_reserved": true,
@@ -4552,7 +4552,7 @@
                 {
                     "id": "fuse160",
                     "name": "Reserved 0x1200",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1200",
                     "index_int": "0x00A0",
                     "is_reserved": true,
@@ -4565,7 +4565,7 @@
                 {
                     "id": "fuse161",
                     "name": "Reserved 0x1210",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1210",
                     "index_int": "0x00A1",
                     "is_reserved": true,
@@ -4578,7 +4578,7 @@
                 {
                     "id": "fuse162",
                     "name": "Reserved 0x1220",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1220",
                     "index_int": "0x00A2",
                     "is_reserved": true,
@@ -4591,7 +4591,7 @@
                 {
                     "id": "fuse163",
                     "name": "Reserved 0x1230",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1230",
                     "index_int": "0x00A3",
                     "is_reserved": true,
@@ -4604,7 +4604,7 @@
                 {
                     "id": "fuse164",
                     "name": "Reserved 0x1240",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1240",
                     "index_int": "0x00A4",
                     "is_reserved": true,
@@ -4617,7 +4617,7 @@
                 {
                     "id": "fuse165",
                     "name": "Reserved 0x1250",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1250",
                     "index_int": "0x00A5",
                     "is_reserved": true,
@@ -4630,7 +4630,7 @@
                 {
                     "id": "fuse166",
                     "name": "Reserved 0x1260",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1260",
                     "index_int": "0x00A6",
                     "is_reserved": true,
@@ -4643,7 +4643,7 @@
                 {
                     "id": "fuse167",
                     "name": "Reserved 0x1270",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1270",
                     "index_int": "0x00A7",
                     "is_reserved": true,
@@ -4656,7 +4656,7 @@
                 {
                     "id": "fuse168",
                     "name": "Reserved 0x1280",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1280",
                     "index_int": "0x00A8",
                     "is_reserved": true,
@@ -4669,7 +4669,7 @@
                 {
                     "id": "fuse169",
                     "name": "Reserved 0x1290",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x1290",
                     "index_int": "0x00A9",
                     "is_reserved": true,
@@ -4682,7 +4682,7 @@
                 {
                     "id": "fuse170",
                     "name": "Reserved 0x12A0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x12A0",
                     "index_int": "0x00AA",
                     "is_reserved": true,
@@ -4695,7 +4695,7 @@
                 {
                     "id": "fuse171",
                     "name": "Reserved 0x12B0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x12B0",
                     "index_int": "0x00AB",
                     "is_reserved": true,
@@ -4708,7 +4708,7 @@
                 {
                     "id": "fuse172",
                     "name": "Reserved 0x12C0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x12C0",
                     "index_int": "0x00AC",
                     "is_reserved": true,
@@ -4721,7 +4721,7 @@
                 {
                     "id": "fuse173",
                     "name": "Reserved 0x12D0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x12D0",
                     "index_int": "0x00AD",
                     "is_reserved": true,
@@ -4734,7 +4734,7 @@
                 {
                     "id": "fuse174",
                     "name": "Reserved 0x12E0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x12E0",
                     "index_int": "0x00AE",
                     "is_reserved": true,
@@ -4747,7 +4747,7 @@
                 {
                     "id": "fuse175",
                     "name": "Reserved 0x12F0",
-                    "description": "Reserved for NXP internal (and future) use only. Customers must not attempt to modify these, because the behavior may be unpredictable. The value can be read as either '0' or '1'.",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
                     "offset_int": "0x12F0",
                     "index_int": "0x00AF",
                     "is_reserved": true,
