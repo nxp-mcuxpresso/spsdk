@@ -876,6 +876,9 @@ class CommentedConfig:
             raise SPSDKError("Configuration cannot be empty")
         yaml = YAML(pure=True)
         yaml.indent(sequence=SPSDK_YML_INDENT * 2, offset=SPSDK_YML_INDENT)
+        # Use a reasonable width that prevents wrapping of long configuration keys
+        # This should be larger than the longest expected configuration key name
+        yaml.width = 200
         stream = io.StringIO()
         yaml.dump(config, stream)
         yaml_data = stream.getvalue()

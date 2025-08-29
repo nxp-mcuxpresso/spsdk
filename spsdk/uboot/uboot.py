@@ -301,9 +301,9 @@ class UbootFastboot:
         if not self.serial_port:
             raise SPSDKError("Serial port must be specified")
         serial = UbootSerial(self.serial_port, timeout=self.timeout // 5000)
-        serial.write(f"fastboot -l {hex(self.buffer_address)} -s {hex(self.buffer_size)} usb auto")
+        serial.write(f"fastboot -l {hex(self.buffer_address)} -s {hex(self.buffer_size)} usb 0")
         output = serial.read_output()
-        if "auto usb" not in output:
+        if "Error" in output:
             raise SPSDKError("Failed to turn on auto USB mode.")
         serial.close()
         logger.info("Successfully opened fastboot in uboot serial")

@@ -19,6 +19,14 @@ revisions:
           reg_spec: pfr_cfpa_a1.json
         cmpa:
           reg_spec: pfr_cmpa_a1.json
+          deprecated_reg_names:
+            field04C:
+              alt_names: [RoTK_USAGE]
+              bitfields:
+                field04C-bits0-2: [RoTK0_Usage]
+                field04C-bits3-5: [RoTK1_Usage]
+                field04C-bits6-8: [RoTK2_Usage]
+                field04C-bits9-11: [RoTK3_Usage]
 
       tz:
         reg_spec: tz_a1.json

@@ -319,6 +319,16 @@ Dependencies for Post-Quantum Cryptography support:
 
     $ pip install "spsdk[pqc]"
 
+rblhost
+-------
+Dependencies for rapid rust blhost:
+
+* pymboot-rs - Python interface for MCU bootloader
+
+.. code:: bash
+
+    $ pip install "spsdk[rblhost]"
+
 all
 ---
 Installs all optional dependencies (except pkcs11 which is currently disabled):

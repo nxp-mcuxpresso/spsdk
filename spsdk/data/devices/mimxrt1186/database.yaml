@@ -10,4 +10,4 @@ latest: a0
 
 # General MCU information
 info:
-  use_in_doc: False # Include this MCU in generated documentation
+  use_in_doc: True # Include this MCU in generated documentation

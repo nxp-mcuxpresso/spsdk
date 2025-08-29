@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,4 +35,14 @@ features:
 
   # ======== Feature 2 ========
   feature3:
-    attribute__int1: 10
+    attribute_int1: 10
+
+  # ======== Feature 2 ========
+  feature4:
+    reg_spec: registers.json
+    deprecated_reg_names:
+      field000:
+        alt_names: [REG1_OLD]
+        bitfields:
+          field000-bits0-1: [REG1_BF1_OLD]
+          field000-bits2-3: [REG1_BF2_OLD, REG1_BF2_SUPEROLD]

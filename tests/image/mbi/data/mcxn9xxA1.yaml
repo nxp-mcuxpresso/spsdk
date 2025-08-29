@@ -1,6 +1,7 @@
-# Copyright 2023 NXP
+# Copyright 2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ==================================  Trust Zone Configuration template for mcxn9xx.  ==================================
 
 # ======================================================================================================================
@@ -210,7 +211,7 @@ trustZonePreset:
   SAU Region 5 Limit Address Register (cm33_sau_rlar5): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for SAU Region 6 Base Address Register  (cm33_sau_rbar6)
-  SAU Region 6 Base Address Register  (cm33_sau_rbar6): '0x0'
+  SAU Region 6 Base Address Register (cm33_sau_rbar6): '0x0'
   # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
   # Description: Preset for SAU Region 6 Limit Address Register (cm33_sau_rlar6)
   SAU Region 6 Limit Address Register (cm33_sau_rlar6): '0x0'

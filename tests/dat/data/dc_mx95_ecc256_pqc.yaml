@@ -22,6 +22,9 @@ revision: latest
 # bits are typically used for controlling which debug domains are accessed via the authentication protocol, but device-
 # specific debug options can be managed in this way also.
 cc_socu: '0x0FFF'
+# -------------------------------------===== Vendor Usage version [Optional] =====--------------------------------------
+# Description: The value must be equal to VU stored in fuses to allow loading this certificate.
+cc_vendor_usage: 0
 # ======================================================================================================================
 #                                   == Configuration of AHAB Container Certificate ==
 #                                           Certificate container definition."
@@ -29,9 +32,7 @@ cc_socu: '0x0FFF'
 # ---------------------------------------------===== UUID [Optional] =====----------------------------------------------
 # Description: (Optional) 128-bit unique identifier
 uuid: '0x00001111aaaabbbb22223333ccccdddd'
-# -----------------------------------------===== Fuse version [Optional] =====------------------------------------------
-# Description: The value must be equal or greater than the version stored in fuses to allow loading this container.
-fuse_version: 0
+
 # -----------------------------------===== Certificate public key 0 [Required] =====------------------------------------
 # Description: Path to Public key 0 file.
 public_key_0: ../../_data/keys/ecc256/dck_ecc256.pub

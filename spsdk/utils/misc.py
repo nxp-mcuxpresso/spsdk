@@ -12,6 +12,7 @@ import logging
 import math
 import os
 import re
+import struct
 import textwrap
 import time
 from enum import Enum
@@ -20,8 +21,9 @@ from pathlib import Path
 from struct import pack, unpack
 from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Type, TypeVar, Union
 
-from packaging.version import Version, parse
+import yaml
 
+from spsdk import SPSDK_SECRETS_PATH
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
@@ -739,17 +741,26 @@ def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
     return f"{int(num)} {i}" if i == "B" else f"{num:3.1f} {i}"
 
 
-def bytes_to_print(data: bytes, max_size: int = 128) -> str:
-    """Prints bytes to hex string and shorten it if needed.
+def bytes_to_print(
+    data: Optional[bytes], max_length: int = 32, unavailable_text: str = "Not available"
+) -> str:
+    """Format bytes data for display with length-based truncation.
 
-    :param data: Input data in bytes
-    :param max_size: maximal count of bytes to be printed, defaults to 128
-    :return: Hex string of input data
+    :param data: Bytes data to format, can be None or empty.
+    :param max_length: Maximum number of bytes to display before truncation.
+    :param unavailable_text: Text to show when data is None or empty.
+    :return: Formatted string representation of the bytes data.
     """
-    if len(data) <= max_size:
+    # Case 1: No bytes - return unavailable text
+    if not data:
+        return unavailable_text
+
+    # Case 2: Bytes shorter than or equal to max_length - print it all
+    if len(data) <= max_length:
         return data.hex()
 
-    return data[:max_size].hex() + "..."
+    # Case 3: Bytes longer than max_length - print shortened with info
+    return f"{data[:max_length].hex()}...(truncated to {max_length}, total {len(data)})"
 
 
 def numberify_version(version: str, separator: str = ".", valid_numbers: int = 3) -> int:
@@ -876,12 +887,10 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
     try:
         config_data = json.loads(config)
     except json.JSONDecodeError:
-        # import YAML only if needed to save startup time
-        from yaml import YAMLError, safe_load  # pylint: disable=import-outside-toplevel
-
         try:
-            config_data = safe_load(config)
-        except (YAMLError, UnicodeDecodeError):
+            # SecretLoader inherits from SafeLoader, thus using yaml.load is OK
+            config_data = yaml.load(config, Loader=SecretsLoader)  # nosec: yaml_load
+        except (yaml.YAMLError, UnicodeDecodeError):
             pass
 
     if not config_data:
@@ -969,18 +978,6 @@ class SingletonMeta(type):
         return cls._instance
 
 
-def get_spsdk_version() -> Version:
-    """Get SPSDK version."""
-    try:
-        from spsdk.__version__ import version as spsdk_version
-
-    except ImportError:
-        from setuptools_scm import get_version
-
-        spsdk_version = get_version()
-    return parse(spsdk_version)
-
-
 def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
     """Load secret text from the configuration value.
 
@@ -1014,3 +1011,88 @@ def swap_bytes(data: bytes) -> bytes:
     data_array = bytearray(data)
     data_array[0::2], data_array[1::2] = data_array[1::2], data_array[0::2]
     return bytes(data_array)
+
+
+class SecretManager(metaclass=SingletonMeta):
+    """Manager for handling secrets from a YAML file with lazy loading and caching."""
+
+    _secrets: Optional[dict[str, Any]] = None
+    secrets_path = SPSDK_SECRETS_PATH
+
+    def get_secret(self, key: str) -> Any:
+        """Get a secret by key, loading the secrets file if needed.
+
+        :param key: The key of the secret to retrieve
+        :return: The secret value
+        :raises ValueError: If the secret key is not found
+        """
+        if self._secrets is None:
+            self._load_secrets()
+
+        assert self._secrets
+        if key not in self._secrets:
+            raise ValueError(f"Secret '{key}' not found in secrets file ({self.secrets_path})")
+
+        return self._secrets[key]
+
+    def _load_secrets(self) -> None:
+        """Load secrets from the secrets file.
+
+        :raises FileNotFoundError: If the secrets file doesn't exist
+        :raises yaml.YAMLError: If the secrets file contains invalid YAML
+        """
+        if not os.path.exists(self.secrets_path):
+            self._secrets = {}  # Initialize with empty dict if file doesn't exist
+            return
+
+        with open(self.secrets_path, "r", encoding="utf-8") as f:
+            self._secrets = yaml.safe_load(f) or {}
+
+
+def secret_constructor(loader: yaml.SafeLoader, node: yaml.ScalarNode) -> Any:
+    """Custom YAML constructor to load secrets from the secrets file.
+
+    :param loader: YAML loader instance
+    :param node: YAML node representing the secret key
+    :return: Secret value corresponding to the key
+    :raises ValueError: If the secret key is not found
+    """
+    key = loader.construct_scalar(node)
+    return SecretManager().get_secret(key)
+
+
+class SecretsLoader(yaml.SafeLoader):
+    """Custom YAML loader that handles !secret tags."""
+
+
+# Register the !secret tag constructor with our custom loader
+SecretsLoader.add_constructor("!secret", secret_constructor)
+
+
+def swap_endianness(data: bytes, word_size: int = 4) -> bytes:
+    """Convert between little-endian and big-endian byte order for data consisting of fixed-size words.
+
+    :param data: Input data bytes to swap endianness
+    :param word_size: Size of each word in bytes (default: 4 for 32-bit words)
+    :return: Data with swapped endianness
+    :raises SPSDKError: If word_size is not supported or data length is not a multiple of word_size
+    """
+    if word_size not in (2, 4, 8):
+        raise SPSDKError(
+            f"Unsupported word size: {word_size}. Supported sizes are 2, 4, and 8 bytes."
+        )
+
+    if len(data) % word_size != 0:
+        raise SPSDKError(f"Data length ({len(data)}) is not a multiple of word size ({word_size}).")
+
+    format_map = {
+        2: ("<H", ">H"),  # 16-bit word
+        4: ("<I", ">I"),  # 32-bit word
+        8: ("<Q", ">Q"),  # 64-bit word
+    }
+    little_format, big_format = format_map[word_size]
+
+    return b"".join(
+        struct.pack(big_format, struct.unpack(little_format, data[i : i + word_size])[0])
+        for i in range(0, len(data), word_size)
+    )

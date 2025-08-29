@@ -3,7 +3,7 @@ name = "spsdk"
 dynamic = ["dependencies", "version"]
 description = "Open Source Secure Provisioning SDK for NXP MCU/MPU"
 readme = "README.md"
-authors = [{ name = "NXP", email = "michal.starecek@nxp.com" }]
+authors = [{ name = "NXP", email = "spsdk@nxp.com" }]
 license = { text = "BSD-3-Clause" }
 requires-python = ">=3.9"
 classifiers = [
@@ -25,7 +25,10 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["spsdk"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["spsdk*"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
@@ -39,13 +42,14 @@ dependencies = { file = ["requirements.txt"] }
 examples = ["flask", "requests", "ipython", "notebook", "ipywidgets"]
 dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
 oscca = ["gmssl>=3.2,<4"]
-can = ["python-can<4.5,>=4.4"]
+can = ["python-can<4.6,>=4.5"]
 jlink = ["spsdk-jlink<1,>=0.3.1"]
 lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
 pemicro = ["spsdk-pemicro<1,>=0.3.1"]
 # disabled until the support of Python 3.12 is fixed (https://github.com/pyauth/python-pkcs11/issues/165)
 # pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
 pqc = ["spsdk-pqc<1.0,>=0.6.1"]
+rblhost = ["pymboot-rs<0.2.0"]
 all = [
     "spsdk[examples]",
     "spsdk[dk6]",
@@ -55,6 +59,7 @@ all = [
     "spsdk[lauterbach]",
     "spsdk[pemicro]",
     "spsdk[pqc]",
+    "spsdk[rblhost]",
 ]
 
 [project.scripts]
@@ -223,7 +228,7 @@ checkers = [
     { "cyclic" = { info_only = true, check_paths = [
         "spsdk",
     ] } },
-    { "cspell" = { info_only = false } },
+    { "cspell" = { info_only = false, timeout = 300 } },
     { "bandit" = { info_only = true } },
     { "black_nb" = { timeout = 120 } },
     "isort_nb",
@@ -261,6 +266,8 @@ project_name = "spsdk"
 include_detector_types = ["pip"]
 sbom_location = "SBOM-spsdk.spdx.json"
 install_hook = ['uv pip install ".[all]" -r requirements-develop.txt --force-reinstall']
+license = 'BSD 3-clause "New" or "Revised" License'
+excluded_directories = ['build', 'dist']
 
 [tool.release-tools.github]
 full_name = "nxp-mcuxpresso/spsdk"

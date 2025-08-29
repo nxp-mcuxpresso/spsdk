@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,7 +22,9 @@ def run(version: ScmVersion) -> str:
 
     # we are on a release branch
     if version.branch and version.branch.startswith("release/"):
-        result = version.branch.replace("release/", "")
+        result = version.branch.lower()
+        result = result.replace("release/", "").replace("-", ".")
+        result = result.replace("ear", "a").replace("prc", "rc")
         if result.startswith(("v", "V")):
             result = result[1:]
         # this is a distance from previous tag (not distance from master branch)

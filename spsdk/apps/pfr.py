@@ -28,17 +28,19 @@ from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, format_raw_
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.image.cert_block.cert_blocks import get_keys_or_rotkh_from_certblock_config
+from spsdk.image.cert_block.rot import Rot, RotCertBlockv1, RotCertBlockv21
 from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
-from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea, get_ifr_pfr_class
+from spsdk.pfr.pfr import CMPA, CONFIG_AREA_CLASSES, BaseConfigArea, get_ifr_pfr_class
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.config import Config
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import get_printable_path, load_binary, size_fmt, write_file
 
-PFRArea = Union[Type[CMPA], Type[CFPA]]
+PFRArea = Type[BaseConfigArea]
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +71,7 @@ def pfr_device_type_options() -> Callable:
             "--type",
             "area",
             required=True,
-            type=click.Choice(["cmpa", "cfpa", "romcfg", "cmactable", "ifr"], case_sensitive=False),
+            type=click.Choice(sorted(list(CONFIG_AREA_CLASSES.keys())), case_sensitive=False),
             help="Select PFR/IFR partition",
         )(options)
 
@@ -231,6 +233,15 @@ def pfr_export(
             else:
                 logger.debug(log_text)
     keys = None
+    if rot_config:
+        try:
+            rot_class = Rot.get_rot_class(pfr_obj.family)
+            if rot_class not in [RotCertBlockv1, RotCertBlockv21]:
+                raise ValueError()  # Trigger the except block
+        except ValueError as exc:
+            raise SPSDKError(
+                f"Family: {pfr_obj.family} does not support 'rot-config' option."
+            ) from exc
     root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, pfr_obj.family)
     if secret_file:
         root_of_trust = secret_file
@@ -286,7 +297,7 @@ def write(
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
         data = pfr_obj.export()
     pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
-    pfr_page_length = pfr_obj.BINARY_SIZE
+    pfr_page_length = pfr_obj.binary_size
 
     click.echo(
         f"The {pfr_obj.__class__.__name__} page for {family.name} is located at "
@@ -297,11 +308,16 @@ def write(
         raise SPSDKError(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
-
     if pfr_obj.WRITE_METHOD == "write_memory":
         with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
             try:
                 mboot.write_memory(address=pfr_page_address, data=data)
+                requires_reset = get_db(family).get_bool(DatabaseManager.PFR, "requires_reset")
+                if requires_reset:
+                    logger.info(
+                        "The configuration will be applied after reset. Resetting the device."
+                    )
+                    mboot.reset()
             except McuBootError as exc:
                 raise SPSDKAppError(
                     f"{pfr_obj.__class__.__name__} data write failed: {exc}"
@@ -343,7 +359,7 @@ def read(
     """Read PFR page from the device."""
     pfr_obj = get_ifr_pfr_class(area, family)(family=family)
     pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
-    pfr_page_length = pfr_obj.BINARY_SIZE
+    pfr_page_length = pfr_obj.binary_size
     pfr_page_name = pfr_obj.__class__.__name__
 
     click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
@@ -397,7 +413,7 @@ def erase_cmpa(interface: MbootProtocolBase, family: FamilyRevision) -> None:
             if erase_method == "write_memory":
                 mboot.write_memory(address=pfr_page_address, data=pfr_obj.export())
             elif erase_method == "flash_erase":
-                mboot.flash_erase_region(address=pfr_page_address, length=pfr_obj.BINARY_SIZE)
+                mboot.flash_erase_region(address=pfr_page_address, length=pfr_obj.binary_size)
             else:
                 raise SPSDKError(f"Unsupported erase method: {erase_method}")
         except McuBootError as exc:

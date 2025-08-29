@@ -21,7 +21,7 @@ from spsdk.crypto.signature_provider import SignatureProvider, get_signature_pro
 from spsdk.crypto.utils import extract_public_key
 from spsdk.dat.rot_meta import RotMeta, RotMetaDummy, RotMetaEcc, RotMetaEdgeLockEnclave, RotMetaRSA
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKTypeError, SPSDKValueError
-from spsdk.image.ahab.ahab_certificate import AhabCertificate
+from spsdk.image.ahab.ahab_certificate import AhabCertificate, get_ahab_certificate_class
 from spsdk.image.ahab.ahab_srk import SRKRecordV2
 from spsdk.image.cert_block.cert_blocks import CertBlock
 from spsdk.utils.abstract_features import FeatureBaseClass
@@ -43,6 +43,9 @@ class ProtocolVersion:
         "2.0",
         "2.1",
         "2.2",
+        "3.0",  # 3.0 is the same as 3.2 AHAB v2
+        "3.1",  # AHAB
+        "3.2",  # AHAB v2
     ]
 
     version: str
@@ -154,6 +157,11 @@ class DebugCredentialCertificate(FeatureBaseClass):
         self.dck_pub = dck_pub
         self.cc_socu = cc_socu
         self.cc_vu = cc_vu
+        if cc_beacon > 0xFFFF:
+            logger.warning(
+                f"Beacon value {cc_beacon} exceeds 16-bit range, it will be truncated to a 16-bit value"
+            )
+            cc_beacon = cc_beacon & 0xFFFF
         self.cc_beacon = cc_beacon
         self.rot_pub = rot_pub
         self.signature = signature
@@ -182,6 +190,11 @@ class DebugCredentialCertificate(FeatureBaseClass):
     def rot_hash_length(self) -> int:
         """Root of Trust debug credential hash length."""
         return 32
+
+    @property
+    def srk_count(self) -> int:
+        """Get the number of Super Root Keys (SRK)."""
+        return 1
 
     @abc.abstractmethod
     def calculate_hash(self) -> bytes:
@@ -248,18 +261,33 @@ class DebugCredentialCertificate(FeatureBaseClass):
             )
         if version.is_rsa():
             return DebugCredentialCertificateRsa  # type: ignore
+        if version.major == 3:
+            if version.minor == 1:
+                return DebugCredentialEdgeLockEnclave  # type: ignore
+            return DebugCredentialEdgeLockEnclaveV2  # type: ignore
         return DebugCredentialCertificateEcc  # type: ignore
 
     @classmethod
     def _get_class_from_cfg(cls, config: Config) -> Type[Self]:
-        if "rot_meta" in config:
-            cfg_path = config["rot_meta"][0]
-        else:
-            cfg_path = config["public_key_0"]
+        family = FamilyRevision.load_from_config(config)
+        db = get_db(family)
 
-        rot_pub = extract_public_key(file_path=cfg_path, search_paths=config.search_paths)
-        version = ProtocolVersion.from_public_key(public_key=rot_pub)
-        return cls._get_class(family=FamilyRevision.load_from_config(config), version=version)
+        if db.get_bool(DatabaseManager.DAT, "based_on_ele", False):
+            cnt_ver = db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1)
+            if cnt_ver == 1:
+                version = ProtocolVersion("3.1")
+            elif cnt_ver == 2:
+                version = ProtocolVersion("3.2")
+            else:
+                raise SPSDKValueError(f"Unsupported ELE container version {cnt_ver} for {family}")
+        else:
+            if "rot_meta" in config:
+                cfg_path = config["rot_meta"][0]
+            else:
+                cfg_path = config["public_key_0"]
+            rot_pub = extract_public_key(file_path=cfg_path, search_paths=config.search_paths)
+            version = ProtocolVersion.from_public_key(public_key=rot_pub)
+        return cls._get_class(family=family, version=version)
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
@@ -878,13 +906,13 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         assert isinstance(certificate.public_key_0, SRKRecordV2)
         super().__init__(
             family=family,
-            version=ProtocolVersion("2.0"),  # Dummy version - is not used in DC data
+            version=ProtocolVersion("3.2"),  # The version is NOT used in DC data
             uuid=certificate._uuid or b"",
             rot_meta=RotMetaDummy(),
             dck_pub=certificate.public_key_0.get_public_key(),
-            cc_socu=0,
+            cc_socu=self.socu,
             cc_vu=0,
-            cc_beacon=0,
+            cc_beacon=self.beacon,
             # just there is a needs to put any public key it won't be used :-)
             rot_pub=certificate.public_key_0.get_public_key(),
             signature=None,
@@ -901,9 +929,14 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         msg = "Debug Credential for ELE v2 :\n"
         msg += f" SOCC    : {hex(self.socc)}\n"
         msg += f" CC_SOCU : {hex(self.socu)}\n"
-        # msg += f" BEACON  : {self.cc_beacon}\n "
+        msg += f" BEACON  : {self.beacon}\n "
         msg += str(self.certificate)
         return msg
+
+    @property
+    def srk_count(self) -> int:
+        """Get the number of Super Root Keys (SRK)."""
+        return 0
 
     def __repr__(self) -> str:
         return f"DC ELE v2, 0x{self.socc:08X}"
@@ -948,8 +981,9 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         :param family: Family for what will be json schema generated.
         :return: Validation list of schemas.
         """
-        ret = AhabCertificate.get_validation_schemas(family)
+        ret = get_ahab_certificate_class(family).get_validation_schemas(family)
         schema = get_schema_file(DatabaseManager.DAT)
+        db = get_db(family=family)
         update_validation_schema_family(
             sch=ret[0]["properties"], devices=cls.get_supported_families(), family=family
         )
@@ -959,6 +993,15 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         ret[1]["properties"].pop("permissions")
         ret[1]["required"].remove("permissions")
         ret[1]["properties"].pop("permission_data")
+
+        use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+        vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
+        if use_beacon:
+            ret.insert(2, schema["ele_dc_beacon"])
+        if vu_instead_fuse_version:
+            ret[1]["properties"].pop("fuse_version")
+            ret.insert(3, schema["ahab_certificate_vendor_usage"])
+
         ret.insert(1, schema["ele_socu"])
         return ret
 
@@ -971,12 +1014,19 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         :return: DebugCredential object
         """
         family = FamilyRevision.load_from_config(config)
+        db = get_db(family=family)
+        use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+        vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
         socc = get_db(family).get_int(DatabaseManager.DAT, "socc")
         socu = value_to_int(config.pop("cc_socu", 0))
+        beacon = value_to_int(config.pop("cc_beacon", 0)) if use_beacon else 0
         config["permissions"] = ["debug"]
-        permission_data = pack("<LLL", socc, socu, 0)
+        permission_data = pack("<LLL", socc, socu, beacon)
         config["permission_data"] = permission_data
-        dc = AhabCertificate.load_from_config(config)
+        if vu_instead_fuse_version and "cc_vendor_usage" in config:
+            config["fuse_version"] = config.get_int("cc_vendor_usage", 0)
+
+        dc = get_ahab_certificate_class(family).load_from_config(config)
         return cls(certificate=dc, family=family)
 
     @classmethod
@@ -987,7 +1037,9 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         :param family: Mandatory family name.
         :return: DebugCredential object
         """
-        return cls(family=family, certificate=AhabCertificate.parse(data, family))
+        return cls(
+            family=family, certificate=get_ahab_certificate_class(family).parse(data, family)
+        )
 
     def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""

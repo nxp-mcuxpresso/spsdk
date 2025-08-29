@@ -151,7 +151,7 @@ def mock_test_database_restricted(monkeypatch, data_dir):
             "dev1",
             "rev1",
             "feature3",
-            "attribute__int1",
+            "attribute_int1",
             10,
             None,
         ),  # Non existing default

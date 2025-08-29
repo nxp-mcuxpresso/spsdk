@@ -9,7 +9,7 @@ key_info:
     key:
       type: string
       title: Key for SCEc operation
-      description: Cryptographic key used in SHE (Secure Hardware Extension) SCEc operation
+      description: AES-128 key used in SHE (Secure Hardware Extension) SCEc operation
       template_value: ~/keys/new_key.txt
     key_id:
       type: [number, string]
@@ -47,13 +47,12 @@ key_info:
     auth_key:
       type: string
       title: Authentication Key
-      description: Authentication key for SHE (Secure Hardware Extension) SCEc operation
+      description: Authentication AES-128 key for SHE (Secure Hardware Extension) SCEc operation
       template_value: ~/keys/auth_key.txt
     auth_key_id:
       type: [number, string]
       title: Authentication Key Identifier
-      description: Unique identifier for the authentication key in SHE SCEc operation
-      enum: ["MASTER_ECU_KEY", "BOOT_MAC_KEY"]
+      description: Specifies which key to use for authentication. For most keys, you can use either MASTER_ECU_KEY or the key's own ID. For BOOT_MAC, you can only use MASTER_ECU_KEY or BOOT_MAC_KEY.
       template_value: MASTER_ECU_KEY
 
     counter:

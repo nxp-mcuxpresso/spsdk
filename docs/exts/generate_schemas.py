@@ -24,6 +24,7 @@ from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType, MemoryType
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 from spsdk.sbfile.sb31.images import SecureBinary31
+from spsdk.sbfile.sb4.images import SecureBinary4
 from spsdk.image.iee.iee import Iee
 from spsdk.image.otfad.otfad import Otfad
 from spsdk.utils.database import DatabaseManager, get_schema_file
@@ -35,7 +36,8 @@ DOC_DIR = os.path.join(DOC_PATH, "_prebuild")
 HTML_SCHEMAS_PATH = os.path.join(DOC_PATH, "html_schemas")
 
 MBI_SCHEMAS_FILE = os.path.join(DOC_DIR, "schemas.inc")
-SB3_SCHEMAS_FILE = os.path.join(DOC_DIR, "schemas_sb3.inc")
+SB31_SCHEMAS_FILE = os.path.join(DOC_DIR, "schemas_sb31.inc")
+SB40_SCHEMAS_FILE = os.path.join(DOC_DIR, "schemas_sb40.inc")
 AHAB_SCHEMAS_FILE = os.path.join(DOC_DIR, "ahab_schemas.inc")
 HAB_SCHEMAS_FILE = os.path.join(DOC_DIR, "hab_schemas.inc")
 OTFAD_SCHEMAS_FILE = os.path.join(DOC_DIR, "otfad_schemas.inc")
@@ -44,13 +46,15 @@ BEE_SCHEMAS_FILE = os.path.join(DOC_DIR, "bee_schemas.inc")
 FCB_SCHEMAS_FILE = os.path.join(DOC_DIR, "fcb_schemas.inc")
 XMCD_SCHEMAS_FILE = os.path.join(DOC_DIR, "xmcd_schemas.inc")
 BOOTABLE_SCHEMAS_FILE = os.path.join(DOC_DIR, "bootable_schemas.inc")
-SB2_TABLE_FILE = os.path.join(DOC_DIR, "table_sb21.inc")
-SB3_TABLE_FILE = os.path.join(DOC_DIR, "table_sb31.inc")
+SB21_TABLE_FILE = os.path.join(DOC_DIR, "table_sb21.inc")
+SB31_TABLE_FILE = os.path.join(DOC_DIR, "table_sb31.inc")
+SB40_TABLE_FILE = os.path.join(DOC_DIR, "table_sb40.inc")
 BOOTABLE_TABLE_FILE = os.path.join(DOC_DIR, "table_bootable.inc")
 
 schema_files = [
     MBI_SCHEMAS_FILE,
-    SB3_SCHEMAS_FILE,
+    SB31_SCHEMAS_FILE,
+    SB40_SCHEMAS_FILE,
     AHAB_SCHEMAS_FILE,
     HAB_SCHEMAS_FILE,
     OTFAD_SCHEMAS_FILE,
@@ -59,8 +63,9 @@ schema_files = [
     FCB_SCHEMAS_FILE,
     XMCD_SCHEMAS_FILE,
     BOOTABLE_SCHEMAS_FILE,
-    SB2_TABLE_FILE,
-    SB3_TABLE_FILE,
+    SB21_TABLE_FILE,
+    SB31_TABLE_FILE,
+    SB40_TABLE_FILE,
     BOOTABLE_TABLE_FILE,
 ]
 
@@ -73,9 +78,9 @@ def clean_files() -> None:
     print("Existing schemas files have been removed")
 
 
-def get_docs_families(feature: str) -> List[str]:
+def get_docs_families(feature: str, sub_feature: Optional[str] = None) -> List[str]:
     """Get list of families."""
-    families = get_families(feature, single_revision=True)
+    families = get_families(feature, sub_feature=sub_feature, single_revision=True)
     families = [
         family
         for family in families
@@ -259,8 +264,10 @@ def get_mbi_doc() -> None:
         )
 
 
-def get_sb3_table() -> None:
-    """Generates table with SB3 supported commands"""
+def get_sb31_table() -> None:
+    """Generates table with SB3.1 supported commands"""
+    if os.path.exists(SB31_TABLE_FILE):
+        os.remove(SB31_TABLE_FILE)
     # Load the YAML files
     sb31_devices = get_docs_families(DatabaseManager.SB31)
     commands_yaml = get_schema_file(DatabaseManager.SB31)
@@ -293,14 +300,14 @@ def get_sb3_table() -> None:
             vals.append(supported)
         values.append(vals)
 
-    write_table(headers, values, "List of SB 3.1 supported commands", SB3_TABLE_FILE)
+    write_table(headers, values, "List of SB 3.1 supported commands", SB31_TABLE_FILE)
 
 
-def get_sb3_doc() -> None:
-    """Get doc for SB3 configurations."""
+def get_sb31_doc() -> None:
+    """Get doc for SB3.1 configurations."""
     # Get validation schemas DOC
-    if os.path.exists(SB3_SCHEMAS_FILE):
-        os.remove(SB3_SCHEMAS_FILE)
+    if os.path.exists(SB31_SCHEMAS_FILE):
+        os.remove(SB31_SCHEMAS_FILE)
     families = get_docs_families(DatabaseManager.SB31)
     for family in families:
         validation_schemas = SecureBinary31.get_validation_schemas(family)
@@ -308,7 +315,61 @@ def get_sb3_doc() -> None:
         schema["title"] = f"{SecureBinary31.__name__} for {family}"
         parsed_schema = parse_schema(schema)
         template = SecureBinary31.get_config_template(family)
-        append_schema(parsed_schema, template, SB3_SCHEMAS_FILE, title=schema["title"])
+        append_schema(parsed_schema, template, SB31_SCHEMAS_FILE, title=schema["title"])
+
+
+def get_sb40_table() -> None:
+    """Generates table with SB4.0 supported commands"""
+    if os.path.exists(SB40_TABLE_FILE):
+        os.remove(SB40_TABLE_FILE)
+    # Load the YAML files
+    sb40_devices = get_docs_families(DatabaseManager.SB40)
+    commands_yaml = get_schema_file(DatabaseManager.SB31)
+
+    headers = ["Command", "Command Description"]
+    values = []
+    supported_commands = {}
+    devices = []
+
+    # Iterate over the devices in the devices YAML data
+    for device in sb40_devices:
+        supported_commands[device] = get_db(device).get_list(
+            DatabaseManager.SB40, "supported_commands"
+        )
+        devices.append(device)
+    headers.extend(devices)
+    commands = commands_yaml["sb3_commands"]["properties"]["commands"]["items"]["oneOf"]
+
+    for command in commands:
+        properties = command["properties"]
+        command_name = list(properties.keys())[0]
+        description = properties[command_name]["description"]
+        vals = [command_name, description]
+
+        for device in devices:
+            if command_name in supported_commands[device]:
+                supported = "YES"
+            else:
+                supported = "NO"
+            vals.append(supported)
+        values.append(vals)
+
+    write_table(headers, values, "List of SB 4.0 supported commands", SB40_TABLE_FILE)
+
+
+def get_sb40_doc() -> None:
+    """Get doc for SB4.0 configurations."""
+    # Get validation schemas DOC
+    if os.path.exists(SB40_SCHEMAS_FILE):
+        os.remove(SB40_SCHEMAS_FILE)
+    families = get_docs_families(DatabaseManager.SB40)
+    for family in families:
+        validation_schemas = SecureBinary4.get_validation_schemas(family)
+        schema = get_schema(validation_schemas)
+        schema["title"] = f"{SecureBinary4.__name__} for {family}"
+        parsed_schema = parse_schema(schema)
+        template = SecureBinary4.get_config_template(family)
+        append_schema(parsed_schema, template, SB40_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_ahab_doc() -> None:
@@ -316,7 +377,7 @@ def get_ahab_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(AHAB_SCHEMAS_FILE):
         os.remove(AHAB_SCHEMAS_FILE)
-    families = get_docs_families(DatabaseManager.AHAB)
+    families = get_docs_families(DatabaseManager.AHAB, sub_feature="ahab_image")
     for fam in families:
         validation_schemas = AHABImage.get_validation_schemas(fam)
         schema = get_schema(validation_schemas)
@@ -480,8 +541,10 @@ def write_table(header: List[str], values: List[List[str]], table_name: str, tab
         writer.write_table()
 
 
-def get_sb2_doc() -> None:
-    """Get doc for SB2 commands."""
+def get_sb21_doc() -> None:
+    """Get doc for SB2.1 commands."""
+    if os.path.exists(SB21_TABLE_FILE):
+        os.remove(SB21_TABLE_FILE)
     doc_lst = []
     helper = SB21Helper()
     del helper.cmds["programFuses"]  # delete program fuses command
@@ -498,17 +561,19 @@ def get_sb2_doc() -> None:
         ["Command", "Description", "Example"],
         doc_lst,
         "Supported commands for SB2.1",
-        SB2_TABLE_FILE,
+        SB21_TABLE_FILE,
     )
 
 
 def main():
     print("Running generate schemas script")
-    clean_files()
+    # clean_files() # not necessary anymore and each schema cleans its own file
     get_mbi_doc()
-    get_sb3_doc()
-    get_sb2_doc()
-    get_sb3_table()
+    get_sb40_doc()
+    get_sb31_doc()
+    get_sb21_doc()
+    get_sb40_table()
+    get_sb31_table()
     get_ahab_doc()
     get_hab_doc()
     get_otfad_doc()

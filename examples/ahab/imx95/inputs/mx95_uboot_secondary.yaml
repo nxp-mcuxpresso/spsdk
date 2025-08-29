@@ -13,7 +13,7 @@
 family: mimx9596
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
-revision: a0
+revision: b0
 # ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
 # Description: Target memory for AHAB container
 # Possible options: <serial_downloader, standard, nand_2k, nand_4k>
@@ -50,7 +50,7 @@ containers:
           # hash_type:                     SHA384
           # -------------------------------------===== ATF binary [Required] =====--------------------------------------
           # Description: ARM Trusted Firmware binary file.
-          atf: bl31-imx95.bin-optee
+          atf: bl31_mx95.bin
 
         - # U-Boot container definition
           # Image array default settings. Can be override by defines that are hidden in template:

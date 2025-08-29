@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """MCU model covering DICE operations."""
 
 import logging
@@ -32,7 +33,7 @@ class ModelDICETarget(DICETarget):
         if port:
             self.device_config = load_configuration(os.path.join(models_dir, port, "config.yaml"))
 
-    def get_ca_puk(self, rkth: bytes) -> bytes:
+    def get_ca_puk(self, rkth: bytes, mldsa: bool = False) -> bytes:
         """Generate and return NXP_CUST_DICE_CA_PUK from the target."""
         logger.info("Generating NXP_CUST_DICE_CA_PUK")
         puk_file_name = self.device_config.get("dice_ca_puk")

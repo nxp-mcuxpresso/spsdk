@@ -586,6 +586,39 @@ class DefaultValueNormalizer:
 
         return True, was_modified
 
+    def remove_double_space(
+        self, register: dict[str, Any], file_path: str, register_name: str
+    ) -> tuple[bool, bool]:
+        """Remove 'config_processor' key from registers and bitfields.
+
+        :param register: Register data
+        :param file_path: Path to the JSON file
+        :param register_name: Name of the register
+        :return: Tuple containing (continue_processing, was_modified)
+        """
+        was_modified = False
+        double_space = "  "
+
+        # Remove from register level
+        if "name" in register and double_space in register["name"]:
+            register["name"] = register["name"].replace(double_space, " ")
+            was_modified = True
+            print(f"   Replaced doublequote in 'name' for register '{register_name}'")
+
+        # Check if register has bitfields
+        if "bitfields" in register and register["bitfields"]:
+            # Process each bitfield
+            for bitfield in register["bitfields"]:
+                if "name" in bitfield and double_space in bitfield.get("name"):
+                    bitfield["name"] = bitfield["name"].replace(double_space, " ")
+                    was_modified = True
+                    print(
+                        f"   Replaced doublequote in 'name' for bitfield '{bitfield['name']}' "
+                        f"in register '{register_name}'"
+                    )
+
+        return True, was_modified
+
     def process_json_file(self, file_path: str) -> bool:
         """Process a JSON file to normalize default_value_int fields.
 
@@ -612,6 +645,7 @@ class DefaultValueNormalizer:
                             self.process_unnamed_bitfields,
                             self.remove_no_yaml_comments,
                             self.remove_config_preprocess,
+                            self.remove_double_space,
                         ]
 
                         for register in group_container["registers"]:

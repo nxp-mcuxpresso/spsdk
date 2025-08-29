@@ -277,6 +277,7 @@ class RegsBitField:
         reserved: bool = False,
         config_processor: Optional[ConfigProcessor] = None,
         no_yaml_comments: bool = False,
+        deprecated_names: Optional[list[str]] = None,
     ) -> None:
         """Constructor of RegsBitField class. Used to store bitfield information.
 
@@ -302,6 +303,7 @@ class RegsBitField:
         self.config_processor = config_processor or ConfigProcessor()
         self.config_width = self.config_processor.width_update(width)
         self.no_yaml_comments = no_yaml_comments
+        self.deprecated_names = deprecated_names or []
 
     @classmethod
     def create_from_spec(
@@ -577,6 +579,7 @@ class Register:
         alt_widths: Optional[list[int]] = None,
         reserved: bool = False,
         no_yaml_comments: bool = False,
+        deprecated_names: Optional[list[str]] = None,
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
 
@@ -614,6 +617,7 @@ class Register:
         self._alias_names: list[str] = []
         self.reserved = reserved
         self.no_yaml_comments = no_yaml_comments
+        self.deprecated_names = deprecated_names or []
 
         # Grouped register members
         self.sub_regs: list[Self] = []
@@ -998,7 +1002,12 @@ class Register:
                 return bitfield
             if name.upper() == bitfield.uid.upper():
                 return bitfield
-
+            if name.upper() in bitfield.deprecated_names:
+                logger.warning(
+                    f"Bitfield name is deprecated, use the new name: {bitfield.name}."
+                    "Deprecated names will be removed in the next major version of SPSDK."
+                )
+                return bitfield
         raise SPSDKRegsErrorBitfieldNotFound(f" The {name} is not found in register {self.name}.")
 
     def __str__(self) -> str:
@@ -1082,7 +1091,6 @@ class _RegistersBase(Generic[RegisterClassT]):
             reg_spec_modifications = self.db.get_value(
                 self.feature, self._create_key("reg_spec_modification"), {}
             )
-
             # Handle potential modifications to register specifications stored in configuration file
             if isinstance(reg_spec_modifications, str):
                 reg_spec_modifications = load_configuration(
@@ -1093,6 +1101,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                 spec_file=spec_file_name,
                 grouped_regs=grouped_registers,
                 reg_spec_modifications=reg_spec_modifications,
+                deprecated_regs=self._load_deprecated_names(),
             )
         except SPSDKError as exc:
             if do_not_raise_exception:
@@ -1150,6 +1159,12 @@ class _RegistersBase(Generic[RegisterClassT]):
             if name.upper() in [x.upper() for x in reg._alias_names]:
                 return True
             if name.upper() == reg.uid.upper():
+                return True
+            if name.upper() in reg.deprecated_names:
+                logger.warning(
+                    f"Register name is deprecated, use the new name: {reg.name}."
+                    "Deprecated names will be removed in the next major version of SPSDK."
+                )
                 return True
             return False
 
@@ -1414,7 +1429,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                 bitfields_schema = {}
                 for bitfield in bitfields:
                     if not bitfield.has_enums():
-                        bitfields_schema[bitfield.name] = {
+                        bitfield_sch = {
                             "type": ["string", "number"],
                             "title": f"{bitfield.name}",
                             "description": self._get_bitfield_yaml_description(bitfield),
@@ -1423,7 +1438,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                             "no_yaml_comments": bitfield.no_yaml_comments,
                         }
                     else:
-                        bitfields_schema[bitfield.name] = {
+                        bitfield_sch = {
                             "type": ["string", "number"],
                             "title": f"{bitfield.name}",
                             "description": self._get_bitfield_yaml_description(bitfield),
@@ -1434,6 +1449,9 @@ class _RegistersBase(Generic[RegisterClassT]):
                             "skip_in_template": bitfield.reserved,
                             "no_yaml_comments": bitfield.no_yaml_comments,
                         }
+                    bitfields_schema[bitfield.name] = bitfield_sch
+                    for alt_name in bitfield.deprecated_names:
+                        bitfields_schema[alt_name] = {**bitfield_sch, "skip_in_template": True}
                 # Extend register schema by obsolete style
                 reg_schema.append(
                     {
@@ -1470,6 +1488,10 @@ class _RegistersBase(Generic[RegisterClassT]):
             # also register UID is accepted as valid schema key
             if reg.uid != reg.name:
                 properties[reg.uid] = {**reg_properties, "skip_in_template": True}
+            # Add deprecated register names to schema but skip them in template
+            for deprecated_name in reg.deprecated_names:
+                properties[deprecated_name] = {**reg_properties, "skip_in_template": True}
+
             if reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
                     add_reg_validation_schema(sub_reg, is_subreg=True)
@@ -1495,6 +1517,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         config: dict[str, Any],
         grouped_regs: Optional[list[dict]] = None,
         reg_spec_modifications: Optional[dict[str, dict]] = None,
+        deprecated_reg_names: Optional[dict[str, dict[str, Any]]] = None,
     ) -> None:
         for spec_group in config.get("groups", []):
             for spec_reg in spec_group.get("registers", []):
@@ -1504,6 +1527,12 @@ class _RegistersBase(Generic[RegisterClassT]):
                     reg_mods = reg_spec_modifications.get(reg_uid)
 
                 reg = self.register_class.create_from_spec(spec_reg, reg_mods)
+                if deprecated_reg_names and reg.uid in deprecated_reg_names:
+                    reg.deprecated_names = deprecated_reg_names[reg.uid]["alt_names"]
+                    for bf in reg.get_bitfields():
+                        if bf.uid in deprecated_reg_names[reg.uid]["bitfields"]:
+                            bf.deprecated_names = deprecated_reg_names[reg.uid]["bitfields"][bf.uid]
+
                 group = self._get_register_group(reg, grouped_regs)
                 if group:
                     try:
@@ -1533,6 +1562,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         spec_file: str,
         grouped_regs: Optional[list[dict]] = None,
         reg_spec_modifications: Optional[dict[str, dict]] = None,
+        deprecated_regs: Optional[dict[str, dict[str, Any]]] = None,
     ) -> None:
         """Function loads the registers from the given JSON.
 
@@ -1548,7 +1578,7 @@ class _RegistersBase(Generic[RegisterClassT]):
             raise SPSDKError(
                 f"Cannot load register specification: {spec_file}. {str(exc)}"
             ) from exc
-        self._load_from_spec(spec, grouped_regs, reg_spec_modifications)
+        self._load_from_spec(spec, grouped_regs, reg_spec_modifications, deprecated_regs)
 
     def write_spec(self, file_name: str) -> None:
         """Write loaded register structures into JSON file.
@@ -1662,6 +1692,31 @@ class _RegistersBase(Generic[RegisterClassT]):
                 logger.error(f"There are no data for {reg_name} register.")
 
             logger.debug(f"The register {reg_name} has been loaded from configuration.")
+
+    def _load_deprecated_names(self) -> dict[str, dict[str, Any]]:
+        """Parse the deprecated_reg_names dictionary into a structured format.
+
+        The structure separates register names and bitfield names for easier lookup.
+
+        :return: Dictionary with structured deprecated names
+        """
+        ret = {}
+        registers = self.db.get_dict(self.feature, self._create_key("deprecated_reg_names"), {})
+        for reg, value in registers.items():
+            # if no bitfields are defined, allow simplified configuration
+            if isinstance(value, list):
+                ret[reg] = {"alt_names": value, "bitfields": {}}
+            elif isinstance(value, dict):
+                ret[reg] = {
+                    "alt_names": value.get("alt_names", []),
+                    "bitfields": {
+                        bf_name: bf_details
+                        for bf_name, bf_details in value.get("bitfields", {}).items()
+                    },
+                }
+            else:
+                raise SPSDKError(f"Invalid register configuration for {reg}")
+        return ret
 
     def get_config(self, data_path: str = "./", diff: bool = False) -> Config:
         """Get the whole configuration in dictionary.

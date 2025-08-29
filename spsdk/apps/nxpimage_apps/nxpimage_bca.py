@@ -11,7 +11,7 @@ import logging
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -24,7 +24,7 @@ from spsdk.utils.misc import get_printable_path, load_binary, write_file
 logger = logging.getLogger(__name__)
 
 
-@click.group(name="bca", cls=SpsdkClickGroup)
+@click.group(name="bca", cls=CommandsTreeGroup)
 def bca_group() -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to BCA block."""
 

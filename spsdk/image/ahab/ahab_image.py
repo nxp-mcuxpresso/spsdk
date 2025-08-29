@@ -156,20 +156,19 @@ class AHABImage(FeatureBaseClass):
     def add_container(self, container: Union[AHABContainer, AHABContainerV2]) -> None:
         """Add new container into AHAB Image.
 
-        Validates container compatibility before adding:
-        - V2 containers can be mixed with V1forV2 containers
-        - V1 containers must all be of the same type
-        - Cannot mix V1 with V2/V1forV2 containers
-
         :param container: AHAB container to be added to the image.
         :raises SPSDKLengthError: If maximum container count is reached.
         :raises SPSDKError: If container type is incompatible with existing containers.
+        :raises SPSDKValueError: If container type is not supported by the family.
         """
         if len(self.ahab_containers) >= self.chip_config.containers_max_cnt:
             raise SPSDKLengthError(
                 "Cannot add new container because the AHAB Image already reached"
                 f" the maximum count: {self.chip_config.containers_max_cnt}"
             )
+
+        # ADD THIS VALIDATION:
+        self._validate_container_type_support(type(container))
 
         # Handle V2 containers which can be mixed with V1forV2
         if isinstance(container, (AHABContainerV2, AHABContainerV1forV2)):
@@ -540,12 +539,28 @@ class AHABImage(FeatureBaseClass):
         :param target_memory: AHAB container target memory.
 
         :raises SPSDKError: No AHAB container found in binary data.
+        :raises SPSDKValueError: Family doesn't support the detected container type.
         """
         if family is None:
             raise SPSDKValueError("Missing family parameter to parse AHAB")
         ret = cls(family=family, target_memory=target_memory)
         # Get container type of first container, rest should be same
         base_container_type = container_type = ret._parse_container_type(data)
+
+        if family:
+            # Check if the detected container type is supported by the family
+            detected_version = 2 if base_container_type == AHABContainerV2 else 1
+            supported_versions = ret.chip_config.container_types
+
+            if detected_version not in supported_versions:
+                supported_str = ", ".join([f"V{v}" for v in supported_versions])
+                error_msg = (
+                    f"Family '{family}' does not support container type V{detected_version}. "
+                    f"Supported types: {supported_str}"
+                )
+                logger.error(error_msg)
+                raise SPSDKValueError(error_msg)
+
         for i in range(ret.chip_config.containers_max_cnt):
             try:
                 container_data = data[container_type.get_container_offset(i) :]
@@ -651,6 +666,7 @@ class AHABImage(FeatureBaseClass):
         for image in images:
             if "general_image" == image["image_identifier"]:
                 image["properties"]["core_id"]["enum"] = core_ids.labels()
+                image["properties"]["core_id"]["template_value"] = core_ids.labels()[0]
                 image["properties"]["image_type"]["enum"] = image_types
                 image["properties"]["hash_type"]["enum"] = [
                     x.lower()
@@ -811,3 +827,30 @@ class AHABImage(FeatureBaseClass):
                 if not DummyContainer.check_container_head(binary[offset:]).has_errors:
                     return offset
         raise SPSDKError("The AHAB container has not been found in given binary data")
+
+    def _validate_container_type_support(
+        self,
+        container_type: Union[
+            Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]
+        ],
+    ) -> None:
+        """Validate that the family supports the given container type.
+
+        :param container_type: Container type to validate
+        :raises SPSDKValueError: If container type is not supported by the family
+        """
+        if container_type == AHABContainerV2:
+            required_version = 2
+        elif container_type in [AHABContainer, AHABContainerV1forV2]:
+            required_version = 1
+        else:
+            raise SPSDKValueError(f"Unknown container type: {container_type}")
+
+        supported_versions = self.chip_config.container_types
+
+        if required_version not in supported_versions:
+            supported_str = ", ".join([f"V{v}" for v in supported_versions])
+            raise SPSDKValueError(
+                f"Family '{self.family}' does not support container type V{required_version}. "
+                f"Supported types: {supported_str}"
+            )

@@ -10,7 +10,7 @@ import click
 
 from spsdk.apps.el2go_apps.common import el2go_fw_interface
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_output_option,
 )
@@ -21,7 +21,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.misc import write_file
 
 
-@click.group(name="utils", cls=SpsdkClickGroup)
+@click.group(name="utils", cls=CommandsTreeGroup)
 def utils_group() -> None:
     """Group of sub-commands related to EdgeLock 2GO Product-based provisioning."""
 

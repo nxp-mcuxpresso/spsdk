@@ -12,15 +12,18 @@ containers used in secure boot implementations. It defines the common interfaces
 for serialization, parsing, and validation of container structures.
 """
 
+import textwrap
 from dataclasses import dataclass
 from struct import calcsize, unpack
 from typing import Optional, Union
 
+import colorama
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError
 from spsdk.image.ahab.ahab_data import LITTLE_ENDIAN, UINT8, UINT16
 from spsdk.utils.abstract import BaseClass
+from spsdk.utils.misc import bytes_to_print
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 
@@ -145,6 +148,9 @@ class HeaderContainer(Container):
 
     TAG: Union[int, list[int]] = 0x00
     VERSION: Union[int, list[int]] = 0x00
+
+    DIFF_ATTRIBUTES_VALUES: list[str] = []
+    DIFF_ATTRIBUTES_OBJECTS: list[str] = []
 
     def __init__(self, tag: int, length: int, version: int):
         """Initialize container with header values.
@@ -326,6 +332,105 @@ class HeaderContainer(Container):
                     f"At least {length} bytes expected, got {data_len} bytes!",
                 )
         return ret
+
+    def diff(self, other: object) -> dict[str, dict]:
+        """Get difference of a container with another container.
+
+        :param other: Another container to compare
+        :return: Dictionary containing differences between containers
+        """
+        diff_dict = {}
+
+        def compare_objects(
+            self_obj: Optional[Union[dict, list]], other_obj: Optional[Union[dict, list]]
+        ) -> dict:
+            """Helper method to recursively compare objects."""
+            sub_diff = {}
+            if isinstance(self_obj, list):
+                min_length = min(len(self_obj), len(other_obj)) if other_obj is not None else 0
+                if min_length:
+                    assert self_obj and other_obj is not None
+                    for i, (self_item, other_item) in enumerate(
+                        zip(self_obj[:min_length], other_obj[:min_length])
+                    ):
+                        if self_item != other_item:
+                            sub_diff[f"[{i}]"] = (
+                                self_item.diff(other_item)
+                                if hasattr(self_item, "diff")
+                                else {"original": self_item, "new": other_item}
+                            )
+                else:
+                    sub_diff = {
+                        "original": f"Array len:{len(self_obj)}",
+                        "new": f"Array len:{len(other_obj) if other_obj is not None else 0}",
+                    }
+            else:
+                if other_obj is None or self_obj is None:
+                    sub_diff = {"original": self_obj, "new": other_obj}
+                elif hasattr(self_obj, "diff"):
+                    sub_diff = self_obj.diff(other_obj)
+                else:
+                    sub_diff = {"original": self_obj, "new": other_obj}
+
+            return sub_diff
+
+        for attr in self.DIFF_ATTRIBUTES_VALUES:
+            if getattr(self, attr) != getattr(other, attr):
+                diff_dict[attr] = {"original": getattr(self, attr), "new": getattr(other, attr)}
+
+        for attr in self.DIFF_ATTRIBUTES_OBJECTS:
+            if getattr(self, attr) != getattr(other, attr):
+                possible_diff = (
+                    compare_objects(getattr(self, attr), getattr(other, attr))
+                    if hasattr(self, attr)
+                    and hasattr(other, attr)
+                    and hasattr(getattr(self, attr), "diff")
+                    else {"original": getattr(self, attr), "new": getattr(other, attr)}
+                )
+                if possible_diff:
+                    diff_dict[attr] = possible_diff
+
+        return diff_dict
+
+    @staticmethod
+    def print_diff(diff: dict) -> str:
+        """Helper method to format and print differences between containers.
+
+        :param diff: Dictionary containing differences from diff() method
+        :return: Formatted string representation of differences
+        """
+        max_line = 120
+
+        def format_dict(d: dict, intend: int = 0) -> str:
+            sub_diff = ""
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    sub_diff += f"{' '*intend*2}{colorama.Fore.CYAN}{k}:\n" + format_dict(
+                        v, intend + 1
+                    )
+                else:
+                    colors = {"original": colorama.Fore.YELLOW, "new": colorama.Fore.GREEN}
+                    color = colors.get(k, colorama.Fore.RESET)
+                    if isinstance(v, int):
+                        value_raw = hex(v)
+                    elif isinstance(v, bytes):
+                        value_raw = bytes_to_print(v)
+                    else:
+                        value_raw = str(v)
+                    value = f"{color}{k}:{colorama.Fore.LIGHTBLACK_EX} {value_raw}\n"
+                    for src_line in value.splitlines():
+                        intended_value = textwrap.wrap(
+                            text=src_line,
+                            width=max_line,
+                            subsequent_indent=" " * intend * 2,
+                            fix_sentence_endings=True,
+                        )
+                        for line in intended_value:
+                            sub_diff += f"{' '*intend*2}{line}\n"
+                    sub_diff += f"{colorama.Fore.RESET}"
+            return sub_diff
+
+        return format_dict(diff, 0)
 
 
 class HeaderContainerInverted(HeaderContainer):

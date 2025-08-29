@@ -23,8 +23,9 @@ info:
       start_int: 0x4000000
       size_int: 0x2000
       external: false
+
 features:
   # ======== PFR section ========
   pfr:
     cmpa: # CMPA description
-      address: 0xf_e000
+      address: 0xF_e000

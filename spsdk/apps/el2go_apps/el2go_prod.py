@@ -7,6 +7,7 @@
 
 """Sub-set of EL2GO-HOST commands related to Product-Based Provisioning."""
 
+import time
 from typing import Optional
 
 import click
@@ -14,7 +15,7 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
 from spsdk.apps.el2go_apps.common import el2go_fw_interface, get_template
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -22,14 +23,14 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.crypto.keys import PublicKeyEcc, SPSDKEncoding
 from spsdk.el2go.api_utils import EL2GOTPClient
-from spsdk.el2go.database import LocalProductBasedBatchDB, RemoteProductBasedBatchDB
+from spsdk.el2go.database import LocalProductBasedBatchDB, ProdDBStats, RemoteProductBasedBatchDB
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, write_file
 
 
-@click.group(name="prod", cls=SpsdkClickGroup)
+@click.group(name="prod", cls=CommandsTreeGroup)
 def prod_group() -> None:
     """Group of sub-commands related to EdgeLock 2GO Product-based provisioning."""
 
@@ -147,7 +148,7 @@ def prod_store_report_command(database: str, remote_database: str, report: str) 
 )
 @optgroup.option(
     "-sf",
-    "--secure-object-file",
+    "--secure-objects-file",
     type=click.Path(exists=True),
     help="Path to file with secure object file for provisioning",
 )
@@ -159,7 +160,7 @@ def prod_provision_device_command(
     config: Config,
     database: str,
     remote_database: str,
-    secure_object_file: str,
+    secure_objects_file: str,
     output: str,
     dry_run: bool = False,
 ) -> None:
@@ -172,7 +173,7 @@ def prod_provision_device_command(
         4) Store the provisioning report
     """
     prod_provision_device(
-        interface, config, database, remote_database, secure_object_file, output, dry_run
+        interface, config, database, remote_database, secure_objects_file, output, dry_run
     )
 
 
@@ -181,13 +182,13 @@ def prod_provision_device(
     config: Config,
     database: Optional[str],
     remote_database: Optional[str],
-    secure_object_file: Optional[str],
+    secure_objects_file: Optional[str],
     output: Optional[str],
     dry_run: bool = False,
 ) -> None:
     """Execute EdgeLock 2GO product-based provisioning process."""
     client = EL2GOTPClient.load_from_config(config)
-    secure_object = _retrieve_secure_objects(database, remote_database, secure_object_file)
+    secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
     interface.write_memory(address=client.tp_data_address, data=secure_object)
     if client.prov_fw:
         interface.write_memory(address=client.fw_load_address, data=client.prov_fw)
@@ -205,6 +206,88 @@ def prod_provision_device(
     _store_report(
         report=report, database=database, remote_database=remote_database, output_file=output
     )
+
+
+@prod_group.command(name="prepare-device", no_args_is_help=True)
+@el2go_fw_interface
+@optgroup.group("Secure Objects Source Options", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "-db",
+    "--database",
+    type=click.Path(exists=True),
+    help="Path to existing database with secure objects",
+)
+@optgroup.option(
+    "-rdb",
+    "--remote-database",
+    help="URL to remote database with secure objects",
+)
+@optgroup.option(
+    "-sf",
+    "--secure-objects-file",
+    type=click.Path(exists=True),
+    help="Path to file with secure object file for provisioning",
+)
+@spsdk_config_option()
+@click.option(
+    "--check-fw",
+    is_flag=True,
+    help="Perform check after reset to validate Provisioning FW is running",
+)
+def prod_prepare_device_command(
+    interface: EL2GOInterfaceHandler,
+    config: Config,
+    database: str,
+    remote_database: str,
+    secure_objects_file: str,
+    check_fw: bool,
+) -> None:
+    """Prepare device for EdgeLock 2GO provisioning process.
+
+    \b
+    - Fetch the secure objects, load them into device memory
+    - Load provisioning firmware if available
+    - Reset the interface and optionally check firmware version
+    """
+    prod_prepare_device(
+        interface=interface,
+        config=config,
+        database=database,
+        remote_database=remote_database,
+        secure_objects_file=secure_objects_file,
+        check_fw=check_fw,
+    )
+
+
+def prod_prepare_device(
+    interface: EL2GOInterfaceHandler,
+    config: Config,
+    database: str,
+    remote_database: str,
+    secure_objects_file: str,
+    check_fw: bool = False,
+) -> None:
+    """Prepare device for EdgeLock 2GO provisioning process.
+
+    Fetch the secure objects, load them into device memory
+    Load provisioning firmware if available
+    Reset the interface and optionally check firmware version
+    """
+    client = EL2GOTPClient.load_from_config(config)
+    if not client.use_dispatch_fw:
+        raise SPSDKAppError("This command is viable only for devices with dispatch firmware")
+    secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
+    interface.prepare_dispatch(
+        secure_objects=secure_object,
+        secure_objects_address=client.tp_data_address,
+        prov_fw=client.prov_fw,
+        prov_fw_address=client.fw_load_address,
+    )
+    if check_fw:
+        time.sleep(0.5)  # Allow a short delay for firmware initialization
+        version = interface.get_version()
+        click.echo(f"Provisioning firmware version: {version}")
+    click.echo("Device is ready for provisioning")
 
 
 @prod_group.command(name="run-provisioning")
@@ -263,6 +346,45 @@ def prod_validate_reports_command(database: str, remote_database: str) -> None:
     raise SPSDKAppError("Not implemented")
 
 
+@prod_group.command(name="db-stats", no_args_is_help=True)
+@optgroup.group("Report Source Options", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "-db",
+    "--database",
+    type=click.Path(exists=True),
+    help="Path to database file with reports",
+)
+@optgroup.option(
+    "-rdb",
+    "--remote-database",
+    help="URL to remote database with reports",
+)
+def prod_db_stats_command(database: str, remote_database: str) -> None:
+    """Get database statistics for provisioning records and reports."""
+    stats = prod_db_stats(database=database, remote_database=remote_database)
+    click.echo("Database Statistics:")
+    click.echo(stats)
+
+
+def prod_db_stats(
+    database: Optional[str] = None, remote_database: Optional[str] = None
+) -> ProdDBStats:
+    """Get database statistics for provisioning records and reports."""
+    stats = None
+    if database:
+        db = LocalProductBasedBatchDB(file_path=database)
+        with db:
+            stats = db.get_stats()
+    if remote_database:
+        rdb = RemoteProductBasedBatchDB(host=remote_database)
+        stats = rdb.get_stats()
+
+    if not stats:
+        raise SPSDKAppError("No database statistics could be retrieved.")
+
+    return stats
+
+
 def _store_report(
     report: bytes,
     database: Optional[str] = None,
@@ -289,7 +411,7 @@ def _store_report(
 def _retrieve_secure_objects(
     database: Optional[str] = None,
     remote_database: Optional[str] = None,
-    secure_object_file: Optional[str] = None,
+    secure_objects_file: Optional[str] = None,
 ) -> bytes:
     if database:
         db = LocalProductBasedBatchDB(file_path=database)
@@ -300,8 +422,8 @@ def _retrieve_secure_objects(
         rdb = RemoteProductBasedBatchDB(host=remote_database)
         return rdb.get_next_secure_object()
 
-    if secure_object_file:
-        return load_binary(secure_object_file)
+    if secure_objects_file:
+        return load_binary(secure_objects_file)
     raise SPSDKAppError("No secure object source provided")
 
 

@@ -1,0 +1,58 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+sb4_output:
+  type: object
+  title: Basic Settings
+  properties:
+    containerOutputFile:
+      type: string
+      title: SB4 filename
+      description: Generated SB4 container filename.
+      template_value: my_new.sb4
+  required: [containerOutputFile]
+
+sb4_description:
+  type: object
+  title: Secure Binary v4.0 Settings
+  properties:
+    description:
+      type: string
+      title: Description
+      description: Description up to 16 characters, longer will be truncated. Stored in SB4.0 manifest.
+      template_value: My SB file
+sb4:
+  type: object
+  title: Secure Binary v4.0 Settings
+  properties:
+    containerKeyBlobEncryptionKey:
+      type: string
+      title: Part Common Key
+      description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
+      template_value: my_pck.txt
+    kdkAccessRights:
+      type: number
+      title: KDK access rights
+      description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details can be found in CSSv2 manual.
+      enum: [0, 1, 2, 3]
+      template_value: 0
+
+sb4_test:
+  type: object
+  title: Secure Binary v4.0 Testing Settings
+  skip_in_template: true
+  properties:
+    isEncrypted:
+      type: boolean
+      title: Enable NXP Container encryption
+      description: If false, generated SB4.0 blocks are not encrypted, only for testing, ROM won't accept unencrypted SB4.0 file. If option is missing, SB4.0 file is automatically encrypted.
+      template_value: true
+      skip_in_template: true
+    timestamp:
+      type: [string, number]
+      title: SB4 file force timestamp
+      description: For testing purposes. This option can override real timestamp of SB4 file.
+      format: number
+      template_value: 1234567890
+      skip_in_template: true

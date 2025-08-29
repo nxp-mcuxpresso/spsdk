@@ -587,13 +587,13 @@
                             "width": 8,
                             "id": "fuse2-bits-0-7",
                             "name": "DBG_KEY_REVOKE[7:0]",
-                            "description": "Debug key revoke.\nThis field is combined with \nCFPA.DBG_REVOKE_VU and CMPA.VENDOR_USAGE fields to form a 32-bit value which is compared with vendor usage field in debug credential certificate.  Only if the values match debug access is granted.\nCC_VENDOR_USAGE = { CMPA.VENDOR_USAGE[31:16], \nCFPA.DBG_REVOKE_VU[15:8], \n(CFPA.DBG_REVOKE_VU[7:0] | OTP.DBG_KEY_REVOKE[7:0]) }"
+                            "description": "Debug key revoke.\nThis field is combined with\nCFPA.DBG_REVOKE_VU and CMPA.VENDOR_USAGE fields to form a 32-bit value which is compared with vendor usage field in debug credential certificate.  Only if the values match debug access is granted.\nCC_VENDOR_USAGE = { CMPA.VENDOR_USAGE[31:16],\nCFPA.DBG_REVOKE_VU[15:8],\n(CFPA.DBG_REVOKE_VU[7:0] | OTP.DBG_KEY_REVOKE[7:0]) }"
                         },
                         {
                             "width": 8,
                             "id": "fuse2-bits-8-15",
                             "name": "IMAGE_KEY_REVOKE[7:0]",
-                            "description": "Image signing key revoke.\nThis field is combined with \nCFPA.IMAGE_KEY_REVOKE field to form a 32-bit value which is compared with IskCertificate.constraints field during image authentication. If the values don't match image authentication fails.\nISK_CONSTRAINT[31:0] = {CFPA.IMAGE_KEY_REVOKE_VU[23:0],  OTP.IMAGE_KEY_REVOKE[7:0] }"
+                            "description": "Image signing key revoke.\nThis field is combined with\nCFPA.IMAGE_KEY_REVOKE field to form a 32-bit value which is compared with IskCertificate.constraints field during image authentication. If the values don't match image authentication fails.\nISK_CONSTRAINT[31:0] = {CFPA.IMAGE_KEY_REVOKE_VU[23:0],  OTP.IMAGE_KEY_REVOKE[7:0] }"
                         },
                         {
                             "width": 4
@@ -733,7 +733,7 @@
                             "width": 1,
                             "id": "fuse3-bit-6",
                             "name": "Rec_Boot_IFR0_Dis",
-                            "description": "Disable recovery boot from IFR0 area( 0x0100_8000 to 0x0100_FFFF). ",
+                            "description": "Disable recovery boot from IFR0 area( 0x0100_8000 to 0x0100_FFFF).",
                             "values": [
                                 {
                                     "name": "Enable",
@@ -939,7 +939,7 @@
                             "width": 5,
                             "id": "fuse3-bits-24-28",
                             "name": "FLASH_REMAP_SZ[4:0]",
-                            "description": "Flash remap size.\n FLASH_REMAP_SZ defines the size of the secondary boot image\n (the range of flash addresses that will be remapped)in internal flash, where remapped\naddress end = (FLASH_REMAP_SZ + 1) * 32 KB. For example, if FLASH_REMAP_SZ = 2,\nthen the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0\nwhen remap is active. Set this field to 0  if you do not want to use the flash remap feature"
+                            "description": "Flash remap size.\nFLASH_REMAP_SZ defines the size of the secondary boot image\n(the range of flash addresses that will be remapped)in internal flash, where remapped\naddress end = (FLASH_REMAP_SZ + 1) * 32 KB. For example, if FLASH_REMAP_SZ = 2,\nthen the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0\nwhen remap is active. Set this field to 0  if you do not want to use the flash remap feature"
                         },
                         {
                             "width": 3,
@@ -1301,19 +1301,19 @@
                             "width": 7,
                             "id": "fuse5-bits-0-6",
                             "name": "FLEXSPI_DELAY_CELL_NUM[6:0]",
-                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS). \nThe value provided here is loaded into the FLEXSPIn_DLLnCR."
+                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS).\nThe value provided here is loaded into the FLEXSPIn_DLLnCR."
                         },
                         {
                             "width": 10,
                             "id": "fuse5-bits-7-16",
                             "name": "FLEXSPI_IMAGE_OFFSET[9:0]",
-                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset. \nThis allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. \nFlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. \nIf this field is left blank boot ROM will not enable FlexSPI remap feature. \nThe physical flash offset is computed as below:\nphysical offset = FLEXSPI_IMAGE_OFFSET * 256KByte"
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support  eXecute In Place (XIP) of image programmed at different offset.\nThis allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset.\nFlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped.\nIf this field is left blank boot ROM will not enable FlexSPI remap feature.\nThe physical flash offset is computed as below:\nphysical offset = FLEXSPI_IMAGE_OFFSET * 256KByte"
                         },
                         {
                             "width": 4,
                             "id": "fuse5-bits-17-20",
                             "name": "FLEXSPI_REMAP_IMAGE_SIZE[3:0]",
-                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped\nNOTE: FlexSPI remap size cannot exceed the start address of boot image 1.  \nb'0000   Remap size = FLEXSPI_IMAGE_OFFSET * 256KByte\n\"   SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field. \nb'0001   SIZE_1MB Size of remapped area is 1MByte.                            \nb'0010   SIZE_2MB Size of remapped area is 2MByte.                            \nb'0011   SIZE_3MB Size of remapped area is 3MByte.                           \nb'0100   SIZE_4MB Size of remapped area is 4MByte.\nb'0101   SIZE_5MB Size of remapped area is 5MByte.                            \nb'0110   SIZE_6MB Size of remapped area is 6MByte.                            \nb'0111   SIZE_7MB Size of remapped area is 7MByte.                            \nb'1000   SIZE_8MB Size of remapped area is 8MByte.                            \nb'1001   SIZE_9MB Size of remapped area is 9MByte.                            \nb'1010   SIZE_10MB Size of remapped area is 10MByte.                         \nb'1011   SIZE_11MB Size of remapped area is 11MByte.                         \nb'1100   SIZE_12MB Size of remapped area is 12MByte.                         \nb'1101   SIZE_256KB Size of remapped area is 256KByte.                       \nb'1110   SIZE_512KB Size of remapped area is 512KByte.                      \nb'1111  SIZE_768KB Size of remapped area is 768KByte."
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped\nNOTE: FlexSPI remap size cannot exceed the start address of boot image 1.\nb'0000   Remap size = FLEXSPI_IMAGE_OFFSET * 256KByte\n\"   SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field.\nb'0001   SIZE_1MB Size of remapped area is 1MByte.\nb'0010   SIZE_2MB Size of remapped area is 2MByte.\nb'0011   SIZE_3MB Size of remapped area is 3MByte.\nb'0100   SIZE_4MB Size of remapped area is 4MByte.\nb'0101   SIZE_5MB Size of remapped area is 5MByte.\nb'0110   SIZE_6MB Size of remapped area is 6MByte.\nb'0111   SIZE_7MB Size of remapped area is 7MByte.\nb'1000   SIZE_8MB Size of remapped area is 8MByte.\nb'1001   SIZE_9MB Size of remapped area is 9MByte.\nb'1010   SIZE_10MB Size of remapped area is 10MByte.\nb'1011   SIZE_11MB Size of remapped area is 11MByte.\nb'1100   SIZE_12MB Size of remapped area is 12MByte.\nb'1101   SIZE_256KB Size of remapped area is 256KByte.\nb'1110   SIZE_512KB Size of remapped area is 512KByte.\nb'1111  SIZE_768KB Size of remapped area is 768KByte."
                         },
                         {
                             "width": 11
@@ -1336,7 +1336,7 @@
                             "width": 2,
                             "id": "fuse6-bits-0-1",
                             "name": "SEC_BOOT_EN[1:0]",
-                            "description": "Secure boot enforcement. \nThis field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign).\nThe Image type field in header indicates the type of verification data (checksum or signature) included in it. \nPlain < CRC32 < CMAC < ECDSA",
+                            "description": "Secure boot enforcement.\nThis field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign).\nThe Image type field in header indicates the type of verification data (checksum or signature) included in it.\nPlain < CRC32 < CMAC < ECDSA",
                             "values": [
                                 {
                                     "name": "ALL_IMAGES",
@@ -1398,7 +1398,7 @@
                             "width": 2,
                             "id": "fuse6-bits-8-9",
                             "name": "ENF_CNSA[1:0]",
-                            "description": "Enforce CNSA suite approved algorithms for secure boot, secure update and debug authentication.\nNote, CMAC image authentication is only allowed in 2b'00 setting.  ",
+                            "description": "Enforce CNSA suite approved algorithms for secure boot, secure update and debug authentication.\nNote, CMAC image authentication is only allowed in 2b'00 setting.",
                             "values": [
                                 {
                                     "name": "ALL_ALLOWED",
@@ -1482,7 +1482,7 @@
                             "width": 2,
                             "id": "fuse6-bits-14-15",
                             "name": "ACTIVE_IMG_PROT[1:0]",
-                            "description": "Protection of active image. \nThis field defines protection of flash area occupied by the active image. Only applicable to internal flash.",
+                            "description": "Protection of active image.\nThis field defines protection of flash area occupied by the active image. Only applicable to internal flash.",
                             "values": [
                                 {
                                     "name": "FLASH_ACL_PROTECTION",

@@ -22,7 +22,7 @@ permissions:
   - container
 # ---------------------------------------------===== UUID [Optional] =====----------------------------------------------
 # Description: (Optional) 128-bit unique identifier
-uuid: 346200660880414387117887842999773
+uuid: "34620066088041438711788784299977"
 # ------------------------------------===== Certificate public key [Required] =====-------------------------------------
 # Description: Path to Public key file ECDSA.
 public_key_0: ../../_data/keys/ecc521/imgkey_ecc521.pub

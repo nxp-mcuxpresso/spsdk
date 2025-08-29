@@ -1,7 +1,7 @@
 # tox has to be installed first
 tox<5
 tox-uv<2
-uv==0.8.6
+uv==0.7.0
 -r requirements.txt
 # testing
 pytest<9
@@ -22,7 +22,7 @@ pyinstaller-hooks-contrib<2026
 # developement/CI tools
 pre-commit<5
 openpyxl<4
-cachier<4
+cachier<5
 jira<4
 inquirerpy<1
 # examples

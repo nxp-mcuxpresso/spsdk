@@ -1,0 +1,110 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  sb40 Configuration template for mcxn556s, Revision: latest.  ============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxn556s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                           == Secure Binary v4.0 Settings ==
+# ======================================================================================================================
+# ----------------------------------------===== Part Common Key [Optional] =====----------------------------------------
+# Description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
+containerKeyBlobEncryptionKey: type=mysbkdp;key_id=0
+# ------------------------------------------===== Description [Optional] =====------------------------------------------
+# Description: Description up to 16 characters, longer will be truncated. Stored in SB4.0 manifest.
+description: Plugin encryption
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# -----------------------------------------===== SB4 filename [Required] =====------------------------------------------
+# Description: Generated SB4 container filename.
+containerOutputFile: output/plugin.sb4
+# ======================================================================================================================
+#                                 == AHAB Container format to add to ECC + PQC sign. ==
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the container.
+# Possible options: <oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# -------------------------------------===== AHAB container signer [Optional] =====-------------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
+# revoked.
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+# ---------------------------------------===== Images HASH type [Optional] =====----------------------------------------
+# Description: HASH type of image.
+# Possible options: <sha256, sha384, sha512>
+image_hash_type: sha384
+
+# ======================================================================================================================
+#                                         == Configuration of AHAB SRK table ==
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+  flag_ca: false
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
+  # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
+  # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
+  srk_array:
+    - ../../_data/keys/ecc256/srk0_ecc256.pub
+    - ../../_data/keys/ecc256/srk1_ecc256.pub
+    - ../../_data/keys/ecc256/srk2_ecc256.pub
+    - ../../_data/keys/ecc256/srk3_ecc256.pub
+
+# ======================================================================================================================
+#                                   == Secure Binary v3.1 / v4.0 Commands Settings ==
+# ======================================================================================================================
+# ----------------------------------------===== SB3.1 Commands [Required] =====-----------------------------------------
+# Description: Secure Binary v3.1 commands block, list of all possible options - Modify it according to your application
+commands:
+  #  =========================== [Example of possible configuration: #0 , erase if not used] ============================
+  # -------------------------------------------===== Erase [Required] =====-------------------------------------------
+  # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+  - erase:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Address of memory block to be erased.
+      address: 0
+      # ------------------------------------------===== Size [Required] =====-------------------------------------------
+      # Description: Size of memory block to be erased.
+      size: 4096
+      # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
+      # Description: ID of memory block to be erased.
+      memoryId: 0
+
+    #  =========================== [Example of possible configuration: #1 , erase if not used] ============================
+    # -------------------------------------------===== Load [Required] =====--------------------------------------------
+    # Description: If set, then the data to write immediately follows the range header. The length field contains the
+    # actual data length
+  - load:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Address of memory block to be loaded.
+      address: 0
+      # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
+      # Description: ID of memory block to be loaded.
+      memoryId: 0
+      # -----------------------------===== Data to be loaded [Conditionally required] =====-----------------------------
+      # Description: The data to be loaded, it could be defined in following formats:
+      #   - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+      #   - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in
+      # little endian format. Example: 0x1234, 0x5678, 0, 12345678
+      #   - List of integers passed as an array.
+      #   - Path to binary file. Example: my_binary.bin
+      data: inputs/my_binary.bin

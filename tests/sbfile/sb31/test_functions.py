@@ -7,8 +7,8 @@
 """Test of commands."""
 
 import os
+
 import pytest
-from spsdk.utils.config import Config
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.signature_provider import PlainFileSP
@@ -21,11 +21,8 @@ from spsdk.sbfile.sb31.functions import (
     _get_key_derivation_data,
     derive_block_key,
 )
-from spsdk.sbfile.sb31.images import (
-    SecureBinary31,
-    SecureBinary31Commands,
-    SecureBinary31Header,
-)
+from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
+from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary
 
@@ -164,28 +161,6 @@ def test_header_validate():
     sb3h.validate()
 
 
-def test_commands_validate():
-    """Test of validation function for Secure Binary commands class."""
-    family = FamilyRevision("lpc55s3x")
-    with pytest.raises(SPSDKError):
-        SecureBinary31Commands(family=family, hash_type=EnumHashAlgorithm.SHA256)
-
-    SecureBinary31Commands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    ).validate()
-
-    sb3c = SecureBinary31Commands(
-        family=family,
-        hash_type=EnumHashAlgorithm.SHA256,
-        pck=bytes(32),
-        kdk_access_rights=1,
-        timestamp=1,
-    )
-    sb3c.key_derivator = None  # something broke key derivator
-    with pytest.raises(SPSDKError):
-        sb3c.validate()
-
-
 def test_load_command_validation(data_dir):
     """Test of validation function for Secure Binary class."""
 
@@ -194,9 +169,7 @@ def test_load_command_validation(data_dir):
     cert_blk = CertBlockV21(family, root_certs=rot, ca_flag=1)
     cert_blk.calculate()
 
-    sb3_commands = SecureBinary31Commands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    sb3_commands = SecureBinary31Commands(family=family, hash_type=EnumHashAlgorithm.SHA256)
     sb3 = SecureBinary31(
         family=family,
         cert_block=cert_blk,
@@ -223,9 +196,7 @@ def test_secure_binary3_info(data_dir):
     cert_blk = CertBlockV21(family, root_certs=rot, ca_flag=1)
     cert_blk.calculate()
 
-    sb3_commands = SecureBinary31Commands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
-    )
+    sb3_commands = SecureBinary31Commands(family=family, hash_type=EnumHashAlgorithm.SHA256)
 
     sb3 = SecureBinary31(
         family=family,
@@ -330,7 +301,6 @@ def test_load_cmd_data_from_cfg_file(temp_binary_file):
     assert result == load_binary(temp_binary_file)
 
 
-
 @pytest.mark.parametrize(
     "data_value,should_pass,description",
     [
@@ -356,14 +326,7 @@ def test_sb31_data_format_validation(data_dir, data_value, should_pass, descript
         "isNxpContainer": False,
         "kdkAccessRights": 0,
         "containerConfigurationWord": 0,
-        "commands": [
-            {
-                "load": {
-                    "address": 0x1000,
-                    "data": data_value
-                }
-            }
-        ]
+        "commands": [{"load": {"address": 0x1000, "data": data_value}}],
     }
     cfg = Config(config_data)
     cfg.search_paths = [data_dir]

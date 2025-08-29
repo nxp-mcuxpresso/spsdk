@@ -18,26 +18,32 @@ import colorama
 import prettytable
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     FC,
     CommandsTreeGroup,
+    Config,
     port_option,
     spsdk_apps_common_options,
+    spsdk_config_option,
     spsdk_family_option,
+    spsdk_mboot_interface,
+    spsdk_output_option,
     timeout_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
+from spsdk.dice.data_container import TPDataContainer
 from spsdk.dice.models import APIResponse, DICEResponse
 from spsdk.dice.service_local import LocalDICEVerificationService
 from spsdk.dice.service_remote import DICEVerificationService, RemoteDICEVerificationService
 from spsdk.dice.target_blhost import BlhostDICETarget, DICETarget
 from spsdk.dice.target_model import ModelDICETarget
-from spsdk.dice.utils import HADDiff, HADDifferences, get_supported_devices
+from spsdk.dice.utils import HADDiff, HADDifferences, ProveGenuinity, get_supported_devices
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import write_file
+from spsdk.utils.misc import load_binary, write_file
 from spsdk.utils.registers import Register, RegsBitField
 
 logger = logging.getLogger(__name__)
@@ -132,7 +138,7 @@ def get_dice_target(
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application designed to cover DICE-related operations."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(log_level or logging.WARNING)
     return 0
 
 
@@ -193,16 +199,25 @@ def register_ca_puk(
     required=True,
     help="HEX value of RKTH",
 )
+@click.option(
+    "--mldsa",
+    is_flag=True,
+    help="Get MLDSA public key instead of default ECC PUK",
+)
 def get_ca_puk(
-    port: str, timeout: int, family: FamilyRevision, models_dir: str, output: str, rkth: str
+    port: str,
+    timeout: int,
+    family: FamilyRevision,
+    models_dir: str,
+    output: str,
+    rkth: str,
+    mldsa: bool,
 ) -> None:
     """Get NXP_CUST_DICE_CA_PUK from the device."""
     rkth_bytes = bytes.fromhex(rkth)
-    if len(rkth_bytes) != 32:
-        raise SPSDKAppError(f"RKTH must be 32B long. Got {len(rkth_bytes)}")
     target = get_dice_target(port=port, timeout=timeout, family=family, models_dir=models_dir)
 
-    puk_data = target.get_ca_puk(rkth=rkth_bytes)
+    puk_data = target.get_ca_puk(rkth=rkth_bytes, mldsa=mldsa)
     write_file(data=puk_data, path=output, mode="wb")
 
 
@@ -536,6 +551,306 @@ def display_had_diff_table(
                 ]
             )
     click.echo(table.get_formatted_string())
+
+
+@main.command(name="get-pg-response", no_args_is_help=True)
+@spsdk_mboot_interface()
+@spsdk_family_option(families=get_supported_devices())
+@spsdk_output_option()
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(ProveGenuinity.Mode.labels(), case_sensitive=False),
+    default="ECDSA",
+    show_default=True,
+    help="Prove genuinity mode",
+)
+@click.option(
+    "-ch",
+    "--challenge",
+    help=(
+        "Challenge to be used for proving genuinity (16B = 32 chars). "
+        "If not specified a random challenge will be generated"
+    ),
+    required=False,
+)
+def prove_genuinity_get_response(
+    interface: MbootProtocolBase,
+    family: FamilyRevision,
+    output: str,
+    challenge: Optional[str] = None,
+    mode: str = "ECDSA",
+) -> None:
+    """Get Prove-Genuinity response from the target."""
+    if not challenge:
+        challenge_bytes = secrets.token_bytes(16)
+        click.echo(f"Generated random challenge: {challenge_bytes.hex()}")
+    else:
+        challenge_bytes = bytes.fromhex(challenge)
+
+    mode_enum = ProveGenuinity.Mode.from_label(mode.upper())
+    pg_resp = ProveGenuinity.get_response(
+        family=family,
+        interface=interface,
+        challenge=challenge_bytes,
+        mode=mode_enum,
+    )
+    write_file(data=pg_resp, path=output, mode="wb")
+
+
+@main.command(name="verify-pg-response", no_args_is_help=True)
+@click.option(
+    "-r",
+    "--response",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to the Prove Genuinity response file",
+)
+@click.option(
+    "-k",
+    "--key-file",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path(s) to public key file(s) for verification",
+    required=True,
+    multiple=True,
+)
+@click.option(
+    "-ch",
+    "--challenge",
+    help=(
+        "Challenge used for proving genuinity (16B = 32 chars). "
+        "If not specified, challenge check will be skipped."
+    ),
+    required=False,
+)
+def verify_pg_response(response: str, challenge: Optional[str], key_file: list[str]) -> None:
+    """Verify the Prove Genuinity response."""
+    response_data = load_binary(response)
+    keys = [load_binary(key) for key in key_file]
+    result = ProveGenuinity.verify_response(
+        response=response_data,
+        keys=keys,
+        challenge=bytes.fromhex(challenge) if challenge else None,
+    )
+    if result:
+        click.secho("Prove Genuinity response verification successful!", fg="green")
+    else:
+        click.secho("Prove Genuinity response verification failed!", fg="red")
+        click.get_current_context().exit(1)
+
+
+@main.command(name="verify-csr", no_args_is_help=True)
+@click.option(
+    "-c",
+    "--csr-file",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to the DICE CSR file",
+)
+@click.option(
+    "-pk",
+    "--product-key-file",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path(s) to NXP PROD public key file(s) for verification",
+    required=True,
+    multiple=True,
+)
+@click.option(
+    "-dk",
+    "--dice-ca-key-file",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path(s) to DICE CA public key file(s) for verification",
+    required=True,
+    multiple=True,
+)
+@click.option(
+    "-ch",
+    "--challenge",
+    help=(
+        "Challenge used for proving genuinity (16B = 32 chars). "
+        "If not specified, challenge check will be skipped."
+    ),
+    required=False,
+)
+@click.option(
+    "-ea",
+    "--export-alias-keys",
+    type=click.Path(dir_okay=False),
+    help=(
+        "Path to export DICE Alias public keys. "
+        "(entry serves as a prefix for all DICE Alias keys found in the CSR)"
+    ),
+)
+@click.option("--strict", is_flag=True, help="Enable strict verification mode")
+def verify_csr(
+    csr_file: str,
+    product_key_file: list[str],
+    dice_ca_key_file: list[str],
+    challenge: Optional[str] = None,
+    export_alias_keys: Optional[str] = None,
+    strict: bool = False,
+) -> None:
+    """Verify the DICE CSR. Optionally export the DICE Alias keys."""
+    csr_data = load_binary(csr_file)
+    prod_keys = [load_binary(key) for key in product_key_file]
+    dice_ca_keys = [load_binary(key) for key in dice_ca_key_file]
+
+    result, alias_keys = ProveGenuinity.verify_csr(
+        csr_data=csr_data,
+        prod_keys=prod_keys,
+        dice_ca_keys=dice_ca_keys,
+        challenge=bytes.fromhex(challenge) if challenge else None,
+        extract_alias_keys=export_alias_keys is not None,
+        strict=strict,
+        print_fn=click.echo,
+    )
+
+    if result:
+        click.secho("DICE CSR verification successful!", fg="green")
+    else:
+        click.secho("DICE CSR verification failed!", fg="red")
+        click.get_current_context().exit(1)
+
+    if export_alias_keys and alias_keys:
+        for i, key in enumerate(alias_keys):
+            export_path = f"{export_alias_keys}_{i}.pem"
+            click.echo(f"Exporting DICE Alias key #{i} ({repr(key)}) to {export_path}")
+            key.save(export_path)
+
+
+@main.command(name="print", no_args_is_help=True)
+@click.option(
+    "-r",
+    "--response",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to the Prove Genuinity response or CSR file",
+)
+def print_file(response: str) -> None:
+    """Print the contents of a Prove Genuinity response or CSR file."""
+    container = TPDataContainer.load(response)
+    click.echo(container)
+
+
+@main.command(name="get-fmc-config", no_args_is_help=True)
+@spsdk_output_option()
+def get_fmc_config(output: str) -> None:
+    """Get config file for creating FMC certificate template."""
+    import shutil
+    from pathlib import Path
+
+    from spsdk import SPSDK_DATA_FOLDER
+
+    Path(output).parent.mkdir(exist_ok=True)
+    src = Path(SPSDK_DATA_FOLDER) / "common" / "dice" / "fmc_template.yaml"
+
+    shutil.copy(src, output)
+
+
+@main.command(name="get-fmc-container", no_args_is_help=True)
+@spsdk_config_option()
+def get_fmc_container(config: Config) -> None:
+    """Generate the FMC Alias certificate container."""
+    from spsdk.dice.gen_alias import generate_fmc
+
+    generate_fmc(config=config)
+
+
+@main.command(name="make-fmc-container", no_args_is_help=True)
+@spsdk_config_option()
+def make_fmc_container(config: Config) -> None:
+    """Create TP container from existing template and descriptor."""
+    from spsdk.dice.gen_alias import make_container
+
+    make_container(config=config)
+
+
+@main.command(name="make-idevid-cert", no_args_is_help=True)
+@click.option(
+    "-r",
+    "--response",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to the Prove Genuinity response file",
+)
+@click.option(
+    "-sn",
+    "--subject-name",
+    required=True,
+    help="Subject common name for the iDevID certificate",
+)
+@click.option(
+    "-p",
+    "--product-puk",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    multiple=True,
+    help="Path to the product public key file(s)",
+)
+@click.option(
+    "-cr",
+    "--ca-prk-key",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to the CA private key file for signing",
+)
+@click.option(
+    "-cu",
+    "--ca-puk-key",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to the CA public key file for issuer setup",
+)
+@click.option(
+    "-cn",
+    "--ca-name",
+    required=False,
+    help="CA name for issuer setup",
+)
+@click.option(
+    "--use-full-der-for-serial",
+    is_flag=True,
+    default=False,
+    help="Use full DER encoding for subject serial number calculation",
+)
+@spsdk_output_option(help="Path to output the generated iDevID certificate")
+@click.pass_context
+def make_idevid_cert(
+    ctx: click.Context,
+    response: str,
+    subject_name: str,
+    ca_prk_key: str,
+    ca_puk_key: str,
+    ca_name: str,
+    product_puk: list[str],
+    output: str,
+    use_full_der_for_serial: bool,
+) -> None:
+    """Create an iDevID certificate from a Prove Genuinity response."""
+    if product_puk:
+        ctx.invoke(verify_pg_response, response=response, key_file=product_puk)
+    else:
+        click.echo("PROD public keys were not specified, PG response verification will be skipped.")
+    response_data = load_binary(response)
+    ca_prk_data = load_binary(ca_prk_key)
+    if ca_puk_key:
+        ca_puk_data = load_binary(ca_puk_key)
+    else:
+        ca_puk_data = None
+
+    if not (ca_puk_data and ca_name):
+        click.echo(
+            "CA public key or CA name not provided. Certificate will not contain issuer details."
+        )
+    cert_data = ProveGenuinity.create_cert(
+        response=response_data,
+        subject_common_name=subject_name,
+        ca_prk=ca_prk_data,
+        ca_puk=ca_puk_data,
+        ca_name=ca_name,
+        use_full_der_for_serial=use_full_der_for_serial,
+    )
+    write_file(cert_data, output, mode="wb")
 
 
 @catch_spsdk_error

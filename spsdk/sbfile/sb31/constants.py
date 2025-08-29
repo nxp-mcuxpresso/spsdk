@@ -33,6 +33,7 @@ class EnumCmdTag(SpsdkEnum):
     FW_VERSION_CHECK = (0x0D, "checkFwVersion")
     # RESET added in SBx
     RESET = (0x0E, "reset")
+    WRITE_IFR = (0x10, "writeIFR")
 
 
 class EnumDevHSMType(SpsdkEnum):

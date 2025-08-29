@@ -21,7 +21,6 @@ from click_option_group import optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    SpsdkClickGroup,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
@@ -38,6 +37,7 @@ from spsdk.crypto.keys import (
     PrivateKeySM2,
     PublicKey,
     PublicKeyEcc,
+    PublicKeyMLDSA,
     SPSDKKeyPassphraseMissing,
     get_ecc_curve,
     get_supported_keys_generators,
@@ -122,7 +122,7 @@ def digest(hash_name: str, input_file: str, compare: str) -> None:
             raise SPSDKAppError("Digests differ!")
 
 
-@main.group(name="rot", cls=SpsdkClickGroup)
+@main.group(name="rot", cls=CommandsTreeGroup)
 def rot_group() -> None:
     """Group of RoT commands."""
 
@@ -192,7 +192,7 @@ def calculate_hash(
         click.echo(f"Result has been stored in: {output}")
 
 
-@main.group(name="cert", cls=SpsdkClickGroup)
+@main.group(name="cert", cls=CommandsTreeGroup)
 def cert_group() -> None:
     """Group of command for working with x509 certificates."""
 
@@ -376,7 +376,7 @@ def verify(certificate: str, sign: str, puk: str) -> None:
             raise SPSDKAppError("Public key in certificate differs from the input")
 
 
-@main.group(name="key", cls=SpsdkClickGroup)
+@main.group(name="key", cls=CommandsTreeGroup)
 def key_group() -> None:
     """Group of commands for working with asymmetric keys."""
 
@@ -536,7 +536,7 @@ def reconstruct_key(
     raise SPSDKError(f"Can't recognize key with length {key_length}")
 
 
-@main.group(name="signature", cls=SpsdkClickGroup)
+@main.group(name="signature", cls=CommandsTreeGroup)
 def signature_group() -> None:
     """Group of commands for working with signature."""
 
@@ -757,10 +757,19 @@ def signature_verify_command(
     data = load_binary(input_file)
     data = cut_off_data_regions(data, regions)
     result = public.verify_signature(signature_bin, data, **extra_params)
+
+    # temporary fallback to MLDSA key verification if primary verification fails
+    if not result:
+        try:
+            public = PublicKeyMLDSA.load(public_key)
+            result = public.verify_signature(signature_bin, data, **extra_params)
+        except SPSDKError:
+            result = False
+
     return result
 
 
-@main.group(name="pki-tree", cls=SpsdkClickGroup)
+@main.group(name="pki-tree", cls=CommandsTreeGroup)
 def pki_group() -> None:
     """Group of commands for generation of PKI tree."""
 

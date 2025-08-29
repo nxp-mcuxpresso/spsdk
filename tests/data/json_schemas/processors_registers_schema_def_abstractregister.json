@@ -59,7 +59,8 @@
           "RW",
           "WO",
           "RO",
-          "WRITE_CONST"
+          "WRITE_CONST",
+          "none"
       ]
     },
     "default_value_int": {
@@ -94,9 +95,9 @@
         "method": {
           "$id": "#/properties/register/calculated/method",
           "type": "string",
-          "title": "Method, how the register is calculated. The following methods are supported: `inverse` - inversion of another register.",
+          "title": "Method, how the register is calculated. The following methods are supported: `inverse` - inversion of another register, 'virtual_counter' - virtual value of counter register.",
           "enum": [
-            "inverse"
+            "inverse", "virtual_counter"
           ]
         },
         "src_register_id": {

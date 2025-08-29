@@ -1,0 +1,20 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mcxe247_she_template.yaml
+user_cfg: inputs/boot_mac_key_config.yaml
+custom_command: "%! nxpshe get-template -f mcxe247 -o workspace/mcxe247_she_template.yaml --force"
+
+comments:
+  auth_key_id: "Id of authentication key"
+  key_id: "Key slot"
+  auth_key: "Use the master ecu key"
+  uid: "Not used in this example"
+  counter: "Counter must be incremented with every update of a key"
+  write_protection: "Not used in this example"
+  boot_protection: "Not used in this example"
+  debugger_protection: "Not used in this example"
+  key_usage: "Not used in this example"
+  wildcard: "Not used in this example"

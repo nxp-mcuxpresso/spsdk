@@ -58,6 +58,14 @@ class AhabBlob(HeaderContainer):
     FLAGS_DEK = 0x01  # DEK flag
     FLAGS_DFLT = FLAGS_KEK_KEY
     SUPPORTED_KEY_SIZES = [128, 192, 256]
+    DIFF_ATTRIBUTES_VALUES = [
+        "mode",
+        "algorithm",
+        "_size",
+        "flags",
+        "dek_keyblob",
+        "key_identifier",
+    ]
 
     class BlobKeySizes(SpsdkEnum):
         """AHAB Blob key sizes."""

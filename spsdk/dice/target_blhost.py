@@ -33,11 +33,16 @@ class BlhostDICETarget(DICETarget):
             "This functionality is not yet implemented. Use SEC tool instead."
         )
 
-    def get_ca_puk(self, rkth: bytes) -> bytes:
+    def get_ca_puk(self, rkth: bytes, mldsa: bool = False) -> bytes:
         """Generate and return NXP_CUST_DICE_CA_PUK from the target."""
         logger.info("Generating NXP_CUST_DICE_CA_PUK")
         buffer_address = self.database.get_int(DatabaseManager.DICE, "buffer_address")
-        ca_puk_length = self.database.get_int(DatabaseManager.DICE, "ca_puk_length")
+        buffer_size = self.database.get_int(DatabaseManager.DICE, "buffer_size")
+        rkth_length = self.database.get_int(DatabaseManager.DICE, "rkth_length")
+
+        if len(rkth) != rkth_length:
+            raise SPSDKDICEError(f"Invalid RKTH length. Expected {rkth_length} bytes.")
+
         with McuBoot(interface=self.interface, family=self.family) as mboot:
             if not mboot.write_memory(address=buffer_address, data=rkth):
                 raise SPSDKDICEError(f"Writing RKTH failed. Error: {mboot.status_string}")
@@ -45,17 +50,14 @@ class BlhostDICETarget(DICETarget):
                 oem_rkth_input_addr=buffer_address,
                 oem_rkth_input_size=len(rkth),
                 oem_cust_cert_dice_puk_output_addr=buffer_address + 0x1000,
-                oem_cust_cert_dice_puk_output_size=ca_puk_length,
+                oem_cust_cert_dice_puk_output_size=buffer_size,
+                mldsa=mldsa,
             )
             if not puk_length:
                 raise SPSDKDICEError(
                     f"Creating NXP_CUST_DICE_CA_PUK failed. Error: {mboot.status_string}"
                 )
-            if puk_length != ca_puk_length:
-                raise SPSDKDICEError(
-                    f"Unexpected NXP_CUST_DICE_CA_PUK length. Expected {ca_puk_length}, got {puk_length}"
-                )
-            ca_puk = mboot.read_memory(address=buffer_address + 0x1000, length=ca_puk_length)
+            ca_puk = mboot.read_memory(address=buffer_address + 0x1000, length=puk_length)
             if not ca_puk:
                 raise SPSDKDICEError(
                     f"Reading NXP_CUST_DICE_CA_PUK failed. Error: {mboot.status_string}"

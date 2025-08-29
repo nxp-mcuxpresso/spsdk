@@ -170,10 +170,10 @@ main_note: "\nDebug credential file has following binary structure:\n
   ============================================\n
   There are two ways how sign the final DC data blob.\n
   \n
- 1. The 'signer' option is available to specify the signature provider configuration or path to a private key.  \n
-    The 'signer' option provides a standardized interface for external signing solutions that works  \n
-    consistently across all SPSDK applications.  \n
-    Previous options like 'rotk' and 'sign_provider'/'signProvider' are no longer supported  \n
+  1. The 'signer' option is available to specify the signature provider configuration or path to a private key.  \n
+  The 'signer' option provides a standardized interface for external signing solutions that works  \n
+  consistently across all SPSDK applications.  \n
+  Previous options like 'rotk' and 'sign_provider'/'signProvider' are no longer supported  \n
   \n
   2. For case that Debug Credential files are generated in untrusted environment (without access to RoT private keys),\n
   there is option to use plugin (example how to create own plugin is in: ./SPSDK/examples/dat/hsm/). The plugin\n
@@ -183,7 +183,6 @@ main_note: "\nDebug credential file has following binary structure:\n
   Those options are exclusive, so only one option could be used to sign the DC.\n
   \n
   "
-
 
 ele_socu:
   required:
@@ -202,18 +201,67 @@ ele_socu:
         options can be managed in this way also.
       format: number
       template_value: "0x0FFF"
-    # cc_beacon:
-    #   type: [string, integer]
-    #   title: Credential Beacon
-    #   description:
-    #     A value that is passed through the authentication protocol, which is not interpreted
-    #     by the protocol but is instead made visible to the application being debugged. A
-    #     credential beacon is associated with a DC and is therefore vendor/RoT-signed. An
-    #     authentication beacon is provided and signed by the debugger during the
-    #     authentication process.
-    #   format: number
-    #   template_value: 0
 
+ele_dc_beacon:
+  type: object
+  title: Debug Credential Content
+  properties:
+    cc_beacon:
+      type: [string, integer]
+      title: Credential Beacon
+      description:
+        A value that is passed through the authentication protocol, which is not interpreted
+        by the protocol but is instead made visible to the application being debugged. A
+        credential beacon is associated with a DC and is therefore vendor/RoT-signed. An
+        authentication beacon is provided and signed by the debugger during the
+        authentication process.
+      format: number
+      template_value: 0
+
+ele_auth_beacon:
+  type: object
+  title: Debug Credential Content
+  properties:
+    beacon:
+      type: [string, integer]
+      title: Authentication beacon
+      description:
+        Debug authentication process can be extended with beacons. DEBUG_AUTH_BEACON (this field) contain
+        information from debug authentication after debugger is successfully authenticated. This register contain
+        data from Authentication beacon [31:16] which is defined during authentication session and
+        Credential beacon [15:0] which is defined on RoT keys owner side during debug credential file
+        generation and signing.
+        When credential beacon non-zero value is used in this field, ROM defers opening debug access to user
+        application. The result of the authentication process is written to DBG_FEATURES register while the
+        user application after doing its extended processing, such as clean-up of critical keys and secrets, should
+        copy the value to DBG_FEATURES_DP register to enable the debug access.
+      format: number
+      template_value: 0
+
+ahab_certificate_vendor_usage:
+  type: object
+  title: Debug Credential Content
+  properties:
+    cc_vendor_usage:
+      type: [number, string]
+      title: Vendor Usage version
+      description: The value must be equal to VU stored in fuses to allow loading this certificate.
+      format: number
+      template_value: 0
+
+ahab_debug_certificate:
+  type: object
+  properties:
+    certificate:
+      type: string
+      title: The AHAB Debug Certificate file
+      template_title: AHAB Debug Certificate
+      description:
+        The file that contains AHAB Debug Certificate. It could be used already prepared binary form signed by SRK, or it is possible to
+        use configuration YAML file of debug certificate.
+      format: file
+      template_value: my_ahab_dc.bin
+  required: [certificate]
 
 dat_classic:
   allOf:
@@ -228,8 +276,7 @@ dat_classic:
     certificate:
       type: string
       title: Debug Credential Certificate file
-      description:
-        A debug credential binary file provided by owner of Root Keys. The file could be created by 'dc' group of commands.
+      description: A debug credential binary file provided by owner of Root Keys. The file could be created by 'dc' group of commands.
       format: file
       template_value: dc.bin
     beacon:
@@ -259,4 +306,3 @@ dat_classic:
       title: Signer
       description: Signature provider configuration in format 'type=<identifier>;key_number=<value>' or a Private key that match the public key in debug credential file, to sign Debug Authentication response.
       template_value: type=sasp;key_number=0
-

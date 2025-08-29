@@ -1,0 +1,28 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# issuer common name; required
+issuer_name: NXP DICE 2.0 - IDevID
+# subject common name; required
+subject_name: NXP DICE 2.0 - FMC Alias
+
+# Include Customer TCB Table; optional (default=false)
+include_cust_table: true
+# Customer SVN for Customer TCB Table; required if include_cust_table = true
+cust_svn: 0xabcd
+
+# Include NXP TCB Table; optional (default=false)
+include_nxp_table: true
+
+# ECDSA/MLDSA mode; optional (default=ecdsa)
+mode: ecdsa
+# Template key; optional (if omitted a new temporary key will be generated each time)
+template_key: idevid_ecc384.pem
+
+# Where to store the FMC Alias certificate; optional
+template_output: alias_fmc.der
+# Where to store the FMC Alias certificate offset descriptor; optional
+descriptor_output: descriptor.bin
+# Where to store the final FMC Alias certificate container; required
+container_output: container.bin

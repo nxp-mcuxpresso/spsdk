@@ -8,6 +8,7 @@
 """AHAB utils module."""
 import logging
 import struct
+from copy import deepcopy
 from typing import Optional
 
 from spsdk.apps.utils.utils import SPSDKError
@@ -170,7 +171,7 @@ def ahab_re_sign(
             raise SPSDKError("AHAB Container must contain SRK table in order to update signature")
 
         # Get data to sign
-        container_signature_offset = signature_block_offset + signature_block.signature_offset
+        container_signature_offset = signature_block_offset + signature_block._signature_offset
         data_to_sign = data[:container_signature_offset]
         signature_data = sign_provider_0.get_signature(data_to_sign)
         container_signature_offset += struct.calcsize(ContainerSignature.format())
@@ -215,10 +216,15 @@ def ahab_re_sign(
             f.write(signature_data)
 
 
-def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> bytes:
+def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> tuple[bytes, BootableImage]:
     """Sign AHAB container set.
 
     Parse segments in Bootable image and sign non NXP AHAB containers.
+
+    :param image_path: Path to the image to sign
+    :param config: Configuration for signing
+    :param mem_type: Memory type
+    :return: Tuple of (signed image data, bootable image object)
     """
     config.check(AHABImage.get_validation_schemas_basic())
     family = FamilyRevision.load_from_config(config)
@@ -248,16 +254,7 @@ def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> bytes:
                 if v2x_found:
                     logger.info("Skipping signing of V2X container")
                     continue
-                # Check if container contains V2X image
-                v2x_found = False
-                if len(container.image_array) > 0:
-                    for image in container.image_array:
-                        if "v2x" in image.flags_core_id_name:
-                            v2x_found = True
-                            break
-                if v2x_found:
-                    logger.info("Skipping signing of V2X container")
-                    continue
+                original_container = deepcopy(container)
                 container.load_from_config_generic(config)
                 if (
                     isinstance(container.signature_block, (SignatureBlock, SignatureBlockV2))
@@ -274,16 +271,26 @@ def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> bytes:
                         # Erase existing image hash
                         image.image_hash = b""
                 container.update_fields()
-                logger.info(container)
-                logger.info(
-                    f"Signed container at offset {hex(container.chip_config.container_offset)}"
+                # Calculate absolute offset (segment + container)
+                segment_offset = segment.full_image_offset
+                container_offset = container.chip_config.container_offset
+                absolute_offset = segment_offset + container_offset
+
+                changes_info = (
+                    f"On container at absolute offset {hex(absolute_offset)} "
+                    f"(AHAB image offset {hex(segment_offset)} + container offset {hex(container_offset)}) "
+                    f"in image \n{segment.image_info()} Has been done following major updates:\n"
+                    f"{container.print_diff(original_container.diff(container))}"
                 )
+                logger.info(changes_info)
+
             segment.ahab.update_fields()
             segment.ahab.verify()
+
         else:
             logger.error("Segment does not contain AHAB data")
 
-    return bimg.export()
+    return bimg.export(), bimg
 
 
 def ahab_fix_signature_block_version(

@@ -63,7 +63,7 @@ def container_signature():
 @pytest.fixture(scope="function")
 def certificate(request):
     srk_record = request.getfixturevalue("srk_record")
-    return AhabCertificate(permissions=0x00, uuid=bytes.fromhex(16 * "33"), public_key=srk_record)
+    return AhabCertificate(permissions=0x00, uuid=bytes.fromhex(16 * "33"), public_key_0=srk_record)
 
 
 @pytest.fixture(scope="function")

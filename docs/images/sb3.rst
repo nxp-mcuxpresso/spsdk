@@ -21,5 +21,5 @@ Supported commands
 Supported configuration options
 =================================
 
-.. include:: ../_prebuild/schemas_sb3.inc
+.. include:: ../_prebuild/schemas_sb31.inc
    :parser: myst_parser.sphinx_

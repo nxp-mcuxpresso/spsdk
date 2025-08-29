@@ -19,8 +19,18 @@ from spsdk.exceptions import SPSDKError
 from spsdk.utils.abstract_features import ConfigBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.misc import swap_endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+
+class SHEBootMode(SpsdkEnum):
+    """Enumeration of SHE boot modes."""
+
+    STRICT = (0x00, "strict", "Strict Boot Mode")
+    SERIAL = (0x01, "serial", "Serial Boot Mode")
+    PARALLEL = (0x02, "parallel", "Parallel Boot Mode")
+    UNSECURE = (0x03, "unsecure", "Unsecure Boot Mode")
 
 
 class SHEMaxKeyCountCode(SpsdkEnum):
@@ -29,13 +39,13 @@ class SHEMaxKeyCountCode(SpsdkEnum):
     NONE = (0x00, "0", "0 Keys, CSEc is disabled")
     FIVE = (0x01, "5", "5 Keys")
     TEN = (0x02, "10", "10 Keys")
-    # TWENTY = (0x03, "20", "20 Keys")
+    TWENTY = (0x03, "20", "20 Keys")
 
 
 class SHEFlashPartitionSizeCode(SpsdkEnum):
     """Enumeration of flash partition codes for SHE operations."""
 
-    # SIXTY_FOUR = (0x00, "64", "64 KB Flash Partition")
+    SIXTY_FOUR = (0x00, "64", "64 KB Flash Partition")
     FORTY_EIGHT = (0x01, "48", "48 KB Flash Partition")
     THIRTY_TWO = (0x02, "32", "32 KB Flash Partition")
     NONE = (0x03, "0", "No Flash Partition")
@@ -58,13 +68,13 @@ class SHEKeyID(SpsdkEnum):
     USER_KEY_8 = (0x0B, "USER_KEY_8")
     USER_KEY_9 = (0x0C, "USER_KEY_9")
     USER_KEY_10 = (0x0D, "USER_KEY_10")
-    # USER_KEY_11 = (0x14, "USER_KEY_11")
-    # USER_KEY_12 = (0x15, "USER_KEY_12")
-    # USER_KEY_13 = (0x16, "USER_KEY_13")
-    # USER_KEY_14 = (0x17, "USER_KEY_14")
-    # USER_KEY_15 = (0x18, "USER_KEY_15")
-    # USER_KEY_16 = (0x19, "USER_KEY_16")
-    # USER_KEY_17 = (0x1A, "USER_KEY_17")
+    USER_KEY_11 = (0x14, "USER_KEY_11")
+    USER_KEY_12 = (0x15, "USER_KEY_12")
+    USER_KEY_13 = (0x16, "USER_KEY_13")
+    USER_KEY_14 = (0x17, "USER_KEY_14")
+    USER_KEY_15 = (0x18, "USER_KEY_15")
+    USER_KEY_16 = (0x19, "USER_KEY_16")
+    USER_KEY_17 = (0x1A, "USER_KEY_17")
 
 
 class SHEDeriveKey:
@@ -74,7 +84,11 @@ class SHEDeriveKey:
         """Enumeration of key types in SHE key derivation."""
 
         ENCRYPTION_KEY = (0x01, "ENC", "Encryption key")
-        MAC_KEY = (0x02, "MAC", "Message Authentication Code key")
+        MAC_KEY = (
+            0x02,
+            "MAC",
+            "Message Authentication Code key",
+        )
         DEBUG_KEY = (0x03, "DBG", "Debug key")
 
     @classmethod
@@ -168,12 +182,23 @@ class SHEUpdate(ConfigBaseClass):
         new_key = SHEKeyID.from_attr(new_key_id)
         auth_key_id = config.get("auth_key_id", 1)
         auth_key = SHEKeyID.from_attr(auth_key_id)
+        new_key_bytes = bytes.fromhex(config.load_secret("key"))
+        auth_key_bytes = bytes.fromhex(config.load_secret("auth_key", "FF" * 16))
+
+        if len(new_key_bytes) != 16:
+            raise SPSDKError(
+                f"New key must be exactly 16 bytes (128 bits), got {len(new_key_bytes)} bytes"
+            )
+        if len(auth_key_bytes) != 16:
+            raise SPSDKError(
+                f"Authentication key must be exactly 16 bytes (128 bits), got {len(auth_key_bytes)} bytes"
+            )
         return cls(
-            new_key=bytes.fromhex(config.load_secret("key")),
+            new_key=new_key_bytes,
             new_key_id=new_key.tag,
             uid=config.get_int("uid", 0),
             auth_key_id=auth_key.tag,
-            auth_key=bytes.fromhex(config.load_secret("auth_key", "FF" * 16)),
+            auth_key=auth_key_bytes,
             counter=config.get_int("counter", 1),
             flags=SHEUpdateFlags.load_from_config(config=config),
         )
@@ -232,7 +257,36 @@ class SHEUpdate(ConfigBaseClass):
         """Get validation schemas for SHE key update configuration."""
         sch_basic = cls.get_validation_schemas_basic()
         sch_cfg = get_schema_file(DatabaseManager.SHE_SCEC)
+        update_validation_schema_family(
+            sch=sch_basic[0]["properties"], devices=cls.get_supported_families(), family=family
+        )
+        allowed_auth_keys = SHEKeyID.labels()
+        allowed_auth_keys.remove(SHEKeyID.BOOT_MAC.label)
+        sch_cfg["key_info"]["properties"]["auth_key_id"]["enum"] = allowed_auth_keys
         return sch_basic + [sch_cfg["key_info"], sch_cfg["flags"]]
+
+    @classmethod
+    def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
+        """Get validation schema based on configuration.
+
+        If the class doesn't behave generally, just override this implementation.
+
+        :param config: Valid configuration
+        :return: Validation schemas
+        """
+        config.check(cls.get_validation_schemas_basic())
+        sch = cls.get_validation_schemas(FamilyRevision.load_from_config(config))
+        if "auth_key_id" in config:
+            key_id = SHEKeyID.from_label(config["key_id"])
+            allowed_auth_keys = [SHEKeyID.MASTER_ECU_KEY.label]
+
+            # Add appropriate additional auth key based on key type
+            if key_id == SHEKeyID.BOOT_MAC:
+                allowed_auth_keys.append(SHEKeyID.BOOT_MAC_KEY.label)
+            else:
+                allowed_auth_keys.append(key_id.label)
+            sch[1]["properties"]["auth_key_id"]["enum"] = list(set(allowed_auth_keys))
+        return sch
 
     def get_config(self, data_path: str = "./") -> Config:
         """Re-create configuration object."""
@@ -253,6 +307,14 @@ class SHEBootMac:
         :param data: Input data for CMAC calculation
         :return: Calculated CMAC
         """
+        # Convert data from little-endian to big-endian format to match firmware's byte order expectations
+        data = swap_endianness(data)
         size = len(data) * 8
         prefix = bytes(12) + size.to_bytes(length=4, byteorder="big")
+        print("prefix.hex():", prefix.hex())
+
+        print("(prefix + data).hex():", (prefix + data).hex())
+
+        print("len(prefix + data)", len(prefix + data))
+
         return cmac(key=key, data=prefix + data)

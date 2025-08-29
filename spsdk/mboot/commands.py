@@ -127,6 +127,7 @@ class TrustProvOperation(SpsdkEnum):
     """Operations supported by Trust Provisioning flow."""
 
     PROVE_GENUINITY = (0xF4, "ProveGenuinity", "Start the proving genuinity process")
+    PROVE_GENUINITY_HYBRID = (0xF5, "ProveGenuinityHybrid", "Start the hybrid proving genuinity process")
     ISP_SET_WRAPPED_DATA = (0xF0, "SetWrappedData", "Start processing Wrapped data")
     """Type of trust provisioning operation."""
 

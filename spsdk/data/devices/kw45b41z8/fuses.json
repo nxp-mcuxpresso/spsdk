@@ -292,14 +292,14 @@
                 {
                     "id": "fuse21",
                     "name": "DBG_AUTH_VU",
-                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0015",
                     "reg_width": 16
                 },
                 {
                     "id": "fuse22",
                     "name": "IMG_KEY_REVOKE",
-                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0016",
                     "reg_width": 16
                 }
@@ -991,21 +991,21 @@
                 {
                     "id": "fuse36",
                     "name": "SOC_VER_CNT",
-                    "description": "Version counter for various software components in SoC. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Version counter for various software components in SoC. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0024",
                     "reg_width": 512
                 },
                 {
                     "id": "fuse37",
                     "name": "CM33_S_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0025",
                     "reg_width": 64
                 },
                 {
                     "id": "fuse38",
                     "name": "CM33_NS_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc",
+                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
                     "index_int": "0x0026",
                     "reg_width": 256
                 }

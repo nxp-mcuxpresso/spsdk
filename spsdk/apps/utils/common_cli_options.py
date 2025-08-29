@@ -31,7 +31,7 @@ from spsdk.utils.abstract_features import ConfigBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_configuration
+from spsdk.utils.misc import load_configuration, load_hex_string
 
 FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
 logger = logging.getLogger(__name__)
@@ -541,7 +541,7 @@ def spsdk_config_option(
 ) -> Callable:
     """Click decorator handling config files.
 
-    Provides: `config: str` a full path to config file.
+    Provides: `config: spsdk.utils.config.Config`
 
     :param required: Config file is required
     :param klass: The class that will handle the configuration, if it's used, the configuration will be validated
@@ -608,6 +608,61 @@ def spsdk_config_option(
         )(wrapper)
 
         return wrapper
+
+    return decorator
+
+
+def hex_value_option(
+    short_name: str,
+    name: str,
+    bit_length: int = 256,
+    help_description: str = "Hex value with specific length",
+    required: bool = False,
+) -> Callable[[FC], FC]:
+    """Create an option for hexadecimal values.
+
+    Creates a Click decorator that adds an option for specifying hexadecimal values,
+    typically used for loading hashes and symmetric keys.
+
+    :param short_name: Short form option name (without the leading dash)
+    :param name: Long form option name (without the leading dashes)
+    :param bit_length: Bit length of the expected hexadecimal value
+    :param help_description: Base help message to be extended with format information
+    :param required: Whether the option is required, defaults to False
+
+    :return: Click decorator function that can be applied to CLI command functions
+    """
+
+    def decorator(f: FC) -> FC:
+        @functools.wraps(f)
+        @click.pass_context
+        def wrapper(ctx: click.Context, *args: Any, **kwargs: Any) -> Any:
+            # Get the value from kwargs using the name parameter
+            cmd_name = name.removeprefix("--")
+            value = kwargs.pop(cmd_name)
+
+            # Convert to bytes using load_hex_string if value is provided
+            if value is not None:
+                # Convert bit length to byte length
+                byte_length = bit_length // 8
+                kwargs[cmd_name] = load_hex_string(value, byte_length, name=cmd_name)
+
+            return f(*args, **kwargs)
+
+        # Apply the click option decorator and cast the result back to FC
+        result = click.option(
+            short_name,
+            name,
+            type=str,
+            required=required,
+            help=(
+                f"{help_description}. Accepts a {bit_length}-bit hexadecimal value that can be provided "
+                f"directly on the command line, or as a path to a binary/text file containing the hex value. "
+                f"(Expected size: {bit_length//8} bytes)"
+            ),
+        )(wrapper)
+
+        return cast(FC, result)
 
     return decorator
 
@@ -1185,7 +1240,7 @@ class CommandsTreeGroup(SpsdkClickGroup):
         :param ctx: click Context
         :param formatter: click HelpFormatter
         """
-        root_cmd = _build_command_tree(ctx.find_root().command)
+        root_cmd = _build_command_tree(ctx.command)
         rows = _get_tree(root_cmd)
 
         with formatter.section(gettext("Commands")):

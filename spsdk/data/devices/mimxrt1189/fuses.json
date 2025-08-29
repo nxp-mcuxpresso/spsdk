@@ -12,7 +12,6 @@
                     "name": "LOCKS0",
                     "description": "Fuse 0",
                     "index_int": "0",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3,
@@ -123,7 +122,6 @@
                     "name": "COM_DEVICE_ID_LOCKS",
                     "description": "Fuse 1",
                     "index_int": "0x0001",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3
@@ -234,7 +232,6 @@
                     "name": "ELE_OTFAD1_KEY_LOCK",
                     "description": "Fuse 2",
                     "index_int": "0x0002",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 3
@@ -297,7 +294,6 @@
                     "name": "ELE_OEM_SRKH_LOCK",
                     "description": "Fuse 4",
                     "index_int": "0x0004",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 12
@@ -360,7 +356,6 @@
                     "name": "ELE_OTFAD2_KEY_LOCK",
                     "description": "Fuse 6",
                     "index_int": "0x0006",
-                    "individual_write_lock": "none",
                     "bitfields": [
                         {
                             "width": 12
@@ -2835,7 +2830,8 @@
                     },
                     "bitfields": [
                         {
-                            "width": 3
+                            "width": 3,
+                            "access": "none"
                         },
                         {
                             "width": 1,
@@ -2956,7 +2952,8 @@
                             ]
                         },
                         {
-                            "width": 15
+                            "width": 15,
+                            "access": "none"
                         }
                     ]
                 },
@@ -3044,7 +3041,8 @@
                     },
                     "bitfields": [
                         {
-                            "width": 3
+                            "width": 3,
+                            "access": "none"
                         },
                         {
                             "width": 1,
@@ -3165,7 +3163,8 @@
                             ]
                         },
                         {
-                            "width": 15
+                            "width": 15,
+                            "access": "none"
                         }
                     ]
                 },

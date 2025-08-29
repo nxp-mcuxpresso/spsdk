@@ -779,7 +779,7 @@
                     "id": "field180",
                     "offset_int": "0x180",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 0 Peripherals  Memory Rule Register 0 (aips_bridge0_mem_rule0)",
+                    "name": "AIPS BRIDGE 0 Peripherals Memory Rule Register 0 (aips_bridge0_mem_rule0)",
                     "description": "TrustZone register - AIPS BRIDGE 0 Peripherals  Memory Rule Register 0 (aips_bridge0_mem_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -787,7 +787,7 @@
                     "id": "field184",
                     "offset_int": "0x184",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 0 Peripherals  Memory Rule Register 1 (aips_bridge0_mem_rule1)",
+                    "name": "AIPS BRIDGE 0 Peripherals Memory Rule Register 1 (aips_bridge0_mem_rule1)",
                     "description": "TrustZone register - AIPS BRIDGE 0 Peripherals  Memory Rule Register 1 (aips_bridge0_mem_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -795,7 +795,7 @@
                     "id": "field188",
                     "offset_int": "0x188",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 0 Peripherals  Memory Rule Register 2 (aips_bridge0_mem_rule2)",
+                    "name": "AIPS BRIDGE 0 Peripherals Memory Rule Register 2 (aips_bridge0_mem_rule2)",
                     "description": "TrustZone register - AIPS BRIDGE 0 Peripherals  Memory Rule Register 2 (aips_bridge0_mem_rule2)",
                     "default_value_int": "0x33333333"
                 },
@@ -803,7 +803,7 @@
                     "id": "field18C",
                     "offset_int": "0x18c",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 0 Peripherals  Memory Rule Register 3 (aips_bridge0_mem_rule3)",
+                    "name": "AIPS BRIDGE 0 Peripherals Memory Rule Register 3 (aips_bridge0_mem_rule3)",
                     "description": "TrustZone register - AIPS BRIDGE 0 Peripherals  Memory Rule Register 3 (aips_bridge0_mem_rule3)",
                     "default_value_int": "0x33333333"
                 },
@@ -835,7 +835,7 @@
                     "id": "field19C",
                     "offset_int": "0x19c",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 1 Peripherals  Memory Rule Register 0 (aips_bridge1_mem_rule0)",
+                    "name": "AIPS BRIDGE 1 Peripherals Memory Rule Register 0 (aips_bridge1_mem_rule0)",
                     "description": "TrustZone register - AIPS BRIDGE 1 Peripherals  Memory Rule Register 0 (aips_bridge1_mem_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -843,7 +843,7 @@
                     "id": "field1A0",
                     "offset_int": "0x1a0",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 1 Peripherals  Memory Rule Register 1 (aips_bridge1_mem_rule1)",
+                    "name": "AIPS BRIDGE 1 Peripherals Memory Rule Register 1 (aips_bridge1_mem_rule1)",
                     "description": "TrustZone register - AIPS BRIDGE 1 Peripherals  Memory Rule Register 1 (aips_bridge1_mem_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -875,7 +875,7 @@
                     "id": "field1B0",
                     "offset_int": "0x1b0",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 2 Peripherals  Memory Rule Register 0 (aips_bridge2_mem_rule0)",
+                    "name": "AIPS BRIDGE 2 Peripherals Memory Rule Register 0 (aips_bridge2_mem_rule0)",
                     "description": "TrustZone register - AIPS BRIDGE 2 Peripherals  Memory Rule Register 0 (aips_bridge2_mem_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -883,7 +883,7 @@
                     "id": "field1B4",
                     "offset_int": "0x1b4",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 2 Peripherals  Memory Rule Register 1 (aips_bridge2_mem_rule1)",
+                    "name": "AIPS BRIDGE 2 Peripherals Memory Rule Register 1 (aips_bridge2_mem_rule1)",
                     "description": "TrustZone register - AIPS BRIDGE 2 Peripherals  Memory Rule Register 1 (aips_bridge2_mem_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -891,7 +891,7 @@
                     "id": "field1B8",
                     "offset_int": "0x1b8",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 3 Peripherals  Memory Rule Register 0 (aips_bridge3_mem_rule0)",
+                    "name": "AIPS BRIDGE 3 Peripherals Memory Rule Register 0 (aips_bridge3_mem_rule0)",
                     "description": "TrustZone register - AIPS BRIDGE 3 Peripherals  Memory Rule Register 0 (aips_bridge3_mem_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -899,7 +899,7 @@
                     "id": "field1BC",
                     "offset_int": "0x1bc",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 3 Peripherals  Memory Rule Register 1 (aips_bridge3_mem_rule1)",
+                    "name": "AIPS BRIDGE 3 Peripherals Memory Rule Register 1 (aips_bridge3_mem_rule1)",
                     "description": "TrustZone register - AIPS BRIDGE 3 Peripherals  Memory Rule Register 1 (aips_bridge3_mem_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -907,7 +907,7 @@
                     "id": "field1C0",
                     "offset_int": "0x1c0",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 3 Peripherals  Memory Rule Register 2 (aips_bridge3_mem_rule2)",
+                    "name": "AIPS BRIDGE 3 Peripherals Memory Rule Register 2 (aips_bridge3_mem_rule2)",
                     "description": "TrustZone register - AIPS BRIDGE 3 Peripherals  Memory Rule Register 2 (aips_bridge3_mem_rule2)",
                     "default_value_int": "0x33333333"
                 },
@@ -915,7 +915,7 @@
                     "id": "field1C4",
                     "offset_int": "0x1c4",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 3 Peripherals  Memory Rule Register 3 (aips_bridge3_mem_rule3)",
+                    "name": "AIPS BRIDGE 3 Peripherals Memory Rule Register 3 (aips_bridge3_mem_rule3)",
                     "description": "TrustZone register - AIPS BRIDGE 3 Peripherals  Memory Rule Register 3 (aips_bridge3_mem_rule3)",
                     "default_value_int": "0x33333333"
                 },
@@ -923,7 +923,7 @@
                     "id": "field1C8",
                     "offset_int": "0x1c8",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 4 Peripherals  Memory Rule Register 0 (aips_bridge4_mem_rule0)",
+                    "name": "AIPS BRIDGE 4 Peripherals Memory Rule Register 0 (aips_bridge4_mem_rule0)",
                     "description": "TrustZone register - AIPS BRIDGE 4 Peripherals  Memory Rule Register 0 (aips_bridge4_mem_rule0)",
                     "default_value_int": "0x33333333"
                 },
@@ -931,7 +931,7 @@
                     "id": "field1CC",
                     "offset_int": "0x1cc",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 4 Peripherals  Memory Rule Register 1 (aips_bridge4_mem_rule1)",
+                    "name": "AIPS BRIDGE 4 Peripherals Memory Rule Register 1 (aips_bridge4_mem_rule1)",
                     "description": "TrustZone register - AIPS BRIDGE 4 Peripherals  Memory Rule Register 1 (aips_bridge4_mem_rule1)",
                     "default_value_int": "0x33333333"
                 },
@@ -939,7 +939,7 @@
                     "id": "field1D0",
                     "offset_int": "0x1d0",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 4 Peripherals  Memory Rule Register 2 (aips_bridge4_mem_rule2)",
+                    "name": "AIPS BRIDGE 4 Peripherals Memory Rule Register 2 (aips_bridge4_mem_rule2)",
                     "description": "TrustZone register - AIPS BRIDGE 4 Peripherals  Memory Rule Register 2 (aips_bridge4_mem_rule2)",
                     "default_value_int": "0x33333333"
                 },
@@ -947,7 +947,7 @@
                     "id": "field1D4",
                     "offset_int": "0x1d4",
                     "reg_width": 32,
-                    "name": "AIPS BRIDGE 4 Peripherals  Memory Rule Register 3 (aips_bridge4_mem_rule3)",
+                    "name": "AIPS BRIDGE 4 Peripherals Memory Rule Register 3 (aips_bridge4_mem_rule3)",
                     "description": "TrustZone register - AIPS BRIDGE 4 Peripherals  Memory Rule Register 3 (aips_bridge4_mem_rule3)",
                     "default_value_int": "0x33333333"
                 },

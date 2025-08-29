@@ -9,6 +9,7 @@
 
 import logging
 import math
+from dataclasses import dataclass
 from typing import Any, Optional, Type
 
 from typing_extensions import Self
@@ -16,7 +17,7 @@ from typing_extensions import Self
 from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.cert_block.rkht import RKHT
 from spsdk.pfr.exceptions import SPSDKPfrError, SPSDKPfrRotkhIsNotPresent
 from spsdk.utils.abstract_features import FeatureBaseClass
@@ -24,10 +25,26 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.family import FamilyRevision, get_db, get_families, update_validation_schema_family
-from spsdk.utils.misc import BinaryPattern, Endianness, value_to_int
+from spsdk.utils.misc import BinaryPattern, Endianness, load_binary, value_to_int
 from spsdk.utils.registers import Register, Registers
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AdditionalDataCfg:
+    """Configuration for additional customer data in PFR/IFR areas.
+
+    This class defines the parameters for additional customer data storage in Protected Flash Region areas.
+
+    :param enabled: Flag indicating if additional customer data is supported
+    :param offset: Offset in bytes where additional customer data should be placed (-1 means append to the end)
+    :param max_size: Maximum allowed size for additional customer data in bytes
+    """
+
+    enabled: bool
+    offset: int
+    max_size: int
 
 
 class BaseConfigArea(FeatureBaseClass):
@@ -57,6 +74,21 @@ class BaseConfigArea(FeatureBaseClass):
             self.FEATURE, [self.SUB_FEATURE, "computed_fields"], {}
         )
         self.registers = self._load_registers(family)
+        self._additional_data = bytes()
+        self.registers_size = self._get_registers_size()
+
+    def _get_registers_size(self) -> int:
+        """Get binary size from database configuration."""
+        try:
+            return self.db.get_int(self.FEATURE, [self.SUB_FEATURE, "size"])
+        except SPSDKValueError:
+            # Fallback to default size if not specified in database
+            return self.BINARY_SIZE
+
+    @property
+    def binary_size(self) -> int:
+        """Final binary size."""
+        return self.registers_size + len(self.additional_data)
 
     @classmethod
     def get_supported_families(cls, include_predecessors: bool = False) -> list[FamilyRevision]:
@@ -76,6 +108,51 @@ class BaseConfigArea(FeatureBaseClass):
     def __repr__(self) -> str:
         """String representation of PFR/IFR class."""
         return f"{self.FEATURE} {self.SUB_FEATURE} class for {self.family}."
+
+    @property
+    def additional_data(self) -> bytes:
+        """Get the additional customer data stored in the configuration area.
+
+        :return: The additional customer data as bytes
+        """
+        return self._additional_data
+
+    @additional_data.setter
+    def additional_data(self, value: bytes) -> None:
+        """Set the additional customer data for the configuration area.
+
+        This method allows setting additional customer data based on the configuration defined in additional_data_cfg().
+        It validates the size and presence of additional customer data before setting.
+
+        :raises SPSDKPfrError: If additional customer data configuration is invalid or data is not provided
+        """
+        cfg = self.additional_data_cfg(self.family)
+        if not cfg.enabled:
+            raise SPSDKPfrError(
+                f"Customer data is not allowed for family {self.family}, area: {self.SUB_FEATURE}"
+            )
+        if len(value) > cfg.max_size:
+            raise SPSDKPfrError(
+                f"Customer data size must be maximum {cfg.max_size} bytes, got {len(value)} bytes"
+            )
+        self._additional_data = value
+
+    @classmethod
+    def additional_data_cfg(cls, family: FamilyRevision) -> AdditionalDataCfg:
+        """Get the additional customer data configuration for the specified family.
+
+        This method retrieves the additional customer data configuration parameters from the database
+        for the specified family and PFR/IFR area.
+
+        :param family: The family revision to get the configuration for
+        :return: CustomerDataCfg object containing the configuration parameters
+        """
+        add_data = get_db(family).get_dict(cls.FEATURE, [cls.SUB_FEATURE, "additional_data"], {})
+        return AdditionalDataCfg(
+            enabled=add_data.get("enabled", False),
+            offset=add_data.get("offset", -1),
+            max_size=add_data.get("max_size", 0),
+        )
 
     @classmethod
     def _load_registers(cls, family: FamilyRevision) -> Registers:
@@ -190,7 +267,10 @@ class BaseConfigArea(FeatureBaseClass):
                 cls.__name__.lower(),
             ]
             sch_cfg["pfr_settings"]["properties"]["settings"] = regs.get_validation_schema()
-            return [sch_family, sch_cfg["pfr_base"], sch_cfg["pfr_settings"]]
+            ret = [sch_family, sch_cfg["pfr_base"], sch_cfg["pfr_settings"]]
+            if cls.additional_data_cfg(family).enabled:
+                ret.append(sch_cfg["pfr_additional_data"])
+            return ret
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} is not supported") from exc
 
@@ -230,6 +310,12 @@ class BaseConfigArea(FeatureBaseClass):
         settings = config.get_config("settings")
         ret = klass(family)
         ret.set_config(settings)
+        additional_data = config.get_str("additional_data", "")
+        if additional_data:
+            try:
+                ret.additional_data = load_binary(config.get_input_file_name("additional_data"))
+            except SPSDKError:
+                ret.additional_data = bytes.fromhex(additional_data)
         return ret  # type: ignore
 
     def get_config(self, data_path: str = "./", diff: bool = False) -> Config:
@@ -244,6 +330,8 @@ class BaseConfigArea(FeatureBaseClass):
         res_data["revision"] = self.family.revision
         res_data["type"] = self.__class__.__name__.upper()
         res_data["settings"] = dict(self.registers.get_config(diff=diff))
+        if self.additional_data:
+            res_data["additional_data"] = self.additional_data.hex()
         return res_data
 
     def _calc_rotkh(self, keys: list[PublicKey]) -> bytes:
@@ -303,7 +391,7 @@ class BaseConfigArea(FeatureBaseClass):
         :param draw: Draw the configuration data in log
         :return: Binary block with PFR configuration(CMPA or CFPA).
         :raises SPSDKPfrRotkhIsNotPresent: This PFR block doesn't contain ROTKH field.
-        :raises SPSDKError: The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}.
+        :raises SPSDKError: The size of data is {len(data)}, is not equal to {self.binary_size}.
         """
         if keys or rotkh:
             try:
@@ -322,7 +410,7 @@ class BaseConfigArea(FeatureBaseClass):
                 ) from exc
 
         image_info = self.registers.image_info(
-            size=self.BINARY_SIZE, pattern=BinaryPattern(self.IMAGE_PREFILL_PATTERN)
+            size=self.registers_size, pattern=BinaryPattern(self.IMAGE_PREFILL_PATTERN)
         )
         if draw:
             logger.info(image_info.draw())
@@ -336,9 +424,35 @@ class BaseConfigArea(FeatureBaseClass):
             except SPSDKError:
                 logger.warning("This device doesn't support sealing of PFR page.")
 
-        if len(data) != self.BINARY_SIZE:
-            raise SPSDKError(f"The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}")
+        if len(data) != self.registers_size:
+            raise SPSDKError(
+                f"The size of data is {len(data)}, is not equal to {self.registers_size}"
+            )
+        self._add_additional_data(data)
         return bytes(data)
+
+    def _add_additional_data(self, data: bytearray) -> None:
+        """Add additional customer data to the binary data.
+
+        :param data: Binary data to which additional customer data will be added
+        """
+        if not self.additional_data:
+            return
+
+        offset = self.additional_data_cfg(self.family).offset
+        size = self.additional_data_cfg(self.family).max_size
+        logger.info(f"Adding customer defined data of {size} bytes")
+
+        if offset == -1:
+            data.extend(self.additional_data)
+            logger.info("Additional customer data appended to the end of the binary")
+        elif offset >= 0 and offset + size <= len(data):
+            data[offset : offset + size] = self.additional_data
+            logger.info(f"Additional customer data inserted at offset {offset}")
+        else:
+            raise SPSDKError(
+                f"Invalid offset {offset} for additional customer data (binary size: {len(data)})"
+            )
 
     @classmethod
     def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
@@ -352,6 +466,8 @@ class BaseConfigArea(FeatureBaseClass):
             raise SPSDKPfrError("For PFR parse method the family parameter is mandatory")
         ret = cls(family)
         ret.registers.parse(data)
+        if ret.additional_data_cfg(ret.family).enabled and len(data) > ret.registers.size:
+            ret.additional_data = data[ret.registers.size :]
         return ret
 
     def __eq__(self, obj: Any) -> bool:
@@ -409,9 +525,18 @@ class IFR(BaseConfigArea):
     WRITE_METHOD = "flash_program_once"
 
 
+class CFPA_CMPA(BaseConfigArea):
+    """CFPA and CMPA combined configuration area."""
+
+    SUB_FEATURE = "cfpa_cmpa"
+    BINARY_SIZE = 1024
+    DESCRIPTION = "CFPA and CMPA combined configuration area"
+
+
 CONFIG_AREA_CLASSES: dict[str, Type[BaseConfigArea]] = {
     "cmpa": CMPA,
     "cfpa": CFPA,
+    "cfpa_cmpa": CFPA_CMPA,
     "romcfg": ROMCFG,
     "cmactable": CMACTABLE,
     "ifr": IFR,
@@ -453,6 +578,6 @@ def get_ifr_pfr_class(area_name: str, family: FamilyRevision) -> Type[BaseConfig
     _cls: Type[BaseConfigArea] = globals()[area_name.upper()]
     if family not in _cls.get_supported_families(True):
         raise SPSDKAppError(
-            f"The family has not support for {_cls.FEATURE.upper()} {area_name.upper()} area"
+            f"The {_cls.FEATURE.upper()} {area_name.upper()} area is not supported by {family.name} family"
         )
     return _cls

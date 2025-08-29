@@ -66,13 +66,7 @@ from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import (
-    BinaryPattern,
-    Endianness,
-    align_block,
-    reverse_bytes_in_longs,
-    value_to_int,
-)
+from spsdk.utils.misc import BinaryPattern, Endianness, align, align_block, value_to_int
 from spsdk.utils.schema_validator import CommentedConfig
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
@@ -154,6 +148,7 @@ class Message(Container):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -163,6 +158,7 @@ class Message(Container):
     ) -> None:
         """Message used to sign and send to device with EdgeLock.
 
+        :param family: Family revision
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -172,6 +168,7 @@ class Message(Container):
         :param unique_id: UUID of device, defaults to None
         :param unique_id_len: UUID length - 64 or 128 bits, defaults to 64 bits (8 bytes)
         """
+        self.family = family
         self.cert_ver = cert_ver
         self.permissions = permissions
         now = datetime.datetime.now()
@@ -203,7 +200,7 @@ class Message(Container):
 
         The length includes the fixed as well as the variable length part.
         """
-        return self.fixed_length() + self.payload_len
+        return self.fixed_length() + self.unique_id_len + self.payload_len
 
     @property
     def payload_len(self) -> int:
@@ -212,7 +209,7 @@ class Message(Container):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Format of binary representation without UUID."""
         return (
             super().format()
             + UINT16  # Issue Date
@@ -221,7 +218,6 @@ class Message(Container):
             + UINT16  # Reserved to zero
             + UINT8  # Command
             + UINT8  # Reserved
-            + f"{cls.UNIQUE_ID_LEN}s"  # Unique ID
         )
 
     def verify(self) -> Verifier:
@@ -257,8 +253,8 @@ class Message(Container):
             RESERVED,
             self.cmd,
             RESERVED,
-            self.convert_uuid(self.unique_id[: self.unique_id_len]),
         )
+        msg += self.unique_id[: self.unique_id_len]
         msg += self.export_payload()
         return msg
 
@@ -270,19 +266,20 @@ class Message(Container):
         """
 
     @classmethod
-    def load_from_config(cls, config: Config) -> Self:
+    def load_from_config(cls, config: Config, family: FamilyRevision) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision
         :return: Message object.
         """
         command = config.get_dict("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
         msg_cls = cls.get_message_class(list(command.keys())[0])
-        return msg_cls._load_from_config(config, cls)
+        return msg_cls._load_from_config(config, family, cls)
 
     @classmethod
     def load_from_config_generic(cls, config: Config) -> tuple[int, int, Optional[int], bytes]:
@@ -305,12 +302,15 @@ class Message(Container):
         return (cert_ver, permission, issue_date, uuid)
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type["Message"]) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type["Message"]
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision for message configuration.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -351,12 +351,15 @@ class Message(Container):
         raise SPSDKValueError(f"Command {cmd} is not supported.")
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
         """Parse input binary to the signed message object.
 
         :param data: Binary data with Container block to parse.
+        :param family: Family revision context.
         :return: Object recreated from the binary data.
         """
+        if family is None:
+            raise SPSDKValueError("Family revision must be provided for parsing")
         (
             issue_date,  # issue Date
             permission,  # permission
@@ -364,19 +367,20 @@ class Message(Container):
             _,  # Reserved to zero
             command,  # Command
             _,  # Reserved
-            uuid,  # Unique ID
         ) = unpack(cls.format(), data[: cls.fixed_length()])
 
+        uuid = data[cls.fixed_length() : cls.fixed_length() + cls.UNIQUE_ID_LEN]
         cmd_name = MessageCommands.get_label(command)
         msg_cls = cls.get_message_class(cmd_name)
         parsed_msg = msg_cls(
+            family=family,
             cert_ver=certificate_version,
             permissions=permission,
             issue_date=issue_date,
-            unique_id=cls.convert_uuid(uuid),
+            unique_id=uuid,
             unique_id_len=cls.UNIQUE_ID_LEN,
         )
-        parsed_msg.parse_payload(data[cls.fixed_length() :])
+        parsed_msg.parse_payload(data[cls.fixed_length() + cls.UNIQUE_ID_LEN :])
         return parsed_msg
 
     @abstractmethod
@@ -385,15 +389,6 @@ class Message(Container):
 
         :param data: Binary data with Payload to parse.
         """
-
-    @staticmethod
-    def convert_uuid(uuid: bytes) -> bytes:
-        """Convert UUID to binary form of message.
-
-        :param uuid: Input format of UUID.
-        :return: Converted UUID.
-        """
-        return reverse_bytes_in_longs(uuid)
 
 
 class MessageV2(Message):
@@ -410,6 +405,7 @@ class MessageReturnLifeCycle(Message):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -419,6 +415,7 @@ class MessageReturnLifeCycle(Message):
     ) -> None:
         """Message used to sign and send to device with EdgeLock.
 
+        :param family: Family revision of the device
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -429,6 +426,7 @@ class MessageReturnLifeCycle(Message):
         :param life_cycle: Requested life cycle, defaults to 0
         """
         super().__init__(
+            family=family,
             cert_ver=cert_ver,
             permissions=permissions,
             issue_date=issue_date,
@@ -458,12 +456,15 @@ class MessageReturnLifeCycle(Message):
         self.life_cycle = int.from_bytes(data[:4], byteorder=Endianness.LITTLE.value)
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type[Message] = Message) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision context.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -480,6 +481,7 @@ class MessageReturnLifeCycle(Message):
         life_cycle = command.get_int("RETURN_LIFECYCLE_UPDATE_REQ")
 
         return cls(
+            family=family,
             cert_ver=cert_ver,
             permissions=permission,
             issue_date=issue_date,
@@ -515,6 +517,7 @@ class MessageWriteSecureFuse(Message):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -527,6 +530,7 @@ class MessageWriteSecureFuse(Message):
     ) -> None:
         """Message used to sign and send to device with EdgeLock.
 
+        :param family: Family revision of the device
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -540,6 +544,7 @@ class MessageWriteSecureFuse(Message):
         :param data: List of fuse values
         """
         super().__init__(
+            family=family,
             cert_ver=cert_ver,
             permissions=permissions,
             issue_date=issue_date,
@@ -589,12 +594,15 @@ class MessageWriteSecureFuse(Message):
             )
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type[Message] = Message) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision context.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -617,6 +625,7 @@ class MessageWriteSecureFuse(Message):
             data.append(value_to_int(x))
         length = len(data_list)
         return cls(
+            family=family,
             cert_ver=cert_ver,
             permissions=permission,
             issue_date=issue_date,
@@ -669,6 +678,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -679,6 +689,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
     ) -> None:
         """Key store reprovisioning enable signed message class init.
 
+        :param family: Family revision
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -690,6 +701,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
         :param user_sab_id: User SAB id, defaults to 0
         """
         super().__init__(
+            family=family,
             cert_ver=cert_ver,
             permissions=permissions,
             issue_date=issue_date,
@@ -745,12 +757,15 @@ class MessageKeyStoreReprovisioningEnable(Message):
         return ret
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type[Message] = Message) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision context.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -768,6 +783,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
         monotonic_counter = keystore_repr_en.get_int("monotonic_counter", 0)
         user_sab_id = keystore_repr_en.get_int("user_sab_id", 0)
         return cls(
+            family=family,
             cert_ver=cert_ver,
             permissions=permission,
             issue_date=issue_date,
@@ -823,6 +839,7 @@ class MessageKeyExchange(Message):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -845,6 +862,7 @@ class MessageKeyExchange(Message):
     ) -> None:
         """Key exchange signed message class init.
 
+        :para family: Family revision for the message
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -944,6 +962,7 @@ class MessageKeyExchange(Message):
             The algorithm used to generate the digest must be SHA256, defaults to list(8)
         """
         super().__init__(
+            family=family,
             cert_ver=cert_ver,
             permissions=permissions,
             issue_date=issue_date,
@@ -1093,12 +1112,15 @@ class MessageKeyExchange(Message):
         return ret
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type[Message] = Message) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision context.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -1144,6 +1166,7 @@ class MessageKeyExchange(Message):
         )
 
         return cls(
+            family=family,
             cert_ver=cert_ver,
             permissions=permission,
             issue_date=issue_date,
@@ -1209,6 +1232,7 @@ class MessageKeyImport(Message):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -1230,6 +1254,7 @@ class MessageKeyImport(Message):
     ) -> None:
         """Key exchange signed message class init.
 
+        :param family: Family revision
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -1321,6 +1346,7 @@ class MessageKeyImport(Message):
 
         """
         super().__init__(
+            family=family,
             cert_ver=cert_ver,
             permissions=permissions,
             issue_date=issue_date,
@@ -1598,12 +1624,15 @@ class MessageKeyImport(Message):
         return ret
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type[Message] = Message) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision context.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -1641,6 +1670,7 @@ class MessageKeyImport(Message):
         )
 
         ret = cls(
+            family=family,
             cert_ver=cert_ver,
             permissions=permission,
             issue_date=issue_date,
@@ -1737,6 +1767,7 @@ class MessageDat(Message):
 
     def __init__(
         self,
+        family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
         issue_date: Optional[int] = None,
@@ -1747,6 +1778,7 @@ class MessageDat(Message):
     ) -> None:
         """Message used to sign and send to device with EdgeLock.
 
+        :param family: Family revision of the device
         :param cert_ver: Certificate version, defaults to 0
         :param permissions: Certificate permission, to be used in future
             The stated permission must allow the operation requested by the signed message
@@ -1755,10 +1787,10 @@ class MessageDat(Message):
         :param unique_id: UUID of device, defaults to None
         :param unique_id_len: UUID length - 64 or 128 bits, defaults to 64 bits (8 bytes)
         :param challenge_vector: 32 bytes of challenge request got's from device by DAC.
-        :param authentication_beacon: Authentication beacon in range 0-65535.
-            At the moment is the reserved field and must be 0.
+        :param authentication_beacon: Authentication beacon in range specified in authentication_beacon_length in bytes.
         """
         super().__init__(
+            family=family,
             cert_ver=cert_ver,
             permissions=permissions,
             issue_date=issue_date,
@@ -1766,13 +1798,27 @@ class MessageDat(Message):
             unique_id=unique_id,
             unique_id_len=unique_id_len,
         )
+
         self.challenge_vector = challenge_vector
         self.authentication_beacon = authentication_beacon
+        authentication_beacon_length = get_db(family).get_int(
+            DatabaseManager.DAT, "auth_beacon_length", 2
+        )
+        if authentication_beacon_length not in [2, 4]:
+            raise SPSDKValueError(
+                f"Invalid authentication beacon length: {authentication_beacon_length}"
+            )
+        self.authentication_beacon_length = authentication_beacon_length
+
+    @property
+    def payload_len(self) -> int:
+        """Message payload length in bytes."""
+        return 32 + self.authentication_beacon_length
 
     def __str__(self) -> str:
         ret = super().__str__() + "\n"
         ret += f"  Challenge Vector: {self.challenge_vector.hex()}"
-        ret += f"  Authentication beacon: {self.authentication_beacon}"
+        ret += f"  Authentication beacon: {self.authentication_beacon:08x}"
         return ret
 
     def export_payload(self) -> bytes:
@@ -1782,7 +1828,9 @@ class MessageDat(Message):
         """
         return self.challenge_vector[
             : self.CHALLENGE_VECTOR_LEN
-        ] + self.authentication_beacon.to_bytes(length=2, byteorder=Endianness.LITTLE.value)
+        ] + self.authentication_beacon.to_bytes(
+            length=self.authentication_beacon_length, byteorder=Endianness.LITTLE.value
+        )
 
     def parse_payload(self, data: bytes) -> None:
         """Parse payload.
@@ -1790,15 +1838,20 @@ class MessageDat(Message):
         :param data: Binary data with Payload to parse.
         """
         self.challenge_vector = data[: self.CHALLENGE_VECTOR_LEN]
-        self.authentication_beacon = int.from_bytes(data[32:34], byteorder=Endianness.LITTLE.value)
+        self.authentication_beacon = int.from_bytes(
+            data[32 : 32 + self.authentication_beacon_length], byteorder=Endianness.LITTLE.value
+        )
 
     @classmethod
-    def _load_from_config(cls, config: Config, base_cls: type[Message] = Message) -> Self:
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
         """Converts the configuration option into an message object.
 
         "config" content of container configurations.
 
         :param config: Message configuration dictionaries.
+        :param family: Family revision context.
         :param base_cls: Base message class for configuration loading.
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
@@ -1819,6 +1872,7 @@ class MessageDat(Message):
         authentication_beacon = dat_cfg.get_int("authentication_beacon", 0)
 
         return cls(
+            family=family,
             cert_ver=cert_ver,
             permissions=permission,
             issue_date=issue_date,
@@ -1854,7 +1908,10 @@ class MessageDat(Message):
             max_length=self.CHALLENGE_VECTOR_LEN,
         )
         ret.add_record_range(
-            "Authentication Beacon", self.authentication_beacon, min_val=0, max_val=65535
+            "Authentication Beacon",
+            self.authentication_beacon,
+            min_val=0,
+            max_val=(1 << self.authentication_beacon_length * 8) - 1,
         )
         return ret
 
@@ -1981,7 +2038,9 @@ class SignedMessageContainer(AHABContainerBase):
         :return: Size in bytes of Message.
         """
         return (
-            self._signature_block_offset + len(self.signature_block) if self.signature_block else 0
+            self._signature_block_offset + align(len(self.signature_block), CONTAINER_ALIGNMENT)
+            if self.signature_block
+            else 0
         )
 
     @classmethod
@@ -2008,7 +2067,7 @@ class SignedMessageContainer(AHABContainerBase):
             # 2. Sign the image header
             if self.flag_srk_set != FlagsSrkSet.NONE:
                 assert isinstance(self.signature_block.signature, ContainerSignature)
-                self.signature_block.signature.sign(self.get_signature_data())
+                self.signature_block.sign_itself(self.get_signature_data())
         else:
             # 0. Update length
             self.length = len(self)
@@ -2098,7 +2157,9 @@ class SignedMessageContainer(AHABContainerBase):
             flags=flags,
             fuse_version=fuse_version,
             sw_version=sw_version,
-            message=cls.MESSAGE_TYPE.parse(data[cls.fixed_length() : signature_block_offset]),
+            message=cls.MESSAGE_TYPE.parse(
+                data[cls.fixed_length() : signature_block_offset], family=chip_config.family
+            ),
             encrypt_iv=iv if bool(descriptor_flags & 0x01) else None,
         )
         ret.length = container_length
@@ -2136,7 +2197,7 @@ class SignedMessageContainer(AHABContainerBase):
 
         message = config.get_config("message")
 
-        signed_msg.message = cls.MESSAGE_TYPE.load_from_config(message)
+        signed_msg.message = cls.MESSAGE_TYPE.load_from_config(message, chip_config.family)
 
         return signed_msg
 
@@ -2372,8 +2433,6 @@ class SignedMessage(FeatureBaseClass):
         :param config: Signed Message configuration dictionaries.
         :return: Signed message object.
         """
-        cls.pre_check_config(config=config)
-
         family = FamilyRevision.load_from_config(config)
         signed_msg_class = cls._get_signed_message_class(family)
 

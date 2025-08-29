@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools >= 74.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["spsdk_sbkdp"]
+
+[tool.setuptools.dynamic]
+version = { attr = "spsdk_sbkdp.__version__" }
+
+
+[project]
+dynamic = ["version"]
+name = "spsdk_sbkdp"
+description = "My Secure Binary Key Derivation Provider plugin for SPSDK."
+
+entry-points = { "spsdk.sb31kdp" = { mysbkdp = "spsdk_sbkdp.provider" } }
+
+requires-python = ">= 3.9"
+dependencies = ["spsdk>3.0"]

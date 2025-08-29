@@ -33,7 +33,7 @@ def test_sbx():
     )
 
     sbx_commands = SecureBinaryXCommands(
-        family=family, hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False, timestamp=25698748
+        family=family, hash_type=EnumHashAlgorithm.SHA256, timestamp=25698748
     )
 
     sbx = SecureBinaryX(

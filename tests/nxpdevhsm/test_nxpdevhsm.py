@@ -20,8 +20,8 @@ from spsdk.sbfile.sbc.devhsm import DevHsmSBc
 from spsdk.sbfile.sbx.devhsm import DevHsmSBx
 from spsdk.sbfile.sbx.images import SecureBinaryXType
 from spsdk.utils.config import Config
-from spsdk.utils.misc import load_binary, use_working_directory
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import load_binary, use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -57,9 +57,7 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
         assert len(cmds) == n_cmds
 
         sb3_data = SecureBinary31Commands(
-            family=FamilyRevision("lpc55s3x"),
-            hash_type=EnumHashAlgorithm.SHA256,
-            is_encrypted=False,
+            family=FamilyRevision("lpc55s3x"), hash_type=EnumHashAlgorithm.SHA256
         )
         sb3_data.add_command(
             CmdLoadKeyBlob(
@@ -85,7 +83,7 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
     [
         ("lpc55s3x", DevHsmSB31),
         ("mc56f818xx", DevHsmSBx),
-        ("mcxa286", DevHsmSBc),
+        ("mcxa366", DevHsmSBc),
     ],
 )
 def test_devhsm_factory(family, expected_cls):
@@ -112,7 +110,10 @@ def test_sbx_devhsm(data_dir):
         ("mcxn9xx"),
         ("mwct20d2"),
         ("rw61x"),
-        ("mcxa286"),
+        ("mcxa255"),
+        ("mcxa256"),
+        ("mcxa366"),
+        ("mcxa365"),
     ],
 )
 def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir, family):

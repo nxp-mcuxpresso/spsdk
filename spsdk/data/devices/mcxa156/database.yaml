@@ -84,7 +84,7 @@ features:
     cmpa: # CMPA description
       erase_method: flash_erase
       address: 0x100_0000
-      size: 512
+      size: 256
       reg_spec: pfr_cmpa.json
 
   # ======== Bootable image section ========

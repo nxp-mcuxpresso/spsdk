@@ -27,7 +27,7 @@ info:
   isp:
     flashloader:
       protocol: mboot
-      interfaces: ["uart", "spi", "i2c"]
+      interfaces: ["uart", "spi"]
 
 features:
   # ======== Blhost section ========
@@ -58,4 +58,6 @@ features:
         reverse: True
         config_as_hexstring: True
 
-  she_scec: {}
+  she_scec: {
+    flash_size_cfg_enabled : False
+  }

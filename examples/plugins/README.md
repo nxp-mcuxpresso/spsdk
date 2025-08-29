@@ -21,11 +21,12 @@ The table bellow shows the list of support plugin types with associated package 
 
 | Plugin                 | Entrypoint             | Template name                                  | Base class                                    |
 |:-----------------------|:-----------------------|:-----------------------------------------------|-----------------------------------------------|
-| Signature Provider     | spsdk.sp               | cookiecutter-spsdk-sp-plugin.zip               | spsdk.crypto.signature_provider.SignatureProvider                |
+| Signature Provider     | spsdk.sp               | cookiecutter-spsdk-sp-plugin.zip               | spsdk.crypto.signature_provider.SignatureProvider  |
 | Mboot Device Interface | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.mboot.protocol.base.MbootProtocolBase   |
 | SDP Device Interface   | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.sdp.protocol.base.SDPProtocolBase       |
 | WPC Service            | spsdk.wpc.service      | cookiecutter-spsdk-wpc-service-plugin.zip      | spsdk.wpc.utils.WPCCertificateService         |
-| Debug probe            | spsdk.debug_probe      | cookiecutter-spsdk-debug-probe-plugin.zip      | spsdk.debuggers.debug_probe.DebugProbeCoreSightOnly      |      
+| Debug probe            | spsdk.debug_probe      | cookiecutter-spsdk-debug-probe-plugin.zip      | spsdk.debuggers.debug_probe.DebugProbeCoreSightOnly    |
+| SB key derivator       | spsdk.sb31kdp          | cookiecutter-spsdk-sbkd-plugin.zip             | spsdk.sbfile.utils.key_derivator.SB31KeyDerivator      |
 
 
 ## Plugin implementation

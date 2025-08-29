@@ -25,9 +25,17 @@ from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.properties import PropertyTag
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.she.she import SHEBootMac, SHEDeriveKey, SHEMaxKeyCountCode, SHEUpdate
+from spsdk.she.she import (
+    SHEBootMac,
+    SHEBootMode,
+    SHEDeriveKey,
+    SHEKeyID,
+    SHEMaxKeyCountCode,
+    SHEUpdate,
+)
 from spsdk.utils.config import Config
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import get_printable_path, load_binary, load_secret, write_file
 
 logger = logging.getLogger(__name__)
@@ -103,22 +111,25 @@ def verify(config: Config, message4: str, message5: str) -> None:
     ),
 )
 @click.option(
+    "-a",
+    "--auth-key-id",
+    type=click.Choice(
+        [SHEKeyID.MASTER_ECU_KEY.label, SHEKeyID.BOOT_MAC_KEY.label], case_sensitive=False
+    ),
+    callback=lambda ctx, param, value: SHEKeyID.from_label(value),
+    help="Authentication key ID.",
+    default=SHEKeyID.BOOT_MAC_KEY.label,
+)
+@click.option(
     "-d",
     "--data",
     required=True,
     type=click.Path(exists=True, dir_okay=False),
-    help="Path to data for MAC calculation.",
-)
-@click.option(
-    "-b",
-    "--boot-mode",
-    type=click.Choice(["strict", "serial", "parallel", "unsecure"], case_sensitive=False),
-    required=False,
-    help="Boot mode [required if interface is defined]",
+    help="Path to application image.",
 )
 @spsdk_output_option(required=False, help="Output file for calculated boot MAC")
 def calc_boot_mac(
-    interface: MbootProtocolBase, key: str, data: str, output: str, boot_mode: str
+    interface: MbootProtocolBase, key: str, auth_key_id: SHEKeyID, data: str, output: str
 ) -> None:
     """Calculate Boot MAC using provided key and data."""
     key_data = bytes.fromhex(load_secret(key))
@@ -129,20 +140,40 @@ def calc_boot_mac(
         write_file(boot_mac.hex(), output)
         click.echo(f"Boot MAC written to {get_printable_path(output)}")
     if interface:
-        if not boot_mode:
-            raise SPSDKAppError("Boot mode is required when using an interface.")
-        boot_mode_mapping = {"strict": 0x00, "serial": 0x01, "parallel": 0x02, "unsecure": 0x03}
-        input_data_len = len(input_data) * 8
-        property_value = boot_mode_mapping[boot_mode] << 30 | input_data_len
-
-        updater = SHEUpdate(new_key=boot_mac, new_key_id=3, auth_key=key_data, auth_key_id=1)
+        updater = SHEUpdate(
+            new_key=boot_mac, new_key_id=3, auth_key=key_data, auth_key_id=auth_key_id.tag
+        )
         updater_blob = updater.get_messages()
         with McuBoot(interface, cmd_exception=True) as mboot:
-            click.echo("Updating BOOT_MAC")
             mboot.kp_set_user_key(3, key_data=b"".join(updater_blob))
-            click.echo("Updating BOOT_MODE property")
-            mboot.set_property(PropertyTag.SHE_BOOT_MODE, property_value)
-            click.echo("Boot MAC and Boot Mode updated successfully.")
+        click.echo("Boot MAC updated successfully.")
+
+
+@main.command(name="set-boot-mode", no_args_is_help=True)
+@spsdk_mboot_interface()
+@click.option(
+    "-bm",
+    "--boot-mode",
+    type=click.Choice(SHEBootMode.labels(), case_sensitive=False),
+    callback=lambda ctx, param, value: SHEBootMode.from_label(value.lower()),
+    required=True,
+    help="Secure hardware extension boot mode",
+)
+@click.option(
+    "-d",
+    "--data",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to application image.",
+)
+def set_boot_mode(interface: MbootProtocolBase, boot_mode: SHEBootMode, data: str) -> None:
+    """Set boot mode from the data and boot mode configuration."""
+    input_data = load_binary(data)
+    input_data_len = len(input_data) * 8
+    property_value = boot_mode.tag << 30 | input_data_len
+    with McuBoot(interface, cmd_exception=True) as mboot:
+        mboot.set_property(PropertyTag.SHE_BOOT_MODE, property_value)
+    click.echo("Boot Mode updated successfully.")
 
 
 @main.command(name="derive-key", no_args_is_help=True)
@@ -183,15 +214,18 @@ def derive_key(master_key: str, key_type: str, output: str) -> None:
     required=True,
     help="Maximum number of keys to setup",
 )
-def setup(interface: MbootProtocolBase, max_key_count: str) -> None:
+@spsdk_family_option(families=SHEUpdate.get_supported_families())
+def setup(interface: MbootProtocolBase, max_key_count: str, family: FamilyRevision) -> None:
     """Setup SHE key storage configuration."""
+    db = get_db(family)
     click.echo(f"Configuring SHE key storage with max keys: {max_key_count}")
     key_code_enum = SHEMaxKeyCountCode.from_label(max_key_count.upper())
     key_code_tag = key_code_enum.tag
     flash_code_tag = 3 - key_code_tag
 
-    property_value = key_code_tag | flash_code_tag << 8
-
+    property_value = key_code_tag
+    if db.get_bool(DatabaseManager.SHE_SCEC, "flash_size_cfg_enabled"):
+        property_value = property_value | flash_code_tag << 8
     with McuBoot(interface, cmd_exception=True) as mboot:
         click.echo("Setting SHE flash partition property")
         mboot.set_property(PropertyTag.SHE_FLASH_PARTITION, property_value)

@@ -952,15 +952,47 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
 
 
 @pytest.mark.parametrize(
-    "config_file,family,input_binary,hash",
+    "config_file,family,input_binary,hash_algo,srk_hash0,srk_hash1",
     [
-        ("container_sign_config.yaml", "mx93", "test_img_for_sign.bin", "default"),
-        ("container_sign_encrypted_config.yaml", "mx93", "test_img_for_sign.bin", "default"),
+        (
+            "container_sign_config.yaml",
+            "mx93",
+            "test_img_for_sign.bin",
+            "sha256",
+            b"\xcb,\xc7t\xb2\xdc\xec\x92\xc8@\xec\xa0dkx\xf8\xd3f\x1d:C\xed&ZI\n\x13\xac\xa7^\x19\n",
+            b"",
+        ),
+        (
+            "container_sign_config_rsa4096_sha384.yaml",
+            "mx93",
+            "test_img_for_sign.bin",
+            "sha384",
+            b"\x8d\xc2\xa8dh\xe2\xcc\x88\x84\x8e\x84\x83\x97\x1fU\x93\xac\x95\xc9=8\xb2\xd0\x86\xc8\x96\xb8O\xc6*\r\xa4",
+            b"",
+        ),
+        (
+            "container_sign_config_rsa4096_sha384_legacy.yaml",
+            "mx93",
+            "test_img_for_sign.bin",
+            "sha384",
+            b"wD\xd7\x9c\x1e\x0f\xe6\xe3N\xec\xb16\xb1\xbcp+\x14g\x1e\x1fW]\x14\x89m\x7f\xdc\x02\xcf\xeb\xde5",
+            b"",
+        ),
+        (
+            "container_sign_encrypted_config.yaml",
+            "mx93",
+            "test_img_for_sign.bin",
+            "default",
+            b"",
+            b"",
+        ),
         pytest.param(
             "container_sign_config_mx95b0_rsa4096.yaml",
             "mx95",
             "ahab_mx95_dilithium3.bin",
             "sha384",
+            b"\x02\xa3\x91\xe5\x1e\xbc\x80.\x02\x95o\xa7a\x8b\xf6P\xf6\x1a\xe7Wz\xd9\\\xd9eQ\xd5\xd5>\xb9\xce\x81m\xba\x17J\xd0 \x19\xea\x96\xc4\xce\x0c\x7f\xdc\xfd\xd1\xccs\xbe\x0b\xc7i\x1dD\x16\xd2\xc4n\xef\x8c\x98\xc6",
+            b"",
             marks=pytest.mark.skipif(
                 not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
             ),
@@ -970,6 +1002,19 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
             "mx95",
             "ahab_mx95_dilithium3.bin",
             "sha3_256",
+            b"\xbd>P\xf0A\xef\xde\x1d#\xd6N\xc5\x92\x03Kh\xdf\xf9*\x0bLvx\xdc\xde$=~2\x19\xde\xfe\t\x05f\xa1$\x12S\xacj\x05\xb4\x14\x83\xd4\xb37q\x9f\xb9)=\xa2m$\xa6<\xfc\xcf\xf0VM ",
+            b"\x9d\xa6\xe7p\xd1`\xe6\x16v\xe8\xcb\x9d\xd1H\x90zY\x1e\xa5\\\x9b\x17\xc0\x87V\x1dk\x1e\xb1\x07\xcf-^\xc4hm5\xb2\x97\xfaV\xd7c\x01\xcaLA\xc1^\x08PE\xb8\x1c\xa7\x8bt\xa7m\xda\xfe\x94\xb7\xef",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "container_sign_config_mx95b0_rsa4096_mldsa65_legacy.yaml",
+            "mx95",
+            "ahab_mx95_dilithium3.bin",
+            "sha3_256",
+            b"\x1b\xc3y\x12\xbb\xc3s\x97\x85\xc4\xc9[\x1a\x0e@gJ\x98\xd4\x15\xb5\xc6\x88\x92F|Q\x12\xf8\xfd\xfeu\xbey\xb1\xe7\xe6+@\x8c\xfbc?6\xa6\xd8&\xa5\x9c\xbd\xc1H;\x00\xb5\x84\xfe_\xf6\x85,\xec\xa2\x8a",
+            b"\x9d\xa6\xe7p\xd1`\xe6\x16v\xe8\xcb\x9d\xd1H\x90zY\x1e\xa5\\\x9b\x17\xc0\x87V\x1dk\x1e\xb1\x07\xcf-^\xc4hm5\xb2\x97\xfaV\xd7c\x01\xcaLA\xc1^\x08PE\xb8\x1c\xa7\x8bt\xa7m\xda\xfe\x94\xb7\xef",
             marks=pytest.mark.skipif(
                 not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
             ),
@@ -983,7 +1028,9 @@ def test_nxpimage_ahab_sign(
     config_file: str,
     input_binary: str,
     family: str,
-    hash: str,
+    hash_algo: str,
+    srk_hash0: bytes,
+    srk_hash1: bytes,
 ) -> None:
     """Test AHAB image signing functionality.
 
@@ -998,23 +1045,93 @@ def test_nxpimage_ahab_sign(
     :param config_file: Name of the signing configuration file to use
     :param input_binary: Name of the binary file to be signed
     :param family: Target family for the AHAB image (e.g., mx93, mx95)
-    :param hash: Hash algorithm, default or hash specified in config
+    :param hash_algo: Hash algorithm, default or hash specified in config
     """
     with use_working_directory(data_dir):
         config_file_path = f"{data_dir}/ahab/{config_file}"
         binary_for_sign = f"{data_dir}/ahab/{input_binary}"
         output_file = f"{tmpdir}/signed.bin"
+        fuse_scripts_dir = f"{tmpdir}/fuse_scripts"
 
-        # Sign the binary
+        # Test 1: Sign the binary without fuse scripts
         cmd = f"ahab sign -c {config_file_path} -b {binary_for_sign} -o {output_file}"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0)
 
         # Verify output file exists
         assert os.path.exists(output_file)
 
-        # Parse the signed image
-        signed_image = load_binary(output_file)
+        # Test 2: Sign the binary with fuse scripts generation
+        output_file_with_fuses = f"{tmpdir}/signed_with_fuses.bin"
+        cmd_with_fuses = f"ahab sign -c {config_file_path} -b {binary_for_sign} -o {output_file_with_fuses} -fs {fuse_scripts_dir}"
+        cli_runner.invoke(nxpimage.main, cmd_with_fuses.split(), expected_code=0)
+
+        # Verify output file exists
+        assert os.path.exists(output_file_with_fuses)
+
+        # Verify fuse scripts directory was created
+        assert os.path.exists(fuse_scripts_dir)
+        assert os.path.isdir(fuse_scripts_dir)
+
+        # Parse the signed image to get family info for fuse script verification
+        signed_image = load_binary(output_file_with_fuses)
         family_revision = FamilyRevision(family)
+        ahab = AHABImage.parse(signed_image, family_revision)
+
+        # Helper function to find files with either oem0 or oem1
+        def find_oem_file(base_pattern: str) -> str:
+            oem_options = ["oem0", "oem1"]
+            for oem in oem_options:
+                file_path = os.path.join(fuse_scripts_dir, base_pattern.replace("{oem}", oem))
+                if os.path.isfile(file_path):
+                    return file_path
+            return None
+
+        # Determine tool suffix based on family
+        uses_nxpele = family.startswith("mx9")  # i.MX 9x series use nxpele
+        tool_suffix = "nxpele" if uses_nxpele else "blhost"
+
+        # Check for base SRK hash file (should exist for all configurations)
+        srk0_hash_txt = find_oem_file("ahab_{oem}_srk0_hash.txt")
+        assert srk0_hash_txt, f"SRK0 hash file not found in {fuse_scripts_dir}"
+
+        # Extract OEM identifier from the found file path
+        oem_id = os.path.basename(srk0_hash_txt).split("_")[1]
+
+        # Check for the appropriate fuse script file based on tool selection
+        srk0_hash_script = os.path.join(
+            fuse_scripts_dir, f"ahab_{oem_id}_srk0_hash_{tool_suffix}.bcf"
+        )
+        assert os.path.isfile(
+            srk0_hash_script
+        ), f"SRK0 hash script file not found: {srk0_hash_script}"
+
+        # For PQC configurations, check for second SRK hash files
+        is_pqc = "pqc" in config_file or "mldsa" in config_file
+        if is_pqc:
+            srk1_hash_txt = os.path.join(fuse_scripts_dir, f"ahab_{oem_id}_srk1_hash.txt")
+            assert os.path.isfile(
+                srk1_hash_txt
+            ), f"SRK1 hash file not found for PQC configuration in {fuse_scripts_dir}"
+
+            srk1_hash_script = os.path.join(
+                fuse_scripts_dir, f"ahab_{oem_id}_srk1_hash_{tool_suffix}.bcf"
+            )
+            assert os.path.isfile(
+                srk1_hash_script
+            ), f"SRK1 hash script file not found for PQC configuration: {srk1_hash_script}"
+        else:
+            # For non-PQC configurations, check that second SRK hash doesn't exist
+            srk1_hash_txt_exists = False
+            for oem in ["oem0", "oem1"]:
+                if os.path.isfile(os.path.join(fuse_scripts_dir, f"ahab_{oem}_srk1_hash.txt")):
+                    srk1_hash_txt_exists = True
+                    break
+
+            assert (
+                not srk1_hash_txt_exists
+            ), f"SRK1 hash file found for non-PQC configuration in {fuse_scripts_dir}"
+
+        # Parse the signed image for further verification
         ahab = AHABImage.parse(signed_image, family_revision)
 
         # Handle decryption if needed
@@ -1056,14 +1173,18 @@ def test_nxpimage_ahab_sign(
                         # Verify hash length matches expected algorithm
                         if hasattr(container.signature_block.srk_assets, "_srk_tables"):
                             # verify the hash matches
-                            if container.flag_srk_set != FlagsSrkSet.NXP and hash != "default":
-                                hash_alg = EnumHashAlgorithm.from_label(hash)
+                            if container.flag_srk_set != FlagsSrkSet.NXP and hash_algo != "default":
+                                hash_alg = EnumHashAlgorithm.from_label(hash_algo)
                                 assert (
                                     container.signature_block.srk_assets._srk_tables[srk_id]
                                     .srk_records[0]
                                     .hash_algorithm.name
                                     == hash_alg.name
                                 )
+
+                                # Assert container hashes
+                                assert container.get_srk_hash(0) == srk_hash0
+                                assert container.get_srk_hash(1) == srk_hash1
 
                             # For SRKTableArray
                             expected_hash_len = (
@@ -1075,6 +1196,17 @@ def test_nxpimage_ahab_sign(
                                 else 32
                             )
                         else:
+                            if container.flag_srk_set != FlagsSrkSet.NXP and hash_algo != "default":
+                                hash_alg = EnumHashAlgorithm.from_label(hash_algo)
+                                assert (
+                                    container.signature_block.srk_assets.srk_records[
+                                        0
+                                    ].hash_algorithm.name
+                                    == hash_alg.name
+                                )
+
+                                assert container.get_srk_hash(0) == srk_hash0
+
                             # For SRKTable
                             expected_hash_len = (
                                 32

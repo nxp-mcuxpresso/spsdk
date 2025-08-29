@@ -49,12 +49,14 @@ class DebugMailbox:
         self.family = family
         self.dbgmlbx_ap_ix = -1
         self.non_standard_statuses = {}
+        self.command_delays: dict[str, float] = {}
         if family:
             db = get_db(family)
             self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
             self.non_standard_statuses = db.get_dict(
                 DatabaseManager.DAT, "non_standard_statuses", {}
             )
+            self.command_delays = db.get_dict(DatabaseManager.DAT, "command_delays", {})
         self.debug_probe = debug_probe
 
         self.reset = reset

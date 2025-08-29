@@ -61,16 +61,14 @@ class Rot:
         """Get RoT class."""
         db = get_db(family)
         rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
-        for subclass in RotBase.__subclasses__():
-            if subclass.rot_type == rot_type:
-                return subclass
-        raise SPSDKError(f"A ROT type {rot_type} does not exist.")
+        return RotBase.get_rot_class(rot_type)
 
 
 class RotBase:
     """Root of Trust base class."""
 
     rot_type: Optional[str] = None
+    _registry: dict[str, Type["RotBase"]] = {}
 
     def __init__(
         self,
@@ -82,6 +80,20 @@ class RotBase:
         self.keys_or_certs = keys_or_certs
         self.password = password
         self.search_paths = search_paths
+
+    @classmethod
+    def register(cls, rot_class: Type["RotBase"]) -> Type["RotBase"]:
+        """Register a ROT implementation class."""
+        if rot_class.rot_type:
+            cls._registry[rot_class.rot_type] = rot_class
+        return rot_class
+
+    @classmethod
+    def get_rot_class(cls, rot_type: str) -> Type["RotBase"]:
+        """Get ROT implementation by type."""
+        if rot_type not in cls._registry:
+            raise SPSDKError(f"A ROT type {rot_type} does not exist.")
+        return cls._registry[rot_type]
 
     @abstractmethod
     def calculate_hash(
@@ -98,6 +110,7 @@ class RotBase:
         """Return string representation of the RoT object."""
 
 
+@RotBase.register
 class RotCertBlockv1(RotBase):
     """Root of Trust for certificate block v1 class."""
 
@@ -127,6 +140,7 @@ class RotCertBlockv1(RotBase):
         return str(self.rkht)
 
 
+@RotBase.register
 class RotCertBlockv21(RotBase):
     """Root of Trust for certificate block v21 class."""
 
@@ -156,6 +170,7 @@ class RotCertBlockv21(RotBase):
         return str(self.rkht)
 
 
+@RotBase.register
 class RotSrkTableAhab(RotBase):
     """Root of Trust for AHAB SrkTable class."""
 
@@ -192,6 +207,7 @@ class RotSrkTableAhab(RotBase):
         return str(self.srk)
 
 
+@RotBase.register
 class RotSrkTableAhabV2(RotBase):
     """Root of Trust for AHAB SrkTable version 2 class."""
 
@@ -230,6 +246,18 @@ class RotSrkTableAhabV2(RotBase):
         return str(self.srk)
 
 
+@RotBase.register
+class RotSrkTableAhabV2_48Bytes(RotSrkTableAhabV2):
+    """Root of Trust for AHAB SrkTable version 2 class with hash shortened to 48 bytes."""
+
+    rot_type = "srk_table_ahab_v2_48_bytes"
+
+    def calculate_hash(self) -> bytes:
+        """Calculate ROT hash."""
+        return super().calculate_hash()[:48]
+
+
+@RotBase.register
 class RotSrkTableHab(RotBase):
     """Root of Trust for HAB SrkTable class."""
 

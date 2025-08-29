@@ -396,9 +396,16 @@ class EleMessageHandlerUBoot(EleMessageHandler):
                 msg.abort_code, msg.status, msg.indication = self.extract_error_values(output)
             else:
                 # 2. Read back the response
-                output = re.sub(r"(u-boot)?=> ", "", output.splitlines()[-1])
-                output = output[: msg.response_words_count * 8]
-                logger.debug(f"Stripped output {output}")
+                lines = output.splitlines()
+                response_lines = [
+                    line for line in lines if line.startswith("06") or line.startswith("07")
+                ]
+                if not response_lines:
+                    raise SPSDKError("No valid response line found in output")
+                stripped_line = re.sub(r"(u-boot)?=> ", "", response_lines[0])
+                output = stripped_line[: msg.response_words_count * 8]
+                output = re.sub(r"Detect.*", "", output)  # cleanup
+                logger.debug(f"Stripped output: {output}")
                 response = value_to_bytes("0x" + output)
         except (SPSDKError, IndexError) as exc:
             raise SPSDKError(f"ELE Communication failed with UBoot: {str(exc)}") from exc

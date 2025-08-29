@@ -7,6 +7,7 @@
 """Test of commands."""
 
 
+import os
 import pytest
 
 from spsdk.exceptions import SPSDKError
@@ -27,6 +28,7 @@ from spsdk.sbfile.sb31.commands import (
     CmdProgFuses,
     CmdProgIfr,
     CmdSectionHeader,
+    CmdWriteIfr,
     parse_command,
 )
 from spsdk.sbfile.sb31.constants import EnumCmdTag
@@ -542,3 +544,130 @@ def test_load_program_ifr_cmd(config, value, raise_error):
     else:
         cmd = CmdProgIfr.load_from_config(Config(config))
         assert cmd[0].data == value
+
+def test_cmd_write_ifr():
+    """Test address, data, ifr_type, info value, size after export and parsing of CmdWriteIfr command."""
+    cmd = CmdWriteIfr(address=100, data=bytes([0] * 100), ifr_type=CmdWriteIfr.WriteIfrType.CFPA)
+    assert cmd.address == 100
+    assert cmd.data == bytes([0] * 100)
+    assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA
+    assert str(cmd)
+
+    data = cmd.export()
+    assert len(data) % 16 == 0  # Check alignment
+    assert len(data) == 16 + 16 + 112  # BaseCmd.SIZE + padding + data (aligned to 16)
+
+    cmd_parsed = CmdWriteIfr.parse(data=data)
+    assert cmd == cmd_parsed
+    assert cmd.data == cmd_parsed.data
+    assert cmd.ifr_type == cmd_parsed.ifr_type
+
+def test_cmd_write_ifr_cfpa_and_cmpa():
+    """Test WriteIFR command with CFPA_AND_CMPA type."""
+    cmd = CmdWriteIfr(address=100, data=bytes([0] * 100), ifr_type=CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA)
+    assert cmd.address == 100
+    assert cmd.data == bytes([0] * 100)
+    assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA
+    assert str(cmd)
+
+    data = cmd.export()
+    cmd_parsed = CmdWriteIfr.parse(data=data)
+    assert cmd == cmd_parsed
+    assert cmd.ifr_type == cmd_parsed.ifr_type == CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA
+
+
+def test_parse_invalid_cmd_write_ifr_cmd_tag():
+    """CmdWriteIfr tag validity test."""
+    cmd = CmdWriteIfr(address=100, data=bytes([0] * 100), ifr_type=CmdWriteIfr.WriteIfrType.CFPA)
+    cmd.CMD_TAG = EnumCmdTag.CALL
+    data = cmd.export()
+    with pytest.raises(SPSDKError):
+        CmdWriteIfr.parse(data=data)
+
+
+def test_cmd_write_ifr_load_from_config():
+    """Test loading CmdWriteIfr from configuration."""
+    # Test with direct value
+    config = Config({
+        "type": "CFPA",
+        "value": "0x12345678"
+    })
+    cmd = CmdWriteIfr.load_from_config(config)[0]
+    assert cmd.address == 0x0
+    assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA
+    assert cmd.data == b'\x78\x56\x34\x12'
+
+    # Test with values list
+    config = Config({
+        "type": "CFPA_AND_CMPA",
+        "values": "0x11111111,0x22222222,0x33333333"
+    })
+    cmd = CmdWriteIfr.load_from_config(config)[0]
+    assert cmd.address == 0x0
+    assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA
+    assert cmd.data == b'\x11\x11\x11\x11\x22\x22\x22\x22\x33\x33\x33\x33'
+
+
+def test_cmd_write_ifr_get_config_context(tmpdir):
+    """Test getting configuration context from CmdWriteIfr."""
+    # Create a temporary directory for data files
+    data_path = str(tmpdir)
+
+    # Create a command
+    test_data = bytes(range(16))
+    cmd = CmdWriteIfr(address=0x3000, data=test_data, ifr_type=CmdWriteIfr.WriteIfrType.CFPA)
+
+    # Get configuration context
+    config = cmd.get_config_context(data_path=data_path)
+
+    # Verify configuration
+    assert config.get_int("address") == 0x3000
+    assert config.get_str("type") == "CFPA"
+
+    # Verify file was created and contains correct data
+    file_path = os.path.join(data_path, config.get_str("file"))
+    assert os.path.exists(file_path)
+    with open(file_path, "rb") as f:
+        file_data = f.read()
+    assert file_data == test_data
+
+
+def test_parse_command_write_ifr():
+    """Test parse_command function with WriteIFR command."""
+    # Create binary data for a WriteIFR command
+    cmd = CmdWriteIfr(address=0x4000, data=bytes([0xAA] * 16), ifr_type=CmdWriteIfr.WriteIfrType.CFPA)
+    data = cmd.export()
+
+    # Parse the command
+    parsed_cmd = parse_command(data)
+
+    # Verify the parsed command
+    assert isinstance(parsed_cmd, CmdWriteIfr)
+    assert parsed_cmd.address == 0x4000
+    assert parsed_cmd.data == bytes([0xAA] * 16)
+    assert parsed_cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA
+
+
+def test_cmd_write_ifr_invalid_config():
+    """Test CmdWriteIfr with invalid configuration."""
+    # Missing type
+    config = Config({
+        "value": "0x12345678"
+    })
+    with pytest.raises(KeyError):
+        CmdWriteIfr.load_from_config(config)
+
+    # Invalid type
+    config = Config({
+        "type": "INVALID_TYPE",
+        "value": "0x12345678"
+    })
+    with pytest.raises(KeyError):
+        CmdWriteIfr.load_from_config(config)
+
+    # Missing data source
+    config = Config({
+        "type": "CFPA"
+    })
+    with pytest.raises(SPSDKError):
+        CmdWriteIfr.load_from_config(config)

@@ -19,7 +19,6 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    SpsdkClickGroup,
     buspal_option,
     is_click_help,
     lpcusbsio_option,
@@ -425,24 +424,93 @@ def ele_ele_fw_auth(
     click.echo("ELE firmware authentication and execution ends successfully.")
 
 
-@main.command(name="dump-debug-data", no_args_is_help=False)
+@main.command(name="dump-debug-buffer", no_args_is_help=False)
+@spsdk_output_option(
+    required=False,
+    help="Store debug logs into a file. If not used, logs are printed to console.",
+)
+@click.option(
+    "--dump-all",
+    is_flag=True,
+    default=False,
+    help="Dump all available logs by calling the command multiple times if needed.",
+)
 @click.pass_obj
-def cmd_dump_debug_data(
+def cmd_dump_debug_buffer(
     handler: EleMessageHandler,
+    output: Optional[str],
+    dump_all: bool,
 ) -> None:
-    """Dump ELE debug buffer data of EdgeLock Enclave firmware."""
-    ele_dump_debug_data(handler)
+    """Dump EdgeLock Enclave debug buffer logs.
+
+    EdgeLock Secure Enclave has a logging mechanism for debugging purposes.
+    Logs are sent over MU with maximum 20 logs per exchange. If ELE has more than
+    20 logs in buffer, this command must be called multiple times.
+
+    Logs are not in plaintext and can only be interpreted by STEC ROM/FW team.
+    Make sure to respect log printing format before sending to STEC team.
+    """
+    all_logs = ele_dump_debug_buffer(handler, dump_all)
+
+    if output:
+        # Save logs to file in STEC format
+        log_content = ""
+        for _, log_pair in enumerate(all_logs):
+            if len(log_pair) == 2:
+                log_content += f"S40X: 0x{log_pair[0]:x} 0x{log_pair[1]:x}\n"
+            else:
+                log_content += f"S40X: 0x{log_pair[0]:x}\n"
+
+        write_file(log_content.encode(), output, mode="wb")
+        click.echo(f"ELE Debug logs saved to: {output}")
+
+    click.echo("ELE Dump Debug Buffer ends successfully")
 
 
-def ele_dump_debug_data(ele_handler: EleMessageHandler) -> None:
-    """Dump ELE debug buffer data command.
+def ele_dump_debug_buffer(
+    ele_handler: EleMessageHandler, dump_all: bool = False
+) -> list[list[int]]:
+    """ELE Dump Debug Buffer command.
 
     :param ele_handler: ELE handler class
+    :param dump_all: If True, dump all available logs by calling multiple times
+    :return: List of log pairs in STEC format
     """
-    dump_debug_data = ele_message.EleMessageDumpDebugBuffer()
-    with ele_handler:
-        ele_handler.send_message(dump_debug_data)
-    click.echo(f"Dump debug buffer ends successfully:\n{dump_debug_data.response_info()}")
+    all_logs = []
+    iteration = 1
+
+    while True:
+        click.echo(f"Dumping debug buffer (iteration {iteration})...")
+
+        dump_debug = ele_message.EleMessageDumpDebugBuffer()
+        with ele_handler:
+            ele_handler.send_message(dump_debug)
+
+        # Print current batch of logs
+        click.echo(dump_debug.response_info())
+
+        # Collect logs in pairs for STEC format
+        debug_words = dump_debug.get_debug_logs()
+        for i in range(0, len(debug_words), 2):
+            if i + 1 < len(debug_words):
+                all_logs.append([debug_words[i], debug_words[i + 1]])
+            else:
+                all_logs.append([debug_words[i]])
+
+        # Check if we should continue dumping
+        if not dump_debug.has_more_logs_available():
+            break
+
+        if not dump_all:
+            if not click.confirm("More logs available. Continue dumping?"):
+                break
+
+        iteration += 1
+
+    total_log_pairs = len(all_logs)
+    click.echo(f"Total debug log pairs collected: {total_log_pairs}")
+
+    return all_logs
 
 
 @main.command(name="read-common-fuse", no_args_is_help=True)
@@ -846,7 +914,7 @@ def ele_load_keyblob(ele_handler: EleMessageHandler, key_id: int, binary: bytes)
     click.echo("ELE load keyblob ends successfully.")
 
 
-@main.group(name="generate-keyblob", cls=SpsdkClickGroup)
+@main.group(name="generate-keyblob", cls=CommandsTreeGroup)
 def gen_keyblob_group() -> None:
     """Group of sub-commands related to generate Keyblob."""
 

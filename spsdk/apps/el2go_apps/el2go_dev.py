@@ -24,7 +24,7 @@ from spsdk.apps.el2go_apps.common import (
     get_template,
 )
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
@@ -41,7 +41,7 @@ from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, load_text, write_file
 
 
-@click.group(name="dev", cls=SpsdkClickGroup)
+@click.group(name="dev", cls=CommandsTreeGroup)
 def dev_group() -> None:
     """Group of sub-commands related to EdgeLock 2GO Device-based provisioning."""
 

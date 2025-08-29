@@ -1650,8 +1650,9 @@ class FeaturesEnum(SpsdkEnum):
     NXPUUU = (32, "nxpuuu", "NXP UUU")
     BCA = (33, "bca", "Bootloader Configuration Area")
     FCF = (34, "fcf", "Flash Configuration Field")
-    SBC = (35, "sbc", "sbc")
-    SHE_SCEC = (36, "she_scec", "Secure Hardware Extension")
+    SB40 = (35, "sb40", "Secure Binary v4.0")
+    SBC = (36, "sbc", "sbc")
+    SHE_SCEC = (37, "she_scec", "Secure Hardware Extension")
 
 
 class DatabaseManager:
@@ -1865,6 +1866,7 @@ class DatabaseManager:
     OTFAD = FeaturesEnum.OTFAD.label
     SB21 = FeaturesEnum.SB21.label
     SB31 = FeaturesEnum.SB31.label
+    SB40 = FeaturesEnum.SB40.label
     SBX = FeaturesEnum.SBX.label
     SHADOW_REGS = FeaturesEnum.SHADOW_REGS.label
     DEVHSM = FeaturesEnum.DEVHSM.label

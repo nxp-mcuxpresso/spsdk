@@ -5,8 +5,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 """Master Boot Image."""
+
+# pylint: disable=too-many-public-methods,too-many-lines
 
 import logging
 import os
@@ -23,6 +24,9 @@ from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt
 from spsdk.crypto.utils import get_hash_type_from_signature_size
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKTypeError
+from spsdk.image.ahab.ahab_container import AHABContainerV2
+from spsdk.image.ahab.ahab_data import create_chip_config
+from spsdk.image.ahab.ahab_iae import ImageArrayEntryV2
 from spsdk.image.bca.bca import BCA
 from spsdk.image.cert_block.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
 from spsdk.image.fcf.fcf import FCF
@@ -36,12 +40,20 @@ from spsdk.image.mbi.mbi_classes import (
     T_Manifest,
 )
 from spsdk.image.mbi.mbi_data import MbiImageTypeEnum
-from spsdk.image.trustzone import TrustZone, TrustZoneType
+from spsdk.image.mbi.utils import get_ahab_supported_hashes, get_mbi_ahab_validation_schemas
+from spsdk.image.trustzone import TrustZone, TrustZoneType, TrustZoneV2
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import Endianness, align_block, load_binary, load_hex_string, write_file
+from spsdk.utils.misc import (
+    Endianness,
+    align_block,
+    bytes_to_print,
+    load_binary,
+    load_hex_string,
+    write_file,
+)
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
@@ -228,9 +240,11 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
 
     def _load_preset_file(self, preset_file: str) -> None:
         try:
-            self.trust_zone = TrustZone.load_from_config(Config.create_from_file(preset_file))
+            cfg = Config.create_from_file(preset_file)
         except SPSDKError:
             self.trust_zone = TrustZone.parse(load_binary(preset_file), family=self.family)
+            return
+        self.trust_zone = TrustZone.load_from_config(cfg)
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
@@ -277,8 +291,9 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
             self.trust_zone = TrustZone(self.family)
 
         if tz_type == TrustZoneType.CUSTOM:
+            tz_data = None
             # load custom data
-            tz_data_size = TrustZone.get_preset_data_size(self.family)
+            tz_data_size = len(TrustZone(self.family))
             if hasattr(self, "cert_block"):
                 assert isinstance(self.cert_block, (CertBlockV1, CertBlockV21))
                 tz_offset = (
@@ -336,6 +351,83 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
             config["trustZonePresetFile"] = filename
 
         return config
+
+
+class Mbi_MixinTrustZoneV2(Mbi_Mixin):
+    """Master Boot Image TrustZone version 2 class."""
+
+    VALIDATION_SCHEMAS: list[str] = ["trust_zone_2"]
+    NEEDED_MEMBERS: dict[str, Any] = {
+        "trust_zone": None,
+        "family": "Unknown",
+        "revision": "latest",
+    }
+
+    trust_zone: Optional[TrustZoneV2]
+    ivt_table: "Mbi_MixinIvt"
+
+    @property
+    def tz_type(self) -> TrustZoneType:
+        """Trustzone type."""
+        if self.trust_zone and self.trust_zone.is_customized:
+            return TrustZoneType.CUSTOM
+        return TrustZoneType.ENABLED
+
+    def mix_len(self) -> int:
+        """Get length of TrustZone array.
+
+        :return: Length of TrustZone.
+        """
+        return len(self.trust_zone) if self.trust_zone else 0
+
+    def mix_load_from_config(self, config: Config) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        self.trust_zone = None
+        if config.get("trustZonePresetFile"):
+            preset_file = config.get_input_file_name("trustZonePresetFile")
+            try:
+                self.trust_zone = TrustZoneV2.load_from_config(Config.create_from_file(preset_file))
+            except SPSDKError:
+                self.trust_zone = TrustZoneV2.parse(load_binary(preset_file), family=self.family)
+
+    def mix_get_config(self, output_folder: str) -> dict[str, Any]:
+        """Get the configuration of the mixin.
+
+        :param output_folder: Output folder to store files.
+        """
+        config: dict[str, Any] = {}
+        if self.trust_zone:
+            filename = "trust_zone.bin"
+            filename_yaml = "trust_zone.yaml"
+            write_file(self.trust_zone.export(), os.path.join(output_folder, filename), mode="wb")
+            write_file(
+                self.trust_zone.get_config_yaml(),
+                os.path.join(output_folder, filename_yaml),
+                mode="w",
+            )
+            config["trustZonePresetFile"] = filename_yaml
+
+        return config
+
+    def mix_parse(self, data: bytes) -> None:
+        """Parse the binary to individual fields.
+
+        :param data: Final Image in bytes.
+        """
+        tz_type = self.ivt_table.get_tz_type(data)
+        if tz_type not in TrustZoneType.tags():
+            raise SPSDKParsingError("Invalid TrustZone type")
+
+        self.trust_zone = None
+
+        if tz_type == TrustZoneType.CUSTOM:
+            tz_offset = TrustZoneV2.find_trustzone_block_offset(data)
+            if tz_offset is None:
+                raise SPSDKParsingError("Trust Zone block not found")
+            self.trust_zone = TrustZoneV2.parse(data[tz_offset:], family=self.family)
 
 
 class Mbi_MixinLoadAddress(Mbi_Mixin):
@@ -608,7 +700,6 @@ class Mbi_MixinIvt(Mbi_Mixin):
         )
 
         # CRC value or Certification block offset
-        crc_val_cert_offset = 0 if int(self.IMAGE_TYPE.tag) == 0 else crc_val_cert_offset
         data[self.IVT_CRC_CERTIFICATE_OFFSET : self.IVT_CRC_CERTIFICATE_OFFSET + 4] = struct.pack(
             "<I", crc_val_cert_offset
         )
@@ -645,6 +736,14 @@ class Mbi_MixinIvt(Mbi_Mixin):
             "<I", crc_val_cert_offset
         )
         return data
+
+    def update_total_length(self, app_data: bytes, total_length: int) -> bytes:
+        """Update total length field in the IVT table."""
+        data = bytearray(app_data)
+        data[self.IVT_IMAGE_LENGTH_OFFSET : self.IVT_IMAGE_LENGTH_OFFSET + 4] = struct.pack(
+            "<I", total_length
+        )
+        return bytes(data)
 
     @classmethod
     def check_total_length(cls, data: bytes) -> None:
@@ -1079,7 +1178,7 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
 
     cert_block: Optional[CertBlockV1]
     signature_provider: Optional[SignatureProvider]
-    total_len: Any
+    total_len: int
     key_store: Optional[KeyStore]
     ivt_table: Mbi_MixinIvt
     get_key_store_presented: Callable[[bytes], int]
@@ -1216,6 +1315,198 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
         self.signature_provider = None
 
 
+class Mbi_MixinAhab(Mbi_Mixin):
+    """Master Boot Image certificate AHAB class."""
+
+    VALIDATION_SCHEMAS: list[str] = [
+        "ahab_sign_support",
+        "ahab_sign_support_add_crc",
+        "ahab_sign_support_add_image_hash_type",
+        "ahab_sign_support_add_core_id",
+    ]
+    NEEDED_MEMBERS: dict[str, Any] = {"ahab": None}
+
+    FEATURE: str
+
+    ahab: AHABContainerV2
+    ivt_table: Mbi_MixinIvt
+    app: bytes
+    trust_zone: Optional[TrustZone]
+    tz_type: TrustZoneType
+    load_address: int
+    image_version: int
+
+    @classmethod
+    def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
+        """Get validation schemas from mixin.
+
+        :param family: Family revision to get schemas
+        :return: List of validation schemas.
+        """
+        schema_cfg = get_mbi_ahab_validation_schemas(
+            create_chip_config(family, feature=DatabaseManager.MBI, base_key=["ahab"])
+        )
+        return [schema_cfg[x] for x in cls.VALIDATION_SCHEMAS]
+
+    @property
+    def crc_check_record(self) -> Optional[ImageArrayEntryV2]:
+        """Check if CRC is included in AHAB container.
+
+        This property examines the AHAB (Advanced High-Assurance Boot) container
+        to determine if it contains a CRC check record as its last image array entry.
+        The CRC record is used to verify data integrity of the boot image.
+
+        Returns:
+            Optional[ImageArrayEntryV2]: The CRC check image array entry if present,
+                otherwise None.
+        """
+        # Verify AHAB container exists and has an image array
+        if not hasattr(self, "ahab") or not self.ahab or not self.ahab.image_array:
+            return None
+
+        # Check if the last entry in image array is a CRC check type
+        last_entry = self.ahab.image_array[-1]
+        if last_entry.flags_image_type_name == "crc_check":
+            assert isinstance(last_entry, ImageArrayEntryV2)
+            return last_entry
+        return None
+
+    def mix_len(self) -> int:
+        """Get length of Certificate Block V2.1.
+
+        :return: Length of Certificate Block V2.1.
+        """
+        if not self.ahab:
+            raise SPSDKError("Certification block or signature provider is missing")
+        return len(self.ahab)
+
+    def mix_load_from_config(self, config: Config) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        chip_config = create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"])
+        self.ahab = AHABContainerV2(chip_config)
+        self.ahab.load_from_config_generic(config)
+        core_id = chip_config.core_ids.from_label(config.get_str("core_id", "cortex-m33"))
+        hash_type = ImageArrayEntryV2.FLAGS_HASH_ALGORITHM_TYPE.from_label(
+            config.get_str("image_hash_type", "sha384")
+        )
+        data_iae_flags = ImageArrayEntryV2.create_flags(
+            image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core_id.tag)
+            .from_label("executable")
+            .tag,
+            core_id=core_id.tag,
+            hash_type=hash_type,
+        )
+        data_image = ImageArrayEntryV2(
+            chip_config=self.ahab.chip_config,
+            image=self.app,
+            image_offset=0,
+            load_address=self.load_address,
+            entry_point=0,
+            flags=data_iae_flags,
+            image_name="MCU Boot Image",
+        )
+        self.ahab.image_array.append(data_image)
+
+        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
+            tz_iae_flags = ImageArrayEntryV2.create_flags(
+                image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core_id.tag)
+                .from_label("tz_data")
+                .tag,
+                core_id=core_id.tag,
+                hash_type=hash_type,
+            )
+            tz_image = ImageArrayEntryV2(
+                chip_config=self.ahab.chip_config,
+                image=self.trust_zone.export(),
+                image_offset=data_image.image_size,
+                load_address=0,
+                entry_point=0,
+                flags=tz_iae_flags,
+                image_name="TrustZone preset data Image",
+            )
+            self.ahab.image_array.append(tz_image)
+
+        if config.get_bool("add_crc_check", False):
+
+            crc_iae_flags = ImageArrayEntryV2.create_flags(
+                image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core_id.tag)
+                .from_label("crc_check")
+                .tag,
+                core_id=core_id.tag,
+                hash_type=hash_type,
+            )
+            crc_image = ImageArrayEntryV2(
+                chip_config=self.ahab.chip_config,
+                image=bytes(4),
+                image_offset=4,
+                load_address=0,
+                entry_point=0,
+                flags=crc_iae_flags,
+                image_name="CRC fact all data check",
+            )
+            self.ahab.image_array.append(crc_image)
+
+    def mix_get_config(self, output_folder: str) -> dict[str, Any]:
+        """Get the configuration of the mixin.
+
+        :param output_folder: Output folder to store files.
+        """
+        if not self.ahab:
+            raise SPSDKError("Ahab container is missing")
+
+        config = self.ahab._create_config(index=0, data_path=output_folder)
+
+        if len(get_ahab_supported_hashes(self.family)) > 1:
+            config["image_hash_type"] = (
+                self.ahab.image_array[0].get_hash_from_flags(self.ahab.image_array[0].flags).label
+            )
+        if len(self.ahab.chip_config.base.core_ids) > 1:
+            config["core_id"] = self.ahab.image_array[0].flags_core_id_name
+
+        return config
+
+    def mix_validate(self) -> None:
+        """Validate the setting of image.
+
+        :raises SPSDKError: The configuration of Certificate v3.1 is invalid.
+        """
+        if not self.ahab:
+            raise SPSDKError("Ahab container is missing")
+
+    def mix_parse(self, data: bytes) -> None:
+        """Parse the binary to individual fields.
+
+        :param data: Final Image in bytes.
+        """
+        ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(data)
+        self.ahab = AHABContainerV2.parse(
+            data,
+            chip_config=create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"]),
+            offset=ahab_offset,
+        )
+        if hasattr(self, "image_version"):
+            self.image_version = self.ahab.sw_version
+
+
+class Mbi_MixinAppCrc(Mbi_Mixin):
+    """Master Boot Image certificate AHAB class."""
+
+    VALIDATION_SCHEMAS: list[str] = []
+    NEEDED_MEMBERS: dict[str, Any] = {"app_crc": 0}
+    app: bytes
+    trust_zone: Optional[TrustZone]
+
+    def mix_len(self) -> int:
+        """Get length of Certificate Block V2.1.
+
+        :return: Length of Certificate Block V2.1.
+        """
+        return 4
+
+
 class Mbi_MixinCertBlockVx(Mbi_Mixin):
     """Master Boot Image certification block for MC55xx class."""
 
@@ -1266,7 +1557,7 @@ class Mbi_MixinBca(Mbi_Mixin):
 
     app: bytes
     bca: Optional[BCA]
-    total_len: Any
+    total_len: int
 
     def mix_len(self) -> int:
         """Get length of BCA.
@@ -1393,7 +1684,7 @@ class Mbi_MixinFcf(Mbi_Mixin):
 
     app: bytes
     fcf: Optional[FCF]
-    total_len: Any
+    total_len: int
 
     def mix_len(self) -> int:
         """Get length of FCF.
@@ -1872,6 +2163,9 @@ class Mbi_ExportMixin:
 class Mbi_ExportMixinApp(Mbi_ExportMixin):
     """Export Mixin to handle simple application data."""
 
+    APP_BLOCK_NAME = "Application Block"
+    APP_IMAGE_NAME = "Application"
+
     app: Optional[bytes]
     clean_ivt: Callable[[bytes], bytes]
     ivt_table: Mbi_MixinIvt
@@ -1881,7 +2175,7 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
     fcf: Optional[FCF]
     BCA_OFFSET: int
     FCF_OFFSET: int
-    total_len: Any
+    total_len: int
 
     def collect_data(self) -> BinaryImage:
         """Collect application data including update of bca and fcf.
@@ -1891,7 +2185,7 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
         if not self.app:
             raise SPSDKError("Application data is missing")
 
-        ret = BinaryImage(name="Application Block")
+        ret = BinaryImage(name=Mbi_ExportMixinApp.APP_BLOCK_NAME)
 
         binary = (
             self.ivt_table.update_ivt(self.app, self.total_len, 0)
@@ -1914,9 +2208,11 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
                 ret.append_image(BinaryImage(name="FCF Settings", binary=self.fcf.export()))
                 offset += self.fcf.SIZE
 
-            ret.append_image(BinaryImage(name="Application", binary=binary[offset:]))
+            ret.append_image(
+                BinaryImage(name=Mbi_ExportMixinApp.APP_IMAGE_NAME, binary=binary[offset:])
+            )
         else:
-            ret.append_image(BinaryImage(name="Application", binary=binary))
+            ret.append_image(BinaryImage(name=Mbi_ExportMixinApp.APP_IMAGE_NAME, binary=binary))
 
         if hasattr(self, "app_table") and self.app_table:
             ret.append_image(
@@ -1942,6 +2238,7 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
     trust_zone: Optional[TrustZone]
     tz_type: TrustZoneType
     family: FamilyRevision
+    TRUST_ZONE_IMAGE_NAME = "TrustZone Preset data"
 
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
@@ -1952,7 +2249,10 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
         if self.trust_zone:
             if self.tz_type == TrustZoneType.CUSTOM:
                 ret.append_image(
-                    BinaryImage(name="TrustZone Settings", binary=self.trust_zone.export())
+                    BinaryImage(
+                        name=Mbi_ExportMixinAppTrustZone.TRUST_ZONE_IMAGE_NAME,
+                        binary=self.trust_zone.export(),
+                    )
                 )
         return ret
 
@@ -1966,10 +2266,54 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
         if tz_type == TrustZoneType.ENABLED:
             self.trust_zone = TrustZone(self.family)
         elif tz_type == TrustZoneType.CUSTOM:
-            tz_len = TrustZone.get_preset_data_size(self.family)
+            tz_len = len(TrustZone(self.family))
             self.trust_zone = TrustZone.parse(image[-tz_len:], self.family)
             image = image[:-tz_len]
         super().disassemble_image(image)
+
+
+class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
+    """Export Mixin to handle simple application data and TrustZone version 2."""
+
+    # Override the type annotation for trust_zone
+    trust_zone: Optional[TrustZoneV2]  # type: ignore
+
+    def collect_data(self) -> BinaryImage:
+        """Collect application data and TrustZone."""
+        ret = super().collect_data()
+        ret.alignment = 4  # Ensure 4-byte alignment for TrustZone V2
+        if self.trust_zone:
+            tz_image = ret.find_sub_image(Mbi_ExportMixinAppTrustZone.TRUST_ZONE_IMAGE_NAME)
+            if not tz_image or not tz_image.binary:
+                raise SPSDKError("TrustZone image not found")
+            app_image = ret.find_sub_image(Mbi_ExportMixinApp.APP_IMAGE_NAME)
+            if not app_image or not app_image.binary:
+                raise SPSDKError("Application image not found")
+            app_image.binary = self.ivt_table.update_ivt(
+                app_image.binary,
+                total_len=len(app_image.binary) + len(tz_image.binary),
+                # What was previously the CRC location is now offset to TZ Data
+                crc_val_cert_offset=len(app_image.binary),
+            )
+
+        return ret
+
+    def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
+        """Disassemble image to individual parts from image.
+
+        :param image: Image.
+        """
+        tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
+        self.trust_zone = None
+        if tz_type == TrustZoneType.CUSTOM:
+            tz_offset = TrustZoneV2.find_trustzone_block_offset(image)
+            if tz_offset is None:
+                raise SPSDKError("Cannot find TrustZone block")
+
+            self.trust_zone = TrustZoneV2.parse(image[tz_offset:], self.family)
+            image = image[:tz_offset]
+
+        Mbi_ExportMixinApp.disassemble_image(self, image)
 
 
 class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
@@ -2029,7 +2373,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
         if tz_type == TrustZoneType.ENABLED:
             self.trust_zone = TrustZone(self.family)
         if tz_type == TrustZoneType.CUSTOM:
-            tz_len = TrustZone.get_preset_data_size(self.family)
+            tz_len = len(TrustZone(self.family))
             self.trust_zone = TrustZone.parse(data=image[-tz_len:], family=self.family)
             image = image[:-tz_len]
         image = image[: -self.ivt_table.get_cert_block_offset_from_data(image)]
@@ -2200,6 +2544,38 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
         if not image_with_crc.binary:
             raise SPSDKError("CRC offset is not valid")
         image_with_crc.binary = self.update_crc_val_cert_offset(image_with_crc.binary, crc)
+        return image
+
+
+class Mbi_ExportMixinCrcSignEnd(Mbi_ExportMixin):
+    """Export Mixin to handle sign by CRC at the end of image."""
+
+    ivt_table: Mbi_MixinIvt
+
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
+        """Do simple calculation of CRC and return image with appended CRC."""
+        if revert and image.binary:
+            image.binary = image.binary[:-4]
+            return image
+
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        image.alignment = 4  # Ensure 4-byte alignment
+        total_data = image.export()
+
+        app_image = image.find_sub_image(Mbi_ExportMixinApp.APP_IMAGE_NAME)
+        if not app_image or not app_image.binary:
+            raise SPSDKError("Application image not found")
+        app_image.binary = self.ivt_table.update_total_length(
+            app_image.binary, total_length=len(total_data) + 4
+        )
+        data_to_sign = image.export()
+        crc = crc_obj.calculate(data_to_sign)
+
+        image.append_image(
+            BinaryImage(
+                name=Mbi_ExportMixinAppTzCrcAhab.CRC_IMAGE_NAME, binary=struct.pack("<I", crc)
+            )
+        )
         return image
 
 
@@ -2557,6 +2933,151 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
         return image
 
 
+class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
+    """Export mixin for simple data image, optional trustzone, CRC checksum and AHAB container for sign."""
+
+    app: bytes
+    trust_zone: TrustZoneV2
+    tz_type: TrustZoneType
+    ivt_table: Mbi_MixinIvt
+    total_len: int
+    image_version: int
+    ahab: AHABContainerV2
+    crc_check_record: Optional[ImageArrayEntryV2]
+    CRC_IMAGE_NAME = "CRC-32 MPEG checksum"
+    AHAB_IMAGE_NAME = "AHAB Container"
+
+    def collect_data(self) -> BinaryImage:
+        """Collect application data and TrustZone including update IVT."""
+        ret = BinaryImage("MBI - App/TZ/CRC/AHAB", alignment=4)
+
+        # Get application data
+        app_block = Mbi_ExportMixinApp.collect_data(self)  # type: ignore
+        ret.append_image(app_block)
+
+        # Get app image and its offset
+        app_image = app_block.find_sub_image(Mbi_ExportMixinApp.APP_IMAGE_NAME)
+        app_offset = app_image.absolute_address
+
+        # Initial offset after application
+        current_offset = self.ahab.image_array[0].image_size
+
+        # TrustZone section (if needed)
+        tz_offset = None
+        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
+            tz_offset = current_offset
+            ret.append_image(
+                BinaryImage(
+                    name=Mbi_ExportMixinAppTrustZone.TRUST_ZONE_IMAGE_NAME,
+                    binary=self.trust_zone.export(),
+                    offset=tz_offset,
+                )
+            )
+            current_offset += self.ahab.image_array[1].image_size
+
+        # CRC section (if needed)
+        crc_offset = None
+        if self.crc_check_record:
+            crc_offset = current_offset
+            ret.append_image(
+                BinaryImage(Mbi_ExportMixinAppTzCrcAhab.CRC_IMAGE_NAME, size=4, offset=crc_offset)
+            )
+            current_offset += 4
+
+        # AHAB container section
+        ahab_offset = current_offset
+        ret.append_image(
+            BinaryImage(
+                Mbi_ExportMixinAppTzCrcAhab.AHAB_IMAGE_NAME, size=len(self.ahab), offset=ahab_offset
+            )
+        )
+
+        # Update IVT with AHAB container address
+        app_image.binary = self.ivt_table.update_ivt(
+            app_data=app_image.export(),
+            total_len=self.total_len,
+            crc_val_cert_offset=ahab_offset,
+        )
+
+        if hasattr(self, "image_version"):
+            self.ahab.sw_version = self.image_version
+
+        # Now update all the AHAB image array entries with the relative offsets
+        # Note: offsets are relative to AHAB container, so they'll be negative values
+        self.ahab.image_array[0].image = app_image.binary
+        self.ahab.image_array[0].image_offset = app_offset - ahab_offset
+
+        if tz_offset is not None:
+            self.ahab.image_array[1].image = self.trust_zone.export()
+            self.ahab.image_array[1].image_offset = tz_offset - ahab_offset
+
+        if crc_offset is not None:
+            crc_index = 1 if tz_offset is None else 2
+            self.ahab.image_array[crc_index].image_offset = crc_offset - ahab_offset
+
+        for img_entry in self.ahab.image_array:
+            img_entry.image_hash = None
+            img_entry.update_fields()
+
+        return ret
+
+    def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
+        """Disassemble image to individual parts from image.
+
+        :param image: Image.
+        """
+        Mbi_ExportMixinApp.disassemble_image(self, self.ahab.image_array[0].image)  # type: ignore
+        Mbi_MixinTrustZoneV2.mix_parse(self, image)  # type: ignore
+
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
+        """Do simple calculation of CRC and return updated image with it.
+
+        :param image: Input raw image.
+        :param revert: Revert the operation if possible.
+        :return: Image enriched by CRC in IVT table.
+        """
+        if revert:
+            return image
+
+        if self.crc_check_record:
+            # ---------  Compute CRC field  -------------
+            input_image = image.export()
+            # calculate CRC using MPEG2 specification over all of data (app and trustzone)
+            # except for 4 bytes at CRC_BLOCK_OFFSET
+            crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+            crc_image = image.find_sub_image(Mbi_ExportMixinAppTzCrcAhab.CRC_IMAGE_NAME)
+            crc_offset = crc_image.absolute_address
+            logger.debug(f"CRC offset: {hex(crc_offset)}")
+            crc = crc_obj.calculate(input_image[:crc_offset])
+            logger.debug(f"CRC value: {hex(crc)}")
+            crc_image.binary = crc.to_bytes(4, "little")
+            self.crc_check_record.image = crc_image.binary
+
+        # ---------  Update AHAB  and do final sign  -------------
+        for img_entry in self.ahab.image_array:
+            img_entry.image_hash = None  # Reset image hash
+        self.ahab.update_fields()
+        # Sign AHAB
+        self.ahab.sign_itself()
+
+        if self.ahab.signature_block and self.ahab.signature_block.srk_assets:
+            srkh0 = self.ahab.srk_hash0
+            logger.info(f"SRK Hash #0 (full): {srkh0.hex()}")
+            logger.info(  # pylint: disable=logging-not-lazy
+                "SRK Hash #0 (truncated): " + bytes_to_print(srkh0, max_length=48)
+            )
+            if self.ahab.signature_block.srk_assets.srk_count > 1:
+                srkh1 = self.ahab.srk_hash1
+                logger.info(f"SRK Hash #1 (full): {srkh1.hex()}")
+                logger.info(  # pylint: disable=logging-not-lazy
+                    "SRK Hash #1 (truncated): " + bytes_to_print(srkh1, max_length=48)
+                )
+        # Export the AHAB Block
+        ahab_image = image.find_sub_image(Mbi_ExportMixinAppTzCrcAhab.AHAB_IMAGE_NAME)
+        ahab_image.binary = self.ahab.export()
+        return image
+
+
 class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
     """Export Mixin to handle simple application data, TrustZone and Certification block."""
 
@@ -2612,7 +3133,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
             self.trust_zone = TrustZone(self.family)
         if tz_type == TrustZoneType.CUSTOM:
             self.trust_zone = TrustZone.parse(
-                data=image[-TrustZone.get_preset_data_size(self.family) :], family=self.family
+                data=image[-len(TrustZone(self.family)) :], family=self.family
             )
             image = image[: -len(self.trust_zone)]
 

@@ -53,6 +53,17 @@ trust_zone_mandatory:
       template_value: my_tz_custom.yaml
       format: optional_file
 
+trust_zone_2:
+  type: object
+  title: Trust Zone Settings
+  properties:
+    trustZonePresetFile:
+      type: string
+      title: TrustZone Customization file in version 2
+      description: Specification of Trust Zone configuration file for advanced settings. It could be as YAML TrustZone configuration file as pre-prepared binary TrustZone configuration.
+      template_value: my_tz_custom.yaml
+      format: optional_file
+
 load_addr:
   type: object
   title: Basic Settings
@@ -130,6 +141,172 @@ cert_block_v21:
       template_value: cert_block.yaml
       format: file
   required: [certBlock]
+
+
+ahab_sign_support:
+  type: object
+  title: AHAB Container format to add to ECC + PQC sign.
+  required: [srk_set, srk_table, used_srk_id]
+  properties:
+    srk_set:
+      type: string
+      title: Super Root Key (SRK) set
+      description: Defines which set is used to authenticate the container.
+      enum: [oem, nxp]
+      template_value: oem
+    used_srk_id:
+      type: [number, string]
+      title: Used SRK
+      description: Which key from SRK set is being used.
+      format: number
+      template_value: 0
+    srk_revoke_mask:
+      type: [number, string]
+      title: SRK revoke mask
+      description:
+        Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke
+        key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
+        Example of revocation SRK_0 and SRK_1 - the value should be 0x03
+      format: number
+      template_value: "0x00"
+    check_all_signatures:
+      type: string
+      title: Check all signatures
+      description:
+        "This option overrides a fuse to select verification mode.\n
+        - default: Apply default fuse policy.\n
+        - check_all_signatures: Force verification of all present signatures."
+      enum: [default, check_all_signatures]
+      template_value: default
+    fuse_version:
+      type: [number, string]
+      title: Fuse version
+      description:
+        The value must be equal or greater than the version stored in fuses
+        to allow loading this container.
+      format: number
+      template_value: 0
+    signer:
+      type: string
+      title: AHAB container signer
+      description:
+        Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+        private key used for sign the container header. Header can be signed by SRK.
+        The referenced SRK must not have been revoked.
+      template_value: type=file;file_path=my_prv_key.pem
+    signer_#2:
+      type: string
+      title: AHAB container signer for second signature (PQC only)
+      description:
+        Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+        private key used for second sign (PQC only) of the container header. Header can be signed by SRK.
+        The referenced SRK must not have been revoked.
+      template_value: type=file;file_path=my_prv_key.pem
+    srk_table:
+      type: object
+      title: SRK Table
+      template_title: Configuration of AHAB SRK table
+      description: "SRK (Super Root key) table definition."
+      required: [srk_array]
+      properties:
+        flag_ca:
+          type: boolean
+          title: CA Flag
+          description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+          template_value: false
+        srk_array:
+          type: array
+          title: Super Root Key (SRK) table
+          description:
+            "Table containing the used SRK records. All SRKs must be of the same
+            type. Supported signing algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms:
+            sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+            rsa2048, rsa4096, dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just
+            in new type of AHAB container"
+          minItems: 4
+          maxItems: 4
+          items:
+            type: string
+            title: SRK key
+            description: Path to SRK Key file.
+            format: file
+            template_value:
+              - my_srk_public_key0.pub
+              - my_srk_public_key1.pub
+              - my_srk_public_key2.pub
+              - my_srk_public_key3.pub
+        srk_table_#2:
+          type: object
+          title: Second SRK Table
+          template_title: Configuration of AHAB SRK table in case that the double signing (ECC + PQC)
+          required: [srk_array]
+          properties:
+            flag_ca:
+              type: boolean
+              title: CA Flag
+              description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+              template_value: false
+            srk_array:
+              type: array
+              title: Super Root Key (SRK) table
+              description:
+                "Table containing the used SRK Dilithium records. All SRKs must be of the same
+                type. Supported signing algorithms are: Dilithium level 3. Supported hash algorithms:
+                sha3_256, sha3_384, sha3_512. Certificate may be of Certificate Authority."
+              minItems: 4
+              maxItems: 4
+              items:
+                type: string
+                title: SRK key
+                description: Path to SRK Key file.
+                format: file
+                template_value:
+                  - my_srk_public_key0.pub
+                  - my_srk_public_key1.pub
+                  - my_srk_public_key2.pub
+                  - my_srk_public_key3.pub
+    certificate:
+      type: string
+      title: The AHAB certificate
+      template_title: Optional configuration of AHAB Container Certificate (if not used, erase the section)
+      description:
+        The file that contains AHAB certificate. It could be used already prepared binary form signed by SRK, or it is possible to
+        use configuration YAML file of certificate and the AHAB export process it will export it itself.
+      format: file
+      template_value: my_ahab_certificate.bin
+
+ahab_sign_support_add_image_hash_type:
+  type: object
+  title: AHAB Container format to add to ECC + PQC sign.
+  properties:
+    image_hash_type:
+      type: string
+      title: Images HASH type
+      description: HASH type of image.
+      enum: [sha256, sha384, sha512]
+      template_value: sha512
+
+ahab_sign_support_add_core_id:
+  type: object
+  title: AHAB Container format to add to ECC + PQC sign.
+  properties:
+    core_id:
+      type: string
+      title: Target Core ID
+      description: Target core id to select kind of image.
+      enum: [cortex-m33, nbu]
+      template_value: cortex-m33
+
+ahab_sign_support_add_crc:
+  type: object
+  title: AHAB Container format to add to ECC + PQC sign.
+  properties:
+    add_crc_check:
+      type: boolean
+      title: The additional CRC images check
+      description:
+        If true, add additional CRC image that is computed from all data execution mage and optionally TrustZone.
+      template_value: false
 
 cert_block_vX:
   type: object

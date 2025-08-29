@@ -12,6 +12,7 @@ from os import path
 from unittest.mock import patch
 
 import pytest
+import requests
 
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import (
@@ -28,7 +29,6 @@ from spsdk.crypto.signature_provider import (
     HttpProxySP,
     SignatureProvider,
     get_signature_provider_from_config_str,
-    requests,
 )
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.utils.misc import write_file
@@ -41,7 +41,7 @@ def test_types():
     class TestSP(SignatureProvider):
         identifier = "test-typesp-test"
 
-    types = SignatureProvider.get_types()
+    types = SignatureProvider.get_types(include_abstract=True)
     assert "test-typesp-test" in types
 
 
@@ -219,7 +219,7 @@ def test_proxy_sp_sign_metadata():
         )
 
     with pytest.raises(AttributeError):
-        with patch("spsdk.crypto.signature_provider.requests.sessions.Session.send", my_thing):
+        with patch("requests.sessions.Session.send", my_thing):
             sp.sign(data=b"\x12\x34\x56")
 
 
@@ -238,7 +238,7 @@ def test_proxy_sp_verify_metadata():
         assert puk == puk2
 
     with pytest.raises(AttributeError):
-        with patch("spsdk.crypto.signature_provider.requests.sessions.Session.send", my_thing):
+        with patch("requests.sessions.Session.send", my_thing):
             sp.verify_public_key(public_key=puk)
 
 
@@ -250,7 +250,7 @@ def test_proxy_sp_signature_length_metadata():
         assert "spsdk-api-version" in request.headers
 
     with pytest.raises(AttributeError):
-        with patch("spsdk.crypto.signature_provider.requests.sessions.Session.send", my_thing):
+        with patch("requests.sessions.Session.send", my_thing):
             sp.signature_length
 
 

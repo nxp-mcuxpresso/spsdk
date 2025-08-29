@@ -50,7 +50,6 @@ def test_register_names_without_reserved(test_path):
                                 invalid_registers.append(
                                     f"{json_file}: Register '{name}' contains 'reserved' but is_reserved is not True"
                                 )
-
         except json.JSONDecodeError as e:
             invalid_registers.append(f"{json_file}: JSON parsing error - {str(e)}")
         except Exception as e:
@@ -293,3 +292,68 @@ def test_bitfield_names_without_reserved(test_path):
 
     # Assert all bitfields follow the naming rule
     assert not invalid_bitfields, "Invalid bitfield names found:\n" + "\n".join(invalid_bitfields)
+
+
+@pytest.mark.parametrize("test_path", ["../../spsdk/data/devices", "../../spsdk/data/common"])
+def test_register_and_bitfield_names(test_path):
+    """Test register and bitfield names for double spaces in JSON files.
+
+    This test checks that register and bitfield names don't contain double spaces,
+    which should be normalized to single spaces by the remove_double_space normalizer.
+    """
+    # Get the current file's directory
+    current_dir = Path(__file__).parent
+
+    # Resolve the test path
+    full_path = current_dir / test_path
+
+    if not full_path.exists():
+        pytest.skip(f"Test path {full_path} does not exist")
+
+    # Find all JSON files
+    json_files = list(full_path.glob("**/*.json"))
+
+    # Check results
+    double_space_violations = []
+    double_space = '  '
+
+    for json_file in json_files:
+        try:
+            with open(json_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Check if this is a register definition file with groups structure
+            if isinstance(data, dict) and "groups" in data:
+                for group in data["groups"]:
+                    if "registers" in group:
+                        for register in group["registers"]:
+                            register_name = register.get("name", "")
+
+                            # Check if register name contains double spaces
+                            if double_space in register_name:
+                                double_space_violations.append(
+                                    f"{json_file}: Register '{register_name}' contains double spaces"
+                                )
+
+                            # Check bitfields if they exist
+                            if "bitfields" in register:
+                                for bitfield in register["bitfields"]:
+                                    # Skip check if the bitfield only has a width key (unnamed/reserved bitfields)
+                                    if set(bitfield.keys()) == {"width"}:
+                                        continue
+
+                                    bitfield_name = bitfield.get("name", "")
+
+                                    # Check if bitfield name contains double spaces
+                                    if bitfield_name and double_space in bitfield_name:
+                                        double_space_violations.append(
+                                            f"{json_file}: Register '{register_name}', bitfield '{bitfield_name}' contains double spaces"
+                                        )
+
+        except json.JSONDecodeError as e:
+            double_space_violations.append(f"{json_file}: JSON parsing error - {str(e)}")
+        except Exception as e:
+            double_space_violations.append(f"{json_file}: Error processing file - {str(e)}")
+
+    # Assert all names are properly formatted without double spaces
+    assert not double_space_violations, "Double space violations found:\n" + "\n".join(double_space_violations)

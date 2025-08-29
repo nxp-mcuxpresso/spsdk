@@ -22,7 +22,7 @@ from spsdk.apps.nxpimage_apps.nxpimage_iee import iee_group
 from spsdk.apps.nxpimage_apps.nxpimage_lpcprog import lpcprog_group
 from spsdk.apps.nxpimage_apps.nxpimage_mbi import mbi_group
 from spsdk.apps.nxpimage_apps.nxpimage_otfad import otfad_group
-from spsdk.apps.nxpimage_apps.nxpimage_sb import sb21_group, sb31_group
+from spsdk.apps.nxpimage_apps.nxpimage_sb import sb21_group, sb31_group, sb40_group
 from spsdk.apps.nxpimage_apps.nxpimage_signed_msg import signed_msg_group
 from spsdk.apps.nxpimage_apps.nxpimage_trustzone import tz_group
 from spsdk.apps.nxpimage_apps.nxpimage_utils import nxpimage_utils_group
@@ -48,6 +48,7 @@ main.add_command(cert_block_group)
 main.add_command(mbi_group)
 main.add_command(sb21_group)
 main.add_command(sb31_group)
+main.add_command(sb40_group)
 main.add_command(hab_group)
 main.add_command(bca_group)
 main.add_command(fcf_group)

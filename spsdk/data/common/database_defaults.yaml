@@ -80,6 +80,8 @@ features:
     based_on_ele: False # Flag if the implementation of DAT is based on EdgeLock Enclave
     # famode_cert: [] # List of Fault analysis Mode certificates (names of MBI classes)
     # famode_cfg_defaults: {} # Dictionary of default values of standard MBI members for FAmode image
+    used_beacons_on_ele: False # The DAT ELE implementation is using certificate and authentication beacons
+    auth_beacon_length: 2 # The length in bytes of authentication beacon
 
     dmbox_ap_ix: -1 # Typical Index of debug mailbox access port is 2
     mem_ap_ix: -1 # Typical Index of debug mailbox access port is 0
@@ -89,6 +91,16 @@ features:
     #     0xEEBA_04C3: ROP_LEVEL1
     #     0x4939_8D8B: ROP_LEVEL2
     #     0xB0AB_B703: ROP_LEVEL3
+
+    command_delays: # Additional standard command delays per individual DM commands
+      ERASE_FLASH: 0.5
+
+    # Memory addresses for SSF certificate data
+    ssf_cert_memory:
+      ecdsa_puk_address: 0x0 # Default address for ECDSA PUK (will be overridden by device-specific values)
+      ecdsa_puk_size: 0x0 # Default size for ECDSA PUK
+      hybrid_puk_address: 0x0 # Default address for Hybrid PUK
+      hybrid_puk_size: 0x0 # Default size for Hybrid PUK
 
   # ======== MBI section ========
   mbi:
@@ -106,6 +118,7 @@ features:
     valid_offset_minimal_alignment: 4
     container_image_size_alignment: 512 # To satisfy SD card blocks
     container_types: [1] # Supported container types
+    certificate_type: standard # The standard certificate
     iae_has_signed_offsets: False # There is a special cases when the Container is after images
     core_ids: {}
     image_types: {}
@@ -141,6 +154,16 @@ features:
     sub_features: [cmpa, cfpa]
     cmpa:
       erase_method: write_memory
+      additional_data: # extra data defined by customer
+        enabled: False
+        offset: -1
+        max_size: 0
+    cfpa:
+      additional_data: # extra data defined by customer
+        enabled: False
+        offset: -1
+        max_size: 0
+    requires_reset: False
 
   # ======== Bootable image section ========
   bootable_image:
@@ -196,6 +219,15 @@ features:
     variable_block_length: false
     commands_block_length: 256
     supports_compression: false
+    command_rules: []
+
+  # ======== Secure binary v4.0 section ========
+  sb40:
+    supported_commands: []
+    key_wraps_version: 2
+    variable_block_length: true
+    commands_block_length: 4096
+    supports_compression: true
 
   # ======== Secure binary vX section ========
   sbx:
@@ -232,9 +264,11 @@ features:
     flag: 0x1
     key_blob_offset: 0x4
     key_blob_command_position: -1
+    devbuff_wrapped_cust_mk_sk_key_size: 0x30
 
   # ======== Trust Zone section ========
   tz:
+    version: v1 # TrustZone configuration version  v1.0
     reg_spec: tz.json
 
   # ======== EdgeLock Enclave section ========
@@ -384,7 +418,7 @@ features:
     critical_had_members: [ELS_AS_CFG0, ELS_AS_CFG1, ELS_AS_CFG2]
     rtf_length: 32
     ca_puk_length: 64
-    rkth_length: 64
+    rkth_length: 32
     need_reset: false
 
   # ======== Fastboot ========

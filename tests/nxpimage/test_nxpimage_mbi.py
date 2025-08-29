@@ -15,24 +15,19 @@ import pytest
 import yaml
 
 from spsdk.apps import nxpimage
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PrivateKey, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
-from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError
+from spsdk.image.cert_block.cert_blocks import CertBlockV21, CertBlockVx
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestCrc, Mbi_MixinHmac, Mbi_MixinIvt
-from spsdk.image.cert_block.cert_blocks import CertBlockV21, CertBlockVx
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import (
-    Endianness,
-    load_binary,
-    load_configuration,
-    use_working_directory,
-)
+from spsdk.utils.misc import Endianness, load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
 mbi_basic_tests = [
@@ -79,6 +74,7 @@ mbi_basic_tests = [
     ("mb_xip_plain.yaml", "mcxc444"),
     ("mb_xip_plain_bca.yaml", "mcxc444"),
     ("mb_xip_plain.yaml", "mcxe247"),
+    ("mb_xip_crc.yaml", "mcxn556s"),
 ]
 
 mbi_signed_tests = [
@@ -171,7 +167,16 @@ def test_mbi_parser_basic(cli_runner: CliRunner, tmpdir, nxpimage_data_dir, fami
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
     if os.path.splitext(input_image)[1] == ".bin":
-        assert filecmp.cmp(input_image, parsed_app)
+        if filecmp.cmp(input_image, parsed_app):
+            assert True
+        else:
+            # There might be passing at the end of the file
+            ref_data = load_binary(input_image)
+            new_data = load_binary(parsed_app)
+            # compare the first N bytes of reference data
+            assert ref_data == new_data[: len(ref_data)]
+            # remaining data must be all zeros
+            assert new_data[len(ref_data) :] == bytes([0] * (len(new_data) - len(ref_data)))
 
 
 @pytest.mark.parametrize("config_file,device,sign_digest", mbi_signed_tests)

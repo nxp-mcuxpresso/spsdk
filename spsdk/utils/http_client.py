@@ -12,15 +12,15 @@ import json
 import logging
 import sys
 from http import HTTPStatus
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, Union
 
 import requests
 from typing_extensions import Self, TypeAlias
 
+from spsdk import __version__ as spsdk_version
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import get_spsdk_version
 from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class HTTPClientBase(abc.ABC):
         timeout: int = 60,
         use_ssl: bool = False,
         raise_exceptions: bool = True,
-        **kwargs: str,
+        **kwargs: Union[str, int, bool],
     ) -> None:
         """Initialize HTTP Client.
 
@@ -102,7 +102,7 @@ class HTTPClientBase(abc.ABC):
         self.kwargs = kwargs
         self.timeout = timeout
         self.headers = {
-            "spsdk-version": str(get_spsdk_version()),
+            "spsdk-version": spsdk_version,
             "spsdk-api-version": self.api_version,
             "Connection": "keep-alive",
             "Keep-Alive": "timeout=60, max=100",
@@ -159,7 +159,9 @@ class HTTPClientBase(abc.ABC):
         return response
 
     # pylint: disable=no-self-use  # derived classes may use self object
-    def _check_response(self, response: dict, names_types: list[tuple[str, Type]]) -> None:
+    def _check_response(
+        self, response: requests.Response, names_types: list[tuple[str, Type]]
+    ) -> dict:
         """Check if the response contains required data.
 
         :param response: Response to check
@@ -167,13 +169,16 @@ class HTTPClientBase(abc.ABC):
         :raises SPSDKError: Response doesn't contain required member
         :raises SPSDKError: Responses' member has incorrect type
         """
+        response.raise_for_status()
+        response_data = response.json()
         for name, typ in names_types:
-            if name not in response:
+            if name not in response_data:
                 raise SPSDKError(f"Response object doesn't contain member '{name}'")
-            if not isinstance(response[name], typ):
+            if not isinstance(response_data[name], typ):
                 raise SPSDKError(
-                    f"Response member '{name}' is not a instance of '{typ}' but '{type(response[name])}'"
+                    f"Response member '{name}' is not a instance of '{typ}' but '{type(response_data[name])}'"
                 )
+        return response_data
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:

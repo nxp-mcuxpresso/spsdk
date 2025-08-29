@@ -1522,6 +1522,7 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
             qb_data_mandatory = db.get_bool(
                 DatabaseManager.AHAB, f"{cls.KEY}_qb_data_mandatory", False
             )
+            qb_data_dummy = db.get_bool(DatabaseManager.AHAB, f"{cls.KEY}_qb_data_dummy", False)
             qb_data = config.get("qb_data")
 
             # Handle mandatory QB data (use blank if not provided)
@@ -1531,17 +1532,24 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                 )
                 # In case QB data are not provided add 64k blank data
                 qb_data_binary = bytes(cls.QB_DATA_SIZE)
+            elif qb_data_dummy and qb_data is None:
+                qb_data_binary = bytes()
+
             elif qb_data:
                 qb_data_binary = load_binary(qb_data, config.search_paths)
 
             # Create separate QB data entry
-            if qb_data_binary:
+            if qb_data_binary is not None:
                 meta_data = iae_cls.create_meta()
                 image_type = chip_config.base.image_types["application"].from_attr("oei_ddr").tag
 
                 flags = iae_cls.create_flags(
                     image_type=image_type, core_id=0, hash_type=AHABSignHashAlgorithmV1.SHA384
                 )
+                gap_after_image = 0
+                if qb_data_dummy:
+                    gap_after_image = 0x10000
+
                 qb_iae = iae_cls(
                     chip_config=chip_config,
                     image=qb_data_binary,
@@ -1551,7 +1559,7 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     flags=flags,
                     image_meta_data=meta_data,
                     image_name=cls.IMAGE_NAME,
-                    gap_after_image=0,
+                    gap_after_image=gap_after_image,
                     image_size_alignment=64 * 1024,
                 )
                 qb_iae.image_size = 0
@@ -1740,3 +1748,10 @@ class IaeV2XDummy(ImageArrayEntryTemplates):
                 config=config,
             )
         ]
+
+
+class IaeMCU(ImageArrayEntryTemplates):
+    """Template for MCU Image."""
+
+    IMAGE_NAME: str = "MCU Firmware"
+    KEY: str = "mcu"

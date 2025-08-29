@@ -9,18 +9,18 @@
 import click
 
 from spsdk.apps.utils.common_cli_options import (
-    SpsdkClickGroup,
+    CommandsTreeGroup,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.image.trustzone import TrustZone
+from spsdk.image.trustzone import TrustZone, get_tz_class
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import get_printable_path, write_file
+from spsdk.utils.misc import get_printable_path, load_binary, write_file
 
 
-@click.group(name="tz", cls=SpsdkClickGroup)
+@click.group(name="tz", cls=CommandsTreeGroup)
 def tz_group() -> None:
     """Group of sub-commands related to Trust Zone."""
 
@@ -37,7 +37,9 @@ def tz_export_command(config: Config) -> None:
 
 def tz_export(config: Config) -> None:
     """Generate TrustZone Image from YAML/JSON configuration."""
-    trust_zone = TrustZone.load_from_config(config)
+    family = FamilyRevision.load_from_config(config)
+    tz_class = get_tz_class(family)
+    trust_zone = tz_class.load_from_config(config)
     tz_data = trust_zone.export()
     output_file = config.get_output_file_name("tzpOutputFile")
     write_file(tz_data, output_file, mode="wb")
@@ -57,5 +59,30 @@ def tz_get_template_command(family: FamilyRevision, output: str) -> None:
 
 def tz_get_template(family: FamilyRevision, output: str) -> None:
     """Create template of configuration in YAML format."""
-    write_file(TrustZone.get_config_template(family), output)
+    tz_class = get_tz_class(family)
+    write_file(tz_class.get_config_template(family), output)
     click.echo(f"Trust zone template file has been created: {output}.")
+
+
+@tz_group.command(name="parse", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary TrustZone to parse.",
+)
+@spsdk_family_option(families=TrustZone.get_supported_families())
+@spsdk_output_option()
+def tz_parse_command(binary: str, family: FamilyRevision, output: str) -> None:
+    """Parse TrustZone."""
+    tz_parse(binary, family, output)
+
+
+def tz_parse(binary: str, family: FamilyRevision, output: str) -> None:
+    """Parse TrustZone Image into YAML configuration."""
+    tz_class = get_tz_class(family)
+    tz_image = tz_class.parse(load_binary(binary), family=family)
+    config = tz_image.get_config_yaml()
+    write_file(config, output)
+    click.echo(f"Success. (TrustZone: {binary} has been parsed and stored into {output}.)")

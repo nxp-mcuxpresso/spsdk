@@ -30,6 +30,8 @@ class EnumHashAlgorithm(SpsdkEnum):
     SHA3_256 = (6, "sha3_256", "SHA3_256")
     SHA3_384 = (7, "sha3_384", "SHA3_384")
     SHA3_512 = (8, "sha3_512", "SHA3_512")
+    SHAKE_128_256 = (9, "shake_128_256", "SHAKE128 with 256b output")
+    SHAKE_256_512 = (10, "shake_256_512", "SHAKE256 with 512b output")
     NONE = (254, "none", "NONE")
 
 
@@ -40,10 +42,15 @@ def get_hash_algorithm(algorithm: EnumHashAlgorithm) -> hashes.HashAlgorithm:
     :return: instance of algorithm class
     :raises SPSDKError: If algorithm not found
     """
-    algo_cls = getattr(hashes, algorithm.label.upper(), None)  # hack: get class object by name
-    if algo_cls is None:
-        raise SPSDKError(f"Unsupported algorithm: hashes.{algorithm.label.upper()}")
+    cls_name = algorithm.label.upper()
+    if cls_name in ["SHAKE_128_256", "SHAKE128"]:
+        return hashes.SHAKE128(digest_size=32)
+    if cls_name in ["SHAKE_256_512", "SHAKE256"]:
+        return hashes.SHAKE256(digest_size=64)
 
+    algo_cls = getattr(hashes, cls_name, None)  # hack: get class object by name
+    if algo_cls is None:
+        raise SPSDKError(f"Unsupported algorithm: hashes.{cls_name}")
     return algo_cls()  # pylint: disable=not-callable
 
 
