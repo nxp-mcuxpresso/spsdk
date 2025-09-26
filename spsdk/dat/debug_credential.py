@@ -9,7 +9,6 @@
 
 import abc
 import logging
-from dataclasses import dataclass
 from struct import calcsize, pack, unpack, unpack_from
 from typing import Any, Optional, Type
 
@@ -19,8 +18,9 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.utils import extract_public_key
+from spsdk.dat.protocol_version import ProtocolVersion
 from spsdk.dat.rot_meta import RotMeta, RotMetaDummy, RotMetaEcc, RotMetaEdgeLockEnclave, RotMetaRSA
-from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKTypeError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueError
 from spsdk.image.ahab.ahab_certificate import AhabCertificate, get_ahab_certificate_class
 from spsdk.image.ahab.ahab_srk import SRKRecordV2
 from spsdk.image.cert_block.cert_blocks import CertBlock
@@ -31,89 +31,6 @@ from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_
 from spsdk.utils.misc import load_binary, value_to_int
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ProtocolVersion:
-    """Debug Authentication protocol version."""
-
-    VERSIONS = [
-        "1.0",
-        "1.1",
-        "2.0",
-        "2.1",
-        "2.2",
-        "3.0",  # 3.0 is the same as 3.2 AHAB v2
-        "3.1",  # AHAB
-        "3.2",  # AHAB v2
-    ]
-
-    version: str
-
-    def __post_init__(self) -> None:
-        self.validate()
-
-    def __eq__(self, obj: object) -> bool:
-        """Check object equality.
-
-        :param other: object to compare with.
-        :return: True if matches, False otherwise.
-        """
-        return (
-            isinstance(obj, self.__class__) and self.major == obj.major and self.minor == obj.minor
-        )
-
-    def __str__(self) -> str:
-        """String representation of protocol version object."""
-        return f"Version {self.major}.{self.minor}"
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-    def is_rsa(self) -> bool:
-        """Determine whether rsa or ecc is used.
-
-        :return: True if the protocol is RSA type. False otherwise
-        """
-        return self.major == 1
-
-    def validate(self) -> None:
-        """Validate the protocol version value.
-
-        :raises SPSDKValueError: In case that protocol version is using unsupported key type.
-        """
-        if self.version not in self.VERSIONS:
-            raise SPSDKValueError(
-                f"Unsupported version '{self.version}' was given. Available versions: {','.join(self.VERSIONS)}"
-            )
-
-    @property
-    def major(self) -> int:
-        """Get major version."""
-        return int(self.version.split(".", 2)[0])
-
-    @property
-    def minor(self) -> int:
-        """Get minor version."""
-        return int(self.version.split(".", 2)[1])
-
-    @classmethod
-    def from_version(cls, major: int, minor: int) -> Self:
-        """Load the version object from major and minor version."""
-        dat_protocol = cls(f"{major}.{minor}")
-        dat_protocol.validate()
-        return dat_protocol
-
-    @classmethod
-    def from_public_key(cls, public_key: PublicKey) -> Self:
-        """Load the version object from public key."""
-        if isinstance(public_key, PublicKeyRsa):
-            minor = {2048: 0, 4096: 1}[public_key.key_size]
-            return cls.from_version(major=1, minor=minor)
-        if isinstance(public_key, PublicKeyEcc):
-            minor = {256: 0, 384: 1, 521: 2}[public_key.key_size]
-            return cls.from_version(major=2, minor=minor)
-        raise SPSDKTypeError(f"Unsupported public key type: {type(public_key)}")
 
 
 class DebugCredentialCertificate(FeatureBaseClass):

@@ -40,13 +40,14 @@ features:
         EXECUTABLE: [0x03, executable, Executable Image]
         DATA: [0x04, data, Data Image]
         DCD: [0x05, dcd, DCD Image]
-        SECO: [0x06, seco, SECO Image]
         PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
         DEK_VALIDATION: [0x08, dek_validation, DEK validation Image]
         PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+      ele:
+        ELE: [0x06, seco, SECO Image]
 
     image_types_mapping:
-      seco: [6]
+      ele: [6]
 
     # AHAB extra images
     ddr_alignments: [0x8000, 0x4000, 0x8000, 0]

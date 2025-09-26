@@ -1,3 +1,7 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # ========================  Advanced High-Assurance Boot Configuration template for mimx8ulp.  =========================
 
 # ======================================================================================================================
@@ -65,6 +69,7 @@ containers:
         # ---------------------------------------===== uPower [Required] =====----------------------------------------
         # Description: uPower firmware
         - upower: upower.bin
+        - mcu: m33_image.bin
 
         #  ======================= [Example of possible configuration: #1 SPL, erase if not used] =======================
         # U-Boot SPL (Secondary program loader)

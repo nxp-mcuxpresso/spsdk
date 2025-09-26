@@ -247,6 +247,7 @@ features:
     sub_features: ["ele_pqc"]
     test_address: 0x2048_0000
     dmbox_ap_ix: 0
+    dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
 
   # ======== FCB section ========
   # fcb:
@@ -344,6 +345,18 @@ features:
     tee_meta_data_start_cpu_id: 2
     tee_image_size_alignment: 0x400
 
+    kernel_load_address: 0x90400000
+    kernel_core_id: cortex-a55
+    kernel_meta_data_start_cpu_id: 2
+    kernel_chunk_size: 0x700000
+    kernel_revisions_to_split: [a0, a1]
+
+    dtb_load_address: 0x93000000
+    dtb_core_id: cortex-a55
+    dtb_meta_data_start_cpu_id: 0
+    dtb_entry_point: 0x0
+    dtb_image_type: data
+
     extra_images:
       [
         double_authentication,
@@ -356,6 +369,8 @@ features:
         atf,
         uboot,
         tee,
+        kernel,
+        dtb
       ]
   # ======== EdgeLock Enclave section ========
   ele: {}
@@ -410,3 +425,5 @@ features:
 
   # ======== nxpuuu ==========
   nxpuuu: {}
+  # ===== TLV =====
+  tlv_blob: {}

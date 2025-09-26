@@ -19,9 +19,7 @@ entry-points = { "spsdk.sp" = { mysp = "spsdk_sasp.provider" } }
 requires-python = ">= 3.9"
 dependencies = ["spsdk>2.1"]
 authors = [{ name = "NXP" }]
-maintainers = [
-    { name = "Marek Bohdan", email = "marek.bohdan@nxp.com" },
-]
+maintainers = [{ name = "NXP", email = "spsdk@nxp.com" }]
 
 keywords = ["NXP", "SPSDK", "mysp"]
 classifiers = [

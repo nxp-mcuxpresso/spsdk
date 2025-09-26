@@ -1654,3 +1654,655 @@ class EleMessageResetApcContext(EleMessage):
     """Send request to reset APC context ELE Message."""
 
     CMD = MessageIDs.ELE_RESET_APC_CTX_REQ.tag
+
+
+class EleMessageSessionOpen(EleMessage):
+    """ELE Message Session Open.
+
+    Session open command is used to initialize the EdgeLock Secure Enclave HSM services
+    for the requestor. It establishes a route between the user and the EdgeLock Secure
+    Enclave as well as a quality of service.
+
+    A maximum of 20 sessions can be opened at the same time.
+    Session open command must be called before any other APIs that use a session.
+    """
+
+    CMD = 0x10  # Session open command ID
+    VERSION = 0x07  # Version for HSM API
+    COMMAND_PAYLOAD_WORDS_COUNT = 2  # Two reserved words
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Session handle word
+
+    def __init__(self) -> None:
+        """Class object initialized."""
+        super().__init__()
+        self.session_handle = 0
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        # Override the header to use HSM API version
+        header = pack(
+            self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
+        )
+        # Add two reserved words (set to 0)
+        payload = pack(LITTLE_ENDIAN + UINT32 + UINT32, RESERVED, RESERVED)
+        return header + payload
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        # Decode and validate header
+        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        if tag != self.RSP_TAG:
+            raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
+        if command != self.command:
+            raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
+        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+            raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
+        if version != self.VERSION:
+            raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
+
+        # Decode status word
+        (
+            self.status,
+            self.indication,
+            self.abort_code,
+        ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
+
+        # Decode session handle
+        if len(response) >= 12:
+            self.session_handle = unpack(LITTLE_ENDIAN + UINT32, response[8:12])[0]
+        else:
+            self.session_handle = 0
+
+    def response_info(self) -> str:
+        """Print specific information about session open response.
+
+        :return: Information about the session.
+        """
+        ret = f"Session handle: 0x{self.session_handle:08X}\n"
+        if self.session_handle == 0:
+            ret += "Session open failed - no valid session handle returned\n"
+        else:
+            ret += "Session successfully opened\n"
+        return ret
+
+    def info(self) -> str:
+        """Print information including live data.
+
+        :return: Information about the message.
+        """
+        ret = super().info()
+        ret += "\nSession Open Command:\n"
+        ret += "- Initializes EdgeLock Secure Enclave HSM services\n"
+        ret += "- Establishes route between user and EdgeLock Secure Enclave\n"
+        ret += "- Maximum 20 sessions can be opened simultaneously\n"
+        ret += "- Must be called before other HSM APIs that use a session\n"
+        if hasattr(self, "session_handle"):
+            ret += f"\n{self.response_info()}"
+        return ret
+
+    def get_session_handle(self) -> int:
+        """Get the session handle from successful response.
+
+        :return: Session handle, 0 if session open failed.
+        """
+        return self.session_handle
+
+    def is_session_valid(self) -> bool:
+        """Check if session was successfully opened.
+
+        :return: True if session handle is valid (non-zero), False otherwise.
+        """
+        return self.session_handle != 0
+
+
+class EleMessageSessionClose(EleMessage):
+    """ELE Message Session Close.
+
+    Session close command is used to close an opened session. Any data related to the session,
+    including other services flow contexts, will be deleted.
+
+    User can call this function only after having opened a valid session (see Session open (0x10)).
+    Session close command will close any associated services to the session as well.
+    """
+
+    CMD = 0x11  # Session close command ID
+    VERSION = 0x07  # Version for HSM API
+    COMMAND_PAYLOAD_WORDS_COUNT = 1  # Session handle word
+    RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
+
+    def __init__(self, session_handle: int) -> None:
+        """Class object initialized.
+
+        :param session_handle: Session handle to close. Handle value returned by Session open (0x10).
+        """
+        super().__init__()
+        self.session_handle = session_handle
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        # Override the header to use HSM API version
+        header = pack(
+            self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
+        )
+        # Add session handle
+        payload = pack(LITTLE_ENDIAN + UINT32, self.session_handle)
+        return header + payload
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        # Decode and validate header
+        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        if tag != self.RSP_TAG:
+            raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
+        if command != self.command:
+            raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
+        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+            raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
+        if version != self.VERSION:
+            raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
+
+        # Decode status word
+        (
+            self.status,
+            self.indication,
+            self.abort_code,
+        ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
+
+    def info(self) -> str:
+        """Print information including live data.
+
+        :return: Information about the message.
+        """
+        ret = super().info()
+        ret += "\nSession Close Command:\n"
+        ret += f"- Session handle: 0x{self.session_handle:08X}\n"
+        ret += "- Closes an opened session and deletes related data\n"
+        ret += "- Closes any associated services to the session\n"
+        ret += "- Can only be called after opening a valid session\n"
+        ret += "- Must use same MU as used for session open\n"
+        return ret
+
+
+class EleMessageSabInit(EleMessage):
+    """ELE Message SAB Init.
+
+    SAB Init command is used to initialize the EdgeLock Secure Enclave Firmware HSM services.
+    It must be called once, at boot, by any core.
+
+    SAB Init command must be called before any other ones that use a SAB session.
+    SAB Init command can be called multiple times, even if not recommended. EdgeLock Secure
+    Enclave Firmware will do nothing and respond a success if the initialization is already done.
+    """
+
+    CMD = 0x17  # SAB Init command ID
+    VERSION = 0x07  # Version for HSM API
+    COMMAND_PAYLOAD_WORDS_COUNT = 0  # No payload words
+    RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        # Override the header to use HSM API version and correct word size
+        header = pack(
+            self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
+        )
+        return header
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        # Decode and validate header
+        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        if tag != self.RSP_TAG:
+            raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
+        if command != self.command:
+            raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
+        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+            raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
+        if version != self.VERSION:
+            raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
+
+        # Decode status word
+        (
+            self.status,
+            self.indication,
+            self.abort_code,
+        ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
+
+    def info(self) -> str:
+        """Print information including live data.
+
+        :return: Information about the message.
+        """
+        ret = super().info()
+        ret += "\nSAB Init Command:\n"
+        ret += "- Initializes EdgeLock Secure Enclave Firmware HSM services\n"
+        ret += "- Must be called once at boot by any core\n"
+        ret += "- Must be called before any other SAB session commands\n"
+        ret += "- Can be called multiple times (will return success if already initialized)\n"
+        return ret
+
+
+class EleMessageKeyStoreOpen(EleMessage):
+    """ELE Message Key Store Open.
+
+    Key store open command is used to open a service flow on the specified key store.
+    A maximum of 2 key stores can be created/opened and a maximum of 100 keys can be stored per key store.
+
+    User can call Key store open command only after having opened a valid session (see Session open (0x10)).
+    Key store open command must be called before any other APIs that use a key store service.
+    """
+
+    CMD = 0x30  # Key store open command ID
+    VERSION = 0x07  # Version for HSM API
+    COMMAND_PAYLOAD_WORDS_COUNT = 5  # Session handle, key store ID, nonce, flags, CRC
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Key store handle
+
+    # Flag bit definitions
+    FLAG_CREATE_KEYSTORE = 0x01  # Bit 0: 1=Create, 0=Load
+    FLAG_SHARED_KEYSTORE = 0x04  # Bit 2: 1=Shared, 0=Regular
+    FLAG_MONOTONIC_COUNTER_INCREMENT = 0x20  # Bit 5: Monotonic counter increment
+    FLAG_SYNC_OPERATION = 0x80  # Bit 7: SYNC operation
+
+    def __init__(
+        self,
+        session_handle: int,
+        key_store_id: int,
+        nonce: int,
+        create_keystore: bool = False,
+        shared_keystore: bool = False,
+        monotonic_counter_increment: bool = False,
+        sync_operation: bool = False,
+    ) -> None:
+        """Class object initialized.
+
+        :param session_handle: Handle identifying the current session
+        :param key_store_id: Key store identifier set by the user
+        :param nonce: Nonce used as authentication proof for accessing the key store
+        :param create_keystore: True to create key store, False to load existing one
+        :param shared_keystore: True for shared keystore, False for regular (isolated) keystore
+        :param monotonic_counter_increment: True to increment monotonic counter (SYNC operation)
+        :param sync_operation: True for SYNC operation (request completed only when written to NVM)
+        """
+        super().__init__()
+        self.session_handle = session_handle
+        self.key_store_id = key_store_id
+        self.nonce = nonce
+        self.create_keystore = create_keystore
+        self.shared_keystore = shared_keystore
+        self.monotonic_counter_increment = monotonic_counter_increment
+        self.sync_operation = sync_operation
+        self.key_store_handle = 0
+
+    @property
+    def flags(self) -> int:
+        """Get flags byte from boolean parameters."""
+        flags = 0
+        if self.create_keystore:
+            flags |= self.FLAG_CREATE_KEYSTORE
+        if self.shared_keystore:
+            flags |= self.FLAG_SHARED_KEYSTORE
+        if self.monotonic_counter_increment:
+            flags |= self.FLAG_MONOTONIC_COUNTER_INCREMENT
+        if self.sync_operation:
+            flags |= self.FLAG_SYNC_OPERATION
+        return flags
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        # Override the header to use HSM API version
+        header = pack(
+            self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
+        )
+
+        # Pack payload without CRC first
+        payload_without_crc = pack(
+            LITTLE_ENDIAN + UINT32 + UINT32 + UINT32 + UINT16 + UINT8 + UINT8,
+            self.session_handle,
+            self.key_store_id,
+            self.nonce,
+            RESERVED,  # Reserved 16 bits
+            self.flags,
+            RESERVED,  # Reserved 8 bits
+        )
+
+        # Calculate CRC over header + payload (without CRC field)
+        data_for_crc = header + payload_without_crc
+        crc = self.get_msg_crc(data_for_crc)
+
+        # Add CRC to complete the payload
+        payload = payload_without_crc + crc
+
+        return header + payload
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        # Decode and validate header
+        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        if tag != self.RSP_TAG:
+            raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
+        if command != self.command:
+            raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
+        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+            raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
+        if version != self.VERSION:
+            raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
+
+        # Decode status word
+        (
+            self.status,
+            self.indication,
+            self.abort_code,
+        ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
+
+        # Decode key store handle
+        if len(response) >= 12:
+            self.key_store_handle = unpack(LITTLE_ENDIAN + UINT32, response[8:12])[0]
+        else:
+            self.key_store_handle = 0
+
+    def response_info(self) -> str:
+        """Print specific information about key store open response.
+
+        :return: Information about the key store.
+        """
+        ret = f"Key store handle: 0x{self.key_store_handle:08X}\n"
+        if self.key_store_handle == 0:
+            ret += "Key store open failed - no valid key store handle returned\n"
+        else:
+            operation = "created" if self.create_keystore else "loaded"
+            keystore_type = "shared" if self.shared_keystore else "regular"
+            ret += f"Key store successfully {operation} ({keystore_type})\n"
+        return ret
+
+    def info(self) -> str:
+        """Print information including live data.
+
+        :return: Information about the message.
+        """
+        ret = super().info()
+        ret += "\nKey Store Open Command:\n"
+        ret += f"- Session handle: 0x{self.session_handle:08X}\n"
+        ret += f"- Key store ID: 0x{self.key_store_id:08X}\n"
+        ret += f"- Nonce: 0x{self.nonce:08X}\n"
+        ret += f"- Operation: {'Create' if self.create_keystore else 'Load'}\n"
+        ret += f"- Type: {'Shared' if self.shared_keystore else 'Regular'}\n"
+        ret += f"- Sync operation: {self.sync_operation}\n"
+        ret += f"- Monotonic counter increment: {self.monotonic_counter_increment}\n"
+        ret += "- Maximum 2 key stores can be created/opened\n"
+        ret += "- Maximum 100 keys can be stored per key store\n"
+        ret += "- Maximum 10 key store handles for shared key stores\n"
+        if hasattr(self, "key_store_handle"):
+            ret += f"\n{self.response_info()}"
+        return ret
+
+    def get_key_store_handle(self) -> int:
+        """Get the key store handle from successful response.
+
+        :return: Key store handle, 0 if key store open failed.
+        """
+        return self.key_store_handle
+
+    def is_key_store_valid(self) -> bool:
+        """Check if key store was successfully opened.
+
+        :return: True if key store handle is valid (non-zero), False otherwise.
+        """
+        return self.key_store_handle != 0
+
+
+class EleMessagePublicKeyExport(EleMessage):
+    """ELE Message Public Key Export.
+
+    Public key export command exports the public key of an asymmetric key whose private key
+    is present in the key store. By default, public key is not stored in EdgeLock Secure
+    Enclave key storage and it's then re-calculated.
+
+    For ECC key type, public key is exported in a non-compressed form {x, y}, in big-endian order.
+    For RSA key type, only the modulus is exported as public exponent is only the default value (65 537).
+    Unlike RFC 7748, ECC PUBLIC KEY MONTGOMERY is exported in big-endian format.
+
+    User can call Public key export command only after having opened a valid key store service.
+    """
+
+    CMD = 0x32  # Public key export command ID
+    VERSION = 0x07  # Version for HSM API
+    COMMAND_PAYLOAD_WORDS_COUNT = 6  # Key store handle, key ID, addresses, size, CRC
+    RESPONSE_PAYLOAD_WORDS_COUNT = 2  # Response indicator + output size
+    MAX_RESPONSE_DATA_SIZE = 1024  # Maximum public key size
+
+    def __init__(self, key_store_handle: int, key_id: int, output_buffer_size: int = 64) -> None:
+        """Class object initialized.
+
+        :param key_store_handle: Handle identifying the key store service flow
+        :param key_id: ID of the asymmetric key stored in the key store
+        :param output_buffer_size: Length in bytes of the output public key buffer
+        """
+        super().__init__()
+        self.key_store_handle = key_store_handle
+        self.key_id = key_id
+        self.output_buffer_size = output_buffer_size
+        self.output_public_key_size = 0
+        self.public_key = b""
+        self._response_data_size = min(output_buffer_size, self.MAX_RESPONSE_DATA_SIZE)
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        # Header: Version(07) | Word size(07) | Command ID(32) | Tag(17)
+        header = pack(
+            self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
+        )
+
+        # Payload without CRC
+        payload_without_crc = pack(
+            LITTLE_ENDIAN + UINT32 + UINT32 + UINT32 + UINT32 + UINT16 + UINT16,
+            self.key_store_handle,  # Word 1: Key store handle
+            self.key_id,  # Word 2: Key ID
+            0,  # Word 3: MSB address (must be 0)
+            self.response_data_address,  # Word 4: LSB address (should be aligned)
+            self.output_buffer_size,  # Word 5 upper: Reserved 16 bits
+            RESERVED,  # Word 5 lower: Output size (reasonable size)
+        )
+
+        # Calculate CRC over header + payload (without CRC field)
+        data_for_crc = header + payload_without_crc
+        crc = self.get_msg_crc(data_for_crc)
+
+        # Add CRC to complete the payload
+        payload = payload_without_crc + crc
+
+        return header + payload
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        # Decode and validate header
+        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        if tag != self.RSP_TAG:
+            raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
+        if command != self.command:
+            raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
+        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+            raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
+        if version != self.VERSION:
+            raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
+
+        # Decode status word
+        (
+            self.status,
+            self.indication,
+            self.abort_code,
+        ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
+
+        # Decode output public key size
+        if len(response) >= 12:
+            self.output_public_key_size, _ = unpack(LITTLE_ENDIAN + UINT16 + UINT16, response[8:12])
+        else:
+            self.output_public_key_size = 0
+
+    def decode_response_data(self, response_data: bytes) -> None:
+        """Decode response data from target.
+
+        :param response_data: Data of response.
+        """
+        if self.output_public_key_size > 0:
+            self.public_key = response_data[: self.output_public_key_size]
+        else:
+            self.public_key = b""
+
+    def response_info(self) -> str:
+        """Print specific information about public key export response.
+
+        :return: Information about the exported public key.
+        """
+        ret = f"Key store handle: 0x{self.key_store_handle:08X}\n"
+        ret += f"Key ID: 0x{self.key_id:08X}\n"
+        ret += f"Output public key size: {self.output_public_key_size} bytes\n"
+        if self.public_key:
+            ret += f"Public key (hex): {self.public_key.hex()}\n"
+            ret += "Public key format:\n"
+            ret += "- ECC: Non-compressed form {x, y} in big-endian order\n"
+            ret += "- RSA: Modulus only (public exponent is 65537)\n"
+            ret += "- Montgomery: Big-endian format (unlike RFC 7748)\n"
+        else:
+            ret += "No public key data received\n"
+        return ret
+
+    def info(self) -> str:
+        """Print information including live data.
+
+        :return: Information about the message.
+        """
+        ret = super().info()
+        ret += "\nPublic Key Export Command:\n"
+        ret += f"- Key store handle: 0x{self.key_store_handle:08X}\n"
+        ret += f"- Key ID: 0x{self.key_id:08X}\n"
+        ret += f"- Output buffer size: {self.output_buffer_size} bytes\n"
+        ret += "- Exports public key of asymmetric key from key store\n"
+        ret += "- Public key is re-calculated (except Twisted Edwards/Montgomery)\n"
+        ret += "- Must be called after opening valid key store service\n"
+        if hasattr(self, "output_public_key_size"):
+            ret += f"\n{self.response_info()}"
+        return ret
+
+    def get_public_key(self) -> bytes:
+        """Get the exported public key.
+
+        :return: Public key bytes, empty if export failed.
+        """
+        return self.public_key
+
+    def get_public_key_size(self) -> int:
+        """Get the size of exported public key.
+
+        :return: Size in bytes of exported public key.
+        """
+        return self.output_public_key_size
+
+
+class EleMessageKeyStoreClose(EleMessage):
+    """ELE Message Key Store Close.
+
+    Key store close command is used to close a key store service flow identified by its handle.
+    Key store context and content is deleted from the EdgeLock Secure Enclave internal memory.
+    Any update not written in the NVM will be lost.
+
+    User can call Key store close command only after having opened a valid key store service.
+    """
+
+    CMD = MessageIDs.KEY_STORE_CLOSE_REQ.tag
+    VERSION = 0x07  # Version for HSM API
+    COMMAND_PAYLOAD_WORDS_COUNT = 1  # Key store handle only
+    RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
+
+    def __init__(self, key_store_handle: int) -> None:
+        """Class object initialized.
+
+        :param key_store_handle: Handle identifying the key store service flow to close
+        """
+        super().__init__()
+        self.key_store_handle = key_store_handle
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array."""
+        # Header: Version(07) | Word size(02) | Command ID(31) | Tag(17)
+        header = pack(
+            self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
+        )
+
+        # Payload: Key store handle only
+        payload = pack(LITTLE_ENDIAN + UINT32, self.key_store_handle)
+
+        return header + payload
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        # Decode and validate header
+        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        if tag != self.RSP_TAG:
+            raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
+        if command != self.command:
+            raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
+        if size != 2:  # Response word size should be 2 (header + response indicator)
+            raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
+        if version != self.VERSION:
+            raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
+
+        # Decode status word (response indicator)
+        (
+            self.status,
+            self.indication,
+            self.abort_code,
+        ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
+
+    def info(self) -> str:
+        """Print information including live data."""
+        ret = super().info()
+        ret += "\nKey Store Close Command:\n"
+        ret += f"- Key store handle: 0x{self.key_store_handle:08X}\n"
+        ret += "- Closes key store service flow and deletes context from ELE memory\n"
+        ret += "- Any updates not written to NVM will be lost\n"
+        return ret
+
+    def response_info(self) -> str:
+        """Print response information."""
+        ret = "Key Store Close Response:\n"
+        ret += f"- Status: {self.status_string}\n"
+        ret += f"- Key store handle 0x{self.key_store_handle:08X} closed successfully\n"
+        return ret

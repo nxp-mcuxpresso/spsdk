@@ -150,7 +150,7 @@ class WPCTargetMBoot(WPCTarget):
         with McuBoot(interface=self.interface, family=self.family) as mboot:
             if self.check_lifecycle:
                 logger.info("Checking lifecycle")
-                lifecycle = mboot.get_property(prop_tag=PropertyTag.LIFE_CYCLE_STATE)
+                lifecycle = mboot.get_property(prop_tag=PropertyTag.FLASH_SECURITY_STATE)
                 if lifecycle is None:
                     raise SPSDKWPCError(
                         f"Unable to get device's lifecycle. Error: {mboot.status_string}"

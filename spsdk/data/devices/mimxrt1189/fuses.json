@@ -921,11 +921,6 @@
                                     "description": "Boot with default 0x03 Read"
                                 },
                                 {
-                                    "name": "Reserved",
-                                    "value": 1,
-                                    "description": "Reserved"
-                                },
-                                {
                                     "name": "2",
                                     "value": 2,
                                     "description": "HyperFLASH 1V8"
@@ -3522,11 +3517,6 @@
                                     "name": "DOUBLE_SYS_TCM",
                                     "value": 2,
                                     "description": "DOUBLE_SYS_TCM (256 kB Sys TCM);"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 }
                             ]
                         },

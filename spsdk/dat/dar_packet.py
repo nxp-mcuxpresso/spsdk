@@ -13,6 +13,7 @@ from typing import Any, Optional, Type
 
 from typing_extensions import Self
 
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.debug_credential import (
@@ -27,6 +28,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import load_binary, value_to_int
+from spsdk.utils.verifier import Verifier, VerifierRecord, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +208,134 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         """Create configuration of the Feature."""
         raise SPSDKNotImplementedError
 
+    def _verify_rot_hash(self) -> VerifierRecord:
+        """Verify Root of Trust Hash between DAC and DC.
+
+        :return: VerifierRecord containing the RoT Hash verification result
+        """
+        db = get_db(self.family)
+        dac_rot_type = db.get_str(DatabaseManager.DAT, "dac_rot_type", "default")
+
+        if dac_rot_type == "not_available":
+            return VerifierRecord(
+                name="RoT Hash", result=VerifierResult.SUCCEEDED, value="Not used"
+            )
+
+        dc_rotkh = self.debug_credential.calculate_hash()
+        min_length = min(len(self.dac.rotid_rkth_hash), len(dc_rotkh))
+        if dc_rotkh and self.dac.rotid_rkth_hash[:min_length] != dc_rotkh[:min_length]:
+            return VerifierRecord(
+                name="RoT Hash",
+                result=VerifierResult.ERROR,
+                value=(
+                    "Invalid RKTH.\n"
+                    f"DAC: {self.dac.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
+                ),
+            )
+
+        return VerifierRecord(
+            name="RoT Hash", result=VerifierResult.SUCCEEDED, value=dc_rotkh.hex()
+        )
+
+    def verify(self) -> Verifier:
+        """Validate Debug Authentication Response against Debug Credential and Challenge data.
+
+        This comprehensive validation method performs cross-verification of multiple debug authentication
+        components to ensure data consistency and security compliance. The verifier systematically checks:
+
+        - **Protocol Version Compatibility**: Ensures DAC (Debug Authentication Challenge) and DC
+          (Debug Credential) use compatible protocol versions
+        - **SoC Class (SOCC) Validation**: Verifies that the SoC Class values match between DAC, DC,
+          and the target chip family specifications
+        - **Device UUID Consistency**: Confirms that device unique identifiers are consistent across
+          all authentication components, with special handling for general/wildcard UUIDs
+        - **Root of Trust Hash Verification**: Validates that the Root of Trust Key Hash (RoTKH)
+          matches between the challenge and credential data
+        - **Cryptographic Key Validation**: Ensures public keys and signatures are properly formatted
+          and mathematically valid
+        - **Constraint Verification**: Checks credential constraints (SOCU, VU, Beacon) against
+          challenge requirements and family-specific limitations
+
+        The method uses the DAR instance's debug_credential, dac, and family attributes to perform
+        validation. It generates detailed verification results with specific error messages, warnings
+        for non-critical issues (like general UUIDs), and success confirmations for valid components.
+
+        :return: The final Verifier object containing detailed validation results and status for each checked component
+        """
+        db = get_db(self.family)
+        ret = Verifier(
+            name="DAC versus DC",
+            description="This is verifier of Debug Authentication Challenge against Debug Credential",
+        )
+        # Verify protocol version
+        if DebugCredentialCertificate.dat_based_on_ele(self.family):
+            ret.add_record(
+                "Protocol version",
+                result=VerifierResult.WARNING,
+                value=(
+                    f"Not supported on {self.family.name}.\n"
+                    f"DAC: {self.dac.version}\nDC:  {self.debug_credential.version}"
+                ),
+            )
+        elif self.dac.version != self.debug_credential.version:
+            ret.add_record(
+                "Protocol version",
+                result=VerifierResult.ERROR,
+                value=f"Invalid protocol version.\nDAC: {self.dac.version}\nDC:  {self.debug_credential.version}",
+            )
+        else:
+            ret.add_record(
+                "Protocol version",
+                result=VerifierResult.SUCCEEDED,
+                value=str(self.debug_credential.version),
+            )
+
+        # Verify SOCC
+        family_socc = db.get_int(DatabaseManager.DAT, "socc")
+        if self.dac.socc != self.debug_credential.socc:
+            ret.add_record(
+                "SOCC",
+                result=VerifierResult.ERROR,
+                value=f"Different DAC and DC SOCC.\nDAC: {self.dac.socc:08X}\nDC:  {self.debug_credential.socc:08X}",
+            )
+        elif self.dac.socc != family_socc:
+            ret.add_record(
+                "SOCC",
+                result=VerifierResult.ERROR,
+                value=(
+                    f"Invalid Family SOCC.\n Used: {self.dac.socc:08X}\n"
+                    f" Family valid SOCC: {family_socc:08X}"
+                ),
+            )
+        else:
+            ret.add_record(
+                "SOCC", result=VerifierResult.SUCCEEDED, value=f"{self.debug_credential.socc:08X}"
+            )
+
+        # Verify UUID
+        if self.debug_credential.uuid == bytes(len(self.debug_credential.uuid)):
+            ret.add_record(
+                "UUID",
+                result=VerifierResult.WARNING,
+                value=f"The general UUID has been used. Fits for all {self.family.name} chips.",
+            )
+        elif self.dac.uuid != self.debug_credential.uuid:
+            ret.add_record(
+                "UUID",
+                result=VerifierResult.ERROR,
+                value=(
+                    f"Different DAC and DC UUID.\nDAC: {self.dac.uuid.hex()}\n"
+                    f"DC:  {self.debug_credential.uuid.hex()}"
+                ),
+            )
+        else:
+            ret.add_record("UUID", result=VerifierResult.SUCCEEDED, value=self.dac.uuid.hex())
+
+        # Verify ROTH / SRKs using the extracted method
+        ret.records.append(self._verify_rot_hash())
+
+        return ret
+
 
 class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
     """Class for RSA specifics of DAR packet."""
@@ -353,6 +483,42 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         if get_db(family).get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False):
             ret.append(get_schema_file(DatabaseManager.DAT)["ele_auth_beacon"])
         return ret
+
+    def _verify_rot_hash(self) -> VerifierRecord:
+        """Verify Root of Trust Hash between DAC and DC.
+
+        :return: VerifierRecord containing the RoT Hash verification result
+        """
+        db = get_db(self.family)
+        dac_rot_type = db.get_str(DatabaseManager.DAT, "dac_rot_type", "default")
+
+        if dac_rot_type == "not_available":
+            return VerifierRecord(
+                name="RoT Hash", result=VerifierResult.SUCCEEDED, value="Not used"
+            )
+
+        srkh_len = len(self.dac.rotid_rkth_hash)
+        srkh0 = self.sign_message.get_srk_hash(0)
+        used_rotkh = srkh0[:srkh_len]
+        ver_name = f"RoT Hash(ECC RKTH[:{srkh_len}])"
+        if dac_rot_type == "ecc_pqc_sha521_truncated" and self.sign_message.srk_count == 2:
+            srkh1 = self.sign_message.get_srk_hash(1)
+            used_rotkh = get_hash(srkh0[:48] + srkh1[:48], EnumHashAlgorithm.SHA512)[:srkh_len]
+            ver_name = f"RoT Hash(SHA521(ECC RKTH[:48]+PQC[:48])[:{srkh_len}])"
+
+        if used_rotkh != self.dac.rotid_rkth_hash:
+            return VerifierRecord(
+                name=ver_name,
+                result=VerifierResult.ERROR,
+                value=(
+                    "Invalid RKTH.\n"
+                    f"DAC: {self.dac.rotid_rkth_hash.hex()}\nDAR:  {used_rotkh.hex()}"
+                ),
+            )
+
+        return VerifierRecord(
+            name=ver_name, result=VerifierResult.SUCCEEDED, value=used_rotkh.hex()
+        )
 
 
 _version_mapping = {

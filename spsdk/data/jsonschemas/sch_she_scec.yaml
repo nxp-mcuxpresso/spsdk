@@ -30,13 +30,13 @@ key_info:
           "USER_KEY_8",
           "USER_KEY_9",
           "USER_KEY_10",
-          # "USER_KEY_11",
-          # "USER_KEY_12",
-          # "USER_KEY_13",
-          # "USER_KEY_14",
-          # "USER_KEY_15",
-          # "USER_KEY_16",
-          # "USER_KEY_17",
+          "USER_KEY_11",
+          "USER_KEY_12",
+          "USER_KEY_13",
+          "USER_KEY_14",
+          "USER_KEY_15",
+          "USER_KEY_16",
+          "USER_KEY_17",
         ]
       template_value: USER_KEY_1
     uid:
@@ -54,7 +54,6 @@ key_info:
       title: Authentication Key Identifier
       description: Specifies which key to use for authentication. For most keys, you can use either MASTER_ECU_KEY or the key's own ID. For BOOT_MAC, you can only use MASTER_ECU_KEY or BOOT_MAC_KEY.
       template_value: MASTER_ECU_KEY
-
     counter:
       type: [number, string]
       title: Counter Value
@@ -69,25 +68,62 @@ flags:
     write_protection:
       type: boolean
       title: Write Protection Flag
-      description: Enable or disable write protection for the SHE-SCEc key
+      description: Enable or disable write protection for the SHE-SCEc key. This flag should be set with caution. Setting this flag is an irreversible step and will prevent the device from being reset to factory state
       template_value: false
     boot_protection:
       type: boolean
       title: Boot Protection Flag
-      description: Enable or disable boot protection for the SHE-SCEc key
+      description: If set, the key cannot be used if the MAC value calculated in the SECURE_BOOT step did not match the BOOT_MAC value stored in secure Flash. In other words, if secure boot fails, the keys marked BOOT_PROT remain locked, and they cannot be used during application execution.
       template_value: false
     debugger_protection:
       type: boolean
       title: Debugger Protection Flag
-      description: Enable or disable debugger protection for the SHE-SCEc key
+      description: If set, the key cannot be used if a debugger is (or has ever been) connected to the MCU since it was last reset.
       template_value: false
     key_usage:
       type: boolean
       title: Key Usage Flag
-      description: Enable or disable key usage permissions for the SHE-SCEc key
+      description: This flag determines if a key is used for encryption/decryption or for CMAC generation/verification. If the flag is set, the key is used for CMAC generation/verification. If the flag is clear, the key is used for encryption/decryption.
       template_value: false
     wildcard:
       type: boolean
       title: Wildcard Key Flag
-      description: Enable or disable wildcard key usage for the SHE-SCEc key
+      description: If set, the key cannot be updated by supplying a special wildcard UID (i.e. UID=0).
       template_value: false
+    verify_only:
+      type: boolean
+      title: Verify Only Flag
+      description: If set, the key cannot be used by the GENERATE_MAC command and can only be used by the VERIFY_MAC command. If KEY_USAGE==0, then this attribute has no effect
+      template_value: false
+
+  allOf:
+    # boot_protection
+    - if:
+        properties:
+          key_id:
+            enum: ["BOOT_MAC_KEY", "BOOT_MAC"]
+      then:
+        properties:
+          boot_protection:
+            enum: [false]
+            description: "The 'boot_protection' flag can not be set to true for BOOT_MAC_KEY, or BOOT_MAC keys"
+    # key_usage
+    - if:
+        properties:
+          key_id:
+            enum: ["MASTER_ECU_KEY", "BOOT_MAC_KEY", "BOOT_MAC"]
+      then:
+        properties:
+          key_usage:
+            enum: [false]
+            description: "The 'key_usage' flag can not be set to true for MASTER_ECU_KEY, BOOT_MAC_KEY, or BOOT_MAC keys"
+    # verify_only
+    - if:
+        properties:
+          key_id:
+            enum: ["MASTER_ECU_KEY", "BOOT_MAC_KEY", "BOOT_MAC"]
+      then:
+        properties:
+          verify_only:
+            enum: [false]
+            description: "The 'verify_only' flag can not be set to true for MASTER_ECU_KEY, BOOT_MAC_KEY, or BOOT_MAC keys"

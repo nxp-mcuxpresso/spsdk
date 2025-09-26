@@ -85,7 +85,7 @@ message:
   # Description: Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug
   # authentication protocol could provide this value. Hex string format (hexadecimal string without '0x'). In case that
   # the restriction on UUID is not needed the field could be omitted.
-  uuid: '0000000000000000'
+  uuid: "0000000000000000"
   command:
     # ---------------------------------------===== Key exchange [Required] =====----------------------------------------
     # Description: This message is used to perform a combined key agreement and key derivation operation. The derived
@@ -101,7 +101,7 @@ message:
       #  HKDF SHA256 0x09020109
       #  HKDF SHA384 0x0902010A
       # Possible options: <HKDF SHA256, HKDF SHA384>
-      key_exchange_algorithm: HKDF SHA256
+      key_exchange_algorithm: ECDH HKDF SHA256 KEY IMPORT
       # ---------------------------------------===== Salt Flags [Required] =====----------------------------------------
       # Description: Bit field indicating the requested operations:
       #  Bit 0: Salt in step #1 (HKDF-extract) of HMAC based two-step key derivation process:
@@ -180,7 +180,7 @@ message:
       private_key_id: 1
       # ------------------------------===== Input peer public key digest [Required] =====-------------------------------
       # Description: The algorithm used to generate the digest must be SHA256
-      input_peer_public_key_digest: '0xdf00000000000000000000000000000000000000000000000000000000000000'
+      input_peer_public_key_digest: "0xdf00000000000000000000000000000000000000000000000000000000000000"
       # ------------------------------===== Input user fixed info digest [Optional] =====-------------------------------
       # Description: The algorithm used to generate the digest must be SHA256
-      input_user_fixed_info_digest: '0x0000000000000000000000000000000000000000000000000000000000000000'
+      input_user_fixed_info_digest: "0x0000000000000000000000000000000000000000000000000000000000000000"

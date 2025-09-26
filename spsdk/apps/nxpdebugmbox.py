@@ -126,7 +126,7 @@ def _open_debugmbox(
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
-        debug_probe.connect()
+        debug_probe.connect_safe()
         dm = DebugMailbox(
             debug_probe=debug_probe,
             family=family,
@@ -477,7 +477,7 @@ def token_auth(
                 # Re-open debug probe
                 mail_box.debug_probe.close()
                 mail_box.debug_probe.open()
-                mail_box.debug_probe.connect()
+                mail_box.debug_probe.connect_safe()
                 # Do test of access to AHB bus
                 ahb_access_granted = test_ahb_access(mail_box.debug_probe)
                 res_str = (
@@ -874,7 +874,11 @@ def famode_image_get_templates_command(family: FamilyRevision, output: str) -> N
 def famode_image_get_templates(family: FamilyRevision, output: str) -> None:
     """Create template of Fault Analysis mode image configurations in YAML format."""
     full_file_name = os.path.join(output, "famode_image.yaml")
-    click.echo(f"Creating {full_file_name} template file.")
+    click.secho(
+        "The get-templates command will be removed and replaced by get-template in the next major release.",
+        fg="yellow",
+    )
+    click.echo(f"Creating {get_printable_path(full_file_name)} template file.")
     write_file(FaModeImage.get_config_template(family), full_file_name)
 
 
@@ -918,6 +922,7 @@ def auth(
     :param config: Configuration of DAT.
     :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
     :raises SPSDKAppError: Raised if any error occurred.
+    :raises KeyboardInterrupt: Internal use to cancel checking of result.
     """
     try:
         logger.info("Starting Debug Authentication")
@@ -942,13 +947,13 @@ def auth(
 
             logger.info(f"DAC: \n{str(dac)}")
 
-            verifier = dac.validate_against_dc(family, debug_cred)
-            if verifier.has_errors:
-                raise SPSDKAppError(f"Invalid DC/DAC combination:\n {verifier.draw()}")
-
-            logger.info(f"\n{verifier.draw()}")
             dar_class = DebugAuthenticateResponse._get_class(family, dac.version)
             dar = dar_class.load_from_config(config=config, dac=dac)
+            verifier = dar.verify()
+            if verifier.has_errors:
+                raise SPSDKAppError(f"DAR verify failed:\n {verifier.draw()}")
+
+            logger.info(f"\n{verifier.draw()}")
             logger.info(f"DAR:\n{str(dar)}")
             dar_data = align_block(dar.export(), alignment=4)
             # convert bytes to list[int]
@@ -979,19 +984,49 @@ def auth(
                             "Exit command failed. Maybe too early reset happen on hardware."
                         )
 
-                # Re-open debug probe
-                mail_box.debug_probe.close()
-                mail_box.debug_probe.open()
-                mail_box.debug_probe.connect()
-                # Do test of access to AHB bus
+                        # Do test of access to AHB bus with retry logic
                 sleep(0.2)
-                ahb_access_granted = test_ahb_access(mail_box.debug_probe)
+                ahb_access_granted = False
+                max_attempts = 20
+                retry_delay = 0.5
+
+                click.echo("Testing AHB access (Press Ctrl+C to stop)", nl=False)
+                try:
+                    for attempt in range(max_attempts):
+                        try:
+                            # Reopen debug probe for each attempt to ensure clean state
+                            mail_box.debug_probe.close()
+                            mail_box.debug_probe.open()
+                            mail_box.debug_probe.connect_safe()
+
+                            ahb_access_granted = test_ahb_access(mail_box.debug_probe)
+                            if ahb_access_granted:
+                                logger.debug(f" SUCCESS (attempt {attempt + 1})")
+                                break
+                            else:
+                                click.echo(".", nl=attempt == max_attempts - 1)
+                                if attempt < max_attempts - 1:  # Don't sleep on last attempt
+                                    sleep(retry_delay)
+                        except KeyboardInterrupt as exc:
+                            # Re-raise to be caught by outer try-catch
+                            raise exc
+                        except Exception as e:
+                            logger.debug(f"AHB access test attempt {attempt + 1} failed: {e}")
+                            click.echo(".", nl=attempt == max_attempts - 1)
+                            if attempt < max_attempts - 1:  # Don't sleep on last attempt
+                                sleep(retry_delay)
+                except KeyboardInterrupt:
+                    click.echo(" INTERRUPTED")
+                    logger.info("AHB access test interrupted by user")
+                    # Set ahb_access_granted to False to trigger the existing error handling
+                    ahb_access_granted = False
+
                 res_str = (
                     (colorama.Fore.GREEN + "successfully")
                     if ahb_access_granted
                     else (colorama.Fore.RED + "without AHB access")
                 )
-                click.echo(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
+                click.echo(f"\nDebug Authentication ends {res_str}{colorama.Fore.RESET}.")
                 if not ahb_access_granted:
                     raise SPSDKAppError("Access to AHB is not granted.")
             else:
@@ -1299,10 +1334,7 @@ def dc_export(
 def dc_get_template_command(family: FamilyRevision, output: str) -> None:
     """Generate the template of Debug Credentials YML configuration file."""
     dc_get_template(family, output)
-    click.echo(
-        f"The Debug Credentials template for {family} has been saved into "
-        f"{get_printable_path(output)} YAML file"
-    )
+    click.echo(f"Creating {get_printable_path(output)} template file.")
 
 
 def dc_get_template(family: FamilyRevision, output: str) -> None:
@@ -1372,7 +1404,7 @@ def read_memory(
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
-        debug_probe.connect()
+        debug_probe.connect_safe()
         try:
             data = debug_probe.mem_block_read(addr=address, size=byte_count)
         except SPSDKError as exc:
@@ -1428,7 +1460,7 @@ def write_memory(
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
-        debug_probe.connect()
+        debug_probe.connect_safe()
         try:
             debug_probe.mem_block_write(addr=address, data=data)
         except SPSDKError as exc:
@@ -1478,7 +1510,7 @@ def test_connection(
             debug_probe_params=debug_probe_params.debug_probe_user_params,
             print_func=click.echo,
         ) as debug_probe:
-            debug_probe.connect()
+            debug_probe.connect_safe()
             if destination == "cpu_mem":
                 return test_ahb_access(debug_probe)
             if destination == "debug_port":
@@ -1597,7 +1629,7 @@ def get_uuid(
             debug_probe_params.debug_probe_user_params,
             print_func=click.echo,
         ) as debug_probe:
-            debug_probe.connect()
+            debug_probe.connect_safe()
             try:
                 dm = DebugMailbox(
                     debug_probe=debug_probe,
@@ -1610,7 +1642,7 @@ def get_uuid(
             except SPSDKError:
                 debug_probe.close()
                 debug_probe.open()
-                debug_probe.connect()
+                debug_probe.connect_safe()
                 dm = DebugMailbox(
                     debug_probe=debug_probe,
                     family=family,
@@ -1659,7 +1691,7 @@ def debug_halt(family: FamilyRevision, debug_probe_params: DebugProbeParams) -> 
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
-        debug_probe.connect()
+        debug_probe.connect_safe()
         debug_probe.debug_halt()
 
 
@@ -1688,7 +1720,7 @@ def debug_resume(family: FamilyRevision, debug_probe_params: DebugProbeParams) -
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
-        debug_probe.connect()
+        debug_probe.connect_safe()
         debug_probe.debug_resume()
 
 

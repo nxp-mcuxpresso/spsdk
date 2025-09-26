@@ -1,0 +1,175 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ======================  Signed message Configuration template for mimx9352, Revision: latest.  =======================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx9352
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output Signed Message file name
+output: ../workspace/signed_msg_key_exchange_hkdf.bin
+
+# ======================================================================================================================
+#                                            == Settings of Signed Message ==
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the signed message.
+# Possible options: <none, oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# ----------------------------------------===== SRK revoke mask [Required] =====----------------------------------------
+# Description: Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 =
+# revoke SRK_1 etc.
+srk_revoke_mask: 0
+# -----------------------------------------===== Fuse version [Required] =====------------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this container.
+fuse_version: 0
+# ---------------------------------------===== Software version [Required] =====----------------------------------------
+# Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse
+# version field.
+sw_version: 0
+# --------------------------------===== Signed Message container signer [Required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
+# revoked.
+signer: srk1_ecc256.pem
+
+# ======================================================================================================================
+#                                    == Configuration of Signed Message SRK table ==
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag only
+  # affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing
+  # process itself. This option exists only for compatibility with systems where fuses are already programmed. In most
+  # cases, this should remain false.
+  flag_ca: false
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
+  # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
+  # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
+  srk_array:
+    - srk0_ecc256.pub
+    - srk1_ecc256.pub
+    - srk2_ecc256.pub
+    - srk3_ecc256.pub
+
+# ======================================================================================================================
+#                                               == Settings of Message ==
+# ======================================================================================================================
+message:
+  command:
+    # ---------------------------------------===== Key exchange [Required] =====----------------------------------------
+    # Description: This message is used to perform a combined key agreement and key derivation operation. The derived
+    # key will be stored in key storage as a new key. Only symmetric keys can be created with this operation. Key
+    # attributes are set in the command, like others key creation APIs (Generate key, Import key).
+    KEY_EXCHANGE_REQ:
+      # --------------------------------------===== Key store ID [Required] =====---------------------------------------
+      # Description: Key store ID where to store the derived key. It must be the key store ID related to the key
+      # management handle set in the command API
+      key_store_id: 0x454C4500
+      # ---------------------------------===== Key exchange algorithm [Required] =====----------------------------------
+      # Description:
+      #  HKDF SHA256 0x09020109
+      #  HKDF SHA384 0x0902010A
+      # Possible options: <HKDF SHA256, HKDF SHA384>
+      key_exchange_algorithm: HKDF SHA256
+      # ---------------------------------------===== Salt Flags [Required] =====----------------------------------------
+      # Description: Bit field indicating the requested operations:
+      #  Bit 0: Salt in step #1 (HKDF-extract) of HMAC based two-step key derivation process:
+      #  - 0: Use zeros salt
+      #  - 1:Use peer public key hash as salt
+      #  Bit 1: In case of ELE import, salt used to derive OEM_IMPORT_WRAP_SK and OEM_IMPORT_CMAC_SK:
+      #  - 0: Zeros string
+      #  - 1: Device SRKH.
+      #  Bit 2 to 15: Reserved
+      salt_flags: 0
+      # ------------------------------------===== Derived key group [Required] =====------------------------------------
+      # Description: Derived key group. 100 groups are available per key store. It must be a value in the range [0; 99].
+      # Keys belonging to the same group can be managed through the Manage key group command
+      derived_key_grp: 0
+      # ----------------------------------===== Derived key size bits [Required] =====----------------------------------
+      # Description: Derived key size bits
+      # Possible options: <128, 192, 224, 256, 384, 512>
+      derived_key_size_bits: 256
+      # ------------------------------------===== Derived key type [Required] =====-------------------------------------
+      # Description:
+      #  Key type          Value   Key size in bits
+      #  AES               0x2400  128/192/256
+      #  HMAC              0x1100  224/256/384/512
+      #  OEM_IMPORT_MK_SK  0x9200  128/192/256
+      # Possible options: <AES, HMAC, OEM_IMPORT_MK_SK>
+      derived_key_type: OEM_IMPORT_MK_SK
+      # ----------------------------------===== Derived key lifetime [Required] =====-----------------------------------
+      # Description:
+      #  VOLATILE           0x00  Standard volatile key.
+      #  PERSISTENT         0x01  Standard persistent key.
+      #  PERMANENT          0xFF  Standard permanent key.
+      # Possible options: <VOLATILE, PERSISTENT, PERMANENT>
+      derived_key_lifetime: PERSISTENT
+      # ------------------------------------===== Derived key usage [Required] =====------------------------------------
+      # Description: Permission usage list. List of possible permissions:
+      #  Cache           0x00000004  Permission to cache the key in the ELE internal secure memory. This usage is set by
+      # default by ELE FW for all keys generated or imported.
+      #  Encrypt         0x00000100  Permission to encrypt a message with the key. It could be cipher encryption, AEAD
+      # encryption or asymmetric encryption operation.
+      #  Decrypt         0x00000200  Permission to decrypt a message with the key. It could be cipher decryption, AEAD
+      # decryption or asymmetric decryption operation.
+      #  Sign message    0x00000400  Permission to sign a message with the key. It could be a MAC generation or an
+      # asymmetric message signature operation.
+      #  Verify message  0x00000800  Permission to verify a message signature with the key. It could be a MAC
+      # verification or an asymmetric message signature verification operation.
+      #  Sign hash       0x00001000  Permission to sign a hashed message with the key with an asymmetric signature
+      # operation. Setting this permission automatically sets the Sign Message usage.
+      #  Verify hash     0x00002000  Permission to verify a hashed message signature with the key with an asymmetric
+      # signature verification operation.
+      #  Setting this permission automatically sets the Verify Message usage.
+      #  Derive          0x00004000  Permission to derive other keys from this key.
+      derived_key_usage:
+        - Derive
+      # -----------------------------===== Derived key permitted algorithm [Required] =====-----------------------------
+      # Description:
+      #  HKDF SHA256 (HMAC two-step)  0x08000109
+      #  HKDF SHA384 (HMAC two-step)  0x0800010A
+      # Possible options: <HKDF SHA256, HKDF SHA384>
+      derived_key_permitted_algorithm: HKDF SHA256
+      # ----------------------------------===== Derived key lifecycle [Required] =====----------------------------------
+      # Description:
+      #  CURRENT           0x00  Key is usable in current lifecycle.
+      #  OPEN              0x01  Key is usable in open lifecycle.
+      #  CLOSED            0x02  Key is usable in closed lifecycle.
+      #  CLOSED and LOCKED 0x04  Key is usable in closed and locked lifecycle.
+      # Possible options: <CURRENT, OPEN, CLOSED, LOCKED>
+      derived_key_lifecycle: CURRENT
+      # -------------------------------------===== Derived key ID [Required] =====--------------------------------------
+      # Description: It could be:
+      #  - Wanted key identifier of the generated key: only supported by persistent and permanent keys
+      #  - 0x00000000 to let the FW chose the key identifier: supported by all keys (all persistence levels)
+      derived_key_id: 0x1
+      # -------------------------------------===== Private key ID [Required] =====--------------------------------------
+      # Description: Identifier in the ELE key storage of the private key to use with the peer public key during the key
+      # agreement process
+      private_key_id: 0x70000000
+      # --------------------------------===== OEM Private Key for ECDH [Optional] =====---------------------------------
+      # Description: Path to OEM P256 private key file (PEM format) used for ECDH key agreement. This key will be used
+      # with NXP_PROD_KA_PUB to derive the shared secret and subsequent keys. If provided along with nxp_prod_ka_pub,
+      # automatic ECDH key derivation will be performed.
+      oem_private_key: oem_private_key.pem
+      # -------------------------===== NXP Production Key Agreement Public Key [Optional] =====-------------------------
+      # Description: NXP production key agreement public key. Used together with oem_private_key for ECDH key
+      # derivation.
+      nxp_prod_ka_pub: nxp.pub

@@ -19,6 +19,7 @@ import colorama
 from click_command_tree import _build_command_tree, _CommandWrapper
 
 from spsdk import __version__ as spsdk_version
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import INT, SPSDKAppError, make_table_from_items
 from spsdk.el2go.interface import EL2GOInterfaceHandler
@@ -31,7 +32,7 @@ from spsdk.utils.abstract_features import ConfigBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_configuration, load_hex_string
+from spsdk.utils.misc import load_hex_string
 
 FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
 logger = logging.getLogger(__name__)
@@ -565,15 +566,11 @@ def spsdk_config_option(
                 kwargs["config"] = None
                 return func(*args, **kwargs)
 
-            cfg = Config()
-            cfg_dir = os.getcwd()
             if cfg_path is not None:
-                cfg_abs_path = os.path.abspath(cfg_path).replace("\\", "/")
-                cfg = Config(load_configuration(cfg_abs_path))
-                cfg_dir = os.path.dirname(cfg_abs_path)
+                cfg = Config.create_from_file(cfg_path)
+            else:
+                cfg = Config()
 
-            cfg.search_paths = [cfg_dir]
-            cfg.config_dir = cfg_dir
             for oc in override_config:
                 pair = oc.split("=", 1)
                 cfg[pair[0]] = pair[1]
@@ -815,6 +812,7 @@ def spsdk_mboot_interface(
 
     :return: Click decorator.
     """
+    spsdk_logger.install(level=logging.WARNING)
 
     def decorator(func: Callable[[FC], FC]) -> Callable:
         @functools.wraps(func)

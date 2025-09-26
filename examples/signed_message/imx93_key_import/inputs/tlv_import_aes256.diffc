@@ -1,0 +1,11 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/tlv_import_aes256.yaml
+user_cfg: inputs/tlv_import_aes256.yaml
+custom_command: "%! nxpimage signed-msg tlv get-template -f mx93 -o workspace/tlv_import_aes256.yaml --force"
+
+comments:
+  permitted_algorithm: "Set permitted algo"
+  key_usage: "Specify key usage restrictions"
+  key_lifecycle: "Specify in which lifecycle stages the key is valid"
+

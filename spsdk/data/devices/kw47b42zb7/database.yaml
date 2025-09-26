@@ -10,7 +10,11 @@ revisions:
           reg_spec: ifr_romcfg_a0.json
         cmactable:
           reg_spec: ifr_cmactable_a0.json
-  a1: {}
+  a1: 
+    features:
+      pfr:
+        romcfg:
+          reg_spec: ifr_romcfg_a1.json
   a2: {}
   a2.1: {}
 latest: a2.1

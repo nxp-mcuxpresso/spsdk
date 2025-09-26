@@ -86,7 +86,7 @@ features:
   # ======== DAT section ========
   dat:
     socc: 0x0A # SOCC identification
-    rot_not_part_of_dac: True
+    dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
     dmbox_ap_ix: 3
 
   # ======== MBI section ========

@@ -111,16 +111,6 @@ def verify(config: Config, message4: str, message5: str) -> None:
     ),
 )
 @click.option(
-    "-a",
-    "--auth-key-id",
-    type=click.Choice(
-        [SHEKeyID.MASTER_ECU_KEY.label, SHEKeyID.BOOT_MAC_KEY.label], case_sensitive=False
-    ),
-    callback=lambda ctx, param, value: SHEKeyID.from_label(value),
-    help="Authentication key ID.",
-    default=SHEKeyID.BOOT_MAC_KEY.label,
-)
-@click.option(
     "-d",
     "--data",
     required=True,
@@ -128,9 +118,7 @@ def verify(config: Config, message4: str, message5: str) -> None:
     help="Path to application image.",
 )
 @spsdk_output_option(required=False, help="Output file for calculated boot MAC")
-def calc_boot_mac(
-    interface: MbootProtocolBase, key: str, auth_key_id: SHEKeyID, data: str, output: str
-) -> None:
+def calc_boot_mac(interface: MbootProtocolBase, key: str, data: str, output: str) -> None:
     """Calculate Boot MAC using provided key and data."""
     key_data = bytes.fromhex(load_secret(key))
     input_data = load_binary(data)
@@ -141,11 +129,11 @@ def calc_boot_mac(
         click.echo(f"Boot MAC written to {get_printable_path(output)}")
     if interface:
         updater = SHEUpdate(
-            new_key=boot_mac, new_key_id=3, auth_key=key_data, auth_key_id=auth_key_id.tag
+            new_key=boot_mac, new_key_id=3, auth_key=key_data, auth_key_id=SHEKeyID.BOOT_MAC_KEY.tag
         )
         updater_blob = updater.get_messages()
         with McuBoot(interface, cmd_exception=True) as mboot:
-            mboot.kp_set_user_key(3, key_data=b"".join(updater_blob))
+            mboot.kp_set_user_key(SHEKeyID.BOOT_MAC.tag, key_data=b"".join(updater_blob))
         click.echo("Boot MAC updated successfully.")
 
 

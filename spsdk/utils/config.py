@@ -37,6 +37,7 @@ class Config(dict):
         """Config dictionary constructor."""
         super().__init__(*args, **kwargs)
         self.config_dir = os.getcwd()
+        self.config_name = ""
         self.search_paths: list[str] = []
 
     @classmethod
@@ -49,8 +50,10 @@ class Config(dict):
         cfg_abs_path = os.path.abspath(file_path).replace("\\", "/")
         cfg = cls(load_configuration(cfg_abs_path))
         cfg_dir = os.path.dirname(cfg_abs_path)
+        cfg_name = os.path.basename(cfg_abs_path)
         cfg.search_paths = [cfg_dir]
         cfg.config_dir = cfg_dir
+        cfg.config_name = cfg_name
         return cfg
 
     @classmethod

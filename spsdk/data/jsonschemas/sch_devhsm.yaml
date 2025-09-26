@@ -26,6 +26,12 @@ common:
       description: Path to a file containing encrypted OEM Master Share to restore a secure session
       template_value: oem_enc_master_share.bin
       format: optional_file
+    oemEncShare:
+      type: string
+      title: OEM Encrypted Share
+      description: Path to a file containing encrypted OEM Share to restore a secure session
+      template_value: oem_enc_share.bin
+      format: optional_file
     initialReset:
       type: boolean
       title: Initial device reset

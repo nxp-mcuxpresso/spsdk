@@ -1034,6 +1034,10 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         :param encoding: encoding type, default is DER
         :returns: Private key in bytes
         """
+        if encoding == SPSDKEncoding.NXP:
+            # Export raw private scalar 'd' only in NXP format
+            return self.d.to_bytes(self.coordinate_size, Endianness.BIG.value)
+
         return self.key.private_bytes(
             encoding=SPSDKEncoding.get_cryptography_encodings(encoding),
             format=PrivateFormat.PKCS8,

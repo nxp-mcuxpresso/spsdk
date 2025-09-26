@@ -16,6 +16,43 @@
 Release Notes
 =============
 
+-------------------------
+3.3.0 (26-September-2025)
+-------------------------
+
+**New features**
+
+* :ref:`el2go-host`:
+    - extend error codes for EL2GO product-based provisioning
+
+* `nxpdebugmbox`_:
+    - add validation in DAT authentication of SRKH for MCU PQC
+    - unify get-template output messages
+
+* :ref:`nxpele`:
+    - secure enclave key provision support 
+
+* `nxpimage`_:
+    - implement iae templates for kernel image and dtb
+    - reorganize AHAB image types and add V2X support for i.MX8 devices
+    - add default instance value to FlexSPI RAM XMCD configurations
+
+* :ref:`nxpshe`:
+    - add verify_only flag support and enable additional user keys
+
+* add shell autocompletion setup command for SPSDK tools
+
+**Bugfixes**
+
+* `nxpimage`_:
+    - add validation for empty binary image export
+
+* :ref:`nxpshe`:
+    - remove debug prints and unused auth-key-id parameter from SHE boot MAC functionality
+
+* :ref:`nxpwpc`:
+    - fix new name for property 17
+
 ------------------------
 3.2.0 (29-August-2025)
 ------------------------

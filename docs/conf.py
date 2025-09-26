@@ -65,7 +65,7 @@ extensions = [
     "generate_schemas",
     "generate_table",
     "generate_apps_img",
-    "generate_readme",
+    # "generate_readme",
     "generate_project_struct_doc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",

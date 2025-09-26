@@ -33,18 +33,26 @@ features:
     core_ids:
       CORTEX_M4: [1, "cortex-m4", "Cortex M4"]
       CORTEX_A35: [2, "cortex-a35", "Cortex A35"]
+      ELE: [0x06, seco, SECO core]
+      V2X_1: [9, "v2x-1", "V2X 1"]
+      V2X_2: [10, "v2x-2", "V2X 2"]
     image_types:
       application:
         EXECUTABLE: [0x03, executable, Executable Image]
         DATA: [0x04, data, Data Image]
-        DCD: [0x05, dcd, DCD Image]
-        SECO: [0x06, seco, SECO Image]
         PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
-        DEK_VALIDATION: [0x08, dek_validation, DEK validation Image]
         PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+        V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
+      ele:
+        ELE: [0x06, seco, SECO Image]
+      v2x:
+        V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
+        V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
+        V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
 
     image_types_mapping:
-      seco: [6]
+      ele: [6]
+      v2x: [9, 10]
 
     # AHAB extra images
     ddr_alignments: [0x8000, 0x4000, 0x8000, 0]

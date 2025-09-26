@@ -144,7 +144,7 @@ def test_ahb_access(
 
     try:
         # Enter debug state and halt
-        probe.mem_reg_read(probe.DHCSR_REG)
+        dhcsr = probe.mem_reg_read(probe.DHCSR_REG)
         probe.mem_reg_write(
             addr=probe.DHCSR_REG,
             data=(probe.DHCSR_DEBUGKEY | probe.DHCSR_C_HALT | probe.DHCSR_C_DEBUGEN),
@@ -159,10 +159,7 @@ def test_ahb_access(
                 raise SPSDKError("Test connection verification failed")
         ahb_enabled = True
         # Exit debug state
-        probe.mem_reg_write(
-            addr=probe.DHCSR_REG, data=(probe.DHCSR_DEBUGKEY | probe.DHCSR_C_DEBUGEN)
-        )
-        probe.mem_reg_write(addr=probe.DHCSR_REG, data=probe.DHCSR_DEBUGKEY)
+        probe.mem_reg_write(addr=probe.DHCSR_REG, data=dhcsr)
 
     except SPSDKError as exc:
         logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {str(exc)}")

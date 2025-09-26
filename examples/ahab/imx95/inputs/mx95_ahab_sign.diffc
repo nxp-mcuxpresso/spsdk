@@ -1,0 +1,15 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_sign_template.yaml
+user_cfg: inputs/mx95_ahab_sign.yaml
+custom_command: "%! nxpimage ahab get-template -f mimx9596 -o workspace/ahab_sign_template.yaml -s --force"
+
+comments:
+    revision: "IMPORTANT! Change the revision according to your chip, latest B0 revision has different container format than A1"
+    srk_set: "Define set which is used to authenticate the container"
+    srk_table: "All attributes related to the signing"
+    srk_table_#2: "All attributes related to the signing"
+    signer: "Define the path to the private key"
+    signer_#2: "Define the path to the private PQC key"
+    check_all_signatures: "Check all signatures in the container"
+    dek_keyblob: "Specify configuration for encryption if needed"

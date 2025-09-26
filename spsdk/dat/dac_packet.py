@@ -12,10 +12,9 @@ from struct import calcsize, pack, unpack_from
 
 from typing_extensions import Self
 
-from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
+from spsdk.dat.protocol_version import ProtocolVersion
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -77,92 +76,6 @@ class DebugAuthenticationChallenge:
         msg += f"CC_soc_default         : {format(self.cc_soc_default, '08X')}\n"
         msg += f"Challenge              : {self.challenge.hex()}\n"
         return msg
-
-    def validate_against_dc(
-        self, family: FamilyRevision, dc: DebugCredentialCertificate
-    ) -> Verifier:
-        """Validate against Debug Credential file.
-
-        :param family: Chip family name
-        :param dc: Debug Credential class to be validated by DAC
-        :return: The final Verifier object
-        """
-        db = get_db(family)
-        ret = Verifier(
-            name="DAC versus DC",
-            description="This is verifier of Debug Authentication Challenge against Debug Credential",
-        )
-        if DebugCredentialCertificate.dat_based_on_ele(family):
-            ret.add_record(
-                "Protocol version",
-                result=VerifierResult.WARNING,
-                value=f"Not supported on {family.name}.\nDAC: {self.version}\nDC:  {dc.version}",
-            )
-        elif self.version != dc.version:
-            ret.add_record(
-                "Protocol version",
-                result=VerifierResult.ERROR,
-                value=f"Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.version}",
-            )
-        else:
-            ret.add_record(
-                "Protocol version", result=VerifierResult.SUCCEEDED, value=str(dc.version)
-            )
-
-        family_socc = db.get_int(DatabaseManager.DAT, "socc")
-        if self.socc != dc.socc:
-            ret.add_record(
-                "SOCC",
-                result=VerifierResult.ERROR,
-                value=f"Different DAC and DC SOCC.\nDAC: {self.socc:08X}\nDC:  {dc.socc:08X}",
-            )
-        elif self.socc != family_socc:
-            ret.add_record(
-                "SOCC",
-                result=VerifierResult.ERROR,
-                value=(
-                    f"Invalid Family SOCC.\n Used: {self.socc:08X}\n"
-                    f" Family valid SOCC: {family_socc:08X}"
-                ),
-            )
-        else:
-            ret.add_record("SOCC", result=VerifierResult.SUCCEEDED, value=f"{dc.socc:08X}")
-
-        if dc.uuid == bytes(len(dc.uuid)):
-            ret.add_record(
-                "UUID",
-                result=VerifierResult.WARNING,
-                value=f"The general UUID has been used. Fits for all {family.name} chips.",
-            )
-        elif self.uuid != dc.uuid:
-            ret.add_record(
-                "UUID",
-                result=VerifierResult.ERROR,
-                value=f"Different DAC and DC UUID.\nDAC: {self.uuid.hex()}\nDC:  {dc.uuid.hex()}",
-            )
-        else:
-            ret.add_record("UUID", result=VerifierResult.SUCCEEDED, value=self.uuid.hex())
-
-        rot_not_part_of_dac = db.get_bool(DatabaseManager.DAT, "rot_not_part_of_dac", False)
-        if rot_not_part_of_dac:
-            ret.add_record("RoT Hash", VerifierResult.SUCCEEDED, value="Not used")
-        else:
-            dc_rotkh = dc.calculate_hash()
-            if dc_rotkh and not all(
-                self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
-            ):
-                ret.add_record(
-                    "RoT Hash",
-                    VerifierResult.ERROR,
-                    value=(
-                        "Invalid RKTH.\n"
-                        f"DAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
-                    ),
-                )
-            else:
-                ret.add_record("RoT Hash", VerifierResult.SUCCEEDED, value=dc_rotkh.hex())
-
-        return ret
 
     def export(self) -> bytes:
         """Exports the DebugAuthenticationChallenge into bytes."""

@@ -145,6 +145,15 @@ class DebugProbeVirtual(DebugProbe):
         """
         self.connected = True
 
+    def connect_safe(self) -> None:
+        """Connect to target in safe manner.
+
+        The Virtual connecting function for SPSDK library to support various DEBUG PROBES.
+        The function is used to initialize the connection to target and enable using debug probe
+        for DAT purposes.
+        """
+        self.connect()
+
     def close(self) -> None:
         """Close Virtual interface.
 
@@ -352,20 +361,27 @@ class DebugProbeVirtual(DebugProbe):
                 subs_data[int(key)] = subs_data_raw[key]
             return subs_data
         except (TypeError, JSONDecodeError) as exc:
-            raise SPSDKDebugProbeError(f"Cannot parse substituted values: ({str(exc)})")
+            raise SPSDKDebugProbeError(f"Cannot parse substituted values: ({str(exc)})") from exc
 
     def debug_halt(self) -> None:
         """Halt the CPU execution."""
-        pass
 
     def debug_resume(self) -> None:
         """Resume the CPU execution."""
-        pass
 
     def debug_step(self) -> None:
         """Step the CPU execution."""
-        pass
 
     def read_dp_idr(self) -> int:
         """Read Debug port identification register."""
         return 0x12345678
+
+    def coresight_reg_read_safe(
+        self, access_port: bool = True, addr: int = 0, max_retries: int = 3
+    ) -> int:
+        return self.coresight_reg_read(access_port=access_port, addr=addr)
+
+    def coresight_reg_write_safe(
+        self, access_port: bool = True, addr: int = 0, data: int = 0, max_retries: int = 3
+    ) -> None:
+        self.coresight_reg_write(access_port=access_port, addr=addr, data=data)

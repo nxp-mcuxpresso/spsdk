@@ -55,6 +55,7 @@ class DevHsmSB4(DevHsm):
         commands: list[BaseCmd],
         oem_share_input: Optional[bytes] = None,
         oem_enc_master_share_input: Optional[bytes] = None,
+        oem_enc_share_input: Optional[bytes] = None,
         cust_mk_sk: Optional[bytes] = None,
         workspace: Optional[str] = None,
         initial_reset: Optional[bool] = False,
@@ -81,6 +82,7 @@ class DevHsmSB4(DevHsm):
         self.mboot = mboot
         self.oem_share_input = oem_share_input or random_bytes(16)
         self.oem_enc_master_share_input = oem_enc_master_share_input
+        self.oem_enc_share_input = oem_enc_share_input
         self.cust_mk_sk = cust_mk_sk
         self.info_print = info_print or print
         self.initial_reset = initial_reset
@@ -101,6 +103,15 @@ class DevHsmSB4(DevHsm):
 
         self.wrapped_cust_mk_sk = bytes()
         self.final_sb = bytes()
+
+        if self.oem_enc_share_input and (
+            bool(self.oem_enc_master_share_input) ^ bool(self.oem_enc_share_input)
+        ):
+            raise SPSDKError(
+                "Incomplete OEM SHARE inputs. "
+                "Either provide both OEM SHARE inputs to recreate secure session, "
+                "or do not provide any of them to create a new session."
+            )
 
     def __repr__(self) -> str:
         return "SB4 DevHSM"
@@ -206,11 +217,12 @@ class DevHsmSB4(DevHsm):
             self.info_print(" 1: Initial target reset is disabled ")
 
         # 2: Call GEN_OEM_MASTER_SHARE to generate encOemShare.bin (ENC_OEM_SHARE will be later put in place of ISK)
-        if self.oem_enc_master_share_input and self.oem_share_input:
+        if self.oem_enc_master_share_input and self.oem_share_input and self.oem_enc_share_input:
             self.info_print(" 2: Setting OEM master share.")
-            oem_enc_share = self.oem_set_master_share(
+            _ = self.oem_set_master_share(
                 oem_seed=self.oem_share_input, enc_oem_share=self.oem_enc_master_share_input
             )
+            oem_enc_share = self.oem_enc_share_input
         elif self.oem_share_input:
             self.info_print(" 2: Generating OEM master share.")
             oem_enc_share, _, _ = self.oem_generate_master_share(self.oem_share_input)
@@ -658,6 +670,12 @@ class DevHsmSB4(DevHsm):
             if "oemEncMasterShare" in config
             else None
         )
+        enc_oem_share_in = (
+            config.load_symmetric_key(key="oemEncShare", expected_size=64, name="OEM ENC SHARE")
+            if "oemEncShare" in config
+            else None
+        )
+
         cust_mk_sk = (
             config.load_symmetric_key(
                 key="containerKeyBlobEncryptionKey", expected_size=32, name="CUST_MK_SK INPUT"
@@ -679,6 +697,7 @@ class DevHsmSB4(DevHsm):
             family=family,
             oem_share_input=oem_share_in,
             oem_enc_master_share_input=enc_oem_master_share_in,
+            oem_enc_share_input=enc_oem_share_in,
             cust_mk_sk=cust_mk_sk,
             commands=sb4_data.commands,
             workspace=config.get_output_file_name("workspace") if "workspace" in config else None,

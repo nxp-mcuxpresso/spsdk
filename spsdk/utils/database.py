@@ -1653,6 +1653,7 @@ class FeaturesEnum(SpsdkEnum):
     SB40 = (35, "sb40", "Secure Binary v4.0")
     SBC = (36, "sbc", "sbc")
     SHE_SCEC = (37, "she_scec", "Secure Hardware Extension")
+    TLV_BLOB = (38, "tlv_blob", "Type-Length-Value blobs")
 
 
 class DatabaseManager:
@@ -1885,6 +1886,7 @@ class DatabaseManager:
     FCF = FeaturesEnum.FCF.label
     SBC = FeaturesEnum.SBC.label
     SHE_SCEC = FeaturesEnum.SHE_SCEC.label
+    TLV_BLOB = FeaturesEnum.TLV_BLOB.label
 
 
 def get_schema_file(feature: str) -> dict[str, Any]:

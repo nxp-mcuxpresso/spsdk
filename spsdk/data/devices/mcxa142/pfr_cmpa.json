@@ -682,42 +682,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -733,42 +733,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -784,42 +784,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -835,42 +835,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -886,42 +886,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -937,42 +937,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -988,42 +988,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1039,42 +1039,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1100,42 +1100,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1151,42 +1151,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1202,42 +1202,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1253,42 +1253,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1304,42 +1304,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1355,42 +1355,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1406,42 +1406,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },
@@ -1457,42 +1457,42 @@
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
                                     "value": 0,
-                                    "description": "Data flash and unlocked (RW__)"
+                                    "description": "Data flash and unlocked (RW__). Default flash behavior with read and write access only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "DATA_RW_LOCKED",
                                     "value": 1,
-                                    "description": "Data flash and locked (RW_L)"
+                                    "description": "Data flash and locked (RW_L). Read and write operations are allowed but execution is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_LOCKED",
                                     "value": 2,
-                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                    "description": "Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "DATA_ROM_LOCKED",
                                     "value": 3,
-                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                    "description": "Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write & execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "ROM_RX_UNLOCKED",
                                     "value": 4,
-                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but write is blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_UNLOCKED",
                                     "value": 5,
-                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index can be changed to another index by software. This configuration register is unlocked and updatable by application"
                                 },
                                 {
                                     "name": "XOM_LOCKED",
                                     "value": 6,
-                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset"
                                 },
                                 {
                                     "name": "NO_ACCESS_LOCKED",
                                     "value": 7,
-                                    "description": "Hidden (___L)"
+                                    "description": "Hidden (___L). Read, Write & execute operations are blocked. Once this access control index is assigned to a block, the memory range associated with block is hidden until next reset"
                                 }
                             ]
                         },

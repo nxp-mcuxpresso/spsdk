@@ -11,8 +11,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 
 from cryptography import x509
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.x509.extensions import ExtensionNotFound
 from typing_extensions import Self
 
@@ -26,7 +27,7 @@ from spsdk.crypto.crypto_types import (
     SPSDKVersion,
 )
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import PrivateKey, PrivateKeyRsa, PublicKey, PublicKeyEcc, PublicKeyRsa
+from spsdk.crypto.keys import IS_DILITHIUM_SUPPORTED, PrivateKey, PrivateKeyRsa, PublicKey
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import align_block, load_binary, write_file
@@ -141,17 +142,34 @@ class Certificate(BaseClass):
         return self.cert.public_bytes(SPSDKEncoding.get_cryptography_encodings(encoding))
 
     def get_public_key(self) -> PublicKey:
-        """Get public keys from certificate.
+        """Get public keys from certificate."""
+        try:
+            pub_key = self.cert.public_key()
+            return PublicKey.create(pub_key)
+        except ValueError:
+            return self._extract_public_key()
 
-        :return: RSA public key
-        """
-        pub_key = self.cert.public_key()
-        if isinstance(pub_key, rsa.RSAPublicKey):
-            return PublicKeyRsa(pub_key)
-        if isinstance(pub_key, ec.EllipticCurvePublicKey):
-            return PublicKeyEcc(pub_key)
+    def _extract_public_key(self) -> PublicKey:
+        """Extract public key from TBS raw data using Public key's OID."""
+        from pyasn1.codec.der.decoder import decode
+        from pyasn1.codec.der.encoder import encode
+        from pyasn1.type import univ
 
-        raise SPSDKError(f"Unsupported Certificate public key: {type(pub_key)}")
+        oid_str = self.cert.signature_algorithm_oid.dotted_string
+        oid_nums = [int(x) for x in oid_str.split(".")]
+        oid_bytes = encode(univ.ObjectIdentifier(oid_nums))
+
+        oid_start = self.cert.tbs_certificate_bytes.rfind(oid_bytes)
+        oid_end = oid_start + len(oid_bytes)
+
+        pub_data, _ = decode(self.cert.tbs_certificate_bytes[oid_end:], univ.BitString())
+        if IS_DILITHIUM_SUPPORTED and oid_str.startswith("2.16.840.1.101.3.4.3"):
+            from spsdk.crypto.keys import PublicKeyMLDSA
+
+            # Special handling for ML-DSA keys
+            return PublicKeyMLDSA.parse(pub_data.asOctets())
+
+        return PublicKey.parse(pub_data.asOctets())
 
     @property
     def version(self) -> SPSDKVersion:
@@ -173,7 +191,10 @@ class Certificate(BaseClass):
         self,
     ) -> Optional[hashes.HashAlgorithm]:
         """Returns a HashAlgorithm corresponding to the type of the digest signed in the certificate."""
-        return self.cert.signature_hash_algorithm
+        try:
+            return self.cert.signature_hash_algorithm
+        except UnsupportedAlgorithm:
+            return None
 
     @property
     def extensions(self) -> SPSDKExtensions:
@@ -231,7 +252,8 @@ class Certificate(BaseClass):
         :raises SPSDKError: Unsupported key type in Certificate
         :return: true/false whether certificate is valid or not
         """
-        assert isinstance(subject_certificate.signature_hash_algorithm, hashes.HashAlgorithm)
+        if subject_certificate.signature_hash_algorithm is None:
+            raise SPSDKError("Unknown Subject Certificate's signature hash algorithm")
         return self.get_public_key().verify_signature(
             subject_certificate.signature,
             subject_certificate.tbs_certificate_bytes,
@@ -245,7 +267,8 @@ class Certificate(BaseClass):
         :raises SPSDKError: Unsupported key type in Certificate
         :return: true/false whether certificate is valid or not
         """
-        assert isinstance(self.signature_hash_algorithm, hashes.HashAlgorithm)
+        if self.signature_hash_algorithm is None:
+            raise SPSDKError("Signature hash algorithm is unknown")
         return issuer_certificate.get_public_key().verify_signature(
             self.signature,
             self.tbs_certificate_bytes,
