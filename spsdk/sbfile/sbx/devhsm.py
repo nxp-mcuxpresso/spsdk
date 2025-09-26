@@ -100,6 +100,7 @@ class DevHsmSBx(DevHsm):
         devhsm_sch_cfg["common"]["properties"]["bufferAddress"]["template_value"] = hex(
             comm_address
         )
+        devhsm_sch_cfg["common"]["properties"].pop("oemEncShare", None)
         schemas.append(family_sch)
         schemas.append(devhsm_sch_cfg["common"])
 

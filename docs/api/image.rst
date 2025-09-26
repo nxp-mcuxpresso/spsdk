@@ -99,6 +99,14 @@ Signed Messages
    :undoc-members:
    :show-inheritance:
 
+Type-Length-Value blobs
+------------------------
+
+.. automodule:: spsdk.image.ahab.tlv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Bootable image
 ----------------
 .. automodule:: spsdk.image.bootable_image.bimg

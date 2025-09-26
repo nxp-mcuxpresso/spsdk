@@ -131,6 +131,7 @@ class DevHsmSB31(DevHsm):
         devhsm_sch_cfg["common"]["properties"]["bufferAddress"]["template_value"] = hex(
             comm_address
         )
+        devhsm_sch_cfg["common"]["properties"].pop("oemEncShare", None)
         return [family_sch, devhsm_sch_cfg["common"], devhsm_sch_cfg["cust_mk_sk"]]
 
     @classmethod

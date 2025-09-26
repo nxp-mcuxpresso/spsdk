@@ -394,3 +394,296 @@ def test_nxpimage_binary_convert_split_image(
         cli_runner.invoke(nxpimage.main, cmd.split())
         for output in output_files:
             os.path.isfile(output)
+
+
+def test_empty_binary_conditions_for_special_handling():
+    """Test that empty binary meets all conditions for special handling."""
+    # Create a completely empty binary image that should trigger the special handling
+    binary_image = BinaryImage(
+        name="empty_test",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Verify all conditions that should trigger special handling
+    exported_data = binary_image.export()
+    assert len(exported_data) == 0
+    assert binary_image.offset == 0
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 0
+    assert binary_image.pattern.pattern == "zeros"
+    assert not binary_image.execution_start_address
+
+
+def test_empty_binary_with_execution_start_address_condition():
+    """Test that execution_start_address prevents special handling condition."""
+    binary_image = BinaryImage(
+        name="empty_with_exec_addr",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=0x1000,
+    )
+
+    # Verify that execution_start_address condition fails
+    exported_data = binary_image.export()
+    assert len(exported_data) == 0
+    assert binary_image.offset == 0
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 0
+    assert binary_image.pattern.pattern == "zeros"
+    assert binary_image.execution_start_address == 0x1000  # This should prevent special handling
+
+
+def test_empty_binary_with_offset_condition():
+    """Test that non-zero offset prevents special handling condition."""
+    binary_image = BinaryImage(
+        name="empty_with_offset",
+        size=0,
+        offset=0x1000,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Verify that offset condition fails
+    exported_data = binary_image.export()
+    assert len(exported_data) == 0
+    assert binary_image.offset == 0x1000  # This should prevent special handling
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 0
+    assert binary_image.pattern.pattern == "zeros"
+    assert not binary_image.execution_start_address
+
+
+def test_empty_binary_with_sub_images_condition():
+    """Test that sub-images prevent special handling condition."""
+    binary_image = BinaryImage(
+        name="empty_with_sub_images",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Add a sub-image
+    sub_image = BinaryImage(
+        name="sub_image", size=10, offset=0, binary=b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a"
+    )
+    binary_image.add_image(sub_image)
+
+    # Verify that sub_images condition fails
+    exported_data = binary_image.export()
+    assert len(exported_data) > 0  # Should have data from sub-image
+    assert binary_image.offset == 0
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 1  # This should prevent special handling
+    assert binary_image.pattern.pattern == "zeros"
+    assert not binary_image.execution_start_address
+
+
+def test_empty_binary_with_binary_data_condition():
+    """Test that binary data prevents special handling condition."""
+    binary_image = BinaryImage(
+        name="with_binary_data",
+        size=0,
+        offset=0,
+        binary=b"\x01\x02\x03",
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Verify that binary data condition fails
+    exported_data = binary_image.export()
+    assert len(exported_data) > 0  # Should have data from binary
+    assert binary_image.offset == 0
+    assert binary_image.binary  # This should prevent special handling
+    assert len(binary_image.sub_images) == 0
+    assert binary_image.pattern.pattern == "zeros"
+    assert not binary_image.execution_start_address
+
+
+def test_empty_binary_with_non_zeros_pattern_condition():
+    """Test that non-zeros pattern prevents special handling condition."""
+    binary_image = BinaryImage(
+        name="empty_with_pattern",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("ones"),
+        execution_start_address=None,
+    )
+
+    # Verify that non-zeros pattern condition fails
+    exported_data = binary_image.export()
+    assert len(exported_data) == 0
+    assert binary_image.offset == 0
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 0
+    assert binary_image.pattern.pattern == "ones"  # This should prevent special handling
+    assert not binary_image.execution_start_address
+
+
+def test_empty_binary_with_no_pattern_condition():
+    """Test that no pattern still allows special handling condition."""
+    binary_image = BinaryImage(
+        name="empty_no_pattern", size=0, offset=0, pattern=None, execution_start_address=None
+    )
+
+    # Verify the conditions for special handling with no pattern
+    exported_data = binary_image.export()
+    assert len(exported_data) == 0
+    assert binary_image.offset == 0
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 0
+    assert not binary_image.pattern  # No pattern should still allow special handling
+    assert not binary_image.execution_start_address
+
+
+def test_empty_binary_exported_data_length_condition():
+    """Test that exported data length affects special handling condition."""
+    # Test with size > 0 but no actual content
+    binary_image = BinaryImage(
+        name="empty_with_size",
+        size=10,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Verify that exported data length condition fails
+    exported_data = binary_image.export()
+    assert len(exported_data) == 10  # Should have data due to size
+    assert binary_image.offset == 0
+    assert not binary_image.binary
+    assert len(binary_image.sub_images) == 0
+    assert binary_image.pattern.pattern == "zeros"
+    assert not binary_image.execution_start_address
+
+
+def test_special_handling_pattern_condition_edge_cases():
+    """Test edge cases for pattern condition in special handling."""
+    # Test with pattern that has "zeros" in the name but is not exactly "zeros"
+    binary_image1 = BinaryImage(
+        name="test1",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("zeros"),  # Exactly "zeros"
+        execution_start_address=None,
+    )
+
+    binary_image2 = BinaryImage(
+        name="test2",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("ones"),  # Not "zeros"
+        execution_start_address=None,
+    )
+
+    # Verify pattern conditions
+    assert binary_image1.pattern.pattern == "zeros"  # Should allow special handling
+    assert binary_image2.pattern.pattern == "ones"  # Should prevent special handling
+
+
+@pytest.mark.parametrize("execution_address", [None, 0, 0x1000, 0xFFFFFFFF])
+def test_execution_start_address_condition_variations(execution_address):
+    """Test various execution start address values for special handling condition."""
+    binary_image = BinaryImage(
+        name="test_exec_addr",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=execution_address,
+    )
+
+    # Verify execution start address condition
+    if execution_address is None:
+        assert not binary_image.execution_start_address  # Should allow special handling
+    else:
+        assert (
+            binary_image.execution_start_address == execution_address
+        )  # Should prevent special handling
+
+
+@pytest.mark.parametrize("offset_value", [0, 1, 0x1000, 0xFFFFFFFF])
+def test_offset_condition_variations(offset_value):
+    """Test various offset values for special handling condition."""
+    binary_image = BinaryImage(
+        name="test_offset",
+        size=0,
+        offset=offset_value,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Verify offset condition
+    assert binary_image.offset == offset_value
+    if offset_value == 0:
+        # Should allow special handling (offset condition passes)
+        pass
+    else:
+        # Should prevent special handling (offset condition fails)
+        pass
+
+
+def test_all_conditions_combined_for_special_handling():
+    """Test that all conditions must be met simultaneously for special handling."""
+    # Create binary image that meets ALL conditions for special handling
+    binary_image = BinaryImage(
+        name="all_conditions_met",
+        size=0,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+        execution_start_address=None,
+    )
+
+    # Verify ALL conditions are met
+    exported_data = binary_image.export()
+    conditions_met = (
+        len(exported_data) == 0
+        and binary_image.offset == 0
+        and not binary_image.binary
+        and len(binary_image.sub_images) == 0
+        and (not binary_image.pattern or binary_image.pattern.pattern == "zeros")
+        and not binary_image.execution_start_address
+    )
+
+    assert conditions_met, "All conditions should be met for special handling"
+
+
+def test_any_condition_fails_prevents_special_handling():
+    """Test that if any single condition fails, special handling is prevented."""
+    base_params = {
+        "name": "test",
+        "size": 0,
+        "offset": 0,
+        "pattern": BinaryPattern("zeros"),
+        "execution_start_address": None,
+    }
+
+    # Test each condition failure individually
+    test_cases = [
+        {"execution_start_address": 0x1000},  # execution_start_address condition fails
+        {"offset": 0x1000},  # offset condition fails
+        {"pattern": BinaryPattern("ones")},  # pattern condition fails
+        {"binary": b"\x01\x02\x03"},  # binary condition fails
+    ]
+
+    for case_params in test_cases:
+        params = base_params.copy()
+        params.update(case_params)
+
+        binary_image = BinaryImage(**params)
+
+        # At least one condition should fail
+        exported_data = binary_image.export()
+        conditions_met = (
+            len(exported_data) == 0
+            and binary_image.offset == 0
+            and not binary_image.binary
+            and len(binary_image.sub_images) == 0
+            and (not binary_image.pattern or binary_image.pattern.pattern == "zeros")
+            and not binary_image.execution_start_address
+        )
+
+        assert not conditions_met, f"Conditions should not all be met for case: {case_params}"

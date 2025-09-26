@@ -1,0 +1,15 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/key_exchange.yaml
+user_cfg: inputs/key_exchange.yaml
+custom_command: "%! nxpimage signed-msg get-template -f mx93 -o workspace/key_exchange.yaml --force -m KEY_EXCHANGE_REQ"
+
+comments:
+  signer: "Add private key or signer"
+  srk_array: "Add your SRK public keys"
+  key_store_id: "Set ID of the keystore"
+  derived_key_type: "Specify OEM_IMPORT_MK_SK for derivation of master key"
+  private_key_id: "This is ID of the NXP prod key agreement key used for key exchange"
+  input_peer_public_key_digest: "Digest of peer's public key for verification, this might be deleted if private OEM key is provided - will be calculated from public part"
+  oem_private_key: Path to the OEM private key used in key exchange process
+  nxp_prod_ka_pub: Path to the NXP pro key agreement public key

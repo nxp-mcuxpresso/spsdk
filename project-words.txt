@@ -202,6 +202,7 @@ cfgs
 cfpa
 Cfpa
 CFPA
+CHACHA
 chdr
 chdx
 CHEC
@@ -395,7 +396,8 @@ ECDH
 ecid
 ECID
 ecparam
-EDFFABEF
+EDDFABEF
+EDDSA
 Edgelock
 EDGELOCK
 edgelockenclaveimport
@@ -905,6 +907,7 @@ OEIDDR
 OEITCM
 oemelefwkeyimportcmac
 oemelefwkeyimportwrap
+OAEP
 OEMFW
 ofile
 oftad

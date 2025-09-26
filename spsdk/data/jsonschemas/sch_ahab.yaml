@@ -419,6 +419,34 @@ whole_ahab_image:
                               format: file
 
                         - type: object
+                          template_title: Linux Kernel Image
+                          image_identifier: kernel
+                          skip_in_template: True
+                          description: Linux kernel Image container definition
+                          required: [kernel]
+                          properties:
+                            kernel:
+                              type: string
+                              title: Linux Kernel Image Binary
+                              description: Linux kernel executable Image binary file (typically Image.bin)
+                              template_value: Image.bin
+                              format: file
+
+                        - type: object
+                          template_title: Device Tree Blob
+                          image_identifier: dtb
+                          skip_in_template: True
+                          description: Device Tree Blob (DTB) container definition
+                          required: [dtb]
+                          properties:
+                            dtb:
+                              type: string
+                              title: Device Tree Blob Binary
+                              description: Device Tree Blob (DTB) binary file containing hardware description
+                              template_value: device-tree.dtb
+                              format: file
+
+                        - type: object
                           template_title: Uboot
                           image_identifier: uboot
                           skip_in_template: True

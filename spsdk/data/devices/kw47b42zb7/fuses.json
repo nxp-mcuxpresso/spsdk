@@ -471,9 +471,7 @@
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse5",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
+                        "write_lock_int": "0x0001"
                     },
                     "reg_width": 256
                 },
@@ -486,9 +484,7 @@
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse6",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
+                        "write_lock_int": "0x0001"
                     },
                     "reg_width": 256
                 }
@@ -508,9 +504,7 @@
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
+                        "write_lock_int": "0x0001"
                     },
                     "bitfields": [
                         {
@@ -896,9 +890,7 @@
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse9",
-                        "write_lock_int": "0x0001",
-                        "read_lock_int": "0x0004",
-                        "operation_lock_int": "0x0002"
+                        "write_lock_int": "0x0001"
                     },
                     "bitfields": [
                         {
@@ -1431,7 +1423,7 @@
                 {
                     "id": "fuse57",
                     "name": "SECURE_STORAGE_VER_CNT_VIRTUAL",
-                    "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+                    "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc. Fuse is not accessible via ISP mode and can be read and written from application by fuse read and fuse write ELE API.",
                     "index_int": "0x0039",
                     "access": "none",
                     "reg_width": 8

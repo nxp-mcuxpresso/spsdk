@@ -17,11 +17,9 @@ from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.apps.shadowregs import main
 from spsdk.exceptions import SPSDKError
-from spsdk.utils import database
-from spsdk.utils import family
 from spsdk.utils.database import Database, DevicesQuickInfo, QuickDatabase
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.misc import Endianness, load_configuration, use_working_directory
+from spsdk.utils.misc import Endianness, use_working_directory
 from tests.cli_runner import CliRunner
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 

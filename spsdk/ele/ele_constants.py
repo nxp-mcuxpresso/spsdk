@@ -15,7 +15,17 @@ class MessageIDs(SpsdkSoftEnum):
 
     PING_REQ = (0x01, "PING_REQ", "Ping request.")
     ELE_FW_AUTH_REQ = (0x02, "ELE_FW_AUTH_REQ", "ELE firmware authenticate request.")
+    SESSION_OPEN_REQ = (0x10, "SESSION_OPEN_REQ", "Session Open Request")
+    SESSION_CLOSE_REQ = (0x11, "SESSION_CLOSE_REQ", "Session Close Request")
+    SAB_INIT_REQ = (0x17, "SAB_INIT_REQ", "SAB Init Request")
+
     ELE_DUMP_DEBUG_BUFFER_REQ = (0x21, "ELE_DUMP_DEBUG_BUFFER_REQ", "Dump the ELE logs")
+
+    KEY_STORE_OPEN_REQ = (0x30, "KEY_STORE_OPEN_REQ", "Key Store Open Request")
+    KEY_STORE_CLOSE_REQ = (0x31, "KEY_STORE_CLOSE_REQ", "Key Store Close Request")
+
+    PUBLIC_KEY_EXPORT_REQ = (0x32, "PUBLIC_KEY_EXPORT_REQ", "Public Key Export Request")
+
     ELE_OEM_CNTN_AUTH_REQ = (0x87, "ELE_OEM_CNTN_AUTH_REQ", "OEM Container authenticate")
     ELE_VERIFY_IMAGE_REQ = (0x88, "ELE_VERIFY_IMAGE_REQ", "Verify Image")
     ELE_RELEASE_CONTAINER_REQ = (0x89, "ELE_RELEASE_CONTAINER_REQ", "Release Container.")

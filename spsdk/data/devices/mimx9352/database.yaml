@@ -201,7 +201,17 @@ features:
     tee_core_id: cortex-a55
     tee_meta_data_start_cpu_id: 2
 
-    extra_images: ["spl_ddr", "atf", "uboot", "tee"]
+    kernel_load_address: 0x80400000
+    kernel_core_id: cortex-a55
+    kernel_meta_data_start_cpu_id: 2
+
+    dtb_load_address: 0x83000000
+    dtb_entry_point: 0x0
+    dtb_core_id: cortex-a55
+    dtb_meta_data_start_cpu_id: 0
+    dtb_image_type: data
+
+    extra_images: ["spl_ddr", "atf", "uboot", "tee", "kernel", "dtb"]
 
   # ======== EdgeLock Enclave section ========
   ele: {}
@@ -294,3 +304,6 @@ features:
     prov_method: oem_app
     validation_method: max_count=16;max_total_size=16384
     uuid_fuse_index: "6 0 4"
+
+  # ===== TLV =====
+  tlv_blob: {}

@@ -186,7 +186,19 @@ features:
     mcu_core_id: cortex-m33
     mcu_meta_data_start_cpu_id: 0
 
-    extra_images: [upower, spl, atf, uboot, tee, mcu]
+    kernel_load_address: 0x80400000
+    kernel_core_id: cortex-a55
+    kernel_meta_data_start_cpu_id: 0
+    kernel_chunk_size: 0x700000
+    kernel_revisions_to_split: [a0]
+
+    dtb_load_address: 0x83000000
+    dtb_core_id: cortex-a55
+    dtb_meta_data_start_cpu_id: 0
+    dtb_entry_point: 0x0
+    dtb_image_type: data
+
+    extra_images: [upower, spl, atf, uboot, tee, mcu, kernel, dtb]
 
   # ======== EdgeLock Enclave section ========
   ele: {}
@@ -268,3 +280,5 @@ features:
     prov_method: oem_app
     validation_method: max_count=16;max_total_size=16384
     uuid_fuse_index: "7 0 4"
+  # ===== TLV =====
+  tlv_blob: {}

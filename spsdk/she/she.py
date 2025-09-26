@@ -30,7 +30,6 @@ class SHEBootMode(SpsdkEnum):
     STRICT = (0x00, "strict", "Strict Boot Mode")
     SERIAL = (0x01, "serial", "Serial Boot Mode")
     PARALLEL = (0x02, "parallel", "Parallel Boot Mode")
-    UNSECURE = (0x03, "unsecure", "Unsecure Boot Mode")
 
 
 class SHEMaxKeyCountCode(SpsdkEnum):
@@ -139,6 +138,7 @@ class SHEUpdateFlags:
     debugger_protection: bool = False
     key_usage: bool = False
     wildcard: bool = False
+    verify_only: bool = False
 
     def get_bits(self) -> Bits:
         """Convert SHE update flags to bitstring representation."""
@@ -148,6 +148,7 @@ class SHEUpdateFlags:
             + Bits(bool=self.debugger_protection)
             + Bits(bool=self.key_usage)
             + Bits(bool=self.wildcard)
+            + Bits(bool=self.verify_only)
         )
 
     @classmethod
@@ -159,6 +160,7 @@ class SHEUpdateFlags:
             debugger_protection=config.get_bool("debugger_protection", False),
             key_usage=config.get_bool("key_usage", False),
             wildcard=config.get_bool("wildcard", False),
+            verify_only=config.get_bool("verify_only", False),
         )
 
 
@@ -215,7 +217,7 @@ class SHEUpdate(ConfigBaseClass):
         """Generate M1, M2, and M3 update messages."""
         m1 = self._get_ids_data()
 
-        m2_bits = Bits(uint=self.counter, length=28) + self.flags.get_bits() + Bits(95)
+        m2_bits = Bits(uint=self.counter, length=28) + self.flags.get_bits() + Bits(94)
         m2_data = m2_bits.tobytes() + self.new_key
         k1 = SHEDeriveKey.derive_enc_key(key=self.auth_key)
         m2 = aes_cbc_encrypt(key=k1, plain_data=m2_data)
@@ -311,10 +313,4 @@ class SHEBootMac:
         data = swap_endianness(data)
         size = len(data) * 8
         prefix = bytes(12) + size.to_bytes(length=4, byteorder="big")
-        print("prefix.hex():", prefix.hex())
-
-        print("(prefix + data).hex():", (prefix + data).hex())
-
-        print("len(prefix + data)", len(prefix + data))
-
         return cmac(key=key, data=prefix + data)

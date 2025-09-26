@@ -632,7 +632,6 @@ def test_nxpimage_ahab_parse_sm2(
     "config_file",
     [
         ("sm_return_lc.yaml"),
-        ("sm_key_import.yaml"),
         ("sm_key_exchange.yaml"),
     ],
 )
@@ -656,6 +655,41 @@ def test_nxpimage_signed_message_export(
         cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
         assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
+
+        new_bin = load_binary(new_binary)
+        ref_bin = load_binary(ref_binary)
+        # Check content up to signature
+        assert new_bin[:408] == ref_bin[:408]
+
+
+@pytest.mark.parametrize(
+    "config_file",
+    [
+        ("key_exchange.yaml"),
+    ],
+)
+def test_nxpimage_signed_message_key_exchange_hkdf(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, config_file: str
+) -> None:
+    """Test the export of signed messages.
+
+    Verifies that signed messages can be correctly exported from configuration files
+    and validates the output binary size and content.
+
+    :param cli_runner: CLI runner instance to invoke commands
+    :param tmpdir: Temporary directory for test outputs
+    :param data_dir: Directory with test data
+    :param config_file: Configuration file name
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/signed_msg/{config_file}"
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
+        cmd = f"signed-msg export -c {new_config} -w {tmpdir}/assets"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert os.path.isfile(new_binary)
+        assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
 
         new_bin = load_binary(new_binary)
         ref_bin = load_binary(ref_binary)

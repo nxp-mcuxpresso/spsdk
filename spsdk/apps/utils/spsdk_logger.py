@@ -151,6 +151,13 @@ def install(
     # Create and configure debug file logger if requested
     if create_debug_logger and not SPSDK_DEBUG_LOGGING_DISABLED:
         try:
+            if root_logger.hasHandlers():
+                for h in root_logger.handlers:
+                    if (
+                        isinstance(h, logging.handlers.RotatingFileHandler)
+                        and h.baseFilename == SPSDK_DEBUG_LOG_FILE
+                    ):
+                        return  # Prevent multiple debug file handlers
             # Create debug log directory if it doesn't exist
             os.makedirs(os.path.dirname(SPSDK_DEBUG_LOG_FILE), exist_ok=True)
 

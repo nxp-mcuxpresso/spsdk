@@ -71,6 +71,7 @@ features:
     vu_instead_fuse_version: True # The DAT ELE implementation is using Vendor usage name instead of Fuse Version
     ele_cnt_version: 2 # DAT container is based on New AHAB container version 2
     sub_features: ["ele_pqc", "ssf_cert"]
+    dac_rot_type: ecc_pqc_sha521_truncated # The Dac packet is using truncated SHA512 hash and in case of 2 signatures
     test_address: 0x2002_8000
     dmbox_ap_ix: 2
     command_delays: # Additional standard command delays per individual DM commands [seconds]

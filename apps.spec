@@ -139,7 +139,17 @@ try:
     import libuuu
 
     uuudll = libuuu.LibUUU().DLL
-    shared_binaries.append((uuudll, "libuuu/lib"))
+    # use the same relative path like it is in site-packages/libuuu
+    shared_binaries.append(
+        (
+            uuudll,
+            os.path.dirname(
+                os.path.relpath(
+                    uuudll, os.path.dirname(libuuu.__spec__.submodule_search_locations[0])
+                )
+            ),
+        )
+    )
 except OSError:
     pass
 

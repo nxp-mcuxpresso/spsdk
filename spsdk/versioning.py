@@ -16,10 +16,6 @@ def run(version: ScmVersion) -> str:
     """Return a string representation of version object provided by setuptools_scm."""
     log.info("Starting custom version processing")
 
-    # we are exactly on a tag
-    if version.exact:
-        return no_guess_dev_version(version)
-
     # we are on a release branch
     if version.branch and version.branch.startswith("release/"):
         result = version.branch.lower()

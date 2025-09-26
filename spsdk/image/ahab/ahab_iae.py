@@ -44,6 +44,7 @@ from spsdk.utils.misc import (
     clean_up_file_name,
     extend_block,
     load_binary,
+    split_data,
     value_to_bool,
     value_to_int,
     write_file,
@@ -1638,6 +1639,83 @@ class IaeATF(ImageArrayEntryTemplates):
 
     IMAGE_NAME: str = "ATF - ARM Trusted Firmware"
     KEY: str = "atf"
+
+
+class IaeKernel(ImageArrayEntryTemplates):
+    """Template for Linux Kernel Image.
+
+    This template handles the inclusion of Linux kernel executable images
+    (typically Image.bin) in AHAB containers. The kernel image is loaded
+    and executed as part of the boot sequence after earlier boot stages
+    like U-Boot have completed system initialization.
+    """
+
+    IMAGE_NAME: str = "Linux Kernel Image"
+    KEY: str = "kernel"
+
+    @classmethod
+    def create_image_array_entry(
+        cls, iae_cls: IAE_TYPE, chip_config: AhabChipContainerConfig, config: Config
+    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+        """Create image array entries for Linux Kernel Image.
+
+        This specialized implementation:
+        1. Checks if the chip revision requires kernel splitting
+        2. If splitting is not required, delegates to parent implementation
+        3. If splitting is required, loads the kernel binary and splits it into chunks
+        4. Creates multiple image array entries with sequential load addresses
+        5. Each chunk is configured with appropriate load and entry point addresses
+
+        Kernel splitting is necessary on certain chip revisions due to memory
+        layout constraints or boot ROM limitations that prevent loading large
+        contiguous kernel images.
+
+        :param iae_cls: ImageArrayEntry class type to instantiate
+        :param chip_config: AHAB container chip configuration
+        :param config: Configuration dictionary with file paths
+        :return: List of image array entries (single entry if no splitting, multiple if split)
+        :raises SPSDKError: If required files can't be loaded
+        """
+        revision = chip_config.base.family.get_real_revision()
+        db = get_db(chip_config.base.family)
+        revisions_to_split = db.get_list(
+            DatabaseManager.AHAB, f"{cls.KEY}_revisions_to_split", default=[]
+        )
+
+        if revision not in revisions_to_split:
+            return super().create_image_array_entry(iae_cls, chip_config, config)
+
+        chunk_size = db.get_int(DatabaseManager.AHAB, f"{cls.KEY}_chunk_size")
+        load_address = db.get_int(DatabaseManager.AHAB, f"{cls.KEY}_load_address")
+        logger.debug(f"Kernel needs to be split into chunks of {chunk_size} bytes")
+        binary_image = load_binary(config.get_input_file_name(cls.KEY))
+
+        entries = []
+        for binary in split_data(binary_image, chunk_size):
+            iae = cls._create_image_array_entry(
+                iae_cls=iae_cls,
+                binary=binary,
+                chip_config=chip_config,
+                config=config,
+            )
+            iae.load_address = load_address
+            iae.entry_point = load_address
+            load_address += chunk_size
+            entries.append(iae)
+        return entries
+
+
+class IaeDTB(ImageArrayEntryTemplates):
+    """Template for Device Tree Blob.
+
+    This template handles the inclusion of Device Tree Blob (DTB) files
+    in AHAB containers. The DTB contains hardware description information
+    that the Linux kernel uses to understand the hardware configuration
+    of the target device.
+    """
+
+    IMAGE_NAME: str = "Device Tree Blob"
+    KEY: str = "dtb"
 
 
 class IaeUBoot(ImageArrayEntryTemplates):

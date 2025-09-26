@@ -1,0 +1,283 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+output_file:
+  type: object
+  title: Basic Settings
+  properties:
+    output:
+      type: string
+      title: Output Image name
+      description: The path for result binary file.
+      format: file_name
+      template_value: tlv.bin
+  required: [output]
+
+tlv:
+  type: object
+  template_title: Settings of TLV
+  required: [command]
+  properties:
+    command:
+      oneOf:
+        - type: object
+          required: [KEY_IMPORT]
+          properties:
+            KEY_IMPORT:
+              type: object
+              title: Key import TLV
+              description:
+                This TLV is designed to import a symmetric key or a private key of an asymmetric key pair. The imported key must be encrypted
+                (except specific cases like SRKH). The key used to decrypt the imported key must have the following attributes;
+                -  DECRYPT usage;
+                -  A wrapping key algorithm as permitted algorithm (detailed in next sections).
+                User must import symmetric key or private key from an asymmetric key pair. For RSA asymmetric
+                private keys, it must be the concatenation of private exponent followed by the modulus.
+                To be valid, all key attributes of the imported key must be coherent. If attributes are invalid, an error is returned.
+              allOf:
+                - required:
+                    - key_id
+                    - permitted_algorithm
+                    - key_usage
+                    - key_type
+                    - key_size_bits
+                    - key_lifetime
+                    - key_lifecycle
+                    - oem_mk_sk_key_id
+                    - key_wrapping_algorithm
+                - oneOf:
+                    - required:
+                        - wrapped_key
+                        - signature
+                    - required:
+                        - import_key
+                        - oem_import_mk_sk_key
+
+              properties:
+                key_id:
+                  type: [number, string]
+                  title: Key ID
+                  description:
+                    Key store ID where to store the imported key. It must be the key store ID
+                    related to the key management handle set in the command API. If set to 0, the actual ID is determined by ELE.
+                  format: number
+                  template_value: 0x0
+                permitted_algorithm:
+                  type: string
+                  title: Permitted algorithm
+                  description: "Permitted algorithm of the imported key. Supports hash, MAC, cipher, AEAD, signature, and key exchange algorithms."
+                  enum:
+                    # Hash Algorithms
+                    - MD5
+                    - SHA1
+                    - SHA224
+                    - SHA256
+                    - SHA384
+                    - SHA512
+                    - SHA3_224
+                    - SHA3_256
+                    - SHA3_384
+                    - SHA3_512
+                    - SHAKE256
+                    # MAC Algorithms
+                    - HMAC SHA256
+                    - HMAC SHA384
+                    - CMAC
+                    # Cipher Algorithms
+                    - ECB NO PADDING
+                    - CBC NO PADDING
+                    - CTR
+                    - CFB
+                    - OFB
+                    - ALL CIPHER
+                    # AEAD Algorithms
+                    - CCM
+                    - GCM
+                    - CHACHA20_POLY1305
+                    - ALL AEAD
+                    # Signature Algorithms
+                    - ECDSA SHA224
+                    - ECDSA SHA256
+                    - ECDSA SHA384
+                    - ECDSA SHA512
+                    - RSA PKCS1 V1.5 SHA224
+                    - RSA PKCS1 V1.5 SHA256
+                    - RSA PKCS1 V1.5 SHA384
+                    - RSA PKCS1 V1.5 SHA512
+                    - RSA PKCS1 V1.5 SHA ANY
+                    - RSA PKCS1 PSS MGF1 SHA224
+                    - RSA PKCS1 PSS MGF1 SHA256
+                    - RSA PKCS1 PSS MGF1 SHA384
+                    - RSA PKCS1 PSS MGF1 SHA512
+                    - RSA PKCS1 PSS MGF1 SHA ANY
+                    - RSA PKCS1 ALL
+                    - ED25519PH
+                    - ED448PH
+                    - PURE EDDSA
+                    - ALL EDDSA
+                    # Public Key Attestation
+                    - CMAC ATTESTATION
+                    - ECDSA SHA224 ATTESTATION
+                    - ECDSA SHA256 ATTESTATION
+                    - ECDSA SHA384 ATTESTATION
+                    - ECDSA SHA512 ATTESTATION
+                    # Asymmetric Encryption/Decryption
+                    - RSA PKCS1 V1.5 CRYPT
+                    - RSA PKCS1 OAEP SHA1
+                    - RSA PKCS1 OAEP SHA224
+                    - RSA PKCS1 OAEP SHA256
+                    - RSA PKCS1 OAEP SHA384
+                    - RSA PKCS1 OAEP SHA512
+                    # Key Exchange
+                    - ECDH HKDF SHA256 KEY IMPORT
+                    - ECDH HKDF SHA384 KEY IMPORT
+                    - ECDH HKDF SHA ANY KEY IMPORT
+                    - ECDH HKDF SHA256
+                    - ECDH HKDF SHA384
+                    - ECDH HKDF SHA ANY
+                  template_value: SHA256
+                key_usage:
+                  type: array
+                  title: Derived key usage
+                  description:
+                    "Permission usage list. List of possible permissions:\n
+                    Cache           0x00000004  Permission to cache the key in the ELE internal secure memory.
+                    This usage is set by default by ELE FW for all keys generated or imported.\n
+                    Encrypt         0x00000100  Permission to encrypt a message with the key. It could be cipher
+                    encryption, AEAD encryption or asymmetric encryption operation.\n
+                    Decrypt         0x00000200  Permission to decrypt a message with the key. It could be
+                    cipher decryption, AEAD decryption or asymmetric decryption operation.\n
+                    Sign message    0x00000400  Permission to sign a message with the key. It could be
+                    a MAC generation or an asymmetric message signature operation.\n
+                    Verify message  0x00000800  Permission to verify a message signature with the key.
+                    It could be a MAC verification or an asymmetric message signature verification operation.\n
+                    Sign hash       0x00001000  Permission to sign a hashed message with the key
+                    with an asymmetric signature operation. Setting this permission automatically
+                    sets the Sign Message usage.\n
+                    Verify hash     0x00002000  Permission to verify a hashed message signature with
+                    the key with an asymmetric signature verification operation.\n
+                    Setting this permission automatically sets the Verify Message usage.\n
+                    Derive          0x00004000  Permission to derive other keys from this key."
+                  inItems: 0
+                  maxItems: 8
+                  items:
+                    type: string
+                    enum:
+                      [
+                        Cache,
+                        Encrypt,
+                        Decrypt,
+                        Sign message,
+                        Verify message,
+                        Sign hash,
+                        Verify hash,
+                        Derive,
+                      ]
+                    template_value: [Cache, Derive]
+                key_type:
+                  type: string
+                  title: Import key type
+                  description: "\n
+                    Key type          Value   Key size in bits\n
+                    AES               0x2400  128/192/256\n
+                    HMAC              0x1100  224/256/384/512\n
+                    Derived key       0x1200  256/384\n
+                    OEM_IMPORT_MK_SK  0x9200  128/192/256\n
+                    ECC NIST          0x7112  128/192/256"
+                  enum: [AES, HMAC, Derived key, OEM_IMPORT_MK_SK, ECC NIST]
+                  template_value: AES
+                key_size_bits:
+                  type: number
+                  title: Import key size bits
+                  description: Import key size bits
+                  enum: [128, 192, 224, 256, 384, 512]
+                  template_value: 256
+                key_lifetime:
+                  type: string
+                  title: Imported key lifetime
+                  description: "\n
+                    ELE_KEY_IMPORT_VOLATILE           0xC0020000  Standard volatile key.\n
+                    ELE_KEY_IMPORT_PERSISTENT         0xC0020001  Standard persistent key.\n
+                    ELE_KEY_IMPORT_PERMANENT          0xC00200FF  Standard permanent key.\n"
+                  enum:
+                    [
+                      ELE_KEY_IMPORT_VOLATILE,
+                      ELE_KEY_IMPORT_PERSISTENT,
+                      ELE_KEY_IMPORT_PERMANENT,
+                    ]
+                  template_value: ELE_KEY_IMPORT_PERSISTENT
+                key_lifecycle:
+                  type: string
+                  title: Imported key lifecycle
+                  description: "\n
+                    CURRENT           0x00  Key is usable in current lifecycle.\n
+                    OPEN              0x01  Key is usable in open lifecycle.\n
+                    CLOSED            0x02  Key is usable in closed lifecycle.\n
+                    OPENED and CLOSED   0x03  Key is usable in opened and closed lifecycle.\n
+                    CLOSED and LOCKED 0x04  Key is usable in closed and locked lifecycle."
+                  enum: [CURRENT, OPEN, CLOSED, OPEN_CLOSED, LOCKED]
+                  template_value: CURRENT
+                oem_mk_sk_key_id:
+                  type: [number, string]
+                  title: OEM_IMPORT_MK_SK key ID
+                  description:
+                    Key store ID where is stored the OEM_IMPORT_MK_SK key. It must be the key store ID
+                    related to the key management handle set in the command API
+                  format: number
+                  template_value: 0x0
+                key_wrapping_algorithm:
+                  type: string
+                  title: Imported key wrapping algorithm
+                  description: "\n
+                    RFC3394 - RFC 3394 wrapping\n
+                    AES_CBC - AES-CBC wrapping (padding: ISO7816-4 padding)"
+                  enum: [RFC3394, AES_CBC]
+                  template_value: RFC3394
+                iv:
+                  type: [number, string]
+                  title: Initial vector
+                  description: IV to use for CBC wrapping. Not used if 'wrapping algorithm' not equal 0x02.
+                  template_value: "0x00000000000000000000000000000000"
+                signing_algorithm:
+                  type: string
+                  title: Wrapped key signing algorithm
+                  description: "Algorithm used to sign the blob itself. Field “Signature” of this blob. It must be: 0x01 (CMAC)"
+                  enum: [CMAC]
+                  template_value: CMAC
+                wrapped_key:
+                  type: [number, string]
+                  title: Wrapped key
+                  description:
+                    "Private key data in encrypted format as defined by the 'Wrapping Algorithm'.
+                    Key used to do the encryption must be OEM_IMPORT_WRAP_SK derived from OEM_IMPORT_MK_SK.
+                    Instead of 'wrapped_key' & 'signature' it could be used 'import_key' & 'oem_import_mk_sk_key'."
+                  template_value: "0x00000000"
+                signature:
+                  type: [number, string]
+                  title: Signature
+                  description:
+                    "Signature of all previous fields of this blob including
+                    the signature tag (0x5E) and signature length fields. Key used to do the signature must be
+                    OEM_IMPORT_CMAC_SK derived from OEM_IMPORT_MK_SK.
+                    Instead of 'wrapped_key' & 'signature' it could be used 'import_key' & 'oem_import_mk_sk_key'."
+                  template_value: "0x00000000000000000000000000000000"
+                import_key:
+                  type: [number, string]
+                  title: Raw import key
+                  description:
+                    "Raw private key that will be wrapped and encrypted by OEM_IMPORT_MK_SK key that must be also provided.
+                    Instead of 'import_key' & 'oem_import_mk_sk_key' it could be used 'wrapped_key' & 'signature'."
+                  template_value: raw_key.pem
+                oem_import_mk_sk_key:
+                  type: [number, string]
+                  title: OEM_IMPORT_MK_SK Key
+                  description:
+                    "OEM_IMPORT_MK_SK key used to wrap and encrypt the raw key.
+                    Instead of 'import_key' & 'oem_import_mk_sk_key' it could be used 'wrapped_key' & 'signature'."
+                  template_value: "0x00000000000000000000000000000000"
+                srkh:
+                  type: [number, string]
+                  title: Super Root Key Hash
+                  description: Optional Super root key hash is used if Salt flags that requires in Exchange keys algorithms.
+                  template_value: "0x00000000000000000000000000000000"

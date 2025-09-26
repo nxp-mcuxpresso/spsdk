@@ -91,7 +91,7 @@ def _open_debug_probe(debug_probe_cfg: DebugProbeCfg) -> Iterator[DebugProbe]:
         debug_probe_params=debug_probe_cfg.debug_probe_params,
         print_func=click.echo,
     ) as probe:
-        probe.connect()
+        probe.connect_safe()
         try:
             yield probe
         except SPSDKError as exc:
@@ -230,7 +230,9 @@ def load_config(pass_obj: dict, config: Config, verify: bool) -> None:
                     f"Verification is not possible on the {shadow_regs.family}, it won't be performed."
                 )
             shadow_regs.set_loaded_registers(verify)
-        click.echo(f"The Shadow registers has been loaded by configuration in {config} YAML file")
+        click.echo(
+            f"The Shadow registers has been loaded by configuration in {config.config_name} YAML file"
+        )
     except SPSDKError as exc:
         raise SPSDKError(f"Load configuration of Shadow registers failed ({str(exc)})!") from exc
 

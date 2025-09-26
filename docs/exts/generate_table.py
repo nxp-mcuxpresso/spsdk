@@ -63,6 +63,7 @@ NXPIMAGE_FEATURES_MAPPING = {
     "sb31": "Secure Binary 3.1",
     "sb40": "Secure Binary 4.0",
     "sbc": "Secure Binary C",
+    "tlv_blob": "Type-Length-Value blobs",
 }
 OTHER_FEATURES_MAPPING = {
     "dat": "nxpdebugmbox",

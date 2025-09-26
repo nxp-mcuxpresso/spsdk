@@ -355,3 +355,101 @@ The SPSDK plugins repository contains various extension modules that enhance SPS
 * **Repository:** https://github.com/nxp-mcuxpresso/spsdk_plugins
 * **PyPI Packages:** All plugins are available on PyPI
 * **License:** BSD-3-Clause
+
+--------------------
+Shell Autocompletion
+--------------------
+
+SPSDK provides shell autocompletion support for all command-line tools to improve user experience and productivity.
+
+Setup
+=====
+
+To enable autocompletion for all SPSDK tools, use the built-in setup command:
+
+.. code-block:: bash
+
+    # Auto-detect shell and setup completion for all tools
+    spsdk utils setup-autocomplete
+
+    # Setup for specific shell
+    spsdk utils setup-autocomplete --shell bash
+    spsdk utils setup-autocomplete --shell zsh
+    spsdk utils setup-autocomplete --shell fish
+
+    # Setup for specific tools only
+    spsdk utils setup-autocomplete --tools nxpfuses nxpimage
+
+    # List all available tools
+    spsdk utils setup-autocomplete --list-tools
+
+    # Preview what would be done (dry run)
+    spsdk utils setup-autocomplete --dry-run
+
+Supported Shells
+================
+
+- **Bash**: Supported on Linux, macOS, and Windows (Git Bash, WSL)
+- **Zsh**: Supported on macOS and Linux
+- **Fish**: Supported on Linux and macOS
+
+.. note::
+    PowerShell is not directly supported by the autocompletion library. For PowerShell users, consider using Windows Subsystem for Linux (WSL) with bash, or Git Bash for Windows.
+
+Activation
+==========
+
+After running the setup command, activate completion by:
+
+**Bash:**
+
+.. code-block:: bash
+
+    source ~/.bashrc
+    # or start a new terminal session
+
+**Zsh:**
+
+.. code-block:: bash
+
+    source ~/.zshrc
+    # or start a new terminal session
+
+**Fish:**
+
+.. code-block:: bash
+
+    source ~/.config/fish/config.fish
+    # or start a new terminal session
+
+Usage Examples
+==============
+
+Once enabled, you can use tab completion with any SPSDK tool:
+
+.. code-block:: bash
+
+    # Complete main commands
+    spsdk <TAB><TAB>
+    # Shows: blhost nxpfuses nxpcrypto nxpdebugmbox nxpdevscan ...
+
+    # Complete subcommands
+    nxpfuses <TAB><TAB>
+    # Shows: get-template write write-single print fuses-script get-config
+
+    # Complete options
+    nxpfuses --<TAB><TAB>
+    # Shows: --family --help --config --output
+
+    # Complete family names
+    nxpfuses --family <TAB><TAB>
+    # Shows available chip families
+
+Requirements
+============
+
+The autocompletion feature requires the ``auto-click-auto`` package. If not installed, you'll see an error message with installation instructions:
+
+.. code-block:: bash
+
+    pip install auto-click-auto

@@ -91,6 +91,7 @@ features:
     #     0xEEBA_04C3: ROP_LEVEL1
     #     0x4939_8D8B: ROP_LEVEL2
     #     0xB0AB_B703: ROP_LEVEL3
+    dac_rot_type: default # Default type is full RKTH/SRK value 
 
     command_delays: # Additional standard command delays per individual DM commands
       ERASE_FLASH: 0.5
@@ -470,3 +471,6 @@ features:
 
   # ======== SHE section ========
   she_scec: {}
+
+  # ===== TLV =====
+  tlv_blob: {}

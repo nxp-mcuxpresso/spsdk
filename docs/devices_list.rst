@@ -36,6 +36,7 @@ Weblink: `mc56f81646 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -80,6 +81,7 @@ Weblink: `mc56f81648 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -124,6 +126,7 @@ Weblink: `mc56f81666 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -168,6 +171,7 @@ Weblink: `mc56f81668 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -212,6 +216,7 @@ Weblink: `mc56f81746 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -256,6 +261,7 @@ Weblink: `mc56f81748 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -300,6 +306,7 @@ Weblink: `mc56f81766 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -344,6 +351,7 @@ Weblink: `mc56f81768 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -390,6 +398,7 @@ Weblink: `mc56f81866 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for devhsm
@@ -436,6 +445,7 @@ Weblink: `mc56f81868 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for devhsm
@@ -482,6 +492,7 @@ Weblink: `lpc5502 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -529,6 +540,7 @@ Weblink: `lpc5504 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -576,6 +588,7 @@ Weblink: `lpc5506 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -623,6 +636,7 @@ Weblink: `lpc5512 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -670,6 +684,7 @@ Weblink: `lpc5514 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -717,6 +732,7 @@ Weblink: `lpc5516 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -764,6 +780,7 @@ Weblink: `lpc5526 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -811,6 +828,7 @@ Weblink: `lpc5528 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -858,6 +876,7 @@ Weblink: `lpc5534 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -900,6 +919,7 @@ Weblink: `lpc5536 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -950,6 +970,7 @@ Weblink: `lpc55s04 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1012,6 +1033,7 @@ Weblink: `lpc55s06 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1074,6 +1096,7 @@ Weblink: `lpc55s14 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1136,6 +1159,7 @@ Weblink: `lpc55s16 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1196,6 +1220,7 @@ Weblink: `lpc55s26 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1256,6 +1281,7 @@ Weblink: `lpc55s28 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1329,6 +1355,7 @@ Examples for lpc55s36
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1401,6 +1428,7 @@ Weblink: `lpc55s66 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1463,6 +1491,7 @@ Weblink: `lpc55s69 <https://www.nxp.com/products/processors-and-microcontrollers
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1635,6 +1664,7 @@ Weblink: `mcxa132 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1684,6 +1714,7 @@ Weblink: `mcxa133 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1733,6 +1764,7 @@ Weblink: `mcxa142 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1782,6 +1814,7 @@ Weblink: `mcxa143 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1831,6 +1864,7 @@ Weblink: `mcxa144 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1880,6 +1914,7 @@ Weblink: `mcxa145 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1929,6 +1964,7 @@ Weblink: `mcxa146 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -1978,6 +2014,7 @@ Weblink: `mcxa152 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2027,6 +2064,7 @@ Weblink: `mcxa153 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2076,6 +2114,7 @@ Weblink: `mcxa154 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2125,6 +2164,7 @@ Weblink: `mcxa155 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2174,6 +2214,7 @@ Weblink: `mcxa156 <https://www.nxp.com/products/MCX-A13X-A14X-A15X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2223,6 +2264,7 @@ Weblink: `mcxa173 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2272,6 +2314,7 @@ Weblink: `mcxa174 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2321,6 +2364,7 @@ Weblink: `mcxa175 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2370,6 +2414,7 @@ Weblink: `mcxa176 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2419,6 +2464,7 @@ Weblink: `mcxa185 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2468,6 +2514,7 @@ Weblink: `mcxa186 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2521,6 +2568,7 @@ Weblink: `mcxa255 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2579,6 +2627,7 @@ Weblink: `mcxa256 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2637,6 +2686,7 @@ Weblink: `mcxa265 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2695,6 +2745,7 @@ Weblink: `mcxa266 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2749,6 +2800,7 @@ Weblink: `mcxa343 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2798,6 +2850,7 @@ Weblink: `mcxa344 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2847,6 +2900,7 @@ Weblink: `mcxa345 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2896,6 +2950,7 @@ Weblink: `mcxa346 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2945,6 +3000,7 @@ Weblink: `mcxa355 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -2994,6 +3050,7 @@ Weblink: `mcxa356 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3047,6 +3104,7 @@ Weblink: `mcxa365 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3105,6 +3163,7 @@ Weblink: `mcxa366 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3157,6 +3216,7 @@ Weblink: `mcxc041 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3192,6 +3252,7 @@ Weblink: `mcxc141 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3227,6 +3288,7 @@ Weblink: `mcxc142 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3262,6 +3324,7 @@ Weblink: `mcxc143 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3297,6 +3360,7 @@ Weblink: `mcxc144 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3332,6 +3396,7 @@ Weblink: `mcxc242 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3367,6 +3432,7 @@ Weblink: `mcxc243 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3402,6 +3468,7 @@ Weblink: `mcxc244 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3437,6 +3504,7 @@ Weblink: `mcxc443 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3472,6 +3540,7 @@ Weblink: `mcxc444 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3507,6 +3576,7 @@ Weblink: `mcxe245 <https://nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3542,6 +3612,7 @@ Weblink: `mcxe246 <https://nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3577,6 +3648,7 @@ Weblink: `mcxe247 <https://nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for mbi
@@ -3614,6 +3686,7 @@ Weblink: `mcxl253 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3663,6 +3736,7 @@ Weblink: `mcxl254 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3712,6 +3786,7 @@ Weblink: `mcxl255 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3773,6 +3848,7 @@ Weblink: `mcxn235 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3844,6 +3920,7 @@ Weblink: `mcxn236 <https://www.nxp.com/products/processors-and-microcontrollers/
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -3873,6 +3950,356 @@ Similar examples for mbi
 Similar examples for memcfg
 
 * `i.MX RT118x External Memory Configuration with SPSDK <examples/memcfg/mimxrt1189/rt118x_external_memory_config.ipynb>`__
+
+
+mcxn247
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxn247 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+--------------------------+
+    |           Feature            |         Support          |
+    +==============================+==========================+
+    |:ref:`blhost`                 |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Bootable image`         |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2_48_bytes|
+    +------------------------------+--------------------------+
+    |:ref:`nxpdebugmbox`           |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdevhsm`              |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdice`                |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Master Boot Image (MBI)`|✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`pfr`                    |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Secure Binary 4.0`      |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`tz`                     |✅                        |
+    +------------------------------+--------------------------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`__
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`__
+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples/mbi/kw45xx_k32w1xx_mcxw71x/kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`__
+
+
+mcxn526
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxn526 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+--------------------------+
+    |           Feature            |         Support          |
+    +==============================+==========================+
+    |:ref:`blhost`                 |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Bootable image`         |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2_48_bytes|
+    +------------------------------+--------------------------+
+    |:ref:`nxpdebugmbox`           |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdevhsm`              |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdice`                |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Master Boot Image (MBI)`|✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`pfr`                    |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Secure Binary 4.0`      |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`tz`                     |✅                        |
+    +------------------------------+--------------------------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`__
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`__
+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples/mbi/kw45xx_k32w1xx_mcxw71x/kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`__
+
+
+mcxn527
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxn527 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+--------------------------+
+    |           Feature            |         Support          |
+    +==============================+==========================+
+    |:ref:`blhost`                 |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Bootable image`         |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2_48_bytes|
+    +------------------------------+--------------------------+
+    |:ref:`nxpdebugmbox`           |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdevhsm`              |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdice`                |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Master Boot Image (MBI)`|✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`pfr`                    |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Secure Binary 4.0`      |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`tz`                     |✅                        |
+    +------------------------------+--------------------------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`__
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`__
+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples/mbi/kw45xx_k32w1xx_mcxw71x/kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`__
+
+
+mcxn536
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxn536 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+--------------------------+
+    |           Feature            |         Support          |
+    +==============================+==========================+
+    |:ref:`blhost`                 |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Bootable image`         |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2_48_bytes|
+    +------------------------------+--------------------------+
+    |:ref:`nxpdebugmbox`           |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdevhsm`              |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdice`                |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Master Boot Image (MBI)`|✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`pfr`                    |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Secure Binary 4.0`      |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`tz`                     |✅                        |
+    +------------------------------+--------------------------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`__
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`__
+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples/mbi/kw45xx_k32w1xx_mcxw71x/kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`__
+
+
+mcxn537
+--------------------------
+
+Latest revision: a0
+
+All supported chip revisions: a0
+
+Weblink: `mcxn537 <https://www.nxp.com>`_
+
+.. table::
+
+    +------------------------------+--------------------------+
+    |           Feature            |         Support          |
+    +==============================+==========================+
+    |:ref:`blhost`                 |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Bootable image`         |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2_48_bytes|
+    +------------------------------+--------------------------+
+    |:ref:`nxpdebugmbox`           |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdevhsm`              |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`nxpdice`                |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Master Boot Image (MBI)`|✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`pfr`                    |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`Secure Binary 4.0`      |✅                        |
+    +------------------------------+--------------------------+
+    |:ref:`tz`                     |✅                        |
+    +------------------------------+--------------------------+
+
+Similar examples for blhost
+
+* `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
+
+
+Similar examples for bootable_image
+
+* `RW61x Bootable Image <examples/bootable_image/rw61x/rw61x_bootable_image.ipynb>`__
+
+
+Similar examples for dat
+
+* `Debug authentication on MCXN9XX <examples/dat/mcxn9xx/mcxn9xx_debug_auth.ipynb>`__
+* `i.MXRT118x Debug Authentication example <examples/dat/mimxrt1189/rt118x_debug_authentication.ipynb>`__
+* `Debug authentication on RW612/RW610 <examples/dat/rw612/rw61x_debug_auth.ipynb>`__
+
+
+Similar examples for devhsm
+
+* `MC56F81xxx/MWCT2xxx Device HSM and Secure Boot <examples/devhsm/mc56_devhsm/mc56_devhsm.ipynb>`__
+
+
+Similar examples for dice
+
+* `DICE flow using LPC55s3x <examples/dice/lpc55s3x/lpc55s3x_dice.ipynb>`__
+
+
+Similar examples for mbi
+
+* `KW45xx, K32W1xx and MCXW71x Secure Boot <examples/mbi/kw45xx_k32w1xx_mcxw71x/kw45xx_k32w1xx_mcxw71x_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Boot <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_boot.ipynb>`__
+* `LPC55Sxx Secure Firmware Update <examples/mbi/lpc55sxx_secure_boot/lpc55sxx_secure_fw_update.ipynb>`__
 
 
 mcxn546
@@ -3925,6 +4352,7 @@ Similar examples for mcxn946
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4011,6 +4439,7 @@ Similar examples for mcxn947
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4082,14 +4511,10 @@ Weblink: `mcxn556s <https://www.nxp.com>`_
     |:ref:`tz`                     |✅                        |
     +------------------------------+--------------------------+
 
-Examples for mcxn556s
-
-* `Encrypting SB40 file using KDP (Key Derivation Provider) <examples/encryption_provider/mcxn556s_sb40/mcxn556s_sb40_kdp.ipynb>`__
-
-
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4171,6 +4596,7 @@ Examples for mcxn946
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4263,6 +4689,7 @@ Similar examples for mcxn946
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4351,6 +4778,7 @@ Similar examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4414,6 +4842,7 @@ Similar examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4477,6 +4906,7 @@ Examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4540,6 +4970,7 @@ Similar examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4603,6 +5034,7 @@ Similar examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4666,6 +5098,7 @@ Similar examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4729,6 +5162,7 @@ Similar examples for kw45b41z8
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4786,6 +5220,7 @@ Weblink: `kw47b42z83 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4843,6 +5278,7 @@ Weblink: `kw47b42z96 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4900,6 +5336,7 @@ Weblink: `kw47b42z97 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -4957,6 +5394,7 @@ Weblink: `kw47b42zb2 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5014,6 +5452,7 @@ Weblink: `kw47b42zb3 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5071,6 +5510,7 @@ Weblink: `kw47b42zb6 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5128,6 +5568,7 @@ Weblink: `kw47b42zb7 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5185,6 +5626,7 @@ Weblink: `kw47z42082 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5242,6 +5684,7 @@ Weblink: `kw47z42092 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5299,6 +5742,7 @@ Weblink: `kw47z420b2 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5356,6 +5800,7 @@ Weblink: `kw47z420b3 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5411,6 +5856,7 @@ Weblink: `mcxw235 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5466,6 +5912,7 @@ Weblink: `mcxw236 <https://www.nxp.com>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5529,6 +5976,7 @@ Similar examples for k32w148
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5592,6 +6040,7 @@ Similar examples for k32w148
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5649,6 +6098,7 @@ Weblink: `mcxw727a <https://www.nxp.com/products/MCX-W72X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5706,6 +6156,7 @@ Weblink: `mcxw727c <https://www.nxp.com/products/MCX-W72X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5763,6 +6214,7 @@ Weblink: `mcxw727d <https://www.nxp.com/products/MCX-W72X>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5818,6 +6270,7 @@ Weblink: `nhs52s04 <https://www.nxp.com/products/wireless-connectivity/bluetooth
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5888,6 +6341,7 @@ Similar examples for rw612
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -5968,6 +6422,7 @@ Examples for rw612
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6035,6 +6490,7 @@ Weblink: `mwct2012 <https://www.nxp.com/products/power-management/wireless-power
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6081,6 +6537,7 @@ Weblink: `mwct2012a <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6117,6 +6574,7 @@ Weblink: `mwct2014s <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 mwct2015s
@@ -6141,6 +6599,7 @@ Weblink: `mwct2015s <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 mwct2016s
@@ -6165,6 +6624,7 @@ Weblink: `mwct2016s <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 mwct20d2
@@ -6201,6 +6661,7 @@ Weblink: `mwct20d2 <https://www.nxp.com/products/power-management/wireless-power
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for devhsm
@@ -6249,6 +6710,7 @@ Weblink: `mwct20d2a <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for devhsm
@@ -6285,6 +6747,7 @@ Weblink: `mwct2d16s <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 mwct2d17s
@@ -6309,6 +6772,7 @@ Weblink: `mwct2d17s <https://www.nxp.com/products/power-management/wireless-powe
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 ========================================================
@@ -6344,6 +6808,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6385,6 +6850,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6426,6 +6892,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6449,25 +6916,27 @@ Weblink: `mimx8ulp <https://www.nxp.com/products/processors-and-microcontrollers
 
 .. table::
 
-    +---------------------+--------+
-    |       Feature       |Support |
-    +=====================+========+
-    |:ref:`ahab`          |✅      |
-    +---------------------+--------+
-    |:ref:`Bootable image`|✅      |
-    +---------------------+--------+
-    |:ref:`RoT`           |SRK AHAB|
-    +---------------------+--------+
-    |:ref:`nxpdebugmbox`  |✅      |
-    +---------------------+--------+
-    |:ref:`el2go-host`    |✅      |
-    +---------------------+--------+
-    |:ref:`nxpele`        |✅      |
-    +---------------------+--------+
-    |:ref:`nxpuuu`        |✅      |
-    +---------------------+--------+
-    |:ref:`otfad`         |✅      |
-    +---------------------+--------+
+    +------------------------------+--------+
+    |           Feature            |Support |
+    +==============================+========+
+    |:ref:`ahab`                   |✅      |
+    +------------------------------+--------+
+    |:ref:`Bootable image`         |✅      |
+    +------------------------------+--------+
+    |:ref:`RoT`                    |SRK AHAB|
+    +------------------------------+--------+
+    |:ref:`nxpdebugmbox`           |✅      |
+    +------------------------------+--------+
+    |:ref:`el2go-host`             |✅      |
+    +------------------------------+--------+
+    |:ref:`nxpele`                 |✅      |
+    +------------------------------+--------+
+    |:ref:`nxpuuu`                 |✅      |
+    +------------------------------+--------+
+    |:ref:`otfad`                  |✅      |
+    +------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`|✅      |
+    +------------------------------+--------+
 
 Examples for mimx8ulp
 
@@ -6481,6 +6950,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6517,23 +6987,25 @@ Weblink: `mimx9131 <https://www.nxp.com/products/processors-and-microcontrollers
 
 .. table::
 
-    +---------------------+--------+
-    |       Feature       |Support |
-    +=====================+========+
-    |:ref:`ahab`          |✅      |
-    +---------------------+--------+
-    |:ref:`Bootable image`|✅      |
-    +---------------------+--------+
-    |:ref:`RoT`           |SRK AHAB|
-    +---------------------+--------+
-    |:ref:`nxpdebugmbox`  |✅      |
-    +---------------------+--------+
-    |:ref:`el2go-host`    |✅      |
-    +---------------------+--------+
-    |:ref:`nxpele`        |✅      |
-    +---------------------+--------+
-    |:ref:`nxpuuu`        |✅      |
-    +---------------------+--------+
+    +------------------------------+--------+
+    |           Feature            |Support |
+    +==============================+========+
+    |:ref:`ahab`                   |✅      |
+    +------------------------------+--------+
+    |:ref:`Bootable image`         |✅      |
+    +------------------------------+--------+
+    |:ref:`RoT`                    |SRK AHAB|
+    +------------------------------+--------+
+    |:ref:`nxpdebugmbox`           |✅      |
+    +------------------------------+--------+
+    |:ref:`el2go-host`             |✅      |
+    +------------------------------+--------+
+    |:ref:`nxpele`                 |✅      |
+    +------------------------------+--------+
+    |:ref:`nxpuuu`                 |✅      |
+    +------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`|✅      |
+    +------------------------------+--------+
 
 Similar examples for ahab
 
@@ -6541,6 +7013,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6571,25 +7044,27 @@ Weblink: `mimx9352 <https://www.nxp.com/products/processors-and-microcontrollers
 
 .. table::
 
-    +---------------------+--------+
-    |       Feature       |Support |
-    +=====================+========+
-    |:ref:`ahab`          |✅      |
-    +---------------------+--------+
-    |:ref:`Bootable image`|✅      |
-    +---------------------+--------+
-    |:ref:`RoT`           |SRK AHAB|
-    +---------------------+--------+
-    |:ref:`nxpdebugmbox`  |✅      |
-    +---------------------+--------+
-    |:ref:`el2go-host`    |✅      |
-    +---------------------+--------+
-    |:ref:`nxpele`        |✅      |
-    +---------------------+--------+
-    |:ref:`nxpuuu`        |✅      |
-    +---------------------+--------+
-    |:ref:`otfad`         |✅      |
-    +---------------------+--------+
+    +------------------------------+--------+
+    |           Feature            |Support |
+    +==============================+========+
+    |:ref:`ahab`                   |✅      |
+    +------------------------------+--------+
+    |:ref:`Bootable image`         |✅      |
+    +------------------------------+--------+
+    |:ref:`RoT`                    |SRK AHAB|
+    +------------------------------+--------+
+    |:ref:`nxpdebugmbox`           |✅      |
+    +------------------------------+--------+
+    |:ref:`el2go-host`             |✅      |
+    +------------------------------+--------+
+    |:ref:`nxpele`                 |✅      |
+    +------------------------------+--------+
+    |:ref:`nxpuuu`                 |✅      |
+    +------------------------------+--------+
+    |:ref:`otfad`                  |✅      |
+    +------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`|✅      |
+    +------------------------------+--------+
 
 Examples for mimx9352
 
@@ -6597,6 +7072,7 @@ Examples for mimx9352
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX93 EdgeLock 2GO Provisioning - Indirect flow <examples/el2go/imx93/imx93_el2go_provisioning.ipynb>`__
 * `i.MX 93 OTFAD (On-The-Fly AES Decryption) Example <examples/otfad/imx93/imx93_otfad.ipynb>`__
+* `i.MX93 Key Import and Key Exchange Example <examples/signed_message/imx93_key_import/imx93_key_import.ipynb>`__
 
 
 Similar examples for ahab
@@ -6605,6 +7081,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6641,21 +7118,23 @@ Weblink: `mimx943 <https://www.nxp.com/products/i.MX94>`_
 
 .. table::
 
-    +---------------------+-----------------+
-    |       Feature       |     Support     |
-    +=====================+=================+
-    |:ref:`ahab`          |✅               |
-    +---------------------+-----------------+
-    |:ref:`Bootable image`|✅               |
-    +---------------------+-----------------+
-    |:ref:`RoT`           |srk_table_ahab_v2|
-    +---------------------+-----------------+
-    |:ref:`nxpdebugmbox`  |✅               |
-    +---------------------+-----------------+
-    |:ref:`nxpele`        |✅               |
-    +---------------------+-----------------+
-    |:ref:`nxpuuu`        |✅               |
-    +---------------------+-----------------+
+    +------------------------------+-----------------+
+    |           Feature            |     Support     |
+    +==============================+=================+
+    |:ref:`ahab`                   |✅               |
+    +------------------------------+-----------------+
+    |:ref:`Bootable image`         |✅               |
+    +------------------------------+-----------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2|
+    +------------------------------+-----------------+
+    |:ref:`nxpdebugmbox`           |✅               |
+    +------------------------------+-----------------+
+    |:ref:`nxpele`                 |✅               |
+    +------------------------------+-----------------+
+    |:ref:`nxpuuu`                 |✅               |
+    +------------------------------+-----------------+
+    |:ref:`Type-Length-Value blobs`|✅               |
+    +------------------------------+-----------------+
 
 Similar examples for ahab
 
@@ -6663,6 +7142,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6693,25 +7173,28 @@ Weblink: `mimx9596 <https://www.nxp.com/products/processors-and-microcontrollers
 
 .. table::
 
-    +---------------------+-----------------+
-    |       Feature       |     Support     |
-    +=====================+=================+
-    |:ref:`ahab`          |✅               |
-    +---------------------+-----------------+
-    |:ref:`Bootable image`|✅               |
-    +---------------------+-----------------+
-    |:ref:`RoT`           |srk_table_ahab_v2|
-    +---------------------+-----------------+
-    |:ref:`nxpdebugmbox`  |✅               |
-    +---------------------+-----------------+
-    |:ref:`nxpele`        |✅               |
-    +---------------------+-----------------+
-    |:ref:`nxpuuu`        |✅               |
-    +---------------------+-----------------+
+    +------------------------------+-----------------+
+    |           Feature            |     Support     |
+    +==============================+=================+
+    |:ref:`ahab`                   |✅               |
+    +------------------------------+-----------------+
+    |:ref:`Bootable image`         |✅               |
+    +------------------------------+-----------------+
+    |:ref:`RoT`                    |srk_table_ahab_v2|
+    +------------------------------+-----------------+
+    |:ref:`nxpdebugmbox`           |✅               |
+    +------------------------------+-----------------+
+    |:ref:`nxpele`                 |✅               |
+    +------------------------------+-----------------+
+    |:ref:`nxpuuu`                 |✅               |
+    +------------------------------+-----------------+
+    |:ref:`Type-Length-Value blobs`|✅               |
+    +------------------------------+-----------------+
 
 Examples for mimx9596
 
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 
@@ -6722,6 +7205,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -6777,6 +7261,7 @@ Weblink: `mimxrt1010 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6834,6 +7319,7 @@ Weblink: `mimxrt1015 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6885,6 +7371,7 @@ Weblink: `mimxrt1020 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6936,6 +7423,7 @@ Weblink: `mimxrt1024 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -6987,6 +7475,7 @@ Weblink: `mimxrt1040 <https://www.nxp.com/products/i.MX-RT1040>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7038,6 +7527,7 @@ Weblink: `mimxrt1043 <https://www.nxp.com/products/i.MX-RT1040>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7089,6 +7579,7 @@ Weblink: `mimxrt1046 <https://www.nxp.com/products/i.MX-RT1040>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7145,6 +7636,7 @@ Examples for mimxrt1050
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7196,6 +7688,7 @@ Weblink: `mimxrt1060 <https://www.nxp.com/products/i.MX-RT1060>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7247,6 +7740,7 @@ Weblink: `mimxrt1064 <https://www.nxp.com/products/i.MX-RT1060>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7302,6 +7796,7 @@ Weblink: `mimxrt1165 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7363,6 +7858,7 @@ Weblink: `mimxrt1166 <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7424,6 +7920,7 @@ Weblink: `mimxrt1171 <https://www.nxp.com/products/i.MX-RT1170>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7485,6 +7982,7 @@ Weblink: `mimxrt1172 <https://www.nxp.com/products/i.MX-RT1170>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7546,6 +8044,7 @@ Weblink: `mimxrt1173 <https://www.nxp.com/products/i.MX-RT1170>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7607,6 +8106,7 @@ Weblink: `mimxrt1175 <https://www.nxp.com/products/i.MX-RT1170>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7668,6 +8168,7 @@ Weblink: `mimxrt1176 <https://www.nxp.com/products/i.MX-RT1170>`_
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7727,6 +8228,8 @@ Weblink: `mimxrt1181 <https://www.nxp.com/products/i.MX-RT1180>`_
     +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
     +------------------------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`                  |✅      |
+    +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
 
@@ -7736,6 +8239,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -7746,6 +8250,7 @@ Similar examples for ahab
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7805,6 +8310,8 @@ Weblink: `mimxrt1182 <https://www.nxp.com/products/i.MX-RT1180>`_
     +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
     +------------------------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`                  |✅      |
+    +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
 
@@ -7822,6 +8329,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -7832,6 +8340,7 @@ Similar examples for ahab
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7891,6 +8400,8 @@ Weblink: `mimxrt1186 <https://www.nxp.com/products/i.MX-RT1180>`_
     +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
     +------------------------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`                  |✅      |
+    +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
 
@@ -7908,6 +8419,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -7918,6 +8430,7 @@ Similar examples for ahab
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -7977,6 +8490,8 @@ Weblink: `mimxrt1187 <https://www.nxp.com/products/i.MX-RT1180>`_
     +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
     +------------------------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`                  |✅      |
+    +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
 
@@ -7994,6 +8509,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -8004,6 +8520,7 @@ Similar examples for ahab
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8063,6 +8580,8 @@ Weblink: `mimxrt1189 <https://www.nxp.com/products/i.MX-RT1180>`_
     +------------------------------------------------+--------+
     |:ref:`otfad`                                    |✅      |
     +------------------------------------------------+--------+
+    |:ref:`Type-Length-Value blobs`                  |✅      |
+    +------------------------------------------------+--------+
     |:ref:`External Memory Configuration Data (XMCD)`|✅      |
     +------------------------------------------------+--------+
 
@@ -8080,6 +8599,7 @@ Similar examples for ahab
 * `i.MX 93 AHAB with U-BOOT <examples/ahab/imx93/imx93_ahab_uboot.ipynb>`__
 * `i.MX 93 signed and encrypted AHAB image <examples/ahab/imx93/imx93_signed_ahab_uboot.ipynb>`__
 * `i.MX 95 AHAB Load M7 Application to TCM <examples/ahab/imx95/imx95_ahab_load_tcm.ipynb>`__
+* `AHAB SIGN <examples/ahab/imx95/imx95_ahab_sign.ipynb>`__
 * `i.MX 95 AHAB with U-BOOT <examples/ahab/imx95/imx95_ahab_uboot.ipynb>`__
 * `i.MX 95 signed AHAB with U-BOOT <examples/ahab/imx95/imx95_signed_ahab_uboot.ipynb>`__
 * `i.MXRT118x Signed AHAB Example <examples/ahab/rt118x_secure_boot/rt118x_secure_boot.ipynb>`__
@@ -8090,6 +8610,7 @@ Similar examples for ahab
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8161,6 +8682,7 @@ Similar examples for mimxrt595s
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8239,6 +8761,7 @@ Similar examples for mimxrt595s
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8317,6 +8840,7 @@ Examples for mimxrt595s
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8395,6 +8919,7 @@ Similar examples for mimxrt595s
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8469,6 +8994,7 @@ Weblink: `mimxrt735s <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8542,6 +9068,7 @@ Weblink: `mimxrt758s <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image
@@ -8615,6 +9142,7 @@ Weblink: `mimxrt798s <https://www.nxp.com/products/processors-and-microcontrolle
 Similar examples for blhost
 
 * `Blhost (MBoot) <examples/blhost/blhost.ipynb>`__
+* `Blhost with CAN Bus Interface <examples/blhost/blhost_with_can.ipynb>`__
 
 
 Similar examples for bootable_image

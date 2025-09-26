@@ -124,7 +124,7 @@ All products, including those with advanced security features, may be subject to
 
     examples/jupyter
     examples/ahab/index
-    examples/blhost/blhost
+    examples/blhost/index
     examples/bootable_image/index
     examples/certificate_block/index
     examples/crypto/index
@@ -145,4 +145,5 @@ All products, including those with advanced security features, may be subject to
     examples/signature_provider/index
     examples/encryption_provider/index
     examples/wpc_provisioning/index
+    examples/signed_message/index
 

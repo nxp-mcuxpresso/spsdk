@@ -38,6 +38,7 @@ from spsdk.ele.ele_constants import (
     KeyBlobEncryptionAlgorithm,
     KeyBlobEncryptionIeeCtrModes,
     LifeCycleToSwitch,
+    ResponseStatus,
 )
 from spsdk.exceptions import SPSDKError
 from spsdk.image.iee.iee import Iee, IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes
@@ -1592,6 +1593,545 @@ def write_shadow_fuse(ele_handler: EleMessageHandler, data: int, index: int) -> 
     with ele_handler:
         ele_handler.send_message(ele_fw_write_fuse_msg)
     click.echo("ELE write shadow fuse ends successfully.")
+
+
+@main.command(name="session-open", no_args_is_help=False)
+@click.pass_obj
+def cmd_session_open(
+    handler: EleMessageHandler,
+) -> None:
+    """Open EdgeLock Enclave HSM session.
+
+    Session open command is used to initialize the EdgeLock Secure Enclave HSM services
+    for the requestor. It establishes a route between the user and the EdgeLock Secure
+    Enclave as well as a quality of service.
+
+    A maximum of 20 sessions can be opened at the same time.
+    Session open command must be called before any other APIs that use a session.
+    """
+    session_handle = ele_session_open(handler)
+    click.echo(f"ELE Session Open ends successfully. Session handle: 0x{session_handle:08X}")
+
+
+def ele_session_open(ele_handler: EleMessageHandler) -> int:
+    """ELE Session Open command.
+
+    :param ele_handler: ELE handler class
+    :return: Session handle if successful, 0 otherwise
+    """
+    session_open = ele_message.EleMessageSessionOpen()
+    with ele_handler:
+        ele_handler.send_message(session_open)
+
+    if not session_open.is_session_valid():
+        click.echo("Warning: Session open failed - no valid session handle returned")
+
+    return session_open.get_session_handle()
+
+
+@main.command(name="sab-init", no_args_is_help=False)
+@click.pass_obj
+def cmd_sab_init(
+    handler: EleMessageHandler,
+) -> None:
+    """Initialize EdgeLock Secure Enclave Firmware HSM services.
+
+    SAB Init command is used to initialize the EdgeLock Secure Enclave Firmware HSM services.
+    It must be called once, at boot, by any core.
+
+    SAB Init command must be called before any other ones that use a SAB session.
+    Can be called multiple times - will return success if already initialized.
+    """
+    ele_sab_init(handler)
+
+
+def ele_sab_init(ele_handler: EleMessageHandler) -> None:
+    """ELE SAB Init command.
+
+    :param ele_handler: ELE handler class
+    """
+    sab_init = ele_message.EleMessageSabInit()
+    with ele_handler:
+        ele_handler.send_message(sab_init)
+    click.echo("ELE SAB Init ends successfully")
+
+
+@main.command(name="session-close", no_args_is_help=True)
+@click.option(
+    "-s",
+    "--session-handle",
+    type=INT(),
+    required=True,
+    help="Session handle to close. Handle value returned by session-open command.",
+)
+@click.pass_obj
+def cmd_session_close(
+    handler: EleMessageHandler,
+    session_handle: int,
+) -> None:
+    """Close EdgeLock Enclave HSM session.
+
+    Session close command is used to close an opened session. Any data related to the session,
+    including other services flow contexts, will be deleted.
+
+    Session close command will close any associated services to the session as well.
+    Can only be called after having opened a valid session.
+    """
+    ele_session_close(handler, session_handle)
+    click.echo(
+        f"ELE Session Close ends successfully. Session handle 0x{session_handle:08X} closed."
+    )
+
+
+def ele_session_close(ele_handler: EleMessageHandler, session_handle: int) -> None:
+    """ELE Session Close command.
+
+    :param ele_handler: ELE handler class
+    :param session_handle: Session handle to close
+    """
+    session_close = ele_message.EleMessageSessionClose(session_handle)
+    with ele_handler:
+        ele_handler.send_message(session_close)
+
+
+@main.command(name="keystore-open", no_args_is_help=True)
+@click.option(
+    "-s",
+    "--session-handle",
+    type=INT(),
+    required=True,
+    help="Session handle from session-open command.",
+)
+@click.option(
+    "-i",
+    "--keystore-id",
+    type=INT(),
+    required=True,
+    help="Key store identifier set by the user.",
+)
+@click.option(
+    "-n",
+    "--nonce",
+    type=INT(),
+    required=True,
+    help="Nonce used as authentication proof for accessing the key store.",
+)
+@click.option(
+    "--create",
+    is_flag=True,
+    default=False,
+    help="Create a new key store (default is to load existing key store).",
+)
+@click.option(
+    "--shared",
+    is_flag=True,
+    default=False,
+    help="Create/open shared keystore accessible from any MU (default is regular/isolated).",
+)
+@click.option(
+    "--sync",
+    is_flag=True,
+    default=False,
+    help="SYNC operation - request completed only when written to NVM (for CREATE only).",
+)
+@click.option(
+    "--monotonic-counter",
+    is_flag=True,
+    default=False,
+    help="Increment monotonic counter (used with SYNC operation).",
+)
+@click.pass_obj
+def cmd_keystore_open(
+    handler: EleMessageHandler,
+    session_handle: int,
+    keystore_id: int,
+    nonce: int,
+    create: bool,
+    shared: bool,
+    sync: bool,
+    monotonic_counter: bool,
+) -> None:
+    """Open EdgeLock Enclave key store service.
+
+    Key store open command is used to open a service flow on the specified key store.
+    Maximum 2 key stores can be created/opened and maximum 100 keys per key store.
+
+    Must be called after opening a valid session. Required before other key store APIs.
+    """
+    keystore_handle = ele_keystore_open(
+        handler, session_handle, keystore_id, nonce, create, shared, sync, monotonic_counter
+    )
+    operation = "created" if create else "loaded"
+    keystore_type = "shared" if shared else "regular"
+    click.echo(
+        f"ELE Key Store Opened. Key store {operation} ({keystore_type}). Handle: 0x{keystore_handle:08X}"
+    )
+
+
+def ele_keystore_open(
+    ele_handler: EleMessageHandler,
+    session_handle: int,
+    keystore_id: int,
+    nonce: int,
+    create: bool = False,
+    shared: bool = False,
+    sync: bool = False,
+    monotonic_counter: bool = False,
+) -> int:
+    """ELE Key Store Open command.
+
+    :param ele_handler: ELE handler class
+    :param session_handle: Session handle from session open
+    :param keystore_id: Key store identifier
+    :param nonce: Authentication nonce
+    :param create: True to create, False to load
+    :param shared: True for shared keystore
+    :param sync: True for SYNC operation
+    :param monotonic_counter: True to increment monotonic counter
+    :return: Key store handle if successful, 0 otherwise
+    """
+    keystore_open = ele_message.EleMessageKeyStoreOpen(
+        session_handle=session_handle,
+        key_store_id=keystore_id,
+        nonce=nonce,
+        create_keystore=create,
+        shared_keystore=shared,
+        sync_operation=sync,
+        monotonic_counter_increment=monotonic_counter,
+    )
+    with ele_handler:
+        ele_handler.send_message(keystore_open)
+
+    if not keystore_open.is_key_store_valid():
+        click.echo("Warning: Key store open failed - no valid key store handle returned")
+
+    return keystore_open.get_key_store_handle()
+
+
+@main.command(name="keystore-close", no_args_is_help=True)
+@click.option(
+    "-k",
+    "--keystore-handle",
+    type=INT(),
+    required=True,
+    help="Key store handle to close. Handle value returned by keystore-open command.",
+)
+@click.pass_obj
+def cmd_keystore_close(
+    handler: EleMessageHandler,
+    keystore_handle: int,
+) -> None:
+    """Close EdgeLock Enclave key store service.
+
+    Key store close command is used to close a key store service flow identified by its handle.
+    Key store context and content is deleted from the EdgeLock Secure Enclave internal memory.
+    Any update not written in the NVM will be lost.
+
+    Must be called after opening a valid key store service.
+    """
+    ele_keystore_close(handler, keystore_handle)
+    click.echo(f"ELE Key Store Close ends successfully. Handle 0x{keystore_handle:08X} closed.")
+
+
+def ele_keystore_close(ele_handler: EleMessageHandler, keystore_handle: int) -> None:
+    """ELE Key Store Close command.
+
+    :param ele_handler: ELE handler class
+    :param keystore_handle: Key store handle to close
+    """
+    keystore_close = ele_message.EleMessageKeyStoreClose(keystore_handle)
+    with ele_handler:
+        ele_handler.send_message(keystore_close)
+
+
+@main.command(name="public-key-export", no_args_is_help=True)
+@click.option(
+    "-k",
+    "--keystore-handle",
+    type=INT(),
+    required=True,
+    help="Key store handle from keystore-open command.",
+)
+@click.option(
+    "-i",
+    "--key-id",
+    type=INT(),
+    required=True,
+    help="ID of the asymmetric key stored in the key store.",
+)
+@click.option(
+    "-s",
+    "--buffer-size",
+    type=INT(),
+    default="512",
+    help="Length in bytes of the output public key buffer (default: 512).",
+)
+@spsdk_output_option(
+    required=False,
+    help="Store exported public key into a file. If not used, key is printed to console.",
+)
+@click.pass_obj
+def cmd_public_key_export(
+    handler: EleMessageHandler,
+    keystore_handle: int,
+    key_id: int,
+    buffer_size: int,
+    output: Optional[str],
+) -> None:
+    """Export public key from EdgeLock Enclave key store.
+
+    Exports the public key of an asymmetric key whose private key is present in the key store.
+    Public key is re-calculated by default (except for Twisted Edwards and Montgomery keys).
+
+    Key formats:
+    - ECC: Non-compressed form {x, y} in big-endian order
+    - RSA: Modulus only (public exponent is 65537)
+    - Montgomery: Big-endian format (unlike RFC 7748)
+
+    Must be called after opening a valid key store service.
+    """
+    public_key = ele_public_key_export(handler, keystore_handle, key_id, buffer_size)
+
+    if public_key:
+        if output:
+            write_file(public_key, output, mode="wb")
+            click.echo(f"ELE Public Key Export ends successfully. Public key saved to: {output}")
+        else:
+            click.echo("ELE Public Key Export ends successfully.")
+            click.echo(f"Public key ({len(public_key)} bytes): {public_key.hex()}")
+    else:
+        click.echo("ELE Public Key Export failed - no public key data received")
+
+
+def ele_public_key_export(
+    ele_handler: EleMessageHandler,
+    keystore_handle: int,
+    key_id: int,
+    buffer_size: int = 512,
+) -> bytes:
+    """ELE Public Key Export command.
+
+    :param ele_handler: ELE handler class
+    :param keystore_handle: Key store handle from keystore open
+    :param key_id: ID of the asymmetric key stored in the key store
+    :param buffer_size: Length in bytes of the output public key buffer
+    :return: Public key bytes if successful, empty bytes otherwise
+    """
+    public_key_export = ele_message.EleMessagePublicKeyExport(
+        key_store_handle=keystore_handle,
+        key_id=key_id,
+        output_buffer_size=buffer_size,
+    )
+    with ele_handler:
+        ele_handler.send_message(public_key_export)
+
+    if not public_key_export.get_public_key():
+        click.echo("Warning: Public key export failed - no public key data returned")
+
+    return public_key_export.get_public_key()
+
+
+@main.command(name="export-nxp-prod-ka-puk", no_args_is_help=True)
+@click.option(
+    "-n",
+    "--nonce",
+    type=INT(),
+    default="0x1234",
+    help="Nonce used as authentication proof for accessing the key store (default: 0x1234).",
+)
+@click.option(
+    "--keystore-id",
+    type=INT(),
+    default="0xABCD",
+    help="Key store identifier (default: 0xABCD).",
+)
+@click.option(
+    "--key-id",
+    type=INT(),
+    default="0x70000000",
+    help="Key ID for NXP production key agreement public key (default: 0x70000000).",
+)
+@click.option(
+    "-s",
+    "--buffer-size",
+    type=INT(),
+    default="64",
+    help="Length in bytes of the output public key buffer (default: 64).",
+)
+@spsdk_output_option(
+    required=True,
+    help="Output file to store the exported NXP production key agreement public key.",
+)
+@click.option(
+    "--keep-session",
+    is_flag=True,
+    default=False,
+    help="Keep session and keystore open after export (for debugging).",
+)
+@click.pass_obj
+def cmd_export_nxp_prod_ka_puk(
+    handler: EleMessageHandler,
+    nonce: int,
+    keystore_id: int,
+    key_id: int,
+    buffer_size: int,
+    output: str,
+    keep_session: bool,
+) -> None:
+    """Export NXP Production Key Agreement Public Key.
+
+    This command performs the complete sequence to export the NXP production
+    key agreement public key (nxp_prod_ka_puk):
+
+    1. SAB Init - Initialize EdgeLock Secure Enclave Firmware HSM services
+    2. Session Open - Open a session for HSM operations
+    3. Keystore Open - Open/create a shared keystore
+    4. Public Key Export - Export the NXP production key agreement public key
+    5. Cleanup - Close keystore and session (unless --keep-session is used)
+
+    The exported key is typically 64 bytes for ECC P-256 keys (32 bytes x + 32 bytes y)
+    in non-compressed form, big-endian order.
+    """
+    try:
+        public_key = ele_export_nxp_prod_ka_puk(
+            handler, nonce, keystore_id, key_id, buffer_size, keep_session
+        )
+
+        if public_key:
+            write_file(public_key, output, mode="wb")
+            click.echo(
+                f"NXP Production Key Agreement Public Key exported successfully to: {output}"
+            )
+            click.echo(f"Key size: {len(public_key)} bytes")
+            click.echo(f"Key (hex): {public_key.hex()}")
+        else:
+            click.echo("Failed to export NXP Production Key Agreement Public Key")
+
+    except Exception as e:
+        click.echo(f"Error exporting NXP Production Key Agreement Public Key: {e}")
+        raise
+
+
+def ele_export_nxp_prod_ka_puk(
+    ele_handler: EleMessageHandler,
+    nonce: int = 0x1234,
+    keystore_id: int = 0xABCD,
+    key_id: int = 0x70000000,
+    buffer_size: int = 64,
+    keep_session: bool = False,
+) -> bytes:
+    """Export NXP Production Key Agreement Public Key.
+
+    Performs the complete sequence of ELE commands to export the key.
+
+    :param ele_handler: ELE handler class
+    :param nonce: Nonce for keystore authentication
+    :param keystore_id: Key store identifier
+    :param key_id: Key ID for the NXP production key agreement public key
+    :param buffer_size: Output buffer size in bytes
+    :param keep_session: Keep session and keystore open after export
+    :return: Public key bytes if successful, empty bytes otherwise
+    """
+    session_handle = 0
+    keystore_handle = 0
+    public_key = b""
+
+    try:
+        # Step 1: SAB Init
+        click.echo("Step 1/4: Initializing SAB...")
+        sab_init = ele_message.EleMessageSabInit()
+        with ele_handler:
+            ele_handler.send_message(sab_init)
+
+        if sab_init.status != ResponseStatus.ELE_SUCCESS_IND:
+            click.echo(f"SAB Init failed: {sab_init.status_string}")
+            return b""
+        click.echo("SAB Init successful")
+
+        # Step 2: Session Open
+        click.echo("Step 2/4: Opening session...")
+        session_open = ele_message.EleMessageSessionOpen()
+        with ele_handler:
+            ele_handler.send_message(session_open)
+
+        if session_open.status != ResponseStatus.ELE_SUCCESS_IND:
+            click.echo(f"Session Open failed: {session_open.status_string}")
+            return b""
+
+        session_handle = session_open.get_session_handle()
+        if session_handle == 0:
+            click.echo("Session Open failed: Invalid session handle")
+            return b""
+        click.echo(f"Session opened successfully. Handle: 0x{session_handle:08X}")
+
+        # Step 3: Keystore Open
+        click.echo("Step 3/4: Opening keystore...")
+        keystore_open = ele_message.EleMessageKeyStoreOpen(
+            session_handle=session_handle,
+            key_store_id=keystore_id,
+            nonce=nonce,
+            create_keystore=True,
+            shared_keystore=True,
+            monotonic_counter_increment=False,
+            sync_operation=False,
+        )
+        with ele_handler:
+            ele_handler.send_message(keystore_open)
+
+        if keystore_open.status != ResponseStatus.ELE_SUCCESS_IND:
+            click.echo(f"Keystore Open failed: {keystore_open.status_string}")
+            return b""
+
+        keystore_handle = keystore_open.get_key_store_handle()
+        if keystore_handle == 0:
+            click.echo("Keystore Open failed: Invalid keystore handle")
+            return b""
+        click.echo(f"Keystore opened successfully. Handle: 0x{keystore_handle:08X}")
+
+        # Step 4: Public Key Export
+        click.echo("Step 4/4: Exporting public key...")
+        public_key_export = ele_message.EleMessagePublicKeyExport(
+            key_store_handle=keystore_handle, key_id=key_id, output_buffer_size=buffer_size
+        )
+        with ele_handler:
+            ele_handler.send_message(public_key_export)
+
+        if public_key_export.status != ResponseStatus.ELE_SUCCESS_IND:
+            click.echo(f"Public Key Export failed: {public_key_export.status_string}")
+            return b""
+
+        public_key = public_key_export.get_public_key()
+        if not public_key:
+            click.echo("Public Key Export failed: No key data returned")
+            return b""
+
+        click.echo(f"Public key exported successfully. Size: {len(public_key)} bytes")
+
+        return public_key
+
+    except Exception as e:
+        click.echo(f"Error during NXP Production Key Agreement Public Key export: {e}")
+        return b""
+
+    # Update the cleanup section in ele_export_nxp_prod_ka_puk function:
+    finally:
+        # Cleanup (unless keep_session is requested)
+        if not keep_session:
+            # Close keystore if it was opened
+            if keystore_handle != 0:
+                try:
+                    click.echo("Cleaning up: Closing keystore...")
+                    ele_keystore_close(ele_handler, keystore_handle)
+                except Exception as e:
+                    click.echo(f"Warning: Failed to close keystore: {e}")
+
+            # Close session if it was opened
+            if session_handle != 0:
+                try:
+                    click.echo("Cleaning up: Closing session...")
+                    ele_session_close(ele_handler, session_handle)
+                except Exception as e:
+                    click.echo(f"Warning: Failed to close session: {e}")
 
 
 @catch_spsdk_error

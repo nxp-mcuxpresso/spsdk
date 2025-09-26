@@ -176,16 +176,127 @@ class KeyImportSigningAlgorithm(SpsdkEnum):
 
 
 class KeyAlgorithm(SpsdkEnum):
-    """Key Import Algorithm valid values."""
+    """Key algorithms supported by EdgeLock Secure Enclave."""
 
-    MD5 = (0x02000003, "MD5")
-    SHA1 = (0x02000005, "SHA1")
-    SHA224 = (0x02000008, "SHA224")
-    SHA256 = (0x02000009, "SHA256")
-    SHA384 = (0x0200000A, "SHA384")
-    SHA512 = (0x0200000B, "SHA512")
-    HKDF_SHA256 = (0x09020109, "HKDF SHA256")
-    HKDF_SHA384 = (0x0902010A, "HKDF SHA384")
+    # Hash Algorithms
+    MD5 = (0x02000003, "MD5", "MD5 hash algorithm")
+    SHA1 = (0x02000005, "SHA1", "SHA1 hash algorithm")
+    SHA224 = (0x02000008, "SHA224", "SHA224 hash algorithm")
+    SHA256 = (0x02000009, "SHA256", "SHA256 hash algorithm")
+    SHA384 = (0x0200000A, "SHA384", "SHA384 hash algorithm")
+    SHA512 = (0x0200000B, "SHA512", "SHA512 hash algorithm")
+    SHA3_224 = (0x02000010, "SHA3_224", "SHA3-224 hash algorithm")
+    SHA3_256 = (0x02000011, "SHA3_256", "SHA3-256 hash algorithm")
+    SHA3_384 = (0x02000012, "SHA3_384", "SHA3-384 hash algorithm")
+    SHA3_512 = (0x02000013, "SHA3_512", "SHA3-512 hash algorithm")
+    SHAKE256 = (0x02000015, "SHAKE256", "SHAKE256 hash algorithm")
+
+    # MAC Algorithms
+    HMAC_SHA256 = (0x03800009, "HMAC SHA256", "HMAC SHA256 algorithm")
+    HMAC_SHA384 = (0x0380000A, "HMAC SHA384", "HMAC SHA384 algorithm")
+    CMAC = (0x03C00200, "CMAC", "CMAC algorithm")
+
+    # Cipher Algorithms
+    ECB_NO_PADDING = (0x04404400, "ECB NO PADDING", "ECB no padding cipher")
+    CBC_NO_PADDING = (0x04404000, "CBC NO PADDING", "CBC no padding cipher")
+    CTR = (0x04C01000, "CTR", "CTR cipher mode")
+    CFB = (0x04C01100, "CFB", "CFB cipher mode")
+    OFB = (0x04C01200, "OFB", "OFB cipher mode")
+    ALL_CIPHER = (0x84C0FF00, "ALL CIPHER", "All supported cipher algorithms")
+
+    # AEAD Algorithms
+    CCM = (0x05500100, "CCM", "CCM AEAD algorithm")
+    GCM = (0x05500200, "GCM", "GCM AEAD algorithm")
+    CHACHA20_POLY1305 = (0x05100500, "CHACHA20_POLY1305", "ChaCha20-Poly1305 AEAD")
+    ALL_AEAD = (0x8550FF00, "ALL AEAD", "All supported AEAD algorithms")
+
+    # Signature Algorithms
+    ECDSA_SHA224 = (0x06000608, "ECDSA SHA224", "ECDSA with SHA224")
+    ECDSA_SHA256 = (0x06000609, "ECDSA SHA256", "ECDSA with SHA256")
+    ECDSA_SHA384 = (0x0600060A, "ECDSA SHA384", "ECDSA with SHA384")
+    ECDSA_SHA512 = (0x0600060B, "ECDSA SHA512", "ECDSA with SHA512")
+    RSA_PKCS1_V15_SHA224 = (0x06000208, "RSA PKCS1 V1.5 SHA224", "RSA PKCS#1 v1.5 with SHA224")
+    RSA_PKCS1_V15_SHA256 = (0x06000209, "RSA PKCS1 V1.5 SHA256", "RSA PKCS#1 v1.5 with SHA256")
+    RSA_PKCS1_V15_SHA384 = (0x0600020A, "RSA PKCS1 V1.5 SHA384", "RSA PKCS#1 v1.5 with SHA384")
+    RSA_PKCS1_V15_SHA512 = (0x0600020B, "RSA PKCS1 V1.5 SHA512", "RSA PKCS#1 v1.5 with SHA512")
+    RSA_PKCS1_V15_SHA_ANY = (0x060002FF, "RSA PKCS1 V1.5 SHA ANY", "RSA PKCS#1 v1.5 with any SHA")
+    RSA_PKCS1_PSS_MGF1_SHA224 = (
+        0x06000308,
+        "RSA PKCS1 PSS MGF1 SHA224",
+        "RSA PKCS#1 PSS MGF1 with SHA224",
+    )
+    RSA_PKCS1_PSS_MGF1_SHA256 = (
+        0x06000309,
+        "RSA PKCS1 PSS MGF1 SHA256",
+        "RSA PKCS#1 PSS MGF1 with SHA256",
+    )
+    RSA_PKCS1_PSS_MGF1_SHA384 = (
+        0x0600030A,
+        "RSA PKCS1 PSS MGF1 SHA384",
+        "RSA PKCS#1 PSS MGF1 with SHA384",
+    )
+    RSA_PKCS1_PSS_MGF1_SHA512 = (
+        0x0600030B,
+        "RSA PKCS1 PSS MGF1 SHA512",
+        "RSA PKCS#1 PSS MGF1 with SHA512",
+    )
+    RSA_PKCS1_PSS_MGF1_SHA_ANY = (
+        0x060003FF,
+        "RSA PKCS1 PSS MGF1 SHA ANY",
+        "RSA PKCS#1 PSS MGF1 with any SHA",
+    )
+    RSA_PKCS1_ALL = (0x8600FF00, "RSA PKCS1 ALL", "All RSA PKCS#1 algorithms")
+    ED25519PH = (0x0600090B, "ED25519PH", "Ed25519ph signature algorithm")
+    ED448PH = (0x06000915, "ED448PH", "Ed448ph signature algorithm")
+    PURE_EDDSA = (0x06000800, "PURE EDDSA", "Pure EdDSA signature algorithm")
+    ALL_EDDSA = (0x86000800, "ALL EDDSA", "All EdDSA algorithms")
+
+    # Public Key Attestation Algorithms
+    CMAC_ATTESTATION = (0x83C00200, "CMAC ATTESTATION", "CMAC attestation algorithm")
+    ECDSA_SHA224_ATTESTATION = (0x86000608, "ECDSA SHA224 ATTESTATION", "ECDSA SHA224 attestation")
+    ECDSA_SHA256_ATTESTATION = (0x86000609, "ECDSA SHA256 ATTESTATION", "ECDSA SHA256 attestation")
+    ECDSA_SHA384_ATTESTATION = (0x8600060A, "ECDSA SHA384 ATTESTATION", "ECDSA SHA384 attestation")
+    ECDSA_SHA512_ATTESTATION = (0x8600060B, "ECDSA SHA512 ATTESTATION", "ECDSA SHA512 attestation")
+
+    # Asymmetric Encryption/Decryption Algorithms
+    RSA_PKCS1_V15_CRYPT = (0x07000200, "RSA PKCS1 V1.5 CRYPT", "RSA PKCS#1 v1.5 encryption")
+    RSA_PKCS1_OAEP_SHA1 = (0x07000305, "RSA PKCS1 OAEP SHA1", "RSA PKCS#1 OAEP with SHA1")
+    RSA_PKCS1_OAEP_SHA224 = (0x07000308, "RSA PKCS1 OAEP SHA224", "RSA PKCS#1 OAEP with SHA224")
+    RSA_PKCS1_OAEP_SHA256 = (0x07000309, "RSA PKCS1 OAEP SHA256", "RSA PKCS#1 OAEP with SHA256")
+    RSA_PKCS1_OAEP_SHA384 = (0x0700030A, "RSA PKCS1 OAEP SHA384", "RSA PKCS#1 OAEP with SHA384")
+    RSA_PKCS1_OAEP_SHA512 = (0x0700030B, "RSA PKCS1 OAEP SHA512", "RSA PKCS#1 OAEP with SHA512")
+
+    # Key Exchange Algorithms
+    ECDH_HKDF_SHA256_KEY_IMPORT = (
+        0x09020109,
+        "ECDH HKDF SHA256 KEY IMPORT",
+        "ECDH HKDF SHA256 for key import",
+    )
+    ECDH_HKDF_SHA384_KEY_IMPORT = (
+        0x0902010A,
+        "ECDH HKDF SHA384 KEY IMPORT",
+        "ECDH HKDF SHA384 for key import",
+    )
+    ECDH_HKDF_SHA_ANY_KEY_IMPORT = (
+        0x090201FF,
+        "ECDH HKDF SHA ANY KEY IMPORT",
+        "ECDH HKDF with any SHA for key import",
+    )
+    ECDH_HKDF_SHA256 = (0x89020109, "ECDH HKDF SHA256", "ECDH HKDF SHA256")
+    ECDH_HKDF_SHA384 = (0x8902010A, "ECDH HKDF SHA384", "ECDH HKDF SHA384")
+    ECDH_HKDF_SHA_ANY = (0x890201FF, "ECDH HKDF SHA ANY", "ECDH HKDF with any SHA")
+
+    # Legacy aliases for backward compatibility
+    HKDF_SHA256 = (
+        0x09020109,
+        "HKDF SHA256",
+        "ECDH HKDF SHA256 for key import",
+    )
+    HKDF_SHA384 = (
+        0x0902010A,
+        "HKDF SHA384",
+        "ECDH HKDF SHA384 for key import",
+    )
 
 
 class KeyDerivationAlgorithm(SpsdkEnum):
@@ -198,8 +309,8 @@ class KeyDerivationAlgorithm(SpsdkEnum):
 class KeyType(SpsdkEnum):
     """Derived Key Type valid values."""
 
-    AES = (0x2400, "AES SHA256", "Possible bit widths: 128/192/256")
-    HMAC = (0x1100, "HMAC SHA384", "Possible bit widths: 224/256/384/512")
+    AES = (0x2400, "AES", "Possible bit widths: 128/192/256")
+    HMAC = (0x1100, "HMAC", "Possible bit widths: 224/256/384/512")
     DERIVE = (0x1200, "Derived key", "Possible bit widths: 256/384")
     OEM_IMPORT_MK_SK = (0x9200, "OEM_IMPORT_MK_SK", "Possible bit widths: 128/192/256")
     ECC = (0x7112, "ECC NIST", "Possible bit widths: 128/192/256")
@@ -211,6 +322,7 @@ class LifeCycle(SpsdkEnum):
     CURRENT = (0x00, "CURRENT", "Current device lifecycle")
     OPEN = (0x01, "OPEN")
     CLOSED = (0x02, "CLOSED")
+    OPEN_CLOSED = (0x03, "OPEN_CLOSED")
     LOCKED = (0x04, "LOCKED")
 
 
@@ -323,7 +435,7 @@ class KeyUsage(SpsdkEnum):
     )
     VERIFY_HASH = (
         0x00002000,
-        "Sign message",
+        "Verify hash",
         (
             "Permission to verify a hashed message signature with the key with an asymmetric "
             "signature verification operation. Setting this permission automatically sets the Verify Message usage."

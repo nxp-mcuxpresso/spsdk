@@ -499,7 +499,10 @@ def enable_debug(probe: DebugProbe, family: FamilyRevision) -> bool:
 
         if not test_ahb_access(probe):
             logger.debug("Locked Device. Launching unlock sequence.")
-
+            # Reopen the probe after failed attempt of AHB Access
+            probe.close()
+            probe.open()
+            probe.connect_safe()
             # Start debug mailbox system
             StartDebugSession(dm=DebugMailbox(debug_probe=probe, family=family)).run()
 

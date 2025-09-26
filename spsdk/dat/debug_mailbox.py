@@ -196,7 +196,7 @@ class DebugMailbox:
                 )
                 for i in POSSIBLE_DBGMLBX_AP_IX:
                     try:
-                        idr = self.debug_probe.coresight_reg_read(
+                        idr = self.debug_probe.coresight_reg_read_safe(
                             access_port=True,
                             addr=self.debug_probe.get_coresight_ap_address(
                                 access_port=i, address=self.registers["IDR"]["address"]
@@ -228,7 +228,7 @@ class DebugMailbox:
         :return: The read value of addressed register (4 bytes)
         :raises NotImplementedError: Derived class has to implement this method
         """
-        return self.debug_probe.coresight_reg_read(
+        return self.debug_probe.coresight_reg_read_safe(
             addr=self.debug_probe.get_coresight_ap_address(
                 access_port=self.dbgmlbx_ap_ix, address=addr
             )
@@ -244,7 +244,7 @@ class DebugMailbox:
         :param data: the data to be written into register
         :raises NotImplementedError: Derived class has to implement this method
         """
-        self.debug_probe.coresight_reg_write(
+        self.debug_probe.coresight_reg_write_safe(
             addr=self.debug_probe.get_coresight_ap_address(
                 access_port=self.dbgmlbx_ap_ix, address=addr
             ),

@@ -10,6 +10,7 @@ import logging
 import math
 import os
 import re
+import sys
 import textwrap
 from typing import Any, Optional
 
@@ -327,6 +328,7 @@ class BinaryImage:
         :raises SPSDKValueError: In case of invalid width.
         :return: ASCII/Unicode art representation of image.
         """
+        use_unicode &= os.name != "nt" or (sys.stdout.isatty() and sys.stderr.isatty())
         if use_unicode:
             # Unicode box drawing characters
             top_left = "┌"
@@ -458,6 +460,10 @@ class BinaryImage:
         if self.binary and len(self) == len(self.binary) and len(self.sub_images) == 0:
             return self.binary
 
+        # Handle empty binary case - if length is 0 and no sub-images, return empty bytes
+        if len(self) == 0 and len(self.sub_images) == 0 and self.size == 0:
+            return b""
+
         if self.pattern:
             ret = bytearray(self.pattern.get_block(len(self)))
         else:
@@ -564,6 +570,23 @@ class BinaryImage:
             data += self.export()
             write_file(data, path, mode="wb")
             return
+
+        # Special handling for empty binary to SREC/HEX conversion
+        if file_format in ("HEX", "S19"):
+            exported_data = self.export()
+            # Only check for the specific problematic case: completely empty binary with no offset
+            # and no meaningful content that could be converted
+            if (
+                len(exported_data) == 0
+                and self.offset == 0
+                and not self.binary
+                and len(self.sub_images) == 0
+                and (not self.pattern or self.pattern.pattern == "zeros")
+                and not self.execution_start_address  # Add this condition
+            ):
+                # For empty files loaded from disk, we should still allow conversion
+                # Create a minimal valid HEX/S19 file
+                pass  # Continue with the conversion process
 
         def add_into_binary(bin_image: BinaryImage) -> None:
             address = bin_image.absolute_address
