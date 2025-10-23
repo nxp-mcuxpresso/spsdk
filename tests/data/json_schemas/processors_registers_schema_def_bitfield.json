@@ -23,6 +23,14 @@
         "type": "string",
         "title": "Bit-field name (to be displayed in UI). Name must be provided for all bit-fields except reserved bit-fields."
       },
+      "deprecated_names": {
+        "$id": "#/properties/register/bitfield/deprecated_names",
+        "type": "array",
+        "title": "Optional list of alternative/backward compatible names for the bitfield.",
+        "items": {
+          "type": "string"
+        }
+      },
       "width": {
         "$id": "#/properties/register/bitfield/width",
         "type": "integer",
@@ -47,7 +55,7 @@
           "WRITE_CONST",
           "same-as-parent",
           "none"
-        ] 
+        ]
       },
       "calculated": {
         "$id": "#/properties/register/bitfield/calculated",
@@ -86,12 +94,20 @@
               "type": "integer",
               "title": "Bit-field value.",
               "minimum": 0
-             },
-             "description": {
+            },
+            "deprecated_names": {
+              "$id": "#/properties/register/bitfield/value/deprecated_names",
+              "type": "array",
+              "title": "Optional list of alternative/backward compatible names for the bitfield value.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": {
               "$id": "#/properties/register/bitfield/value/description",
               "type": "string",
               "title": "Description of the bit-field value."
-            }  
+            }
           }
         }
       }

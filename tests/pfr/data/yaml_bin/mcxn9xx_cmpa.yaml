@@ -793,16 +793,8 @@ settings: # The CMPA registers configuration.
       # - LOCKED_0b10, (2): Region is locked
       # - LOCKED_0b11, (3): Region is locked
       IPED_CTX7_END_ADDR: 0x12345678 # Offset: 8b, Width: 32b, Description: Upper 24-bits of IPED region 7 end address. Lower 8 address bits are always 0. NOTE: ROM only uses upper 24bits to address IPED region. In config file use full 32b address.
-  REC_IMG_EXT0: # Bitmap mask for recovery image extended sectors (sectors 8 - 31).
-    bitfields:  # The register bitfields
-      REC_IMG_EXT0: '0x000000'  # Offset: 8b, Width: 24b, Description: Bitmap mask to indicate sectors included in recovery image. Recovery image is programmed in BANK1_IFR0. But if the image size is more than 32KB, this field can be used to indicate sectors to include in recovery image.
-      # ROM will configure flash protection setting for these sectors the same as BANK1_IFR0 before exiting to user code.
-      # The protection settings are managed through CMPA.OEM_BANK1_IFR0_PROT. The lower 8 sectors are excluded from this mask to avoid conflicts with dual image boot feature.
-  REC_IMG_EXT1: # Bitmap mask for recovery image extended sectors (sectors 40 - 63).
-    bitfields:  # The register bitfields
-      REC_IMG_EXT1: '0x000000'  # Offset: 8b, Width: 24b, Description: Bitmap mask to indicate sectors included in recovery image. Recovery image is programmed in BANK1_IFR0. But if the image size is more than 32KB, this field can be used to indicate sectors to include in recovery image.
-      # ROM will configure flash protection setting for these sectors the same as BANK1_IFR0 before exiting to user code.
-      # The protection settings are managed through CMPA.OEM_BANK1_IFR0_PROT. The lower 8 sectors are excluded from this mask to avoid conflicts with dual image boot feature.
+  REC_IMG_EXT0: 0x000000 # Bitmap mask for recovery image extended sectors (sectors 8 - 31).
+  REC_IMG_EXT1: 0x000000 # Bitmap mask for recovery image extended sectors (sectors 40 - 63).
   QUICK_SET_GPIO_0: # Drive GPIO 0 port [31:0] pins high after reset.
 # Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.

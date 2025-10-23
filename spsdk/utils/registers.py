@@ -8,7 +8,7 @@
 
 import json
 import logging
-from typing import Any, Generic, Iterator, Mapping, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Iterator, Mapping, Optional, Type, TypeVar, Union, cast
 
 from typing_extensions import Self
 
@@ -74,13 +74,21 @@ class Access(SpsdkEnum):
 class RegsEnum:
     """Storage for register enumerations."""
 
-    def __init__(self, name: str, value: Any, description: str, max_width: int = 0) -> None:
+    def __init__(
+        self,
+        name: str,
+        value: Any,
+        description: str,
+        max_width: int = 0,
+        deprecated_names: Optional[list[str]] = None,
+    ) -> None:
         """Constructor of RegsEnum class. Used to store enumeration information of bitfield.
 
         :param name: Name of enumeration.
         :param value: Value of enumeration.
         :param description: Text description of enumeration.
         :param max_width: Maximal width of enum value used to format output
+        :param deprecated_names: Optional list of deprecated names for this enum
         :raises SPSDKRegsError: Invalid input value.
         """
         self.name = name or "N/A"
@@ -90,6 +98,7 @@ class RegsEnum:
             raise SPSDKRegsError(f"Invalid Enum Value: {value}") from exc
         self.description = description or ""
         self.max_width = max_width
+        self.deprecated_names = [x.upper() for x in deprecated_names] if deprecated_names else []
 
     @classmethod
     def create_from_spec(cls, spec: dict[str, Any], maxwidth: int = 0) -> Self:
@@ -111,19 +120,22 @@ class RegsEnum:
             raise SPSDKRegsError(f"Invalid Enum Value: {raw_val}") from exc
 
         description = spec.get("description", "N/A")
+        deprecated_names = spec.get("deprecated_names", [])
 
-        return cls(name, value, description, maxwidth)
+        return cls(name, value, description, maxwidth, deprecated_names=deprecated_names)
 
     def create_spec(self) -> dict[str, Union[str, int]]:
         """Creates the enumeration specification.
 
         :returns: The specification dictionary of enum.
         """
-        spec: dict[str, Union[str, int]] = {}
+        spec: dict[str, Union[str, int, list[str]]] = {}
         spec["name"] = self.name
         spec["value"] = self.value
         spec["description"] = self.description
-        return spec
+        if self.deprecated_names:
+            spec["deprecated_names"] = self.deprecated_names
+        return cast(dict[str, Union[str, int]], spec)
 
     def get_value_int(self) -> int:
         """Method returns Integer value of enum.
@@ -327,6 +339,7 @@ class RegsBitField:
         reserved = bool(name is None or name.lower().startswith("reserved"))
         description = spec.get("description", "N/A")
         access = Access.from_label(spec.get("access", "RW"))
+        deprecated_names = spec.get("deprecated_names", [])
         config_processor = ConfigProcessor()
         no_yaml_comments = False
         # Apply bitfield modifications if available
@@ -352,6 +365,7 @@ class RegsBitField:
             reserved,
             config_processor,
             no_yaml_comments,
+            deprecated_names=deprecated_names,
         )
 
         for enum_spec in spec.get("values", []):
@@ -386,7 +400,7 @@ class RegsBitField:
 
         :returns: The specification of Register bitfield.
         """
-        spec: dict[str, Union[str, list[dict[str, Union[str, int]]]]] = {}
+        spec: dict[str, Any] = {}
         spec["id"] = self._get_uid()
         spec["offset"] = hex(self.offset)
         spec["width"] = str(self.width)
@@ -399,6 +413,8 @@ class RegsBitField:
             enums.append(enum.create_spec())
         if enums:
             spec["values"] = enums
+        if self.deprecated_names:
+            spec["deprecated_names"] = self.deprecated_names
         return spec
 
     def has_enums(self) -> bool:
@@ -521,8 +537,21 @@ class RegsBitField:
         :return: Constant of enum.
         :raises SPSDKRegsErrorEnumNotFound: The enum has not been found.
         """
+        if isinstance(enum_name, int):
+            for enum in self._enums:
+                if enum.get_value_int() == enum_name:
+                    return enum_name
+        if not isinstance(enum_name, str):
+            raise SPSDKRegsErrorEnumNotFound(f"The enum for {enum_name} has not been found.")
+        enum_name = enum_name.upper()
         for enum in self._enums:
-            if enum.name == enum_name:
+            if enum.name.upper() == enum_name:
+                return enum.get_value_int()
+            if enum_name in enum.deprecated_names:
+                logger.warning(
+                    f"Using deprecated enum name: {enum_name}, "
+                    f"updated configuration to use: {enum.name}"
+                )
                 return enum.get_value_int()
 
         raise SPSDKRegsErrorEnumNotFound(f"The enum for {enum_name} has not been found.")
@@ -614,10 +643,9 @@ class Register:
         self.reverse_subregs_order = reverse_subregs_order
         self.base_endianness = base_endianness
         self.alt_widths = alt_widths
-        self._alias_names: list[str] = []
         self.reserved = reserved
         self.no_yaml_comments = no_yaml_comments
-        self.deprecated_names = deprecated_names or []
+        self.deprecated_names = [x.upper() for x in (deprecated_names or [])]
 
         # Grouped register members
         self.sub_regs: list[Self] = []
@@ -666,6 +694,7 @@ class Register:
         reverse = value_to_bool(spec.get("reverse", False))
         config_as_hexstring = value_to_bool(spec.get("config_as_hexstring", False))
         alt_widths = spec.get("alt_widths")
+        deprecated_names = [x.upper() for x in spec.get("deprecated_names", [])]
 
         if reg_mods:
             if "reverse" in reg_mods:
@@ -689,6 +718,7 @@ class Register:
             no_yaml_comments=no_yaml_comments,
             config_as_hexstring=config_as_hexstring,
             alt_widths=alt_widths,
+            deprecated_names=deprecated_names,
         )
         reg._default_value = value_to_int(spec.get("default_value_int", 0))
         if reg._default_value:
@@ -743,15 +773,9 @@ class Register:
 
         if bitfields:
             spec["bitfields"] = bitfields
+        if self.deprecated_names:
+            spec["deprecated_names"] = self.deprecated_names
         return spec
-
-    def add_alias(self, alias: str) -> None:
-        """Add alias name to register.
-
-        :param alias: Register name alias.
-        """
-        if alias not in self._alias_names:
-            self._alias_names.append(alias)
 
     def has_group_registers(self) -> bool:
         """Returns true if register is compounded from sub-registers.
@@ -1156,8 +1180,6 @@ class _RegistersBase(Generic[RegisterClassT]):
         def check_reg(reg: RegisterClassT) -> bool:
             if name.upper() == reg.name.upper():
                 return True
-            if name.upper() in [x.upper() for x in reg._alias_names]:
-                return True
             if name.upper() == reg.uid.upper():
                 return True
             if name.upper() in reg.deprecated_names:
@@ -1212,16 +1234,14 @@ class _RegistersBase(Generic[RegisterClassT]):
         if reg.name in self.get_reg_names():
             raise SPSDKRegsError(f"Cannot add register with same name: {reg.name}.")
 
-        for idx, register in enumerate(self._registers):
+        for register in self._registers:
             # TODO solve problem with group register that are always at 0 offset
             if register.offset == reg.offset != 0:
-                logger.debug(
+                logger.error(
                     f"Found register at the same offset {hex(reg.offset)}"
-                    f", adding {reg.name} as an alias to {register.name}"
+                    f"cannot add register instead of {register.name}"
                 )
-                self._registers[idx].add_alias(reg.name)
-                self._registers[idx]._bitfields.extend(reg._bitfields)
-                return
+                raise SPSDKRegsError(f"Cannot add register on existing offset: {hex(reg.offset)}.")
         # update base endianness for all registers in group
         reg.base_endianness = self.base_endianness
         self._registers.append(reg)
@@ -1235,13 +1255,17 @@ class _RegistersBase(Generic[RegisterClassT]):
         self._registers.remove(self.find_reg(name, True))
 
     def get_registers(
-        self, exclude: Optional[list[str]] = None, include_group_regs: bool = False
+        self,
+        exclude: Optional[list[str]] = None,
+        include_group_regs: bool = False,
+        include_reserved: bool = False,
     ) -> list[RegisterClassT]:
         """Returns list of the registers.
 
         Method allows exclude some register by their names.
         :param exclude: Exclude list of register names if needed.
         :param include_group_regs: The algorithm will check also group registers.
+        :param include_reserved : Include reserved registers in the result.
         :return: List of register names.
         """
         if exclude:
@@ -1254,6 +1278,9 @@ class _RegistersBase(Generic[RegisterClassT]):
                 if reg.has_group_registers():
                     sub_regs.extend(reg.sub_regs)
             regs.extend(sub_regs)
+
+        if include_reserved:
+            return regs
 
         return [x for x in regs if not x.reserved]
 
@@ -1302,15 +1329,12 @@ class _RegistersBase(Generic[RegisterClassT]):
         """
         image = BinaryImage(self.family.name, size=size, pattern=pattern)
         for reg in self._registers:
-            description = reg.description
-            if reg._alias_names:
-                description += f"\n Alias names: {', '.join(reg._alias_names)}"
             image.add_image(
                 BinaryImage(
                     reg.name,
                     reg.width // 8,
                     offset=reg.offset,
-                    description=description,
+                    description=reg.description,
                     binary=reg.get_bytes_value(raw=True),
                 )
             )
@@ -1528,10 +1552,12 @@ class _RegistersBase(Generic[RegisterClassT]):
 
                 reg = self.register_class.create_from_spec(spec_reg, reg_mods)
                 if deprecated_reg_names and reg.uid in deprecated_reg_names:
-                    reg.deprecated_names = deprecated_reg_names[reg.uid]["alt_names"]
+                    reg.deprecated_names.extend(deprecated_reg_names[reg.uid]["alt_names"])
                     for bf in reg.get_bitfields():
                         if bf.uid in deprecated_reg_names[reg.uid]["bitfields"]:
-                            bf.deprecated_names = deprecated_reg_names[reg.uid]["bitfields"][bf.uid]
+                            bf.deprecated_names.extend(
+                                deprecated_reg_names[reg.uid]["bitfields"][bf.uid]
+                            )
 
                 group = self._get_register_group(reg, grouped_regs)
                 if group:

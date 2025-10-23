@@ -269,7 +269,10 @@ class Segment(BaseClass):
         :return: Verifier of current object.
         """
         ret = Verifier(f"Segment({self.NAME}) details")
-        ret.add_record_range("Offset", self._offset, min_val=-1)
+        if self._offset < 0:
+            ret.add_record("Offset", VerifierResult.SUCCEEDED, "Automatic")
+        else:
+            ret.add_record_range("Offset", hex(self._offset), min_val=0)
         bin_size = len(self.raw_block) if (self.raw_block is not None) else 0
         ret.add_record_range("Size", bin_size)
         if self.not_parsed:

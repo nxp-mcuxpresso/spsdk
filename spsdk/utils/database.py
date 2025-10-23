@@ -662,6 +662,66 @@ class MemMap:
                 return self._mem_map[name]
         raise SPSDKError("Block has not been found")
 
+    def find_memory_blocks(
+        self,
+        block_name: Optional[str] = None,
+        core: Optional[str] = None,
+        instance: Optional[int] = None,
+        secure_access: Optional[bool] = None,
+        external: Optional[bool] = None,
+        name_regex: Optional[str] = None,
+        base_address_range: Optional[tuple[int, int]] = None,
+    ) -> list[MemBlock]:
+        """Find memory blocks matching the specified criteria.
+
+        All criteria are optional and combined with logical AND. If a criterion is None, it's not used for filtering.
+
+        :param block_name: Exact block name to match
+        :param core: Core name to match
+        :param instance: Instance number to match
+        :param secure_access: Security access flag to match
+        :param external: External memory flag to match
+        :param name_regex: Regular expression pattern to match against the full block name
+        :param base_address_range: Tuple of (min_address, max_address) to match blocks within address range
+        :return: List of memory blocks matching all specified criteria
+        """
+        result = []
+
+        for block in self._mem_map.values():
+            # Skip if block name doesn't match
+            if block_name is not None and block.block_name != block_name:
+                continue
+
+            # Skip if core doesn't match
+            if core is not None and block.core != core:
+                continue
+
+            # Skip if instance doesn't match
+            if instance is not None and block.instance != instance:
+                continue
+
+            # Skip if security access doesn't match
+            if secure_access is not None and block.security_access != secure_access:
+                continue
+
+            # Skip if external flag doesn't match
+            if external is not None and block.external != external:
+                continue
+
+            # Skip if name doesn't match regex pattern
+            if name_regex is not None and not re.search(name_regex, block.name):
+                continue
+            # Skip if base address is outside specified range
+            if base_address_range is not None:
+                min_addr, max_addr = base_address_range
+                if not min_addr <= block.base_address <= max_addr:
+                    continue
+
+            # If we got here, the block matches all criteria
+            result.append(block)
+
+        return result
+
 
 class IspCfg:
     """ISP configuration."""

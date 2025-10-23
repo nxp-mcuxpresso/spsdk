@@ -166,8 +166,9 @@ class MasterBootImage(FeatureBaseClass):
         base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [
             MasterBootImage
         ]
+        mixins = mbi_mixin.get_all_mbi_mixins()
         for mixin in class_descr["mixins"]:
-            mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
+            mixin_cls: Type[mbi_mixin.Mbi_Mixin] = mixins[mixin]
             if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
                 for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
                     if member not in members:
@@ -228,7 +229,10 @@ class MasterBootImage(FeatureBaseClass):
         """
         img_type = get_db(family).get_int(DatabaseManager.MBI, ["fixed_image_type"], -1)
         if img_type < 0:
-            return mbi_mixin.Mbi_MixinIvt.get_image_type(data)
+            ivt_class_name = get_db(family).get_str(
+                DatabaseManager.MBI, ["ivt_type"], "Mbi_MixinIvt"
+            )
+            return mbi_mixin.get_all_mbi_mixins()[ivt_class_name].get_image_type(data)
         return img_type
 
     @classmethod

@@ -34,34 +34,9 @@
                                     "description": "UART ISP"
                                 },
                                 {
-                                    "name": "Reserved_0b010",
-                                    "value": 2,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b011",
-                                    "value": 3,
-                                    "description": "Reserved"
-                                },
-                                {
                                     "name": "USB0_HID",
                                     "value": 4,
                                     "description": "USB0_HID"
-                                },
-                                {
-                                    "name": "Reserved_0b101",
-                                    "value": 5,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b110",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b111",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -83,16 +58,6 @@
                                     "name": "FRO_96_MHZ",
                                     "value": 1,
                                     "description": "96MHz FRO @1v1"
-                                },
-                                {
-                                    "name": "Reserved_0b10",
-                                    "value": 2,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b11",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -518,11 +483,6 @@
                                     "name": "USB0_VBUS",
                                     "value": 1,
                                     "description": "Customer defined GPIO for USB0_VBUS detect."
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 2,
-                                    "description": "RESERVED"
                                 },
                                 {
                                     "name": "VDD_USB",

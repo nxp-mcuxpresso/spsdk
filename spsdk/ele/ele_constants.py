@@ -379,3 +379,265 @@ class EleImemState(SpsdkSoftEnum):
         "Some IMEM regions have been lost during power down and fw "
         "must be re-installed to use all ELE features",
     )
+
+
+class HseMessageIDs(SpsdkSoftEnum):
+    """HSE Service Message IDs."""
+
+    SET_ATTR = (0x00000001, "HSE_SRV_ID_SET_ATTR", "Set attribute service")
+    GET_ATTR = (0x00A50002, "HSE_SRV_ID_GET_ATTR", "Get attribute service")
+    CANCEL = (0x00A50004, "HSE_SRV_ID_CANCEL", "Cancel service")
+    FIRMWARE_UPDATE = (0x00000005, "HSE_SRV_ID_FIRMWARE_UPDATE", "Firmware update service")
+    SYS_AUTH_REQ = (0x00000006, "HSE_SRV_ID_SYS_AUTH_REQ", "System authorization request")
+    SYS_AUTH_RESP = (0x00000007, "HSE_SRV_ID_SYS_AUTH_RESP", "System authorization response")
+    BOOT_DATA_IMAGE_SIGN = (
+        0x00000008,
+        "HSE_SRV_ID_BOOT_DATA_IMAGE_SIGN",
+        "Boot data image sign service",
+    )
+    BOOT_DATA_IMAGE_VERIFY = (
+        0x00000009,
+        "HSE_SRV_ID_BOOT_DATA_IMAGE_VERIFY",
+        "Boot data image verify service",
+    )
+    IMPORT_EXPORT_STREAM_CTX = (
+        0x00A5000A,
+        "HSE_SRV_ID_IMPORT_EXPORT_STREAM_CTX",
+        "Import/export stream context",
+    )
+
+    ERASE_HSE_NVM_DATA = (0x00000050, "HSE_SRV_ID_ERASE_HSE_NVM_DATA", "Erase HSE NVM data")
+    ERASE_FW = (0x00000057, "HSE_SRV_ID_ERASE_FW", "Erase firmware")
+    ACTIVATE_PASSIVE_BLOCK = (
+        0x00000051,
+        "HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK",
+        "Activate passive block",
+    )
+    SBAF_UPDATE = (0x00000053, "HSE_SRV_ID_SBAF_UPDATE", "SBAF update service")
+    FW_INTEGRITY_CHECK = (0x00000054, "HSE_SRV_ID_FW_INTEGRITY_CHECK", "Firmware integrity check")
+    PUBLISH_NVM_KEYSTORE_RAM_TO_FLASH = (
+        0x00000055,
+        "HSE_SRV_ID_PUBLISH_NVM_KEYSTORE_RAM_TO_FLASH",
+        "Publish NVM keystore RAM to flash",
+    )
+    CONFIG_COUNTER = (0x00000052, "HSE_SRV_ID_CONFIG_COUNTER", "Configure counter")
+
+    LOAD_ECC_CURVE = (0x00000100, "HSE_SRV_ID_LOAD_ECC_CURVE", "Load ECC curve")
+    FORMAT_KEY_CATALOGS = (0x00000101, "HSE_SRV_ID_FORMAT_KEY_CATALOGS", "Format key catalogs")
+    ERASE_KEY = (0x00000102, "HSE_SRV_ID_ERASE_KEY", "Erase key")
+    GET_KEY_INFO = (0x00A50103, "HSE_SRV_ID_GET_KEY_INFO", "Get key information")
+    IMPORT_KEY = (0x00000104, "HSE_SRV_ID_IMPORT_KEY", "Import key")
+    EXPORT_KEY = (0x00000105, "HSE_SRV_ID_EXPORT_KEY", "Export key")
+    KEY_GENERATE = (0x00000106, "HSE_SRV_ID_KEY_GENERATE", "Generate key")
+    KEY_DERIVE = (0x00000108, "HSE_SRV_ID_KEY_DERIVE", "Derive key")
+    KEY_DERIVE_COPY = (0x00000109, "HSE_SRV_ID_KEY_DERIVE_COPY", "Derive key copy")
+    KEY_VERIFY = (0x0000010B, "HSE_SRV_ID_KEY_VERIFY", "Verify key")
+
+    SHE_LOAD_KEY = (0x0000A101, "HSE_SRV_ID_SHE_LOAD_KEY", "SHE load key")
+    SHE_LOAD_PLAIN_KEY = (0x0000A102, "HSE_SRV_ID_SHE_LOAD_PLAIN_KEY", "SHE load plain key")
+    SHE_EXPORT_RAM_KEY = (0x0000A103, "HSE_SRV_ID_SHE_EXPORT_RAM_KEY", "SHE export RAM key")
+    SHE_GET_ID = (0x0000A104, "HSE_SRV_ID_SHE_GET_ID", "SHE get ID")
+    SHE_BOOT_OK = (0x0000A105, "HSE_SRV_ID_SHE_BOOT_OK", "SHE boot OK")
+    SHE_BOOT_FAILURE = (0x0000A106, "HSE_SRV_ID_SHE_BOOT_FAILURE", "SHE boot failure")
+
+    HASH = (0x00A50200, "HSE_SRV_ID_HASH", "Hash service")
+    MAC = (0x00A50201, "HSE_SRV_ID_MAC", "MAC service")
+    FAST_CMAC = (0x00A50202, "HSE_SRV_ID_FAST_CMAC", "Fast CMAC service")
+    SYM_CIPHER = (0x00A50203, "HSE_SRV_ID_SYM_CIPHER", "Symmetric cipher service")
+    AEAD = (0x00A50204, "HSE_SRV_ID_AEAD", "AEAD service")
+    RSA_CIPHER = (0x00000207, "HSE_SRV_ID_RSA_CIPHER", "RSA cipher service")
+
+    GET_RANDOM_NUM = (0x00000300, "HSE_SRV_ID_GET_RANDOM_NUM", "Get random number")
+
+    INCREMENT_COUNTER = (0x00A50400, "HSE_SRV_ID_INCREMENT_COUNTER", "Increment counter")
+    READ_COUNTER = (0x00A50401, "HSE_SRV_ID_READ_COUNTER", "Read counter")
+
+    SMR_ENTRY_INSTALL = (0x00000501, "HSE_SRV_ID_SMR_ENTRY_INSTALL", "SMR entry install")
+    SMR_VERIFY = (0x00000502, "HSE_SRV_ID_SMR_VERIFY", "SMR verify")
+    CORE_RESET_ENTRY_INSTALL = (
+        0x00000503,
+        "HSE_SRV_ID_CORE_RESET_ENTRY_INSTALL",
+        "Core reset entry install",
+    )
+    ON_DEMAND_CORE_RESET = (0x00000504, "HSE_SRV_ID_ON_DEMAND_CORE_RESET", "On-demand core reset")
+    SMR_ENTRY_ERASE = (0x00000505, "HSE_SRV_ID_SMR_ENTRY_ERASE", "SMR entry erase")
+    CORE_RESET_ENTRY_ERASE = (
+        0x00000506,
+        "HSE_SRV_ID_CORE_RESET_ENTRY_ERASE",
+        "Core reset entry erase",
+    )
+
+
+class HseResponseStatus(SpsdkEnum):
+    """HSE service response codes."""
+
+    # Success response
+    OK = (0x55A5AA33, "HSE_SRV_RSP_OK", "HSE service successfully executed with no error.")
+
+    # Verification and parameter errors
+    VERIFY_FAILED = (
+        0x55A5A164,
+        "HSE_SRV_RSP_VERIFY_FAILED",
+        "HSE signals that a verification request fails (e.g. MAC and Signature verification).",
+    )
+    INVALID_ADDR = (0x55A5A26A, "HSE_SRV_RSP_INVALID_ADDR", "The address parameters are invalid.")
+    INVALID_PARAM = (
+        0x55A5A399,
+        "HSE_SRV_RSP_INVALID_PARAM",
+        "The HSE request parameters are invalid.",
+    )
+
+    # Operation restrictions
+    NOT_SUPPORTED = (
+        0xAA55A11E,
+        "HSE_SRV_RSP_NOT_SUPPORTED",
+        "The operation or feature not supported.",
+    )
+    NOT_ALLOWED = (
+        0xAA55A21C,
+        "HSE_SRV_RSP_NOT_ALLOWED",
+        "The operation is not allowed because of some restrictions.",
+    )
+    NOT_ENOUGH_SPACE = (
+        0xAA55A371,
+        "HSE_SRV_RSP_NOT_ENOUGH_SPACE",
+        "There is no enough space to perform service.",
+    )
+
+    # Access failures
+    READ_FAILURE = (
+        0xAA55A427,
+        "HSE_SRV_RSP_READ_FAILURE",
+        "The service request failed because read access was denied.",
+    )
+    WRITE_FAILURE = (
+        0xAA55A517,
+        "HSE_SRV_RSP_WRITE_FAILURE",
+        "The service request failed because write access was denied.",
+    )
+    STREAMING_MODE_FAILURE = (
+        0xAA55A6B1,
+        "HSE_SRV_RSP_STREAMING_MODE_FAILURE",
+        "The service request that uses streaming mode failed.",
+    )
+
+    # Key-related errors
+    KEY_NOT_AVAILABLE = (
+        0xA5AA51B2,
+        "HSE_SRV_RSP_KEY_NOT_AVAILABLE",
+        "Key is locked due to failed boot measurement or an active debugger.",
+    )
+    KEY_INVALID = (
+        0xA5AA52B4,
+        "HSE_SRV_RSP_KEY_INVALID",
+        "The key usage flags don't allow to perform the requested crypto operation.",
+    )
+    KEY_EMPTY = (0xA5AA5317, "HSE_SRV_RSP_KEY_EMPTY", "Specified key slot is empty.")
+    KEY_WRITE_PROTECTED = (
+        0xA5AA5436,
+        "HSE_SRV_RSP_KEY_WRITE_PROTECTED",
+        "Key slot to be loaded is protected with WRITE PROTECTION restriction flag.",
+    )
+    KEY_UPDATE_ERROR = (
+        0xA5AA5563,
+        "HSE_SRV_RSP_KEY_UPDATE_ERROR",
+        "Specified key slot cannot be updated due to errors in verification of the parameters.",
+    )
+
+    # General errors
+    MEMORY_FAILURE = (
+        0x33D6D136,
+        "HSE_SRV_RSP_MEMORY_FAILURE",
+        "Detect physical errors, flipped bits etc., during memory read or write operations.",
+    )
+    CANCEL_FAILURE = (0x33D6D261, "HSE_SRV_RSP_CANCEL_FAILURE", "The service can not be canceled.")
+    CANCELED = (0x33D6D396, "HSE_SRV_RSP_CANCELED", "The service has been canceled.")
+    GENERAL_ERROR = (
+        0x33D6D4F1,
+        "HSE_SRV_RSP_GENERAL_ERROR",
+        "Error not covered by the other error codes is detected inside HSE.",
+    )
+    COUNTER_OVERFLOW = (
+        0x33D6D533,
+        "HSE_SRV_RSP_COUNTER_OVERFLOW",
+        "The monotonic counter overflows.",
+    )
+
+    # SHE-specific errors
+    SHE_NO_SECURE_BOOT = (
+        0x33D6D623,
+        "HSE_SRV_RSP_SHE_NO_SECURE_BOOT",
+        "HSE did not perform SHE based secure Boot.",
+    )
+    SHE_BOOT_SEQUENCE_ERROR = (
+        0x33D7D83A,
+        "HSE_SRV_RSP_SHE_BOOT_SEQUENCE_ERROR",
+        "Received SHE_BOOT_OK or SHE_BOOT_FAILURE more then one time.",
+    )
+    RNG_INIT_IN_PROGRESS = (
+        0x33D7D92A,
+        "HSE_SRV_RSP_RNG_INIT_IN_PROGRESS",
+        "RNG Initialization is in Progress.",
+    )
+
+    # IPSEC-specific errors
+    IPSEC_INVALID_DATA = (
+        0xDD333133,
+        "HSE_SRV_RSP_IPSEC_INVALID_DATA",
+        "Invalid (malformed) IP packet.",
+    )
+    IPSEC_REPLAY_DETECTED = (
+        0xDD3332DD,
+        "HSE_SRV_RSP_IPSEC_REPLAY_DETECTED",
+        "Valid packet but replay detected.",
+    )
+    IPSEC_REPLAY_LATE = (
+        0xDD3333A5,
+        "HSE_SRV_RSP_IPSEC_REPLAY_LATE",
+        "Valid packet but frame late in sequence.",
+    )
+    IPSEC_SEQ_NUM_OVERFLOW = (
+        0xDD33343D,
+        "HSE_SRV_RSP_IPSEC_SEQNUM_OVERFLOW",
+        "Sequence number overflow.",
+    )
+    IPSEC_CE_DROP = (0xDD33A15A, "HSE_SRV_RSP_IPSEC_CE_DROP", "Decap CE DROP (ECN issue) error.")
+    IPSEC_TTL_EXCEEDED = (
+        0xDD33A2D3,
+        "HSE_SRV_RSP_IPSEC_TTL_EXCEEDED",
+        "Packet decrypted but TTL exceeded.",
+    )
+    IPSEC_VALID_DUMMY_PAYLOAD = (
+        0xDD33A3D5,
+        "HSE_SRV_RSP_IPSEC_VALID_DUMMY_PAYLOAD",
+        "Valid Dummy Payload (type 59).",
+    )
+    IPSEC_HEADER_LEN_OVERFLOW = (
+        0xDD33A4D9,
+        "HSE_SRV_RSP_IPSEC_HEADER_LEN_OVERFLOW",
+        "Operation successful, but IPsec additions cause overflow of IP header length field.",
+    )
+    IPSEC_PADDING_CHECK_FAIL = (
+        0xDD33A53A,
+        "HSE_SRV_RSP_IPSEC_PADDING_CHECK_FAIL",
+        "IPsec padding check error found.",
+    )
+
+    # Fuse-related errors
+    FUSE_WRITE_FAILURE = (
+        0xBB4456E7,
+        "HSE_SRV_RSP_FUSE_WRITE_FAILURE",
+        "Fuse write operation failed.",
+    )
+    FUSE_VDD_GND = (
+        0xBB4457F3,
+        "HSE_SRV_RSP_FUSE_VDD_GND",
+        "EFUSE_VDD connected to ground during fuse write operation.",
+    )
+
+    # SBAF-related errors
+    SBAF_UPDATE_REQUIRED = (
+        0xCC66FEAD,
+        "HSE_SRV_RSP_SBAF_UPDATE_REQUIRED",
+        "Operation is dependent on Secure BAF version, which on the device happens to be old.",
+    )

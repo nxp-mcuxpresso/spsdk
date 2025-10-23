@@ -9,10 +9,13 @@
 
 # pylint: disable=too-many-public-methods,too-many-lines
 
+import importlib
+import inspect
 import logging
 import os
+import pkgutil
 import struct
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -58,6 +61,41 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
+
+def get_all_mbi_mixins() -> dict[str, Type]:
+    """Get all classes inheriting from MBI mixin base classes.
+
+    This function finds all classes that inherit from any of the specified
+    mixin base classes, including classes that inherit from classes that
+    inherit from these base classes. Only processes modules in the same
+    directory as this module.
+
+    Returns:
+        list: List of all mixin classes
+    """
+    # Base mixin classes to search for
+    base_mixins = [Mbi_Mixin, Mbi_ExportMixin]
+
+    all_mixins = {}
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    package_name = __name__.rsplit(".", 1)[0]
+
+    for _, module_name, _ in pkgutil.iter_modules([current_dir]):
+        try:
+            full_module_name = f"{package_name}.{module_name}"
+            module = importlib.import_module(full_module_name)
+
+            for _, obj in inspect.getmembers(module, inspect.isclass):
+                for base_mixin in base_mixins:
+                    if issubclass(obj, base_mixin) and obj not in base_mixins:
+                        all_mixins[obj.__qualname__] = obj
+                        break
+        except (ImportError, AttributeError, TypeError):
+            # Skip modules that can't be inspected
+            continue
+    return all_mixins
+
+
 # ****************************************************************************************************
 #                                             Mbi Mixins
 # ****************************************************************************************************
@@ -65,7 +103,7 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=invalid-name
 class Mbi_Mixin:
-    """Base class for Master BOtt Image Mixin classes."""
+    """Base class for Master Boot Image Mixin classes."""
 
     VALIDATION_SCHEMAS: list[str] = []
     NEEDED_MEMBERS: dict[str, Any] = {}

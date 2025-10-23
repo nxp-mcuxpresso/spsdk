@@ -56,6 +56,7 @@ class EleMessage:
     RSP_TAG = 0xE1
     VERSION = 0x06
     HEADER_FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8
+    MSG_IDS = MessageIDs
     COMMAND_HEADER_WORDS_COUNT = 1
     COMMAND_PAYLOAD_WORDS_COUNT = 0
     RESPONSE_HEADER_WORDS_COUNT = 2
@@ -132,6 +133,11 @@ class EleMessage:
     def response_data_size(self) -> int:
         """Response data address in target memory space."""
         return align(self._response_data_size, self.ELE_MSG_ALIGN)
+
+    @response_data_size.setter
+    def response_data_size(self, size: int) -> None:
+        """Response data address in target memory space."""
+        self._response_data_size = size
 
     @property
     def free_space_address(self) -> int:
@@ -285,7 +291,7 @@ class EleMessage:
 
         :return: Information about the message.
         """
-        ret = f"Command:         {MessageIDs.get_label(self.command)} - ({hex(self.command)})\n"
+        ret = f"Command:         {self.MSG_IDS.get_label(self.command)} - ({hex(self.command)})\n"
         ret += f"Command words:   {self.command_words_count}\n"
         ret += f"Command data:    {self.has_command_data}\n"
         ret += f"Response words:  {self.response_words_count}\n"

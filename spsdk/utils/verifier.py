@@ -15,7 +15,7 @@ import colorama
 import prettytable
 
 from spsdk.exceptions import SPSDKError, SPSDKVerificationError
-from spsdk.utils.misc import check_range, wrap_text
+from spsdk.utils.misc import check_range, value_to_int, wrap_text
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
@@ -246,31 +246,46 @@ class Verifier:
             self.add_record(name, VerifierResult.SUCCEEDED, f"0x{value:{fmt}}", important)
 
     def add_record_range(
-        self, name: str, value: Optional[int], min_val: int = 0, max_val: int = (1 << 32) - 1
+        self,
+        name: str,
+        value: Optional[Union[int, str]],
+        min_val: int = 0,
+        max_val: int = (1 << 32) - 1,
     ) -> None:
         """Add to verifier check of the range record.
 
         :param name: Name of record
-        :param value: Integer value to be checked
+        :param value: Integer value or hex string to be checked
         :param min_val: Minimal allowed value, defaults to 0
         :param max_val: Maximal allowed value, defaults to full 32 bit variable
         """
         if value is None:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
-        elif value < min_val:
+            return
+
+        # Convert hex string to int for validation, keep original for display
+        display_value = value
+        if isinstance(value, str):
+            try:
+                value = value_to_int(value)
+            except ValueError:
+                self.add_record(name, VerifierResult.ERROR, f"Invalid hex format: {value}")
+                return
+
+        if value < min_val:
             self.add_record(
                 name,
                 VerifierResult.ERROR,
-                f"Lower than allowed: {value} < {min_val}",
+                f"Lower than allowed: {display_value} < {min_val}",
             )
         elif value > max_val:
             self.add_record(
                 name,
                 VerifierResult.ERROR,
-                f"Higher than allowed: {value} > {max_val}",
+                f"Higher than allowed: {display_value} > {max_val}",
             )
         else:
-            self.add_record(name, VerifierResult.SUCCEEDED, value)
+            self.add_record(name, VerifierResult.SUCCEEDED, display_value)
 
     def add_record_contains(self, name: str, value: Optional[Any], collection: Iterable) -> None:
         """Add to verifier check the presence of item in collection.

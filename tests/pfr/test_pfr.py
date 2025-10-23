@@ -28,7 +28,14 @@ from spsdk.crypto.keys import PrivateKeyRsa
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.pfr.exceptions import SPSDKPfrError
-from spsdk.pfr.pfr import CFPA, CFPA_CMPA, CMPA, AdditionalDataCfg, BaseConfigArea, SPSDKPfrRotkhIsNotPresent
+from spsdk.pfr.pfr import (
+    CFPA,
+    CFPA_CMPA,
+    CMPA,
+    AdditionalDataCfg,
+    BaseConfigArea,
+    SPSDKPfrRotkhIsNotPresent,
+)
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import load_configuration, load_file
@@ -376,11 +383,7 @@ def get_mcxa_families() -> list[str]:
     :return: List of MCXA family device names supported for CMPA operations
     """
     all_families = CMPA.get_supported_families()
-    mcxa_families = [
-        family.name
-        for family in all_families
-        if family.name.startswith("mcxa")
-    ]
+    mcxa_families = [family.name for family in all_families if family.name.startswith("mcxa")]
     return mcxa_families
 
 
@@ -399,10 +402,11 @@ def test_rop_state_reset_value_mcxa1x(cpu_name: str, reset_value: int = 0xFFFF_F
     assert cmpa.registers.find_reg("ROP_STATE").get_reset_value() == reset_value
     assert cmpa.registers.find_reg("ROP_STATE_DP").get_reset_value() == reset_value
 
+
 def test_additional_data_setter_success():
     """Test that additional_data setter works correctly when configuration allows it."""
     # Use patch as a context manager instead of a fixture
-    with patch.object(CMPA, 'additional_data_cfg') as mock_cfg:
+    with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         # Mock the additional_data_cfg to return a configuration that allows additional data
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=512, max_size=128)
 
@@ -413,9 +417,10 @@ def test_additional_data_setter_success():
         cmpa.additional_data = test_data
         assert cmpa._additional_data == test_data
 
+
 def test_additional_data_setter_disabled():
     """Test that additional_data setter raises error when additional data is disabled."""
-    with patch.object(CMPA, 'additional_data_cfg') as mock_cfg:
+    with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         # Mock the additional_data_cfg to return a configuration that disables additional data
         mock_cfg.return_value = AdditionalDataCfg(enabled=False, offset=-1, max_size=0)
 
@@ -426,9 +431,10 @@ def test_additional_data_setter_disabled():
         with pytest.raises(SPSDKPfrError, match="Customer data is not allowed for family"):
             cmpa.additional_data = test_data
 
+
 def test_additional_data_setter_size_exceeded():
     """Test that additional_data setter raises error when data size exceeds maximum."""
-    with patch.object(CMPA, 'additional_data_cfg') as mock_cfg:
+    with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         # Mock the additional_data_cfg to return a configuration with small max size
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=512, max_size=2)
 
@@ -439,6 +445,7 @@ def test_additional_data_setter_size_exceeded():
         with pytest.raises(SPSDKPfrError, match="Customer data size must be maximum 2 bytes"):
             cmpa.additional_data = test_data
 
+
 def test_additional_data_cfg():
     """Test that additional_data_cfg returns correct configuration from database."""
     # Test with a family that has additional data configuration in the database
@@ -448,14 +455,15 @@ def test_additional_data_cfg():
     # Verify the returned configuration matches expected values
     # Note: Actual values will depend on the database content
     assert isinstance(cfg, AdditionalDataCfg)
-    assert hasattr(cfg, 'enabled')
-    assert hasattr(cfg, 'offset')
-    assert hasattr(cfg, 'max_size')
+    assert hasattr(cfg, "enabled")
+    assert hasattr(cfg, "offset")
+    assert hasattr(cfg, "max_size")
+
 
 def test_export_with_additional_data():
     """Test that export correctly includes additional data in the binary output."""
     # This test requires mocking or using a family that supports additional data
-    with patch.object(CMPA, 'additional_data_cfg') as mock_cfg:
+    with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=-1, max_size=16)
 
         cmpa = CMPA(FamilyRevision("lpc55s6x"))
@@ -467,16 +475,17 @@ def test_export_with_additional_data():
 
         # Verify the additional data is included in the binary
         # For offset=-1, additional data should be appended to the end
-        assert binary[-len(test_data):] == test_data
+        assert binary[-len(test_data) :] == test_data
 
         # Verify total binary size includes additional data
         assert len(binary) == cmpa.registers_size + len(test_data)
         assert cmpa.binary_size == cmpa.registers_size + len(test_data)
 
+
 def test_parse_with_additional_data():
     """Test that parse correctly extracts additional data from binary."""
     # Create a binary with additional data
-    with patch.object(CMPA, 'additional_data_cfg') as mock_cfg:
+    with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=-1, max_size=16)
 
         # Create original CMPA with additional data
@@ -493,9 +502,10 @@ def test_parse_with_additional_data():
         # Verify the additional data was correctly parsed
         assert parsed_cmpa.additional_data == test_data
 
+
 def test_get_config_with_additional_data():
     """Test that get_config includes additional data in the configuration."""
-    with patch.object(CMPA, 'additional_data_cfg') as mock_cfg:
+    with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=-1, max_size=16)
 
         cmpa = CMPA(FamilyRevision("lpc55s6x"))

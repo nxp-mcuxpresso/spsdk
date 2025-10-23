@@ -1,8 +1,21 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 alias: kw45b41z8
+
+revisions:
+  a0:
+    features:
+      pfr:
+        romcfg:
+          reg_spec: ifr_romcfg_a0.json
+  a1: 
+    features:
+      pfr:
+        romcfg:
+          reg_spec: ifr_romcfg_a1.json
+latest: a1
 
 # General MCU information
 info:

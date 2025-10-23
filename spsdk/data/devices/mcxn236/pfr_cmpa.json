@@ -86,11 +86,6 @@
                                     "name": "CAN_ISP",
                                     "value": 6,
                                     "description": "CAN ISP"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -117,11 +112,6 @@
                                     "name": "SB3_IMAGE",
                                     "value": 2,
                                     "description": "SB3 image in 1-bit SPI flash connected to FlexComm. FC7 used for this function by default overlaps with FlexSPI A."
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -900,11 +890,6 @@
                                     "name": "XTAL_32MHZ",
                                     "value": 2,
                                     "description": "32MHz input clock (Divide by 15)"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "XTAL_20MHZ",

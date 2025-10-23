@@ -20,10 +20,12 @@ Adesto
 ADESTO
 adipiscing
 Adipiscing
+adkp
 Adleman
 Aera
 aesccm
 AESCCM
+AESGCM
 AESK
 aeskey
 AGDET
@@ -88,6 +90,7 @@ badc
 baudrate
 Baudrate
 BAUDRATE
+BBBBIIII
 BBHH
 BBII
 BBIO
@@ -325,6 +328,7 @@ DEBUGKEY
 debugmailbox
 debugmbox
 debugprobes
+Decap
 decryptor
 deepmerge
 derivator
@@ -367,6 +371,7 @@ dlla
 DLLA
 dllb
 DLLB
+DLLCR
 DLLCRA
 DLPR
 dmbox
@@ -539,6 +544,7 @@ GLBA
 glbac
 GLBAC
 GLBL
+gmac
 gmssl
 GOTP
 gpio
@@ -846,6 +852,7 @@ niden
 NIDEN
 nirq
 Nisl
+NINV
 Nmpa
 NMPA
 noca
@@ -896,6 +903,7 @@ nxpshe
 NXPUSB
 NXPUUU
 nxpwpc
+OAEP
 objcopy
 ocotp
 OCOTP
@@ -907,7 +915,6 @@ OEIDDR
 OEITCM
 oemelefwkeyimportcmac
 oemelefwkeyimportwrap
-OAEP
 OEMFW
 ofile
 oftad
@@ -938,6 +945,7 @@ OTPS
 OUTDIV
 OUTOFRANGEVAL
 overgeneral
+overlappes
 Oykl
 Packetizer
 PACKETIZER
@@ -1102,6 +1110,7 @@ READOK
 readwrite
 Reauth
 recvd
+redudant
 refreshperiod
 regs
 Regs
@@ -1177,6 +1186,7 @@ Sast
 saveconfig
 saveloadconfig
 SAVEVAL
+SBAF
 sbfile
 sbkek
 SBKEK
@@ -1231,6 +1241,7 @@ semcnand
 SEMCNAND
 semcnor
 SEMCNOR
+SEQNUM
 Seqs
 serialext
 setenv
@@ -1252,6 +1263,7 @@ shutil
 SIGB
 signaturetimestamp
 SIGNK
+SIPHASH
 skipfhdr
 skipspl
 smartcard

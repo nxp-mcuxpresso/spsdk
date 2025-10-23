@@ -22,6 +22,18 @@ whole_ahab_image:
       description: Output AHAB file name
       format: file_name
       template_value: generated_ahab.bin
+    output_format:
+      type: string
+      title: Output file format
+      description: Output file format for AHAB image
+      enum: [bin, hex, srec]
+      template_value: bin
+    output_offset:
+      type: [string, number]
+      title: Base offset for the output file
+      description: Base offset where the AHAB image will be placed in target memory. (primarily when using SREC/HEX output_format)
+      template_value: 0
+      format: number
     container_version:
       type: number
       title: Container version
@@ -762,10 +774,31 @@ ahab_certificate:
       template_value: "00000000000000000000000000000000"
     fuse_version:
       type: [number, string]
-      title: Fuse version
-      description:
-        The value must be equal or greater than the version stored in fuses
-        to allow loading this container.
+      title: Fuse/PFR monotonic counter version
+      description: |
+        The fuse version serves as a monotonic counter for anti-rollback protection, but its exact
+        implementation and validation mechanism depends on the target device type and certification purpose.
+
+        **For MPU devices (i.MX series):**
+        The fuse version is compared against a monotonic counter implemented directly in hardware fuses.
+        The value must be equal to or greater than the version stored in fuses to allow loading this container.
+
+        **For MCU devices (e.g., MCXN556S):**
+        The fuse version validation depends on the specific feature being certified:
+
+        - **Debug Authentication:** The fuse version is validated against the monotonic counter
+          "Vendor usage" located in the CFPA (Customer Field Programmable Area) PFR page.
+
+        - **Bootable Image Certification:** The fuse version is validated against the
+          IMAGE_KEY_REVOCATION_ID, which is a combination of both CFPA and OTP fuse data:
+          `CFPA.IMAGE_KEY_REVOKE[23:0] | OTP.IMAGE_KEY_REVOKE[7:0] << 24`
+          This creates a 32-bit revocation ID where the lower 24 bits come from CFPA and
+          the upper 8 bits come from OTP fuses.
+
+        **Note:** Despite these different validation mechanisms across device types and use cases,
+        a single "fuse_version" field name is used for consistency and simplicity in the configuration
+        schema, as all scenarios serve the same fundamental purpose of preventing rollback attacks
+        through monotonic counter validation.
       format: number
       template_value: 0
     public_key_0:

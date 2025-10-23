@@ -91,7 +91,7 @@ settings: # The CFPA registers configuration.
     value: 0x12345678  # The value width: 32b
   DBG_REVOKE_VU: # Debug Revoke Vendor Usage.
     bitfields:  # The register bitfields
-      FIELD: '0x0000'  # Offset: 0b, Width: 16b, Description: Debug certificate revocation counter.
+      DEBUG_CERTIFICATE_REVOCATION_COUNTER: '0x0000'  # Offset: 0b, Width: 16b, Description: Debug certificate revocation counter.
       # This monotonic counter field is used for revoking debug certificates.
       # As part of debug authentication, CC_VU field in debug certificate/credential is checked against DCFG_VENDOR_USAGE value.
       # The 32-bit DCFG_VENDOR_USAGE is formed using upper 16 bit of CMPA.VENDOR_USAGE and lower 16 bits of this field.

@@ -471,11 +471,14 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         schemas_smsg["required"].remove("fuse_version")
         schemas_smsg["required"].remove("sw_version")
         schemas_smsg["required"].remove("message")
+        schemas_smsg["required"].remove("srk_revoke_mask")
+
         schemas_smsg["properties"].pop("output")
         schemas_smsg["properties"].pop("check_all_signatures")
         schemas_smsg["properties"].pop("iv_path")
         schemas_smsg["properties"].pop("message")
         schemas_smsg["properties"].pop("certificate")
+        schemas_smsg["properties"].pop("srk_revoke_mask")
 
         ahab_dc_schema = get_schema_file(DatabaseManager.DAT)["ahab_debug_certificate"]
 

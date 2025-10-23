@@ -554,11 +554,11 @@ class BinaryImage:
         """Save binary data file.
 
         :param path: Path to the file.
-        :param file_format: Format of saved file ('BIN', 'HEX', 'S19'), defaults to 'BIN'.
+        :param file_format: Format of saved file ('BIN', 'HEX', 'S19', 'SREC'), defaults to 'BIN'.
         :raises SPSDKValueError: The file format is invalid.
         """
         file_format = file_format.upper()
-        if file_format.upper() not in ("BIN", "HEX", "S19"):
+        if file_format.upper() not in ("BIN", "HEX", "S19", "SREC"):
             raise SPSDKValueError(f"Invalid input file format: {file_format}")
 
         if file_format == "BIN":
@@ -572,7 +572,7 @@ class BinaryImage:
             return
 
         # Special handling for empty binary to SREC/HEX conversion
-        if file_format in ("HEX", "S19"):
+        if file_format in ("HEX", "S19", "SREC"):
             exported_data = self.export()
             # Only check for the specific problematic case: completely empty binary with no offset
             # and no meaningful content that could be converted

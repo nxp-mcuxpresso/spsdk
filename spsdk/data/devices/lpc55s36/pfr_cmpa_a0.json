@@ -45,21 +45,6 @@
                                     "name": "AUTO_BOOT",
                                     "value": 4,
                                     "description": "Auto boot similar to ISP"
-                                },
-                                {
-                                    "name": "Reserved_0",
-                                    "value": 5,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_1",
-                                    "value": 6,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_2",
-                                    "value": 7,
-                                    "description": "Reserved."
                                 }
                             ]
                         },
@@ -101,11 +86,6 @@
                                     "name": "CAN_ISP",
                                     "value": 5,
                                     "description": "CAN ISP"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 6,
-                                    "description": "Reserved."
                                 },
                                 {
                                     "name": "DISBL_ISP_FALLTHRU",
@@ -233,26 +213,6 @@
                                     "name": "FC1",
                                     "value": 3,
                                     "description": "FC1 P2_4-MISO, P2_3-MOSI, P2_5-SSEL0, P1_9-SCK"
-                                },
-                                {
-                                    "name": "Reserved_0",
-                                    "value": 4,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_1",
-                                    "value": 5,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_2",
-                                    "value": 6,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_3",
-                                    "value": 7,
-                                    "description": "Reserved."
                                 }
                             ]
                         },
@@ -309,41 +269,6 @@
                                     "name": "KBPS_1000",
                                     "value": 8,
                                     "description": "1,000 kbps"
-                                },
-                                {
-                                    "name": "Reserved_0",
-                                    "value": 9,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_1",
-                                    "value": 10,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_2",
-                                    "value": 11,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_3",
-                                    "value": 12,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_4",
-                                    "value": 13,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_5",
-                                    "value": 14,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_6",
-                                    "value": 15,
-                                    "description": "Reserved."
                                 }
                             ]
                         },
@@ -1884,26 +1809,6 @@
                                     "name": "ADESTO_OCTAL_FLASH",
                                     "value": 3,
                                     "description": "Adesto Octal FLASH"
-                                },
-                                {
-                                    "name": "Reserved_0",
-                                    "value": 4,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_1",
-                                    "value": 5,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_2",
-                                    "value": 6,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_3",
-                                    "value": 7,
-                                    "description": "Reserved."
                                 }
                             ]
                         },
@@ -1917,11 +1822,6 @@
                                     "name": "QSPI_ADDR_3B",
                                     "value": 0,
                                     "description": "QSPI_ADDR_3B"
-                                },
-                                {
-                                    "name": "Reserved_0",
-                                    "value": 1,
-                                    "description": "Reserved."
                                 },
                                 {
                                     "name": "HYPER_1V8",
@@ -1942,16 +1842,6 @@
                                     "name": "FlexSPI_DDR_MICRON",
                                     "value": 5,
                                     "description": "FlexSPI_DDR_MICRON"
-                                },
-                                {
-                                    "name": "Reserved_1",
-                                    "value": 6,
-                                    "description": "Reserved."
-                                },
-                                {
-                                    "name": "Reserved_2",
-                                    "value": 7,
-                                    "description": "Reserved."
                                 }
                             ]
                         },

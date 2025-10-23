@@ -9,7 +9,14 @@ import yaml
 from voluptuous import ALLOW_EXTRA, All, Any, Optional, Required, Schema
 
 from spsdk.mboot.memories import ExtMemId
-from spsdk.mboot.properties import CommandTag, PeripheryTag, PropertyTag, Version, get_properties, get_property_index
+from spsdk.mboot.properties import (
+    CommandTag,
+    PeripheryTag,
+    PropertyTag,
+    Version,
+    get_properties,
+    get_property_index,
+)
 
 ########################################################################################################################
 # Validator schema for configuration file

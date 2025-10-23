@@ -1122,7 +1122,7 @@ def test_register_deprecated_names(mock_test_database):
     regs = Registers(
         family=FamilyRevision("dev1"),  # Use a device that exists in the mock database
         feature="feature4",
-        do_not_raise_exception=True
+        do_not_raise_exception=True,
     )
     # Test finding register by current name
     found_reg = regs.find_reg("REG1")
@@ -1140,7 +1140,7 @@ def test_register_deprecated_bitfields(mock_test_database):
     regs = Registers(
         family=FamilyRevision("dev1"),  # Use a device that exists in the mock database
         feature="feature4",
-        do_not_raise_exception=True
+        do_not_raise_exception=True,
     )
     # Test finding register by current name
     found_reg = regs.find_reg("REG1")
@@ -1149,6 +1149,6 @@ def test_register_deprecated_bitfields(mock_test_database):
     bf = found_reg.find_bitfield("REG1_BF2")
     assert bf
     bf_old = found_reg.find_bitfield("REG1_BF2_OLD")
-    assert bf ==bf_old
-    bf_old =found_reg.find_bitfield("REG1_BF2_SUPEROLD")
-    assert bf ==bf_old
+    assert bf == bf_old
+    bf_old = found_reg.find_bitfield("REG1_BF2_SUPEROLD")
+    assert bf == bf_old

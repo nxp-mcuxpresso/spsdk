@@ -198,11 +198,6 @@
                                     "description": "QuadSPI DDR"
                                 },
                                 {
-                                    "name": "Reserved",
-                                    "value": 2,
-                                    "description": "Reserved"
-                                },
-                                {
                                     "name": "HyperFLASH_3V",
                                     "value": 3,
                                     "description": "HyperFLASH 3V"

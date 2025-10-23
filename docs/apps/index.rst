@@ -24,3 +24,4 @@ Application User Guides
     nxpdice
     nxpuuu
     nxpshe
+    tlv_blob

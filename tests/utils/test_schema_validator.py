@@ -515,12 +515,7 @@ def test_file_or_hex_value_format(data_dir, test_input, should_pass):
     # Define a simple schema with file-or-hex-value format
     schema = {
         "type": "object",
-        "properties": {
-            "test_value": {
-                "type": "string",
-                "format": "file-or-hex-value"
-            }
-        }
+        "properties": {"test_value": {"type": "string", "format": "file-or-hex-value"}},
     }
 
     config = {"test_value": test_input}

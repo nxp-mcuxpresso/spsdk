@@ -80,6 +80,8 @@ docs/_build/
 docs/_prebuild/
 docs/examples/**
 docs/html_schemas/**
+docs/_static/images/spsdk-architecture*.png
+docs/device_list.rst
 # docs examples are copied from spsdk/examples
 
 # PyBuilder

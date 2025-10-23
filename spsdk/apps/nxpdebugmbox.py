@@ -1426,7 +1426,9 @@ def read_memory(
 @optgroup.option(
     "--file", type=click.Path(exists=True, dir_okay=False), help="Path to file to write"
 )
-@optgroup.option("-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'")
+@optgroup.option(  # type: ignore[arg-type]
+    "-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'"
+)
 @click.option("-c", "--count", type=INT(), required=False, help="Number of bytes to write")
 @click.pass_obj
 def write_memory_command(

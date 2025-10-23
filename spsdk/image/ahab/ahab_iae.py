@@ -169,7 +169,11 @@ class ImageArrayEntry(Container):
         self.image_meta_data = image_meta_data
         self.image_hash = image_hash
         self.image_iv = (
-            image_iv or get_hash(self.plain_image, algorithm=EnumHashAlgorithm.SHA256)
+            image_iv
+            or get_hash(
+                extend_block(self.plain_image, self._get_valid_size(self.plain_image)),
+                algorithm=EnumHashAlgorithm.SHA256,
+            )
             if self.flags_is_encrypted
             else bytes(self.IV_LEN)
         )

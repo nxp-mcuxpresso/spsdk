@@ -160,24 +160,6 @@ ahab_sign_support:
       description: Which key from SRK set is being used.
       format: number
       template_value: 0
-    srk_revoke_mask:
-      type: [number, string]
-      title: SRK revoke mask
-      description:
-        Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke
-        key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
-        Example of revocation SRK_0 and SRK_1 - the value should be 0x03
-      format: number
-      template_value: "0x00"
-    check_all_signatures:
-      type: string
-      title: Check all signatures
-      description:
-        "This option overrides a fuse to select verification mode.\n
-        - default: Apply default fuse policy.\n
-        - check_all_signatures: Force verification of all present signatures."
-      enum: [default, check_all_signatures]
-      template_value: default
     fuse_version:
       type: [number, string]
       title: Fuse version
@@ -534,3 +516,76 @@ fcf:
       description: Path to FCF binary or config file.
       template_value: fcf.yaml
       format: file
+
+hse_ivt:
+  type: object
+  title: HSE IVT Settings
+  description: "HSE Interrupt Vector Table configuration settings"
+  properties:
+    appSwtInit:
+      type: boolean
+      title: APP SWT Init
+      description: "Application Software Tamper initialization"
+      template_value: false
+    appStartAddress:
+      type: [number, string]
+      title: Application Start Address
+      description: "Start address for CM7_0 core application"
+      format: number
+      template_value: "0x00400200"
+    lcConfigAddr:
+      type: [number, string]
+      title: Lifecycle Configuration Address
+      description: "Address of lifecycle configuration data. If not set, the LC configuration will be placed after application."
+      format: number
+      template_value: "0x0"
+    hseFwAddr:
+      type: [number, string]
+      title: HSE Firmware Address
+      description: "Address of HSE firmware"
+      format: number
+      template_value: "0x0"
+  required: [appStartAddress]
+
+hse_app_boot_header:
+  type: object
+  title: Application Boot Header Settings
+  description: "Configuration for the Application Boot"
+  properties:
+    appStartAddress:
+      type: [number, string]
+      title: Start Address
+      description: "Start address of the application"
+      format: number
+      template_value: "0x00400200"
+
+hse_signature:
+  type: object
+  title: HSE Signature settings
+  description: "Configuration of HSE signature"
+  properties:
+    initialVector:
+      type: string
+      title: Initial Vector
+      description: "Initial vector for encryption (12 bytes hexadecimal). If not specified, random value will be generated."
+      format: file-or-hex-value
+      template_value: "000102030405060708090A0B"
+    adkp:
+      type: string
+      title: Application Debug/Key Password
+      description: "Key used for encryption (16 bytes hexadecimal)"
+      format: file-or-hex-value
+      template_value: "000102030405060708090A0B0C0D0E0F"
+  required: [adkp]
+
+hse_lifecycle:
+  type: object
+  title: Lifecycle Configuration
+  description: "Configuration for HSE lifecycle state. The lifecycle state determines the security level and available features of the device. Each state has specific implications for device functionality and security."
+  properties:
+    lifecycle:
+      type: string
+      title: Lifecycle State
+      description: "Defines the lifecycle state of the device: 'none' - default state with no lifecycle change, 'oem_prod' - OEM production state with increased security, 'in_field' - deployed state with highest security level and restricted debug access."
+      enum: ["none", "oem_prod", "in_field"]
+      template_value: "none"

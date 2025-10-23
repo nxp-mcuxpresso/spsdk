@@ -46,7 +46,7 @@
                     "offset_int": "0x0001",
                     "is_reserved": true,
                     "default_value_int": "0x00FFFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 24
                 },
                 {
@@ -56,7 +56,7 @@
                     "offset_int": "0x0004",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "field008",
@@ -225,7 +225,7 @@
                     "offset_int": "0x0012",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -235,7 +235,7 @@
                     "offset_int": "0x0014",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "field018",
@@ -466,7 +466,7 @@
                     "offset_int": "0x0051",
                     "is_reserved": true,
                     "default_value_int": "0x00FFFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 24
                 },
                 {
@@ -476,7 +476,7 @@
                     "offset_int": "0x0054",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00058",
@@ -485,7 +485,7 @@
                     "offset_int": "0x0058",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0005C",
@@ -494,7 +494,7 @@
                     "offset_int": "0x005C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -758,7 +758,7 @@
                     "offset_int": "0x0062",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -768,7 +768,7 @@
                     "offset_int": "0x0064",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00068",
@@ -777,7 +777,7 @@
                     "offset_int": "0x0068",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0006C",
@@ -786,7 +786,7 @@
                     "offset_int": "0x006C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -803,7 +803,7 @@
                     "offset_int": "0x0070",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00074",
@@ -812,7 +812,7 @@
                     "offset_int": "0x0074",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00078",
@@ -821,7 +821,7 @@
                     "offset_int": "0x0078",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0007C",
@@ -830,7 +830,7 @@
                     "offset_int": "0x007C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -855,7 +855,7 @@
                     "offset_int": "0x0084",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00088",
@@ -864,7 +864,7 @@
                     "offset_int": "0x0088",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0008C",
@@ -873,7 +873,7 @@
                     "offset_int": "0x008C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -898,7 +898,7 @@
                     "offset_int": "0x0094",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00098",
@@ -907,7 +907,7 @@
                     "offset_int": "0x0098",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0009C",
@@ -916,7 +916,7 @@
                     "offset_int": "0x009C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -941,7 +941,7 @@
                     "offset_int": "0x00A4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000A8",
@@ -950,7 +950,7 @@
                     "offset_int": "0x00A8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000AC",
@@ -959,7 +959,7 @@
                     "offset_int": "0x00AC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -984,7 +984,7 @@
                     "offset_int": "0x00B4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000B8",
@@ -993,7 +993,7 @@
                     "offset_int": "0x00B8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000BC",
@@ -1002,7 +1002,7 @@
                     "offset_int": "0x00BC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1019,7 +1019,7 @@
                     "offset_int": "0x00C0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000C4",
@@ -1028,7 +1028,7 @@
                     "offset_int": "0x00C4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000C8",
@@ -1037,7 +1037,7 @@
                     "offset_int": "0x00C8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000CC",
@@ -1046,7 +1046,7 @@
                     "offset_int": "0x00CC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1063,7 +1063,7 @@
                     "offset_int": "0x00D0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000D4",
@@ -1072,7 +1072,7 @@
                     "offset_int": "0x00D4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000D8",
@@ -1081,7 +1081,7 @@
                     "offset_int": "0x00D8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000DC",
@@ -1090,7 +1090,7 @@
                     "offset_int": "0x00DC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1107,7 +1107,7 @@
                     "offset_int": "0x00E0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000E4",
@@ -1116,7 +1116,7 @@
                     "offset_int": "0x00E4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000E8",
@@ -1125,7 +1125,7 @@
                     "offset_int": "0x00E8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000EC",
@@ -1134,7 +1134,7 @@
                     "offset_int": "0x00EC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1151,7 +1151,7 @@
                     "offset_int": "0x00F0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000F4",
@@ -1160,7 +1160,7 @@
                     "offset_int": "0x00F4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000F8",
@@ -1169,7 +1169,7 @@
                     "offset_int": "0x00F8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000FC",
@@ -1178,7 +1178,7 @@
                     "offset_int": "0x00FC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1281,7 +1281,7 @@
                     "offset_int": "0x0101",
                     "is_reserved": true,
                     "default_value_int": "0x00FFFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 24
                 },
                 {
@@ -1300,7 +1300,7 @@
                     "offset_int": "0x0106",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -1318,9 +1318,9 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0109",
                     "is_reserved": true,
-                    "default_value_int": "0xFF",
-                    "individual_write_lock": "implicit_16bytes",
-                    "reg_width": 8
+                    "default_value_int": "0xFFFF",
+                    "individual_write_lock": "none",
+                    "reg_width": 16
                 },
                 {
                     "id": "Reserved0010A",
@@ -1329,7 +1329,7 @@
                     "offset_int": "0x010A",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -1373,7 +1373,7 @@
                     "offset_int": "0x0114",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00118",
@@ -1382,7 +1382,7 @@
                     "offset_int": "0x0118",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0011C",
@@ -1391,7 +1391,7 @@
                     "offset_int": "0x011C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1436,7 +1436,7 @@
                     "offset_int": "0x0124",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00128",
@@ -1445,7 +1445,7 @@
                     "offset_int": "0x0128",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0012C",
@@ -1454,7 +1454,7 @@
                     "offset_int": "0x012C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1706,21 +1706,6 @@
                                     "name": "PORTE",
                                     "value": 4,
                                     "description": "Port E"
-                                },
-                                {
-                                    "name": "Reserved_5",
-                                    "value": 5,
-                                    "description": "RESERVED"
-                                },
-                                {
-                                    "name": "Reserved_6",
-                                    "value": 6,
-                                    "description": "RESERVED"
-                                },
-                                {
-                                    "name": "Reserved_7",
-                                    "value": 7,
-                                    "description": "RESERVED"
                                 }
                             ]
                         }
@@ -1733,7 +1718,7 @@
                     "offset_int": "0x00142",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 112
                 }
             ]

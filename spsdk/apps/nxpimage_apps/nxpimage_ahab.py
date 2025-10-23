@@ -59,13 +59,15 @@ def ahab_export(config: Config) -> None:
     ahab = AHABImage.load_from_config(config)
     ahab.update_fields()
     ahab.verify().validate()
-    ahab_data = ahab.export()
+    ahab_image = ahab.image_info()
 
     ahab_output_file_path = config.get_output_file_name("output")
-    write_file(ahab_data, ahab_output_file_path, mode="wb")
+    ahab_output_file_format = config.get_str("output_format", default="bin").lower()
+    ahab_image.offset = config.get_int("output_offset", default=0)
+    ahab_image.save_binary_image(ahab_output_file_path, file_format=ahab_output_file_format)
 
-    logger.info(f"Created AHAB Image:\n{str(ahab.image_info())}")
-    logger.info(f"Created AHAB Image memory map:\n{ahab.image_info().draw()}")
+    logger.info(f"Created AHAB Image:\n{ahab_image}")
+    logger.info(f"Created AHAB Image memory map:\n{ahab_image.draw()}")
     click.echo(f"Success. (AHAB: {get_printable_path(ahab_output_file_path)} created.)")
 
     post_export_files = ahab.post_export(config.get_output_dir("output"))
@@ -192,11 +194,27 @@ def ahab_parse_image(family: FamilyRevision, binary: bytes) -> AHABImage:
     help="Select memory type. Only applicable for bootable images "
     "(image containing FCB or XMCD segments). Do not use for raw AHAB image",
 )
+@click.option(
+    "-j",
+    "--image-id",
+    type=INT(),
+    required=False,
+    default="0",
+    help="""
+    ID of the AHAB image where the container is located, where the keyblob will be replaced.
+    The default value is first image (0).
+    """,
+)
 def ahab_update_keyblob_command(
-    family: FamilyRevision, binary: str, keyblob: str, container_id: int, mem_type: str
+    family: FamilyRevision,
+    binary: str,
+    keyblob: str,
+    container_id: int,
+    image_id: int,
+    mem_type: str,
 ) -> None:
     """Update keyblob in AHAB image container."""
-    ahab_update_keyblob(family, binary, keyblob, container_id, mem_type)
+    ahab_update_keyblob(family, binary, keyblob, container_id, image_id, mem_type)
     click.echo(f"Success. (AHAB: {binary} keyblob has been updated)")
 
 
@@ -361,6 +379,17 @@ def ahab_cert_block_get_template(family: FamilyRevision, output: str) -> None:
     """,
 )
 @click.option(
+    "-j",
+    "--image-id",
+    type=INT(),
+    required=False,
+    default="0",
+    help="""
+    ID of the AHAB image where the container is located, where the sign will be updated.
+    The default value is first image (0).
+    """,
+)
+@click.option(
     "-m",
     "--mem-type",
     type=click.Choice(
@@ -378,6 +407,7 @@ def ahab_re_sign_command(
     pkey_1: Optional[str],
     container_id: int,
     mem_type: str,
+    image_id: int = 0,
 ) -> None:
     """Re-sign the container in AHAB image."""
     sign_provider_0 = get_signature_provider_from_config_str(pkey, pss_padding=True)
@@ -388,6 +418,7 @@ def ahab_re_sign_command(
         family=family,
         binary=binary,
         container_id=container_id,
+        image_id=image_id,
         sign_provider_0=sign_provider_0,
         sign_provider_1=sign_provider_1,
         mem_type=mem_type,
@@ -422,14 +453,28 @@ def ahab_re_sign_command(
     required=False,
     help="Directory path where fuse script files will be exported.",
 )
+@click.option(
+    "-j",
+    "--image-id",
+    type=INT(),
+    required=False,
+    default="0",
+    help="""
+    ID of the AHAB image, in case of multiple AHAB image binaries.
+    The default value is first image (0).
+    """,
+)
 def ahab_sign_command(
-    binary: str, output: str, mem_type: str, config: Config, fuse_scripts: Optional[str]
+    binary: str,
+    output: str,
+    mem_type: str,
+    config: Config,
+    fuse_scripts: Optional[str],
+    image_id: int = 0,
 ) -> None:
     """Sign all non-NXP AHAB containers and optionally encrypt them."""
     signed_image, bimg = ahab_sign_image(
-        image_path=binary,
-        config=config,
-        mem_type=mem_type,
+        image_path=binary, config=config, mem_type=mem_type, image_id=image_id
     )
     write_file(signed_image, output, "wb")
     click.echo(f"Signed image saved to {output}")

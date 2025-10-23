@@ -133,6 +133,7 @@ All products, including those with advanced security features, may be subject to
     examples/dice/index
     examples/dk6/dk6prog_intro
     examples/el2go/index
+    examples/ele/index
     examples/hab/index
     examples/lpcprog/lpcprog
     examples/mbi/index

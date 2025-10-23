@@ -207,27 +207,6 @@ features:
           - fuse97
           - fuse98
           - fuse99
-      - uid: cust_mk_sk
-        name: CUST_MK_SK
-        width: 384
-        config_as_hexstring: true
-        #reversed: true
-        alternative_widths: [256]
-        description: CUST_MK_SK
-        sub_regs:
-          - fuse100
-          - fuse101
-          - fuse102
-          - fuse103
-          - fuse104
-          - fuse105
-          - fuse106
-          - fuse107
-          - fuse108
-          - fuse109
-          - fuse110
-          - fuse111
-
   # ======== DAT section ========
   dat:
     socc: 0x8 # SOCC identification

@@ -1,0 +1,14 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/imx93_signed_ahab_kernel_dtb.yaml
+custom_command: "%! nxpimage ahab get-template -f mimx9352 -o workspace/ahab_template.yaml --force"
+
+comments:
+  target_memory: "Change the target memory to serial downloader"
+  output: "Change the output file name"
+  srk_table: "Set your own srk table"
+  blob: "And finally remove unused parts for AHAB Certificate and Encryption blob"
+  kernel: "Change the kernel path"
+  dtb: "Change the dtb path"
+  blob: "And finally remove unused parts for AHAB Certificate and Encryption blob"

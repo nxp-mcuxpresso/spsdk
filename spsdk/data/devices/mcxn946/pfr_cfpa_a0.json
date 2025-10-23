@@ -94,11 +94,6 @@
                                     "description": "No action"
                                 },
                                 {
-                                    "name": "Reserved_0b001",
-                                    "value": 1,
-                                    "description": "Combination is ignored."
-                                },
-                                {
                                     "name": "UPDATE_IN_CMPA",
                                     "value": 2,
                                     "description": "Update CMAC field in CMPA page. "
@@ -109,11 +104,6 @@
                                     "description": "Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7)"
                                 },
                                 {
-                                    "name": "Reserved_0b100",
-                                    "value": 4,
-                                    "description": "Combination is ignored."
-                                },
-                                {
                                     "name": "TO_OEM_CLOSED",
                                     "value": 5,
                                     "description": "Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF)."
@@ -122,11 +112,6 @@
                                     "name": "TO_OEM_LOCKED",
                                     "value": 6,
                                     "description": "Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF)."
-                                },
-                                {
-                                    "name": "Reserved_0b111",
-                                    "value": 7,
-                                    "description": "Combination is ignored."
                                 }
                             ]
                         },

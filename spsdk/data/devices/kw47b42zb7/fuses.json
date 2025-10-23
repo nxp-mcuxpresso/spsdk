@@ -210,7 +210,7 @@
                 {
                     "id": "fuse11",
                     "name": "DBG_EN_LOCK",
-                    "description": "Debug Enable Lock.",
+                    "description": "Debug Enable Lock. To increase the flexibility of the debug controller, an option to enable the debug ports via OEM software can be done by default setting of \u2018DBG_EN_LOCK\u2019 at 0. The SMSCM[DBGEN] and SMSCM[DBGEN_B] registers will not be write-locked, meaning SW can allow specified debug ports to be opened without the challenge-response scheme. It is the responsibility of the OEM\u2019s application to handle these registers carefully. Since this relies solely on OEM\u2019s SW protections it reduces the overall security of the system. If this feature is not required, it is strongly recommended to burn the \u2018DBG_EN_LOCK\u2019 to 1 which disables this feature. For production lifecycles (OEM-Closed and OEM-Locked), this feature is only available in OEM-Closed. In OEM-Locked, the debug access registers are write-locked regardless of the DBG_EN_LOCK fuse value.",
                     "index_int": "0x000B",
                     "reg_width": 8,
                     "bitfields": [
@@ -1356,17 +1356,17 @@
                             "width": 1,
                             "id": "fuse51-bit-0",
                             "name": "NBU_SEC_BOOT_EN",
-                            "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set. See the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
+                            "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set.\nSee the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
                             "values": [
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "NBU image doesn't need to be authenticated (default)."
+                                    "description": "NBU image doesn't need to be authenticated (default)"
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 1,
-                                    "description": "NBU image must be authenticated to boot."
+                                    "description": "NBU image must be authenticated to boot"
                                 }
                             ]
                         },
@@ -1391,12 +1391,12 @@
                                 {
                                     "name": "Disabled",
                                     "value": 0,
-                                    "description": "Boot image doesn't need to be authenticated to boot (default)."
+                                    "description": "Boot image doesn't need to be authenticated to boot (default)"
                                 },
                                 {
                                     "name": "Enabled",
                                     "value": 10,
-                                    "description": "Boot image must be authenticated to boot."
+                                    "description": "Boot image must be authenticated to boot"
                                 }
                             ]
                         },

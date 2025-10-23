@@ -23,7 +23,16 @@
       "$id": "#/properties/register/name",
       "type": "string",
       "minLength": 2,
+      "maxLength": 40,
       "title": "Name of the register to be displayed in UI."
+    },
+    "deprecated_names": {
+      "$id": "#/properties/register/deprecated_names",
+      "type": "array",
+      "title": "Optional list of alternative/backward compatible names for the register.",
+      "items": {
+        "type": "string"
+      }
     },
     "description": {
       "$id": "#/properties/register/description",
@@ -97,7 +106,8 @@
           "type": "string",
           "title": "Method, how the register is calculated. The following methods are supported: `inverse` - inversion of another register, 'virtual_counter' - virtual value of counter register.",
           "enum": [
-            "inverse", "virtual_counter"
+            "inverse",
+            "virtual_counter"
           ]
         },
         "src_register_id": {

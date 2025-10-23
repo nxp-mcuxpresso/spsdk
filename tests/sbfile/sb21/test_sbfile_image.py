@@ -273,9 +273,7 @@ def test_sb2x_builder(
 
     if signed:
         boot_image.cert_block = gen_cert_block(data_dir, sign_bits)
-        private_key = os.path.join(
-            data_dir, "selfsign_privatekey_rsa" + str(sign_bits) + ".pem"
-        )
+        private_key = os.path.join(data_dir, "selfsign_privatekey_rsa" + str(sign_bits) + ".pem")
         signature_provider = PlainFileSP(private_key)
 
         boot_image.signature_provider = signature_provider

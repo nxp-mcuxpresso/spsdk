@@ -29,6 +29,14 @@ revisions:
       fuses:
         tool: nxpele
         grouped_registers:
+          - uid: otfad1_key
+            name: OTFAD1_KEY
+            width: 128
+            reverse_subregs_order: True
+            reversed: True
+            config_as_hexstring: true
+            description: OTFAD1 Key known as KEK.
+            sub_regs: [fuse184, fuse185, fuse186, fuse187]
           - uid: srkh
             name: SRKH
             width: 512
@@ -250,8 +258,11 @@ features:
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
 
   # ======== FCB section ========
-  # fcb:
-  #   mem_types: {}
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== AHAB section ========
   ahab:
@@ -409,7 +420,31 @@ features:
           secondary_image_container_set: -1 # Just behind previous segment
 
   # # ======== OTFAD section ========
-  # otfad:
+  otfad: 
+    keyblob_byte_swap_cnt: 8
+    sb_21_supported: False
+    has_kek_fuses: True
+    supports_key_scrambling: True
+
+    fuses_1: # Fuses for OTFAD1
+      _name: Configuration of fuses for OTFAD1
+      _no_verify: True
+      fuse188: # OTFAD CFG Fuse
+        fuse188-bit-3: 1 # OTFAD Enable
+        fuse188-bit-7: __scramble_enabled # OTFAD enable scrambling
+        fuse188-bits-8-15: __key_scramble_align # OTFAD scramble align
+      fuse189: __key_scramble_mask # OTFAD Scramble Key
+      otfad1_key: __kek # OTFAD Key
+
+    additional_template: ["otfad_scramble"]
+    additional_template_text: |
+      Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
+      For example:
+        In case of using FlexSPI2 the secure base address address is 0x1400_0000. But in setting of the OTFAD use 0x0400_0000 as a base address.
+        The code must be still linked on secure base address 0x1400_0000 to proper run of OTFAD hardware.
+
+        Same is for FlexSPI1, but instead of 0x3800_0000 base address, the 0x2800_0000 must be used in OTFAD configuration.
+
 
   #   # ======== Device Hardware Security Module (HSM) section ========
   # devhsm: EdgeLock 2 Go

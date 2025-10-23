@@ -31,7 +31,7 @@
         "properties": {
           "group": {
             "$ref": "localschema:processors_registers_schema_def_group_info.json"
-          },
+          },    
           "registers": {
             "$id": "#/properties/registers",
             "type": "array",
@@ -39,19 +39,8 @@
             "minItems": 1,
             "additionalItems": false,
             "items": {
-              "type": "object",
-              "allOf": [
-                {
-                  "$ref": "localschema:processors_registers_schema_def_abstractregister.json"
-                },
-                {
-                  "properties": {
-                  "name": {
-                    "maxLength": 40
-                    }
-                  }
-                }
-              ]
+              "$ref": "localschema:processors_registers_schema_def_abstractregister.json",
+              "additionalProperties": false
             }
           }
         }

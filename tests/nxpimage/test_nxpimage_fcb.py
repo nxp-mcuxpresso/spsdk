@@ -51,7 +51,10 @@ def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, me
     "family,mem_type",
     [
         ("rt5xx", "flexspi_nor"),
-        ("rt6xx", "flexspi_nor", ),
+        (
+            "rt6xx",
+            "flexspi_nor",
+        ),
         ("mimxrt798s", "xspi_nor"),
         ("rt105x", "flexspi_nor"),
         ("rt106x", "flexspi_nor"),
@@ -138,11 +141,12 @@ def test_fcb_parse_invalid(binary, fail, family, mem_type):
     else:
         FCB.parse(binary, family=FamilyRevision(family), mem_type=mem_type)
 
+
 @pytest.mark.parametrize(
     "family,mem_type,is_valid",
     [
-        ("mimxrt798s", 'flexspi_nor', False),
-        ("mimxrt798s", 'xspi_nor', True),
+        ("mimxrt798s", "flexspi_nor", False),
+        ("mimxrt798s", "xspi_nor", True),
         ("mimxrt798s", None, True),
     ],
 )

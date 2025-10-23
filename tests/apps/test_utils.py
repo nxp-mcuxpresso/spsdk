@@ -107,9 +107,10 @@ def test_load_configuration_invalid_file(data_dir, file_name):
         with pytest.raises(SPSDKError):
             load_configuration(file_name)
 
+
 def test_make_table_from_items():
     rows = make_table_from_items(["A", "B", "C", "D", "E"], row_width=10, column_width=5)
     assert len(rows) == 3
-    assert rows[0] == 'A    B  '
-    assert rows[1] == 'C    D  '
-    assert rows[2] == 'E  '
+    assert rows[0] == "A    B  "
+    assert rows[1] == "C    D  "
+    assert rows[2] == "E  "
