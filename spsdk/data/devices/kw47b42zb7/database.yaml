@@ -3,20 +3,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 revisions:
-  a0:
-    features:
-      pfr:
-        romcfg:
-          reg_spec: ifr_romcfg_a0.json
-        cmactable:
-          reg_spec: ifr_cmactable_a0.json
-  a1: 
+  a0: {}
+
+  a1:
     features:
       pfr:
         romcfg:
           reg_spec: ifr_romcfg_a1.json
-  a2: {}
-  a2.1: {}
+        cmactable:
+          reg_spec: ifr_cmactable_a1.json
+  a2:
+    features:
+      pfr:
+        romcfg:
+          reg_spec: ifr_romcfg_a1.json
+        cmactable:
+          reg_spec: ifr_cmactable_a1.json
+  a2.1:
+    features:
+      pfr:
+        romcfg:
+          reg_spec: ifr_romcfg_a1.json
+        cmactable:
+          reg_spec: ifr_cmactable_a1.json
+
 latest: a2.1
 
 # General MCU information
@@ -55,9 +65,14 @@ features:
 
   # ======== Blhost section ========
   blhost:
-    sub_features: [overridden_properties]
+    sub_features: [overridden_properties, property_warnings]
     overridden_properties:
       10: "verify-erase"
+      34: "fuse-program-voltage"
+    property_warnings:
+      34:  # 0x22 in hexadecimal
+        value: 0
+        message: "WARNING: Setting property Fuse Program Voltage (0x22) to 0 on KW47 will cause a device reset!"
 
   # ======== DAT section ========
   dat:

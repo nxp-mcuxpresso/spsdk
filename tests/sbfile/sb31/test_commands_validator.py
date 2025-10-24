@@ -36,7 +36,7 @@ def test_command_rule_validator_base():
     assert validator.get_command_class("nonexistent") is None
 
     # Test get_command_tags method
-    commands = [CmdLoad(address=0, data=b'test'), CmdExecute(address=0x1000)]
+    commands = [CmdLoad(address=0, data=b"test"), CmdExecute(address=0x1000)]
     tags = validator.get_command_tags(commands)
     assert len(tags) == 2
     assert tags[0] == CmdLoad.CMD_TAG
@@ -61,26 +61,20 @@ def test_must_follow_validator():
     # Valid sequence: erase followed by load
     valid_commands = [
         CmdErase(address=0, length=0x1000),
-        CmdLoad(address=0, data=b'test'),
-        CmdExecute(address=0x1000)
+        CmdLoad(address=0, data=b"test"),
+        CmdExecute(address=0x1000),
     ]
     result = validator.validate(valid_commands)
     assert result.result == ResultType.PASSED
     result.check()
 
-    invalid_commands = [
-        CmdErase(address=0, length=0x1000),
-        CmdExecute(address=0x1000)
-    ]
+    invalid_commands = [CmdErase(address=0, length=0x1000), CmdExecute(address=0x1000)]
     result = validator.validate(invalid_commands)
     assert result.result == ResultType.FAILED
     with pytest.raises(SPSDKValidationError, match="load command must follow erase command"):
         result.check()
 
-    invalid_end_commands = [
-        CmdLoad(address=0, data=b'test'),
-        CmdErase(address=0, length=0x1000)
-    ]
+    invalid_end_commands = [CmdLoad(address=0, data=b"test"), CmdErase(address=0, length=0x1000)]
     result = validator.validate(invalid_end_commands)
     assert result.result == ResultType.FAILED
     with pytest.raises(SPSDKValidationError, match="load command must follow erase command"):
@@ -109,17 +103,14 @@ def test_max_occurrences_validator():
 
     valid_commands = [
         CmdErase(address=0, length=0x1000),
-        CmdLoad(address=0, data=b'test'),
-        CmdExecute(address=0x1000)
+        CmdLoad(address=0, data=b"test"),
+        CmdExecute(address=0x1000),
     ]
     result = validator.validate(valid_commands)
     assert result.result == ResultType.PASSED
     result.check()
 
-    invalid_commands = [
-        CmdExecute(address=0x1000),
-        CmdExecute(address=0x2000)
-    ]
+    invalid_commands = [CmdExecute(address=0x1000), CmdExecute(address=0x2000)]
 
     result = validator.validate(invalid_commands)
     assert result.result == ResultType.FAILED
@@ -129,17 +120,17 @@ def test_max_occurrences_validator():
     custom_rule = {"command": "load", "count": 2}
     custom_validator = MaxOccurrencesValidator(custom_rule)
     valid_custom_commands = [
-        CmdLoad(address=0, data=b'test1'),
-        CmdLoad(address=0x1000, data=b'test2')
+        CmdLoad(address=0, data=b"test1"),
+        CmdLoad(address=0x1000, data=b"test2"),
     ]
     result = validator.validate(valid_custom_commands)
     assert result.result == ResultType.PASSED
     result.check()
 
     invalid_custom_commands = [
-        CmdLoad(address=0, data=b'test1'),
-        CmdLoad(address=0x1000, data=b'test2'),
-        CmdLoad(address=0x2000, data=b'test3')
+        CmdLoad(address=0, data=b"test1"),
+        CmdLoad(address=0x1000, data=b"test2"),
+        CmdLoad(address=0x2000, data=b"test3"),
     ]
     result = custom_validator.validate(invalid_custom_commands)
     assert result.result == ResultType.FAILED
@@ -156,6 +147,7 @@ def test_max_occurrences_validator():
     result = incomplete_validator.validate(valid_commands)
     assert result.result == ResultType.SKIPPED
 
+
 def test_must_appear_after_validator():
     """Test the MustAppearAfterValidator class."""
     # Test with valid command sequence
@@ -165,27 +157,24 @@ def test_must_appear_after_validator():
     # Valid sequence: erase followed by load
     valid_commands = [
         CmdErase(address=0, length=0x1000),
-        CmdLoad(address=0, data=b'test'),
-        CmdExecute(address=0x1000)
+        CmdLoad(address=0, data=b"test"),
+        CmdExecute(address=0x1000),
     ]
     result = validator.validate(valid_commands)
     assert result.result == ResultType.PASSED
     result.check()
 
     # Valid sequence: load without erase (source command not present)
-    valid_no_source_commands = [
-        CmdLoad(address=0, data=b'test'),
-        CmdExecute(address=0x1000)
-    ]
+    valid_no_source_commands = [CmdLoad(address=0, data=b"test"), CmdExecute(address=0x1000)]
     result = validator.validate(valid_no_source_commands)
     assert result.result == ResultType.PASSED
     result.check()
 
     # Invalid sequence: load appears before erase
     invalid_commands = [
-        CmdLoad(address=0, data=b'test'),
+        CmdLoad(address=0, data=b"test"),
         CmdErase(address=0, length=0x1000),
-        CmdExecute(address=0x1000)
+        CmdExecute(address=0x1000),
     ]
     result = validator.validate(invalid_commands)
     assert result.result == ResultType.FAILED
@@ -195,9 +184,9 @@ def test_must_appear_after_validator():
     # Test with multiple occurrences of both commands
     multiple_commands = [
         CmdErase(address=0, length=0x1000),
-        CmdLoad(address=0, data=b'test1'),
+        CmdLoad(address=0, data=b"test1"),
         CmdErase(address=0x2000, length=0x1000),
-        CmdLoad(address=0x2000, data=b'test2')
+        CmdLoad(address=0x2000, data=b"test2"),
     ]
     result = validator.validate(multiple_commands)
     assert result.result == ResultType.PASSED
@@ -206,10 +195,10 @@ def test_must_appear_after_validator():
     # Invalid with multiple occurrences - last erase followed by no load
     invalid_multiple_commands = [
         CmdErase(address=0, length=0x1000),
-        CmdLoad(address=0, data=b'test1'),
-        CmdLoad(address=0x1000, data=b'test2'),
+        CmdLoad(address=0, data=b"test1"),
+        CmdLoad(address=0x1000, data=b"test2"),
         CmdErase(address=0x2000, length=0x1000),
-        CmdExecute(address=0x1000)
+        CmdExecute(address=0x1000),
     ]
     result = validator.validate(invalid_multiple_commands)
     assert result.result == ResultType.FAILED

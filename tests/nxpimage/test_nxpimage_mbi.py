@@ -74,6 +74,9 @@ mbi_basic_tests = [
     ("mb_xip_plain.yaml", "mcxc444"),
     ("mb_xip_plain_bca.yaml", "mcxc444"),
     ("mb_xip_plain.yaml", "mcxe247"),
+    ("mb_xip_plain.yaml", "mcxe31b"),
+    ("mb_xip_plain_lc.yaml", "mcxe31b"),
+    ("mb_xip_plain_lc_with_addr.yaml", "mcxe31b"),
     ("mb_xip_crc.yaml", "mcxn556s"),
 ]
 
@@ -178,6 +181,26 @@ def test_mbi_parser_basic(cli_runner: CliRunner, tmpdir, nxpimage_data_dir, fami
             # remaining data must be all zeros
             assert new_data[len(ref_data) :] == bytes([0] * (len(new_data) - len(ref_data)))
 
+def test_mbi_parser_basic_mcxe31_image_with_ivt(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
+    # Create new MBI file
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxe31b", "mb_xip_plain_with_ivt.yaml")
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = f"mbi export -c {new_config}"
+    with use_working_directory(nxpimage_data_dir):
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+    cmd = f"mbi parse -b {new_binary} -f mcxe31b -o {tmpdir}/parsed"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+
+    sub_path: str = load_configuration(config_file)["inputImageFile"]
+    input_image = os.path.normpath(os.path.join(nxpimage_data_dir, sub_path.replace("\\", "/")))
+    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+    assert os.path.isfile(parsed_app)
+    assert load_binary(input_image)[0x1000:] == load_binary(parsed_app)
+
 
 @pytest.mark.parametrize("config_file,device,sign_digest", mbi_signed_tests)
 def test_nxpimage_mbi_signed(
@@ -277,6 +300,31 @@ def test_nxpimage_mbi_signed(
             # validate data before signature
             assert ref_data[:-signature_length] == new_data[:-signature_length]
 
+
+@pytest.mark.parametrize("config_file,device", [("mb_xip_signed.yaml", "mcxe31b")])
+def test_nxpimage_mbi_signed_mcxe31(
+    cli_runner: CliRunner, nxpimage_data_dir, tmpdir, config_file, device
+):
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+        cmd = f"mbi export -c {new_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        assert os.path.isfile(new_binary)
+
+        # validate file lengths
+        ref_data = load_binary(ref_binary)
+        new_data = load_binary(new_binary)
+        assert len(ref_data) == len(new_data)
+        assert ref_data == new_data
+        cmd = f"mbi parse -b {new_binary} -f {device} -o {tmpdir}/parsed"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"]).replace("\\", "/")
+        parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+        assert os.path.isfile(parsed_app)
+        assert filecmp.cmp(input_image, parsed_app)
 
 @pytest.mark.parametrize(
     "config_file,device,added_hash",
@@ -727,6 +775,7 @@ def test_mbi_lpc55s3x_invalid():
         "mwct20d2",
         "mcxn947",
         "rw612",
+        "mcxe31b",
     ],
 )
 def test_mbi_get_templates(cli_runner: CliRunner, tmpdir, family):

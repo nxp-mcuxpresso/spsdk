@@ -7,6 +7,7 @@
 
 """AHAB utils module."""
 import logging
+import os
 import struct
 from copy import deepcopy
 from typing import Optional
@@ -31,12 +32,39 @@ from spsdk.utils.misc import load_binary
 logger = logging.getLogger(__name__)
 
 
+def find_ahab_image_in_file(file_path: str, image_id: int = 0, start_offset: int = 0) -> int:
+    """Get offset of AHAB image in file.
+
+    :param file_path: File path of file with AHAB image
+    :param image_id: The AHAB image ID, defaults to 0
+    :param start_offset: Start offset to find the image
+    :return: Offset of AHAB image by ID, otherwise value under zero
+    """
+    DATA_READ = 0x1000
+    file_size = os.path.getsize(file_path)
+    act_image_id = 0
+    for x in range(start_offset, file_size, DATA_READ):
+        with open(file_path, "r+b") as f:
+            try:
+                f.seek(x)
+                data = f.read(DATA_READ)
+                image_offset = AHABImage.find_offset_of_ahab(binary=data)
+                if act_image_id == image_id:
+                    logger.debug(f"Found AHAB image at offset {hex(x+image_offset)}")
+                    return x + image_offset
+                act_image_id += 1
+            except (IndexError, SPSDKError):
+                pass
+    return -1
+
+
 def ahab_update_keyblob(
     family: FamilyRevision,
     binary: str,
     keyblob: str,
     container_id: int,
-    mem_type: Optional[str],
+    image_id: int = 0,
+    mem_type: Optional[str] = None,
 ) -> None:
     """Update keyblob in AHAB image.
 
@@ -44,6 +72,7 @@ def ahab_update_keyblob(
     :param binary: Path to AHAB image binary
     :param keyblob: Path to keyblob
     :param container_id: Index of the container to be updated
+    :param image_id: Index of AHAB image in binary to look for, default is 0
     :param mem_type: Memory type used for bootable image
     :raises SPSDKError: In case the container id not present
     :raises SPSDKError: In case the AHAB image does not contain blob
@@ -62,19 +91,25 @@ def ahab_update_keyblob(
                 DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
             )["primary_image_container_set"]
 
+    ahab_image_offset = find_ahab_image_in_file(binary, image_id=image_id, start_offset=offset)
+    if ahab_image_offset < 0:
+        raise SPSDKError(f"AHAB Image ({image_id}) not found!")
+
     keyblob_data = load_binary(keyblob)
 
     with open(binary, "r+b") as f:
         try:
-            f.seek(offset)
+            f.seek(ahab_image_offset)
             first_container = f.read(DATA_READ)
             container_type = AHABImage._parse_container_type(first_container)
             address = container_type.get_container_offset(container_id)
         except IndexError as exc:
             raise SPSDKError(f"No container ID {container_id}") from exc
 
-        logger.debug(f"Trying to find AHAB container header at offset {hex(address + offset)}")
-        f.seek(address + offset)
+        logger.debug(
+            f"Trying to find AHAB container header at offset {hex(address + ahab_image_offset)}"
+        )
+        f.seek(address + ahab_image_offset)
         data = f.read(DATA_READ)
         (
             _,
@@ -84,7 +119,7 @@ def ahab_update_keyblob(
             _,
             signature_block_offset,
         ) = container_type._parse(data)
-        f.seek(signature_block_offset + address + offset)
+        f.seek(signature_block_offset + address + ahab_image_offset)
         ahab_srk_id = (flags >> container_type.FLAGS_USED_SRK_ID_OFFSET) & (
             (1 << container_type.FLAGS_USED_SRK_ID_SIZE) - 1
         )
@@ -99,10 +134,10 @@ def ahab_update_keyblob(
             raise SPSDKError("AHAB Container must contain BLOB in order to update it")
         if not len(signature_block.blob.export()) == len(blob.export()):
             raise SPSDKError("The size of the BLOB must be same")
-        logger.debug(f"AHAB container found at offset {hex(address + offset)}")
+        logger.debug(f"AHAB container found at offset {hex(address + ahab_image_offset)}")
         logger.debug(f"New keyblob: \n{blob}")
         logger.debug(f"Old keyblob: \n{signature_block.blob}")
-        f.seek(signature_block_offset + address + signature_block._blob_offset + offset)
+        f.seek(signature_block_offset + address + signature_block._blob_offset + ahab_image_offset)
         f.write(blob.export())
 
 
@@ -110,6 +145,7 @@ def ahab_re_sign(
     family: FamilyRevision,
     binary: str,
     container_id: int,
+    image_id: int,
     sign_provider_0: SignatureProvider,
     sign_provider_1: Optional[SignatureProvider] = None,
     mem_type: Optional[str] = None,
@@ -119,6 +155,7 @@ def ahab_re_sign(
     :param family: MCU family
     :param binary: Path to AHAB image binary
     :param container_id: Index of the container to be updated
+    :param image_id: Index of AHAB image in binary to look for
     :param sign_provider_0: Signature provider object for main signature
     :param sign_provider_1: Signature provider object for additional signature
     :param mem_type: Memory type used for bootable image
@@ -137,17 +174,22 @@ def ahab_re_sign(
                 DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
             )["primary_image_container_set"]
 
+    ahab_image_offset = find_ahab_image_in_file(binary, image_id=image_id, start_offset=offset)
+    if ahab_image_offset < 0:
+        raise SPSDKError(f"AHAB Image ({image_id}) not found!")
     with open(binary, "r+b") as f:
         try:
-            f.seek(offset)
+            f.seek(ahab_image_offset)
             first_container = f.read(DATA_READ)
             container_type = AHABImage._parse_container_type(first_container)
             address = container_type.get_container_offset(container_id)
         except IndexError as exc:
             raise SPSDKError(f"No container ID {container_id}") from exc
 
-        logger.debug(f"Trying to find AHAB container header at offset {hex(address + offset)}")
-        f.seek(address + offset)
+        logger.debug(
+            f"Trying to find AHAB container header at offset {hex(address + ahab_image_offset)}"
+        )
+        f.seek(address + ahab_image_offset)
         data = f.read(DATA_READ)
         (
             _,
@@ -182,10 +224,10 @@ def ahab_re_sign(
         signature_block.signature.signature_data = signature_data
         signature_block.verify().validate()
         signature_block.verify_container_authenticity(data_to_sign).validate()
-        logger.debug(f"AHAB container found at offset {hex(address + offset)}")
+        logger.debug(f"AHAB container found at offset {hex(address + ahab_image_offset)}")
         logger.debug(f"New main signature: \n{signature_data.hex()}")
         logger.debug(f"Old main signature: \n{old_signature_data.hex()}")
-        f.seek(offset + address + container_signature_offset)
+        f.seek(ahab_image_offset + address + container_signature_offset)
         f.write(signature_data)
 
         if sign_provider_1:
@@ -208,7 +250,7 @@ def ahab_re_sign(
             logger.debug(f"New additional signature: \n{signature_data.hex()}")
             logger.debug(f"Old additional signature: \n{old_signature_data.hex()}")
             f.seek(
-                offset
+                ahab_image_offset
                 + address
                 + container_signature_offset
                 + struct.calcsize(ContainerSignature.format())
@@ -216,7 +258,9 @@ def ahab_re_sign(
             f.write(signature_data)
 
 
-def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> tuple[bytes, BootableImage]:
+def ahab_sign_image(
+    image_path: str, config: Config, mem_type: str, image_id: int = 0
+) -> tuple[bytes, BootableImage]:
     """Sign AHAB container set.
 
     Parse segments in Bootable image and sign non NXP AHAB containers.
@@ -224,6 +268,7 @@ def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> tuple[byt
     :param image_path: Path to the image to sign
     :param config: Configuration for signing
     :param mem_type: Memory type
+    :param image_id: The AHAB Image ID, default is 0
     :return: Tuple of (signed image data, bootable image object)
     """
     config.check(AHABImage.get_validation_schemas_basic())
@@ -236,10 +281,13 @@ def ahab_sign_image(image_path: str, config: Config, mem_type: str) -> tuple[byt
         memory = None
     bimg = BootableImage.parse(load_binary(image_path), family=family, mem_type=memory)
     logger.info(f"Parsed Bootable image memory map: {bimg.image_info().draw()}")
-
+    act_ahab_image_id = 0
     for segment in bimg.segments:
         logger.info(f"Segment: {segment}")
         if isinstance(segment, SegmentAhab) and isinstance(segment.ahab, AHABImage):
+            if act_ahab_image_id < image_id:
+                act_ahab_image_id += 1
+                continue
             for container in segment.ahab.ahab_containers:
                 if container.flag_srk_set not in [FlagsSrkSet.OEM, FlagsSrkSet.NONE]:
                     logger.info("Skipping signing of none OEM and non signed container")

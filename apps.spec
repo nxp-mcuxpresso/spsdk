@@ -66,6 +66,7 @@ hidden_imports = {
     "spsdk_lauterbach",
     "spsdk_mcu_link",
     "pyocd.rtos.threadx",
+    "spsdk.image.mbi.mbi_mixin_hse",
 }
 
 

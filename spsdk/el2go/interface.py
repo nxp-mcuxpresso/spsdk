@@ -7,6 +7,7 @@
 
 """El2Go Interfaces."""
 import logging
+import os
 from abc import abstractmethod
 from types import TracebackType
 from typing import Callable, Optional, Type, Union
@@ -15,13 +16,18 @@ import click
 from hexdump import hexdump
 
 from spsdk.apps.utils.interface_helper import InterfaceConfig
-from spsdk.exceptions import SPSDKError
+from spsdk.el2go.api_utils import EL2GOTPClient
+from spsdk.el2go.client import CleanMethod
+from spsdk.el2go.secure_objects import SecureObjects
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKUnsupportedOperation
 from spsdk.mboot.mcuboot import McuBoot, StatusCode, stringify_status_code
 from spsdk.mboot.properties import PropertyTag
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.uboot.uboot import UbootFastboot, UbootSerial
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
+from spsdk.utils.misc import write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
@@ -184,13 +190,7 @@ class EL2GOInterfaceHandler:
         """Optional preparation step."""
 
     @abstractmethod
-    def prepare_dispatch(
-        self,
-        secure_objects: bytes,
-        secure_objects_address: int,
-        prov_fw: Optional[bytes] = None,
-        prov_fw_address: Optional[int] = None,
-    ) -> None:
+    def prepare_dispatch(self, secure_objects: bytes, client: EL2GOTPClient) -> None:
         """Prepare device to run NXP Provisioning Firmware."""
 
     @abstractmethod
@@ -214,39 +214,47 @@ class EL2GOInterfaceHandler:
         """Reset target."""
 
     @abstractmethod
+    def write_secure_objects(
+        self,
+        client: EL2GOTPClient,
+        secure_objects: bytes,
+        workspace: Optional[str] = None,
+        clean: bool = False,
+    ) -> None:
+        """Write secure objects to the device memory."""
+
+    @abstractmethod
+    def write_secure_objects_prod(
+        self,
+        client: EL2GOTPClient,
+        secure_objects: bytes,
+        workspace: Optional[str] = None,
+        clean: bool = False,
+    ) -> None:
+        """Write secure objects to the device memory."""
+
+    @abstractmethod
     def run_provisioning(
         self,
-        tp_data_address: int,
-        use_dispatch_fw: bool = True,
-        prov_fw: Optional[bytes] = None,
+        client: EL2GOTPClient,
         dry_run: bool = False,
     ) -> None:
         """Run provisioning.
 
-        :param tp_data_address: TP data address for dispatch FW
-        :param use_dispatch_fw: Use dispatch FW, defaults to True
-        :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used.
+        :param client: EL2GO TP Client instance
         :param dry_run: Dry run, defaults to False
         """
 
     @abstractmethod
     def run_batch_provisioning(
         self,
-        tp_data_address: int,
-        use_dispatch_fw: bool = True,
-        prov_fw: Optional[bytes] = None,
-        prov_report_address: Optional[int] = None,
+        client: EL2GOTPClient,
         dry_run: bool = False,
     ) -> Optional[bytes]:
         """Run provisioning using Batch mode.
 
-        :param tp_data_address: TP data address for dispatch FW
-        :param use_dispatch_fw: Use dispatch FW, defaults to True, defaults to True
-        :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used., defaults to None
+        :param client: EL2GO TP Client instance
         :param dry_run: Dry run, defaults to False
-        :param prov_report_address: Address where to store Provisioning Report,
-            defaults to None = don't store the report
-        :returns: Provisioning report
         """
 
     def __enter__(self) -> None:
@@ -322,6 +330,92 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         with self.device as device:
             device.write_memory(address, data)
 
+    def run_cleanup_method(self, client: EL2GOTPClient) -> None:
+        """Run cleanup method."""
+        if client.clean_method == CleanMethod.NONE:
+            logger.info(f"Device {self.family} doesn't have a registered cleanup method")
+            return
+        if client.clean_method == CleanMethod.ERASE_CMPA:
+            # don't use top-level import to save time in production, where this functionality is not required
+            from spsdk.pfr.pfr import CMPA
+
+            if not self.family or not self.db:
+                logger.error("Family and DB must be provided for CMPA cleanup method")
+                return
+            cmpa = CMPA(family=self.family)
+            cmpa.set_config(Config())
+            cmpa_data = cmpa.export(draw=False)
+            cmpa_address = self.db.get_int(DatabaseManager.PFR, ["cmpa", "address"])
+
+            self.write_memory(address=cmpa_address, data=cmpa_data)
+            return
+
+        raise SPSDKUnsupportedOperation(f"Unsupported cleanup method {client.clean_method}")
+
+    def write_secure_objects(
+        self,
+        client: EL2GOTPClient,
+        secure_objects: bytes,
+        workspace: Optional[str] = None,
+        clean: bool = False,
+    ) -> None:
+        """Write secure objects."""
+        if workspace:
+            write_file(secure_objects, os.path.join(workspace, "secure_objects.bin"), mode="wb")
+
+        user_config, fw_read_address, user_data_address = client.create_user_config()
+        if workspace and user_config:
+            write_file(user_config, os.path.join(workspace, "user_config.bin"), mode="wb")
+
+        so_list = SecureObjects.parse(secure_objects)
+        so_list.validate(family=client.family)
+
+        if clean:
+            logger.info("Performing cleanup method")
+            self.run_cleanup_method(client=client)
+        if client.use_dispatch_fw:
+            logger.info(f"Writing Secure Objects to: {hex(user_data_address)}")
+            self.write_memory(address=user_data_address, data=secure_objects)
+            if client.prov_fw:
+                logger.info("Uploading ProvFW")
+                self.write_memory(address=client.fw_load_address, data=client.prov_fw)
+                logger.info("Resetting the device (Starting Provisioning FW)")
+                self.reset()
+        elif client.use_user_config:
+            click.echo(f"Writing User config data to: {hex(fw_read_address)}")
+            self.write_memory(address=fw_read_address, data=user_config)
+            click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
+            self.write_memory(address=user_data_address, data=secure_objects)
+        elif client.use_data_split:
+            internal, external = so_list.split_int_ext()
+            if internal:
+                if workspace:
+                    write_file(internal, os.path.join(workspace, "internal_so.bin"), mode="wb")
+                click.echo(f"Writing Internal Secure Objects to: {hex(fw_read_address)}")
+                self.write_memory(address=fw_read_address, data=internal)
+            if external:
+                if workspace:
+                    write_file(external, os.path.join(workspace, "external_so.bin"), mode="wb")
+                click.echo(f"Writing External Secure Objects to: {hex(user_data_address)}")
+                self.write_memory(address=user_data_address, data=external)
+        else:
+            raise SPSDKNotImplementedError("Unsupported provisioning method")
+
+        logger.info("Secure Objects uploaded successfully")
+
+    def write_secure_objects_prod(
+        self,
+        client: EL2GOTPClient,
+        secure_objects: bytes,
+        workspace: Optional[str] = None,
+        clean: bool = False,
+    ) -> None:
+        """Write secure objects to the device memory."""
+        self.write_memory(address=client.tp_data_address, data=secure_objects)
+        if client.prov_fw:
+            self.write_memory(address=client.fw_load_address, data=client.prov_fw)
+        self.reset(reopen=True)
+
     def reset(self, reopen: bool = False) -> None:
         """Reset target."""
         if not isinstance(self.device, McuBoot):
@@ -338,32 +432,26 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         """Prepare device for provisioning."""
         logger.debug("Prepare method is not implemented")
 
-    def prepare_dispatch(
-        self,
-        secure_objects: bytes,
-        secure_objects_address: int,
-        prov_fw: Optional[bytes] = None,
-        prov_fw_address: Optional[int] = None,
-    ) -> None:
+    def prepare_dispatch(self, secure_objects: bytes, client: EL2GOTPClient) -> None:
         """Prepare device to run NXP Provisioning Firmware."""
         if not isinstance(self.device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
         with self.device as device:
-            result = device.flash_erase_region(secure_objects_address, len(secure_objects))
+            result = device.flash_erase_region(client.tp_data_address, len(secure_objects))
             if not result:
                 raise SPSDKError(
                     f"Failed to erase secure objects region. Error: {device.status_string}"
                 )
-            result = device.write_memory(secure_objects_address, secure_objects)
+            result = device.write_memory(client.tp_data_address, secure_objects)
             if not result:
                 raise SPSDKError(f"Failed to write secure objects. Error: {device.status_string}")
-            if prov_fw is not None and prov_fw_address is not None:
-                result = device.flash_erase_region(prov_fw_address, len(prov_fw))
+            if client.prov_fw is not None and client.fw_load_address is not None:
+                result = device.flash_erase_region(client.fw_load_address, len(client.prov_fw))
                 if not result:
                     raise SPSDKError(
                         f"Failed to erase  provisioning firmware region. Error: {device.status_string}"
                     )
-                result = device.write_memory(prov_fw_address, prov_fw)
+                result = device.write_memory(client.fw_load_address, client.prov_fw)
                 if not result:
                     raise SPSDKError(
                         f"Failed to write provisioning firmware. Error: {device.status_string}"
@@ -372,24 +460,20 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
 
     def run_provisioning(
         self,
-        tp_data_address: int,
-        use_dispatch_fw: bool = True,
-        prov_fw: Optional[bytes] = None,
+        client: EL2GOTPClient,
         dry_run: bool = False,
     ) -> None:
         """Run provisioning.
 
-        :param tp_data_address: TP data address for dispatch FW
-        :param use_dispatch_fw: Use dispatch FW, defaults to True
-        :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used.
+        :param client: EL2GO TP Client instance
         :param dry_run: Dry run, defaults to False
         """
         if not isinstance(self.device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
         with self.device as device:
-            if use_dispatch_fw:
+            if client.use_dispatch_fw:
                 self.print_func("Starting provisioning process")
-                status = device.el2go_close_device(tp_data_address, dry_run=dry_run)
+                status = device.el2go_close_device(client.tp_data_address, dry_run=dry_run)
                 if status is None:
                     raise SPSDKError("Provisioning failed. No response from the firmware.")
                 if status != StatusCode.EL2GO_PROV_SUCCESS.tag:
@@ -398,38 +482,30 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
                     )
             else:
                 self.print_func("Uploading ProvFW (Starting provisioning process)")
-                if not isinstance(prov_fw, bytes):
+                if not isinstance(client.prov_fw, bytes):
                     raise SPSDKError("Provisioning firmware is not provided!")
-                device.receive_sb_file(prov_fw)
+                device.receive_sb_file(client.prov_fw)
 
         self.print_func("Secure Objects provisioned successfully")
 
     def run_batch_provisioning(
         self,
-        tp_data_address: Optional[int] = True,
-        use_dispatch_fw: bool = True,
-        prov_fw: Optional[bytes] = None,
-        prov_report_address: Optional[int] = None,
+        client: EL2GOTPClient,
         dry_run: bool = False,
     ) -> Optional[bytes]:
-        """Run provisioning in Batch mode.
+        """Run provisioning using Batch mode.
 
-        :param tp_data_address: TP data address for dispatch FW
-        :param use_dispatch_fw: Use dispatch FW, defaults to True
-        :param prov_fw: Path to provisioning firmware, only applicable if dispatch FW is not used.
-        :param prov_report_address: Address where to store Provisioning Report,
-            defaults to None = don't store the report
+        :param client: EL2GO TP Client instance
         :param dry_run: Dry run, defaults to False
-        :returns: Provisioning report (in case the provisioning process was executed successfully)
         """
         if not isinstance(self.device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
         with self.device as device:
-            if use_dispatch_fw:
+            if client.use_dispatch_fw:
                 self.print_func("Starting provisioning process in batch mode")
                 status, report = device.el2go_batch_tp(
-                    data_address=tp_data_address or self.buffer_address,
-                    report_address=prov_report_address or 0xFFFF_FFFF,
+                    data_address=client.tp_data_address or self.buffer_address,
+                    report_address=client.prov_report_address or 0xFFFF_FFFF,
                     dry_run=dry_run,
                 )
                 if status is None:
@@ -439,9 +515,12 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
                         f"Provisioning failed with status: {stringify_status_code(status)}"
                     )
 
-                if prov_report_address is not None and prov_report_address != 0xFFFF_FFFF:
+                if (
+                    client.prov_report_address is not None
+                    and client.prov_report_address != 0xFFFF_FFFF
+                ):
                     self.print_func(
-                        f"Provisioning report stored at address: {hex(prov_report_address)}"
+                        f"Provisioning report stored at address: {hex(client.prov_report_address)}"
                     )
                 self.print_func("Secure Objects provisioned successfully")
                 if report:
@@ -522,37 +601,129 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         self.device.write(command, no_exit)
         return self.device.read_output()
 
+    def write_secure_objects(
+        self,
+        client: EL2GOTPClient,
+        secure_objects: bytes,
+        workspace: Optional[str] = None,
+        clean: bool = False,
+    ) -> None:
+        """Write secure objects."""
+        if workspace:
+            write_file(secure_objects, os.path.join(workspace, "secure_objects.bin"), mode="wb")
+
+        user_config, _, user_data_address = client.create_user_config()
+        if workspace and user_config:
+            write_file(user_config, os.path.join(workspace, "user_config.bin"), mode="wb")
+
+        so_list = SecureObjects.parse(secure_objects)
+        so_list.validate(family=client.family)
+
+        if client.use_oem_app:
+            logger.info(f"Writing Secure Objects to MMC/SD FAT: {hex(user_data_address)}")
+            self.write_memory(address=user_data_address, data=secure_objects)
+            output = self.send_command(
+                f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
+                + f" {user_data_address:x} {client.fatwrite_filename} {len(secure_objects):x}"
+            )
+            logger.info(f"Data written {output}")
+
+    def write_secure_objects_prod(
+        self,
+        client: EL2GOTPClient,
+        secure_objects: bytes,
+        workspace: Optional[str] = None,
+        clean: bool = False,
+    ) -> None:
+        """Write secure objects to the device memory."""
+        if workspace:
+            write_file(secure_objects, os.path.join(workspace, "secure_objects.bin"), mode="wb")
+
+        user_config, _, user_data_address = client.create_user_config()
+        if workspace and user_config:
+            write_file(user_config, os.path.join(workspace, "user_config.bin"), mode="wb")
+
+        if client.use_oem_app:
+            logger.info(f"Writing Secure Objects to MMC/SD FAT: {hex(user_data_address)}")
+            self.write_memory(address=user_data_address, data=secure_objects)
+            output = self.send_command(
+                f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
+                + f" {user_data_address:x} {client.fatwrite_filename} {len(secure_objects):x}"
+            )
+            logger.info(f"Data written {output}")
+
+    def save_config(self, client: EL2GOTPClient) -> None:
+        """Save configuration to the target device.
+
+        :param client: EL2Go Client
+        """
+        if client.oem_provisioning_config_filename:
+            self.write_memory(
+                address=client.tp_data_address, data=client.oem_provisioning_config_bin
+            )
+            # Write also OEM APP config if provided
+            logger.info(
+                f"Writing OEM Provisioning Config to MMC/SD FAT: {client.oem_provisioning_config_filename}"
+            )
+
+            output = self.send_command(
+                f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
+                + f" {client.tp_data_address:x} {client.oem_provisioning_config_filename} "
+                + f"{len(client.oem_provisioning_config_bin):x}"
+            )
+
+            logger.info(f"Data written {output}")
+
+    def boot_linux(self, client: EL2GOTPClient) -> None:
+        """Boot Linux for provisioning.
+
+        :param client: EL2GO TP Client instance
+        """
+        if client.boot_linux:
+            logger.info("Booting Linux")
+
+            for command in client.linux_boot_sequence:
+                # in case of last command set no_exit to true
+                if command == client.linux_boot_sequence[-1]:
+                    output = self.send_command(command, no_exit=True)
+                else:
+                    output = self.send_command(command)
+                logger.info(f"  Command: {command} -> {output}")
+
     def run_provisioning(
         self,
-        tp_data_address: int,
-        use_dispatch_fw: bool = True,
-        prov_fw: Optional[bytes] = None,
+        client: EL2GOTPClient,
         dry_run: bool = False,
     ) -> None:
-        """Run provisioning."""
-        raise NotImplementedError("Provisioning not supported for U-Boot interface")
+        """Run provisioning.
+
+        :param client: EL2GO TP Client instance
+        :param dry_run: Dry run, defaults to False
+        """
+        # 1. Optionally save config for El2Go provisioning
+        self.save_config(client)
+        # 2. Boot Linux
+        self.boot_linux(client)
+        logger.info("SPSDK ends here, OEM provisioning app takes care of the rest")
 
     def run_batch_provisioning(
         self,
-        tp_data_address: int,
-        use_dispatch_fw: bool = True,
-        prov_fw: Optional[bytes] = None,
-        prov_report_address: Optional[int] = None,
+        client: EL2GOTPClient,
         dry_run: bool = False,
     ) -> Optional[bytes]:
-        """Run provisioning in Batch mode."""
-        raise NotImplementedError("Batch Mode Provisioning not supported for U-Boot interface")
+        """Run provisioning using Batch mode.
+
+        :param client: EL2GO TP Client instance
+        :param dry_run: Dry run, defaults to False
+        """
+        # Batch provisioning is same as regular provisioning for this interface
+        self.run_provisioning(client, dry_run)
+        return None
 
     def reset(self, reopen: bool = False) -> None:
         """Reset the target."""
-        logger.error("Reset is not supported")
+        logger.debug("Reset is not supported")
 
-    def prepare_dispatch(
-        self,
-        secure_objects: bytes,
-        secure_objects_address: int,
-        prov_fw: Optional[bytes] = None,
-        prov_fw_address: Optional[int] = None,
-    ) -> None:
-        """Prepare device to run NXP Provisioning Firmware."""
-        raise NotImplementedError("Provisioning not supported for U-Boot interface")
+    def prepare_dispatch(self, secure_objects: bytes, client: EL2GOTPClient) -> None:
+        """Prepare device to run OEM Provisioning App."""
+        logger.debug("Provisioning not supported for U-Boot interface")

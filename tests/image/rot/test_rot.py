@@ -31,6 +31,7 @@ def load_keys(tests_root_dir, key_type: str, nr_keys: int = 4):
         keys.append(PublicKey.load(key_path))
     return keys
 
+
 def load_certs(tests_root_dir, cert_type: str, nr_certs: int = 4):
     crts_dir = os.path.join(tests_root_dir, "_data", "certs", cert_type)
     certs = []
@@ -38,6 +39,7 @@ def load_certs(tests_root_dir, cert_type: str, nr_certs: int = 4):
         crt_path = os.path.join(crts_dir, f"srk{i}_{cert_type}_self_signed.der")
         certs.append(Certificate.load(crt_path))
     return certs
+
 
 # Fixtures for test data
 @pytest.fixture
@@ -110,7 +112,7 @@ def test_get_rot_class_invalid():
             "cert_block_21",
             "rsa2048_keys",
             "749c019d97aaffc9bbcf566162c39e9c39572ab8243a0dafeb9aee0f465a8f4f",
-       ),
+        ),
         (
             "cert_block_21",
             "ecc256_keys",
@@ -135,27 +137,27 @@ def test_get_rot_class_invalid():
             "srk_table_ahab_v2",
             "rsa2048_keys",
             "2585044c7096bfbf35901436c1cada1df6a5e34cbeee4ac38610f1053a7714c8e9953c9a9fcc0de05d75110bb31dd5f31fe0c771452bbd27385d0093e9f29343",
-         ),
+        ),
         (
             "srk_table_ahab_v2",
             "ecc256_keys",
             "412600fd846385bd8263770692fba46721d30c12aede0dc19cbaf54c5c473948179953bdaf43eb2a3cfdbfde7ae8f17bdcbb3ba79b675c2b5746c41c1f4d2d6b",
-         ),
+        ),
         (
             "srk_table_ahab_v2_48_bytes",
             "rsa2048_keys",
             "2585044c7096bfbf35901436c1cada1df6a5e34cbeee4ac38610f1053a7714c8e9953c9a9fcc0de05d75110bb31dd5f3",
-         ),
+        ),
         (
             "srk_table_ahab_v2_48_bytes",
             "ecc256_keys",
             "412600fd846385bd8263770692fba46721d30c12aede0dc19cbaf54c5c473948179953bdaf43eb2a3cfdbfde7ae8f17b",
-         ),
+        ),
         (
             "srk_table_hab",
             "rsa2048_crts",
             "e7be8a78ed297bbc862cf0b2a72ad37c34f8c1f401114c47f2bd3156f15af733",
-         ),
+        ),
     ],
 )
 def test_rot_cert_block_with_real_keys(rot_type, key_fixture, expected_hash, request):

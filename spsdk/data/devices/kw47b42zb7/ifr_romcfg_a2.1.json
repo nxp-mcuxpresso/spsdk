@@ -1,5 +1,5 @@
 {
-    "cpu": "MCXW716C",
+    "cpu": "KW47B42ZB7",
     "groups": [
         {
             "group": {
@@ -46,7 +46,7 @@
                     "offset_int": "0x0001",
                     "is_reserved": true,
                     "default_value_int": "0x00FFFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 24
                 },
                 {
@@ -56,7 +56,7 @@
                     "offset_int": "0x0004",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "field008",
@@ -225,7 +225,7 @@
                     "offset_int": "0x0012",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -235,7 +235,7 @@
                     "offset_int": "0x0014",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "field018",
@@ -397,12 +397,12 @@
                             "description": "Enable ISP",
                             "values": [
                                 {
-                                    "name": "BOOT_CFG_PIN_ENABLED",
+                                    "name": "ENABLED",
                                     "value": 1,
                                     "description": "Boot config pin enabled"
                                 },
                                 {
-                                    "name": "BOOT_CFG_PIN_DIS",
+                                    "name": "DISABLED",
                                     "value": 0,
                                     "description": "Boot config pin disabled"
                                 }
@@ -415,9 +415,9 @@
                             "description": "Boot speed",
                             "values": [
                                 {
-                                    "name": "NORMAL_BOOT_32_MHZ",
+                                    "name": "NORMAL_BOOT_48_MHZ",
                                     "value": 0,
-                                    "description": "Normal Boot (32MHz)"
+                                    "description": "Normal Boot (48MHz)"
                                 },
                                 {
                                     "name": "FAST_BOOT_96_MHZ",
@@ -437,7 +437,25 @@
                             ]
                         },
                         {
-                            "width": 5
+                            "width": 1,
+                            "id": "field050-bit3",
+                            "name": "BOOT_LOW_POWER",
+                            "description": "Boot low power",
+                            "values": [
+                                {
+                                    "name": "LOWER",
+                                    "value": 0,
+                                    "description": "Normal Boot: Core LDO = 1.0 V, DCDC = 1.25 V; Fast Boot: Core LDO = 1.1 V DCDC = 1.35 V"
+                                },
+                                {
+                                    "name": "NORMAL",
+                                    "value": 1,
+                                    "description": "Normal Boot: Core LDO = 1.0 V, DCDC = 1.25 V; Fast Boot:  Core LDO = 1.1 V DCDC = 1.8 V"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
                         }
                     ]
                 },
@@ -448,7 +466,7 @@
                     "offset_int": "0x0051",
                     "is_reserved": true,
                     "default_value_int": "0x00FFFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 24
                 },
                 {
@@ -458,7 +476,7 @@
                     "offset_int": "0x0054",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00058",
@@ -467,7 +485,7 @@
                     "offset_int": "0x0058",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0005C",
@@ -476,7 +494,7 @@
                     "offset_int": "0x005C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -496,38 +514,23 @@
                     "reg_width": 8,
                     "bitfields": [
                         {
-                            "width": 1,
-                            "id": "field060-bit0",
-                            "name": "SECURE_BOOT_MODE",
-                            "description": "Secure Boot failure mode",
-                            "values": [
-                                {
-                                    "name": "INFINITE_SLEEP",
-                                    "value": 0,
-                                    "description": "Infinite sleep"
-                                },
-                                {
-                                    "name": "SERIAL_DOWNLOAD",
-                                    "value": 1,
-                                    "description": "Serial download"
-                                }
-                            ]
+                            "width": 1
                         },
                         {
                             "width": 1,
                             "id": "field060-bit1",
-                            "name": "SECURE_BOOT_FAILURE_ALERT_PIN",
-                            "description": "Secure Boot failure alert pin",
+                            "name": "SECURE_BOOT_OPTION",
+                            "description": "Secure Boot option",
                             "values": [
                                 {
                                     "name": "ENABLED",
                                     "value": 0,
-                                    "description": "Secure Boot failure alert pin is enabled"
+                                    "description": "Secure Boot option is enabled"
                                 },
                                 {
                                     "name": "DISABLED",
                                     "value": 1,
-                                    "description": "Secure Boot failure alert pin is disabled"
+                                    "description": "Secure Boot option is disabled"
                                 }
                             ]
                         },
@@ -538,8 +541,8 @@
                 },
                 {
                     "id": "field061",
-                    "name": "SECURE_BOOT_FAILURE_ALERT_PIN_SELECTION",
-                    "description": "Secure Boot Failure Alert Pin Selection",
+                    "name": "SECURE_BOOT_FAILURE_ALERT_PIN",
+                    "description": "Secure Boot Failure Alert Pin",
                     "offset_int": "0x0061",
                     "default_value_int": "0x00FF",
                     "individual_write_lock": "implicit_16bytes",
@@ -743,21 +746,6 @@
                                     "name": "PORTE",
                                     "value": 4,
                                     "description": "Port E"
-                                },
-                                {
-                                    "name": "Reserved_5",
-                                    "value": 5,
-                                    "description": "RESERVED"
-                                },
-                                {
-                                    "name": "Reserved_6",
-                                    "value": 6,
-                                    "description": "RESERVED"
-                                },
-                                {
-                                    "name": "Reserved_7",
-                                    "value": 7,
-                                    "description": "RESERVED"
                                 }
                             ]
                         }
@@ -770,7 +758,7 @@
                     "offset_int": "0x0062",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -780,7 +768,7 @@
                     "offset_int": "0x0064",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00068",
@@ -789,7 +777,7 @@
                     "offset_int": "0x0068",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0006C",
@@ -798,14 +786,14 @@
                     "offset_int": "0x006C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
         {
             "group": {
-                "name": "Block 00070-0007F",
-                "description": "Block 00070-0007F"
+                "name": "Reserved 00070-0007F",
+                "description": "Reserved 00070-0007F"
             },
             "registers": [
                 {
@@ -815,7 +803,7 @@
                     "offset_int": "0x0070",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00074",
@@ -824,7 +812,7 @@
                     "offset_int": "0x0074",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00078",
@@ -833,7 +821,7 @@
                     "offset_int": "0x0078",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0007C",
@@ -842,7 +830,7 @@
                     "offset_int": "0x007C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -854,35 +842,38 @@
             "registers": [
                 {
                     "id": "field080",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS0",
-                    "description": "Boot Image Base Address 0",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS3",
+                    "description": "Boot Image Base Address 3",
                     "offset_int": "0x0080",
                     "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
-                    "id": "field084",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS1",
-                    "description": "Boot Image Base Address 1",
+                    "id": "Reserved00084",
+                    "name": "Reserved 0x00084",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x0084",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field088",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS2",
-                    "description": "Boot Image Base Address 2",
+                    "id": "Reserved00088",
+                    "name": "Reserved 0x00088",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x0088",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field08C",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS3",
-                    "description": "Boot Image Base Address 3",
+                    "id": "Reserved0008C",
+                    "name": "Reserved 0x0008C",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x008C",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -894,35 +885,38 @@
             "registers": [
                 {
                     "id": "field090",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS4",
-                    "description": "Boot Image Base Address 4",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS2",
+                    "description": "Boot Image Base Address 2",
                     "offset_int": "0x0090",
                     "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
-                    "id": "field094",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS5",
-                    "description": "Boot Image Base Address 5",
+                    "id": "Reserved00094",
+                    "name": "Reserved 0x00094",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x0094",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field098",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS6",
-                    "description": "Boot Image Base Address 6",
+                    "id": "Reserved00098",
+                    "name": "Reserved 0x00098",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x0098",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field09C",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS7",
-                    "description": "Boot Image Base Address 7",
+                    "id": "Reserved0009C",
+                    "name": "Reserved 0x0009C",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x009C",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -934,35 +928,38 @@
             "registers": [
                 {
                     "id": "field0A0",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS8",
-                    "description": "Boot Image Base Address 8",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS1",
+                    "description": "Boot Image Base Address 1",
                     "offset_int": "0x00A0",
                     "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
-                    "id": "field0A4",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS9",
-                    "description": "Boot Image Base Address 9",
+                    "id": "Reserved000A4",
+                    "name": "Reserved 0x000A4",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00A4",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field0A8",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS10",
-                    "description": "Boot Image Base Address 10",
+                    "id": "Reserved000A8",
+                    "name": "Reserved 0x000A8",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00A8",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field0AC",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS11",
-                    "description": "Boot Image Base Address 11",
+                    "id": "Reserved000AC",
+                    "name": "Reserved 0x000AC",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00AC",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -974,42 +971,45 @@
             "registers": [
                 {
                     "id": "field0B0",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS12",
-                    "description": "Boot Image Base Address 12",
+                    "name": "BOOT_IMAGE_BASE_ADDRESS0",
+                    "description": "Boot Image Base Address 0",
                     "offset_int": "0x00B0",
                     "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
                 },
                 {
-                    "id": "field0B4",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS13",
-                    "description": "Boot Image Base Address 13",
+                    "id": "Reserved000B4",
+                    "name": "Reserved 0x000B4",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00B4",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field0B8",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS14",
-                    "description": "Boot Image Base Address 14",
+                    "id": "Reserved000B8",
+                    "name": "Reserved 0x000B8",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00B8",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
-                    "id": "field0BC",
-                    "name": "BOOT_IMAGE_BASE_ADDRESS15",
-                    "description": "Boot Image Base Address 15",
+                    "id": "Reserved000BC",
+                    "name": "Reserved 0x000BC",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00BC",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
         {
             "group": {
-                "name": "Block 000C0-000CF",
-                "description": "Block 000C0-000CF"
+                "name": "Reserved 000C0-000CF",
+                "description": "Reserved 000C0-000CF"
             },
             "registers": [
                 {
@@ -1019,7 +1019,7 @@
                     "offset_int": "0x00C0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000C4",
@@ -1028,7 +1028,7 @@
                     "offset_int": "0x00C4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000C8",
@@ -1037,7 +1037,7 @@
                     "offset_int": "0x00C8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000CC",
@@ -1046,14 +1046,14 @@
                     "offset_int": "0x00CC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
         {
             "group": {
-                "name": "Block 000D0-000DF",
-                "description": "Block 000D0-000DF"
+                "name": "Reserved 000D0-000DF",
+                "description": "Reserved 000D0-000DF"
             },
             "registers": [
                 {
@@ -1063,7 +1063,7 @@
                     "offset_int": "0x00D0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000D4",
@@ -1072,7 +1072,7 @@
                     "offset_int": "0x00D4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000D8",
@@ -1081,7 +1081,7 @@
                     "offset_int": "0x00D8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000DC",
@@ -1090,14 +1090,14 @@
                     "offset_int": "0x00DC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
         {
             "group": {
-                "name": "Block 000E0-000EF",
-                "description": "Block 000E0-000EF"
+                "name": "Reserved 000E0-000EF",
+                "description": "Reserved 000E0-000EF"
             },
             "registers": [
                 {
@@ -1107,7 +1107,7 @@
                     "offset_int": "0x00E0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000E4",
@@ -1116,7 +1116,7 @@
                     "offset_int": "0x00E4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000E8",
@@ -1125,7 +1125,7 @@
                     "offset_int": "0x00E8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000EC",
@@ -1134,14 +1134,14 @@
                     "offset_int": "0x00EC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
         {
             "group": {
-                "name": "Block 000F0-000FF",
-                "description": "Block 000F0-000FF"
+                "name": "Reserved 000F0-000FF",
+                "description": "Reserved 000F0-000FF"
             },
             "registers": [
                 {
@@ -1151,7 +1151,7 @@
                     "offset_int": "0x00F0",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000F4",
@@ -1160,7 +1160,7 @@
                     "offset_int": "0x00F4",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000F8",
@@ -1169,7 +1169,7 @@
                     "offset_int": "0x00F8",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved000FC",
@@ -1178,7 +1178,7 @@
                     "offset_int": "0x00FC",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 }
             ]
         },
@@ -1204,14 +1204,14 @@
                             "description": "LPUART1 peripheral for ISP",
                             "values": [
                                 {
-                                    "name": "LPUART1_DISABLED",
+                                    "name": "DISABLED",
                                     "value": 0,
                                     "description": "LPUART1 disabled"
                                 },
                                 {
-                                    "name": "LUPART1_ENABLED",
+                                    "name": "ENABLED",
                                     "value": 1,
-                                    "description": "LUPART1 enabled"
+                                    "description": "LPUART1 enabled"
                                 }
                             ]
                         },
@@ -1222,12 +1222,12 @@
                             "description": "LPI2C1 peripheral for ISP",
                             "values": [
                                 {
-                                    "name": "LPI2C1_DISABLED",
+                                    "name": "DISABLED",
                                     "value": 0,
                                     "description": "LPI2C1 disabled"
                                 },
                                 {
-                                    "name": "LPI2C1_ENABLED",
+                                    "name": "ENABLED",
                                     "value": 1,
                                     "description": "LPI2C1 enabled"
                                 }
@@ -1240,12 +1240,12 @@
                             "description": "LPSPI1 peripheral for ISP",
                             "values": [
                                 {
-                                    "name": "LPSPI1_DISABLED",
+                                    "name": "DISABLED",
                                     "value": 0,
                                     "description": "LPSPI1 disabled"
                                 },
                                 {
-                                    "name": "LPSPI1_ENABLED",
+                                    "name": "ENABLED",
                                     "value": 1,
                                     "description": "LPSPI1 enabled"
                                 }
@@ -1258,14 +1258,14 @@
                             "description": "CAN peripheral for ISP",
                             "values": [
                                 {
-                                    "name": "CAN_DISABLED",
+                                    "name": "DISABLED",
                                     "value": 0,
-                                    "description": "CAN disabled"
+                                    "description": "CAN0 disabled"
                                 },
                                 {
-                                    "name": "CAN_ENABLED",
+                                    "name": "ENABLED",
                                     "value": 1,
-                                    "description": "CAN enabled"
+                                    "description": "CAN0 enabled"
                                 }
                             ]
                         },
@@ -1281,13 +1281,13 @@
                     "offset_int": "0x0101",
                     "is_reserved": true,
                     "default_value_int": "0x00FFFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 24
                 },
                 {
                     "id": "field104",
                     "name": "PERIPHERAL_DETECTION_TIMEOUT",
-                    "description": "Peripheral Detection Timeout",
+                    "description": "Peripheral Detection Timeout in milliseconds for active peripheral detection",
                     "offset_int": "0x0104",
                     "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
@@ -1300,7 +1300,7 @@
                     "offset_int": "0x0106",
                     "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
@@ -1313,27 +1313,29 @@
                     "reg_width": 8
                 },
                 {
-                    "id": "field109",
-                    "name": "CAN_CONFIG_1",
-                    "description": "CAN config 1",
+                    "id": "Reserved00109",
+                    "name": "Reserved 0x00109",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x0109",
-                    "default_value_int": "0x00FF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "is_reserved": true,
+                    "default_value_int": "0xFF",
+                    "individual_write_lock": "none",
                     "reg_width": 8
                 },
                 {
-                    "id": "field10A",
-                    "name": "CAN_CONFIG_2",
-                    "description": "CAN config 2",
+                    "id": "Reserved0010A",
+                    "name": "Reserved 0x0010A",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x010A",
+                    "is_reserved": true,
                     "default_value_int": "0xFFFF",
-                    "individual_write_lock": "implicit_16bytes",
+                    "individual_write_lock": "none",
                     "reg_width": 16
                 },
                 {
                     "id": "field10C",
                     "name": "CANTxID",
-                    "description": "Field.",
+                    "description": "TxID field.",
                     "offset_int": "0x010C",
                     "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
@@ -1342,7 +1344,7 @@
                 {
                     "id": "field10E",
                     "name": "CANRxID",
-                    "description": "Field.",
+                    "description": "RxID field.",
                     "offset_int": "0x010E",
                     "default_value_int": "0xFFFF",
                     "individual_write_lock": "implicit_16bytes",
@@ -1358,8 +1360,8 @@
             "registers": [
                 {
                     "id": "field110",
-                    "name": "SSS_LOADABLE_FW_ENTRY_ADDRESS",
-                    "description": "SSS_Loadable_FW_Entry_Address",
+                    "name": "ELE_LOADABLE_FW_ENTRY_ADDRESS",
+                    "description": "ELE loadable FW resides address",
                     "offset_int": "0x0110",
                     "default_value_int": "0xFFFFFFFF",
                     "individual_write_lock": "implicit_16bytes"
@@ -1371,7 +1373,7 @@
                     "offset_int": "0x0114",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved00118",
@@ -1380,7 +1382,7 @@
                     "offset_int": "0x0118",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
                 },
                 {
                     "id": "Reserved0011C",
@@ -1389,7 +1391,379 @@
                     "offset_int": "0x011C",
                     "is_reserved": true,
                     "default_value_int": "0xFFFFFFFF",
-                    "individual_write_lock": "implicit_16bytes"
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00120-0012F",
+                "description": "Block 00120-0012F"
+            },
+            "registers": [
+                {
+                    "id": "field120",
+                    "name": "SECURE_HASH_BASED_IMAGE_VERIFICATION",
+                    "description": "Secure Hash based image verification feature (for faster subsequent boot)",
+                    "offset_int": "0x0120",
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "field120-bits0-31",
+                            "name": "SECURE_HASH_BASED_IMAGE_VERIFICATION_CONFIG",
+                            "description": "Secure Hash based image verification feature",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 4294967295,
+                                    "description": "Disabled (ECDSA based verification will be used)."
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1213415752,
+                                    "description": "Enabled ('HASH')."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00124",
+                    "name": "Reserved 0x00124",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0124",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00128",
+                    "name": "Reserved 0x00128",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0128",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0012C",
+                    "name": "Reserved 0x0012C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x012C",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00130-0013F",
+                "description": "Block 00130-0013F"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00130",
+                    "name": "Reserved 0x00130",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0130",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00134",
+                    "name": "Reserved 0x00134",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0134",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00138",
+                    "name": "Reserved 0x00138",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0138",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0013C",
+                    "name": "Reserved 0x0013C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x013C",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Block 00140-0014F",
+                "description": "Block 00140-0014F"
+            },
+            "registers": [
+                {
+                    "id": "field140",
+                    "name": "GO_ISP_MODE_OPTIONS",
+                    "description": "If enter ISP mode, the log will be recorded on the corresponding pin when this bit and GoIspModeFailAlertPin are enable.",
+                    "offset_int": "0x0140",
+                    "default_value_int": "0xFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "field140-bit1",
+                            "name": "SECURE_BOOT_OPTION",
+                            "description": "Secure Boot option",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Secure Boot option is enabled"
+                                },
+                                {
+                                    "name": "DISABLED",
+                                    "value": 1,
+                                    "description": "Secure Boot option is disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        }
+                    ]
+                },
+                {
+                    "id": "field141",
+                    "name": "GO_ISP_MODE_FAIL_ALERT_PIN",
+                    "description": "Go ISP mode fail alert pin",
+                    "offset_int": "0x0141",
+                    "default_value_int": "0xFF",
+                    "individual_write_lock": "implicit_16bytes",
+                    "reg_width": 8,
+                    "bitfields": [
+                        {
+                            "width": 5,
+                            "id": "field141-bits0-4",
+                            "name": "PIN_SELECTION",
+                            "description": "Pin selection",
+                            "values": [
+                                {
+                                    "name": "PIN_0",
+                                    "value": 0,
+                                    "description": "Pin 0"
+                                },
+                                {
+                                    "name": "PIN_1",
+                                    "value": 1,
+                                    "description": "Pin 1"
+                                },
+                                {
+                                    "name": "PIN_2",
+                                    "value": 2,
+                                    "description": "Pin 2"
+                                },
+                                {
+                                    "name": "PIN_3",
+                                    "value": 3,
+                                    "description": "Pin 3"
+                                },
+                                {
+                                    "name": "PIN_4",
+                                    "value": 4,
+                                    "description": "Pin 4"
+                                },
+                                {
+                                    "name": "PIN_5",
+                                    "value": 5,
+                                    "description": "Pin 5"
+                                },
+                                {
+                                    "name": "PIN_6",
+                                    "value": 6,
+                                    "description": "Pin 6"
+                                },
+                                {
+                                    "name": "PIN_7",
+                                    "value": 7,
+                                    "description": "Pin 7"
+                                },
+                                {
+                                    "name": "PIN_8",
+                                    "value": 8,
+                                    "description": "Pin 8"
+                                },
+                                {
+                                    "name": "PIN_9",
+                                    "value": 9,
+                                    "description": "Pin 9"
+                                },
+                                {
+                                    "name": "PIN_10",
+                                    "value": 10,
+                                    "description": "Pin 10"
+                                },
+                                {
+                                    "name": "PIN_11",
+                                    "value": 11,
+                                    "description": "Pin 11"
+                                },
+                                {
+                                    "name": "PIN_12",
+                                    "value": 12,
+                                    "description": "Pin 12"
+                                },
+                                {
+                                    "name": "PIN_13",
+                                    "value": 13,
+                                    "description": "Pin 13"
+                                },
+                                {
+                                    "name": "PIN_14",
+                                    "value": 14,
+                                    "description": "Pin 14"
+                                },
+                                {
+                                    "name": "PIN_15",
+                                    "value": 15,
+                                    "description": "Pin 15"
+                                },
+                                {
+                                    "name": "PIN_16",
+                                    "value": 16,
+                                    "description": "Pin 16"
+                                },
+                                {
+                                    "name": "PIN_17",
+                                    "value": 17,
+                                    "description": "Pin 17"
+                                },
+                                {
+                                    "name": "PIN_18",
+                                    "value": 18,
+                                    "description": "Pin 18"
+                                },
+                                {
+                                    "name": "PIN_19",
+                                    "value": 19,
+                                    "description": "Pin 19"
+                                },
+                                {
+                                    "name": "PIN_20",
+                                    "value": 20,
+                                    "description": "Pin 20"
+                                },
+                                {
+                                    "name": "PIN_21",
+                                    "value": 21,
+                                    "description": "Pin 21"
+                                },
+                                {
+                                    "name": "PIN_22",
+                                    "value": 22,
+                                    "description": "Pin 22"
+                                },
+                                {
+                                    "name": "PIN_23",
+                                    "value": 23,
+                                    "description": "Pin 23"
+                                },
+                                {
+                                    "name": "PIN_24",
+                                    "value": 24,
+                                    "description": "Pin 24"
+                                },
+                                {
+                                    "name": "PIN_25",
+                                    "value": 25,
+                                    "description": "Pin 25"
+                                },
+                                {
+                                    "name": "PIN_26",
+                                    "value": 26,
+                                    "description": "Pin 26"
+                                },
+                                {
+                                    "name": "PIN_27",
+                                    "value": 27,
+                                    "description": "Pin 27"
+                                },
+                                {
+                                    "name": "PIN_28",
+                                    "value": 28,
+                                    "description": "Pin 28"
+                                },
+                                {
+                                    "name": "PIN_29",
+                                    "value": 29,
+                                    "description": "Pin 29"
+                                },
+                                {
+                                    "name": "PIN_30",
+                                    "value": 30,
+                                    "description": "Pin 30"
+                                },
+                                {
+                                    "name": "PIN_31",
+                                    "value": 31,
+                                    "description": "Pin 31"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "field141-bits5-7",
+                            "name": "PORT_SELECTION",
+                            "description": "Port Selection",
+                            "values": [
+                                {
+                                    "name": "PORTA",
+                                    "value": 0,
+                                    "description": "Port A"
+                                },
+                                {
+                                    "name": "PORTB",
+                                    "value": 1,
+                                    "description": "Port B"
+                                },
+                                {
+                                    "name": "PORTC",
+                                    "value": 2,
+                                    "description": "Port C"
+                                },
+                                {
+                                    "name": "PORTD",
+                                    "value": 3,
+                                    "description": "Port D"
+                                },
+                                {
+                                    "name": "PORTE",
+                                    "value": 4,
+                                    "description": "Port E"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00142",
+                    "name": "Reserved 0x00142",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00142",
+                    "is_reserved": true,
+                    "default_value_int": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "individual_write_lock": "none",
+                    "reg_width": 112
                 }
             ]
         }

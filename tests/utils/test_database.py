@@ -481,17 +481,21 @@ def test_restricted_data_devices():
     for device in os.listdir(os.path.join(restricted_data, "devices")):
         assert db.devices.get(device)
 
+
 ALLOWED_PURPOSES = [
-        "32-bit DSC Series",
-        "LPC800 Series",
-        "MCX Series",
-        "Wireless Connectivity MCUs",
-        "i.MX Application Processors",
-        "Wireless Power",
-        "LPC5500 Series",
-        "i.MX RT Crossover MCUs",
-    ]
+    "32-bit DSC Series",
+    "LPC800 Series",
+    "MCX Series",
+    "Wireless Connectivity MCUs",
+    "i.MX Application Processors",
+    "Wireless Power",
+    "LPC5500 Series",
+    "i.MX RT Crossover MCUs",
+]
+
+
 def test_processor_purpose():
     for dev, quick_info in DatabaseManager().quick_info.devices.devices.items():
-        assert quick_info.info.purpose in ALLOWED_PURPOSES , f"Device '{dev}' purpose {quick_info.info.purpose} is not amongst allowed purposes: {ALLOWED_PURPOSES}"
-
+        assert (
+            quick_info.info.purpose in ALLOWED_PURPOSES
+        ), f"Device '{dev}' purpose {quick_info.info.purpose} is not amongst allowed purposes: {ALLOWED_PURPOSES}"

@@ -78,6 +78,7 @@ def test_nxpdebugmbox_ispmode_exe(cli_runner: CliRunner):
     cmd = f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv cmd -f lpc55s69 ispmode"
     cli_runner.invoke(main, cmd.split())
 
+
 def test_nxpdebugmbox_famode_exe(cli_runner: CliRunner):
     """Test for famode command of nxp debug mailbox."""
     cmd = f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} -vv cmd -f lpc55s69 famode"

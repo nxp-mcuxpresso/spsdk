@@ -135,9 +135,9 @@ class JsonSchemaValidator:
             for file_path in glob.glob(os.path.join(root, "fuses*.json")):
                 fuses_files.append(file_path)
 
-            # Find tz_*.json files
-            for file_path in glob.glob(os.path.join(root, "tz*.json")):
-                trustzone_files.append(file_path)
+            # # Find tz_*.json files
+            # for file_path in glob.glob(os.path.join(root, "tz*.json")):
+            #     trustzone_files.append(file_path)
 
             # Find other *.json files (excluding the schema files themselves)
             for file_path in glob.glob(os.path.join(root, "*.json")):

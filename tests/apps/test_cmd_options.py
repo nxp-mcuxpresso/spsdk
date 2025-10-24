@@ -18,7 +18,10 @@ from spsdk.apps.spsdk_apps import main as spsdk_main
 
 
 def gather(
-    group: Union[click.Group, click.Command], func: Callable, command_name: str = "", excluded_commands: List[str] = None
+    group: Union[click.Group, click.Command],
+    func: Callable,
+    command_name: str = "",
+    excluded_commands: List[str] = None,
 ) -> Iterator[bool]:
     if isinstance(group, click.Group):
         for name in sorted(group.commands):
@@ -38,7 +41,11 @@ def test_get_template_has_force():
             logging.debug(f"Checking command: {command_name} -> {result}")
             yield result
 
-    results = gather(group=spsdk_main, func=get_template_has_force, excluded_commands=["blhost", "sdphost", "sdpshost", "dk6prog"])
+    results = gather(
+        group=spsdk_main,
+        func=get_template_has_force,
+        excluded_commands=["blhost", "sdphost", "sdpshost", "dk6prog"],
+    )
     assert all(results)
 
 
@@ -53,7 +60,11 @@ def test_templates_to_dirs():
             logging.debug(f"Checking command: {command_name} -> {result}")
             yield result
 
-    results = gather(group=spsdk_main, func=templates_to_dirs, excluded_commands=["blhost", "sdphost", "sdpshost", "dk6prog"])
+    results = gather(
+        group=spsdk_main,
+        func=templates_to_dirs,
+        excluded_commands=["blhost", "sdphost", "sdpshost", "dk6prog"],
+    )
     assert all(results)
 
 
@@ -73,13 +84,15 @@ def get_option_names(command: click.Command) -> Dict[str, List[click.Option]]:
             # Get all short and long option names
             for opt in param.opts:
                 # Extract just the option name without dashes
-                clean_opt = opt.lstrip('-')
+                clean_opt = opt.lstrip("-")
                 option_map[clean_opt].append(param)
 
     return option_map
 
+
 def test_no_conflicting_options():
     """Test that there are no conflicting options in any command."""
+
     def conflicting_options(group: click.Command, command_name: str):
         conflicts = []
 
@@ -88,15 +101,12 @@ def test_no_conflicting_options():
         # Find options with multiple definitions
         for opt_name, options in option_map.items():
             if len(options) > 1:
-                option_details = [
-                    f"{opt.name} ({', '.join(opt.opts)})"
-                    for opt in options
-                ]
+                option_details = [f"{opt.name} ({', '.join(opt.opts)})" for opt in options]
                 conflicts.append(
                     f"Command '{command_name}' has conflicting option '{opt_name}' used by: {', '.join(option_details)}"
                 )
         yield conflicts
+
     conflicts = list(gather(group=spsdk_main, func=conflicting_options))
     conflicts = [item for sublist in conflicts for item in sublist]
     assert not conflicts, f"Found {len(conflicts)} option conflicts"
-

@@ -48,6 +48,16 @@ from spsdk.utils.family import FamilyRevision, get_families
 from spsdk.utils.misc import Endianness, load_hex_string
 
 
+def get_property_warnings(family: FamilyRevision) -> dict:
+    """Get property warnings configuration for the given family."""
+    try:
+        db = DatabaseManager().db
+        features = db.get_device_features(family.name, family.revision)
+        return features.get_dict("blhost", "property_warnings")
+    except SPSDKError:
+        return {}
+
+
 @click.group(name="blhost", cls=CommandsTreeGroup)
 @spsdk_mboot_interface()
 @spsdk_use_json_option
@@ -746,6 +756,14 @@ def set_property(
     Note: Not all properties can be set on all devices.
     """
     property_tag_int = parse_property_tag(property_tag, family)
+    if family:
+        warnings_config = get_property_warnings(family)
+        if property_tag_int in warnings_config:
+            warning = warnings_config[property_tag_int]
+            if value == warning.get("value"):
+                message = warning["message"]
+                click.secho(f"{message}", fg="yellow", err=True)
+
     with McuBoot(ctx.obj["interface"], family=family) as mboot:
         mboot.set_property(prop_tag=property_tag_int, value=value)
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])

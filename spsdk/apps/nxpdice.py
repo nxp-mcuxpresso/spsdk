@@ -59,7 +59,9 @@ def service_options(options: FC) -> FC:
         "--database",
         type=click.Path(dir_okay=False),
         help="Path to local database instead of service-url.",
-    )(options)
+    )(
+        options  # type: ignore[arg-type]
+    )
     options = optgroup.option(
         "-su",
         "--service-url",

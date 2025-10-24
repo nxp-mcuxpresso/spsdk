@@ -545,6 +545,7 @@ def test_load_program_ifr_cmd(config, value, raise_error):
         cmd = CmdProgIfr.load_from_config(Config(config))
         assert cmd[0].data == value
 
+
 def test_cmd_write_ifr():
     """Test address, data, ifr_type, info value, size after export and parsing of CmdWriteIfr command."""
     cmd = CmdWriteIfr(address=100, data=bytes([0] * 100), ifr_type=CmdWriteIfr.WriteIfrType.CFPA)
@@ -562,9 +563,12 @@ def test_cmd_write_ifr():
     assert cmd.data == cmd_parsed.data
     assert cmd.ifr_type == cmd_parsed.ifr_type
 
+
 def test_cmd_write_ifr_cfpa_and_cmpa():
     """Test WriteIFR command with CFPA_AND_CMPA type."""
-    cmd = CmdWriteIfr(address=100, data=bytes([0] * 100), ifr_type=CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA)
+    cmd = CmdWriteIfr(
+        address=100, data=bytes([0] * 100), ifr_type=CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA
+    )
     assert cmd.address == 100
     assert cmd.data == bytes([0] * 100)
     assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA
@@ -588,24 +592,18 @@ def test_parse_invalid_cmd_write_ifr_cmd_tag():
 def test_cmd_write_ifr_load_from_config():
     """Test loading CmdWriteIfr from configuration."""
     # Test with direct value
-    config = Config({
-        "type": "CFPA",
-        "value": "0x12345678"
-    })
+    config = Config({"type": "CFPA", "value": "0x12345678"})
     cmd = CmdWriteIfr.load_from_config(config)[0]
     assert cmd.address == 0x0
     assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA
-    assert cmd.data == b'\x78\x56\x34\x12'
+    assert cmd.data == b"\x78\x56\x34\x12"
 
     # Test with values list
-    config = Config({
-        "type": "CFPA_AND_CMPA",
-        "values": "0x11111111,0x22222222,0x33333333"
-    })
+    config = Config({"type": "CFPA_AND_CMPA", "values": "0x11111111,0x22222222,0x33333333"})
     cmd = CmdWriteIfr.load_from_config(config)[0]
     assert cmd.address == 0x0
     assert cmd.ifr_type == CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA
-    assert cmd.data == b'\x11\x11\x11\x11\x22\x22\x22\x22\x33\x33\x33\x33'
+    assert cmd.data == b"\x11\x11\x11\x11\x22\x22\x22\x22\x33\x33\x33\x33"
 
 
 def test_cmd_write_ifr_get_config_context(tmpdir):
@@ -635,7 +633,9 @@ def test_cmd_write_ifr_get_config_context(tmpdir):
 def test_parse_command_write_ifr():
     """Test parse_command function with WriteIFR command."""
     # Create binary data for a WriteIFR command
-    cmd = CmdWriteIfr(address=0x4000, data=bytes([0xAA] * 16), ifr_type=CmdWriteIfr.WriteIfrType.CFPA)
+    cmd = CmdWriteIfr(
+        address=0x4000, data=bytes([0xAA] * 16), ifr_type=CmdWriteIfr.WriteIfrType.CFPA
+    )
     data = cmd.export()
 
     # Parse the command
@@ -651,23 +651,16 @@ def test_parse_command_write_ifr():
 def test_cmd_write_ifr_invalid_config():
     """Test CmdWriteIfr with invalid configuration."""
     # Missing type
-    config = Config({
-        "value": "0x12345678"
-    })
+    config = Config({"value": "0x12345678"})
     with pytest.raises(KeyError):
         CmdWriteIfr.load_from_config(config)
 
     # Invalid type
-    config = Config({
-        "type": "INVALID_TYPE",
-        "value": "0x12345678"
-    })
+    config = Config({"type": "INVALID_TYPE", "value": "0x12345678"})
     with pytest.raises(KeyError):
         CmdWriteIfr.load_from_config(config)
 
     # Missing data source
-    config = Config({
-        "type": "CFPA"
-    })
+    config = Config({"type": "CFPA"})
     with pytest.raises(SPSDKError):
         CmdWriteIfr.load_from_config(config)

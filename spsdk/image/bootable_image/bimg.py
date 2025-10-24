@@ -545,7 +545,7 @@ class BootableImage(FeatureBaseClass):
                     "Availability", VerifierResult.WARNING, "The segment is excluded"
                 )
             else:
-                seg_ver.add_record_range("Offset in image", self.get_segment_offset(seg))
+                seg_ver.add_record_range("Offset in image", hex(self.get_segment_offset(seg)))
                 seg_ver.add_child(seg.verify())
 
             ret.add_child(seg_ver)

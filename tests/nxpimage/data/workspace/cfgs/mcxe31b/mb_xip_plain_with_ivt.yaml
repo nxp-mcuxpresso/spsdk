@@ -1,0 +1,49 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxe31b, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe31b
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <signed, plain>
+outputImageAuthenticationType: plain
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: .\workspace\output_images\mcxe31b\mb_xip_plain.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: .\workspace\input_images\mcxe31b_app_red_blinky_with_ivt.bin
+# ======================================================================================================================
+#                                                 == HSE IVT Settings ==
+#                                   HSE Interrupt Vector Table configuration settings
+# ======================================================================================================================
+# -----------------------------------------===== APP SWT Init [Optional] =====------------------------------------------
+# Description: Application Software Tamper initialization
+appSwtInit: false
+# -----------------------------------===== Application Start Address [Required] =====-----------------------------------
+# Description: Start address for CM7_0 core application
+appStartAddress: '0x00401000'
+# --------------------------------===== Lifecycle Configuration Address [Optional] =====--------------------------------
+# Description: Address of lifecycle configuration data
+lcConfigAddr: '0x0'
+# -------------------------------------===== HSE Firmware Address [Optional] =====--------------------------------------
+# Description: Address of HSE firmware
+hseFwAddr: '0x0'

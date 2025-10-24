@@ -107,7 +107,9 @@ def test_int_value_fmt():
     value = IntValue(prop=PropertyTag.FLASH_START_ADDRESS, raw_values=[0], str_format="int32")
     assert isinstance(value, IntValue)
     assert value.to_str() == "0"
-    value = IntValue(prop=PropertyTag.FLASH_START_ADDRESS, raw_values=[0xFFFFFFFF], str_format="int32")
+    value = IntValue(
+        prop=PropertyTag.FLASH_START_ADDRESS, raw_values=[0xFFFFFFFF], str_format="int32"
+    )
     assert isinstance(value, IntValue)
     assert value.to_str() == "-1"
 
@@ -195,20 +197,32 @@ def test_irq_notifier_pin_value():
 
 
 def test_external_memory_attributes():
-    value = ExternalMemoryAttributesValue(prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[2, 3, 4, 5, 6, 7])
+    value = ExternalMemoryAttributesValue(
+        prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[2, 3, 4, 5, 6, 7]
+    )
     assert value.to_str() == "Total Size:    4.0 kiB"
-    value = ExternalMemoryAttributesValue(prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[1, 3, 4, 5, 6, 7])
+    value = ExternalMemoryAttributesValue(
+        prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[1, 3, 4, 5, 6, 7]
+    )
     assert value.to_str() == "Start Address: 0x00000003"
-    value = ExternalMemoryAttributesValue(prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[4, 3, 4, 5, 6, 7])
+    value = ExternalMemoryAttributesValue(
+        prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[4, 3, 4, 5, 6, 7]
+    )
     assert value.to_str() == "Page Size:     5 B"
-    value = ExternalMemoryAttributesValue(prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[8, 3, 4, 5, 6, 7])
+    value = ExternalMemoryAttributesValue(
+        prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[8, 3, 4, 5, 6, 7]
+    )
     assert value.to_str() == "Sector Size:   6 B"
-    value = ExternalMemoryAttributesValue(prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[16, 3, 4, 5, 6, 7])
+    value = ExternalMemoryAttributesValue(
+        prop=PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, raw_values=[16, 3, 4, 5, 6, 7]
+    )
     assert value.to_str() == "Block Size:    7 B"
 
 
 def test_fuse_locked_status():
-    value = FuseLockedStatus(prop=PropertyTag.FUSE_LOCKED_STATUS, raw_values=[0x4, 0x1E17F00F, 0x30000, 65535, 0])
+    value = FuseLockedStatus(
+        prop=PropertyTag.FUSE_LOCKED_STATUS, raw_values=[0x4, 0x1E17F00F, 0x30000, 65535, 0]
+    )
     assert "FUSE000: UNLOCKED" in value.to_str()
     assert "FUSE084: LOCKED" in value.to_str()
     assert "FUSE143: UNLOCKED" in value.to_str()
@@ -216,6 +230,7 @@ def test_fuse_locked_status():
     fuses = value.get_fuses()
     assert not fuses[0].locked
     assert fuses[84].locked
+
 
 def test_get_properties_no_family():
     """Test get_properties without specifying a family."""
@@ -231,7 +246,12 @@ def test_get_properties_with_family_with_overrides():
 
     family = FamilyRevision("kw45b41z8")
     properties = get_properties(family)
-    overwritten = {0xA:PropertyTag.VERIFY_ERASE, 0x14: PropertyTag.BOOT_STATUS_REGISTER, 0x15: PropertyTag.FIRMWARE_VERSION, 0x16: PropertyTag.FUSE_PROGRAM_VOLTAGE}
+    overwritten = {
+        0xA: PropertyTag.VERIFY_ERASE,
+        0x14: PropertyTag.BOOT_STATUS_REGISTER,
+        0x15: PropertyTag.FIRMWARE_VERSION,
+        0x16: PropertyTag.FUSE_PROGRAM_VOLTAGE,
+    }
     for idx, prop in overwritten.items():
         assert properties[idx] == prop
     for idx, prop in COMMON_PROPERTY_INDEXES.items():

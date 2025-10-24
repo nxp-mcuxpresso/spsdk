@@ -10,6 +10,7 @@
 import json
 import logging
 import uuid
+from enum import Enum
 from typing import Optional
 
 from typing_extensions import Self
@@ -19,6 +20,13 @@ from spsdk.utils.http_client import HTTPClientBase, SPSDKHTTPClientError
 from spsdk.utils.misc import find_file
 
 logger = logging.getLogger(__name__)
+
+
+class CleanMethod(str, Enum):
+    """Various types of Cleanup methods."""
+
+    ERASE_CMPA = "erase_cmpa"
+    NONE = "none"
 
 
 class EL2GOApiResponse:

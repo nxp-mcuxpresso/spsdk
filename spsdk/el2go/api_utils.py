@@ -16,8 +16,7 @@ import time
 from enum import Enum
 from typing import Any, Literal, Optional, Union
 
-from spsdk.el2go.client import EL2GOApiResponse, EL2GOClient, SPSDKHTTPClientError
-from spsdk.el2go.interface import EL2GOInterfaceHandler
+from spsdk.el2go.client import CleanMethod, EL2GOApiResponse, EL2GOClient, SPSDKHTTPClientError
 from spsdk.el2go.secure_objects import SecureObjects
 from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation
 from spsdk.fuses.fuse_registers import FuseRegister
@@ -96,13 +95,6 @@ class ProvisioningMethod(str, Enum):
     FW_USER_CONFIG = "fw_user_config"
     FW_DATA_SPLIT = "fw_data_split"
     OEM_APP = "oem_app"
-
-
-class CleanMethod(str, Enum):
-    """Various types of Cleanup methods."""
-
-    ERASE_CMPA = "erase_cmpa"
-    NONE = "none"
 
 
 class EL2GODomain(str, Enum):
@@ -637,25 +629,6 @@ class EL2GOTPClient(EL2GOClient):
     def use_oem_app(self) -> bool:
         """Use OEM APP TP method."""
         return self.prov_method == ProvisioningMethod.OEM_APP
-
-    def run_cleanup_method(self, interface: EL2GOInterfaceHandler) -> None:
-        """Run cleanup method."""
-        if self.clean_method == CleanMethod.NONE:
-            logger.info(f"Device {self.family} doesn't have a registered cleanup method")
-            return
-        if self.clean_method == CleanMethod.ERASE_CMPA:
-            # don't use top-level import to save time in production, where this functionality is not required
-            from spsdk.pfr.pfr import CMPA
-
-            cmpa = CMPA(family=self.family)
-            cmpa.set_config(Config())
-            cmpa_data = cmpa.export(draw=False)
-            cmpa_address = self.db.get_int(DatabaseManager.PFR, ["cmpa", "address"])
-
-            interface.write_memory(address=cmpa_address, data=cmpa_data)
-            return
-
-        raise SPSDKUnsupportedOperation(f"Unsupported cleanup method {self.clean_method}")
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:  # type: ignore[override]  # pylint: disable=arguments-differ

@@ -86,7 +86,7 @@ from spsdk.utils.devicedescription import (
     flag_value="lpcusbsio",
     help="Search only for USBSIO devices",
 )
-@optgroup.option(
+@optgroup.option(  # type: ignore[arg-type]
     "--uuu",
     "scope",
     flag_value="uuu",

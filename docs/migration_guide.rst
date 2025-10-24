@@ -62,6 +62,14 @@ nxpdice
 ^^^^^^^
 * In ``nxpdice``, the configuration data values have been simplified and shortened for better clarity and readability. If you were using the full names in your configurations, you'll need to update them to the new shortened versions.
 
+el2go-host
+^^^^^^^^^^
+* Commands are now separated into distinct groups with clearer organization. Subcommands groups are as follows:
+    * ``dev`` - Device-based provisioning flow
+    * ``prod`` - Production-based provisioning flow
+    * ``utils`` - Generic utilities not bound to any particular provisioning flow
+* In general old provisioning commands were targeting the device-based provisioning flow, thus they have been moved to ``dev`` group. E.g.: old ``el2go-host provision-objects`` is now ``el2go-host dev provision-objects``
+
 Removed Applications
 --------------------
 

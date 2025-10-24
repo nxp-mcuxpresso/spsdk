@@ -19,3 +19,6 @@ info:
       start_int: 0x200_00000
       size_int: 0x10000
       external: false
+features:
+  pfr:
+      address: 0x0003_F000

@@ -275,3 +275,57 @@ def sm4_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] 
     cipher = Cipher(algorithms.SM4(key), modes.CBC(init_vector))
     dec = cipher.decryptor()
     return dec.update(encrypted_data) + dec.finalize()
+
+
+def aes_gcm_encrypt(
+    key: bytes, plain_data: bytes, init_vector: Optional[bytes] = None, associated_data: bytes = b""
+) -> bytes:
+    """Encrypt plain data with AES in GCM mode (Galois/Counter Mode).
+
+    :param key: The key for data encryption
+    :param plain_data: Input data
+    :param init_vector: Initialization vector (nonce) - typically 12 bytes
+    :param associated_data: Associated data - Unencrypted but authenticated
+    :return: Encrypted data with authentication tag appended
+    :raises SPSDKError: Invalid Key or IV
+    """
+    if len(key) * 8 not in algorithms.AES.key_sizes:
+        raise SPSDKError(
+            "The key must be a valid AES key length: "
+            f"{', '.join([str(k) for k in algorithms.AES.key_sizes])}"
+        )
+    init_vector = init_vector or bytes(12)
+    if len(init_vector) != 12:
+        raise SPSDKError("The initial vector length must be 12 Bytes long")
+
+    aesgcm = aead.AESGCM(key)
+    return aesgcm.encrypt(init_vector, plain_data, associated_data)
+
+
+def aes_gcm_decrypt(
+    key: bytes,
+    encrypted_data: bytes,
+    init_vector: bytes,
+    associated_data: bytes = b"",
+) -> bytes:
+    """Decrypt encrypted data with AES in GCM mode (Galois/Counter Mode).
+
+    :param key: The key for data decryption
+    :param encrypted_data: Input data with authentication tag appended
+    :param init_vector: Initialization vector (nonce) - typically 12 bytes
+    :param associated_data: Associated data - Unencrypted but authenticated
+    :return: Decrypted data
+    :raises SPSDKError: Invalid Key, IV, or authentication failure
+    """
+    if len(key) * 8 not in algorithms.AES.key_sizes:
+        raise SPSDKError(
+            "The key must be a valid AES key length: "
+            f"{', '.join([str(k) for k in algorithms.AES.key_sizes])}"
+        )
+    if len(init_vector) != 12:
+        raise SPSDKError("The initial vector length must be 12 Bytes long")
+    aesgcm = aead.AESGCM(key)
+    try:
+        return aesgcm.decrypt(init_vector, encrypted_data, associated_data)
+    except Exception as e:
+        raise SPSDKError(f"AES-GCM decryption failed: {str(e)}") from e

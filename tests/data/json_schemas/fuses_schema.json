@@ -3,7 +3,7 @@
   "$id": "https://mcuxpresso.nxp.com/secure_provisioning/fuses_schema.json",
   "title": "Schema for definition of processor fuses for Secure Provision Tool",
   "description": "Copyright NXP 2020-2025, Schema for definition of the fuse registers for Secure Provision Tool",
-
+  
   "definitions": {
     "fuse_register": {
       "$id": "#/definitions/fuse_register",
@@ -16,8 +16,8 @@
           "type": "string",
           "pattern":"^(0x[0-9a-fA-F]+|[0-9]+)$",
           "title": "Offset of the shadow register. `-1` if the fuse does not have shadow register.",
-          "default": "-1"
-        },
+          "default": "-1" 
+        }, 
         "lock": {
           "$id": "#/properties/register/lock",
           "type": "object",
@@ -57,8 +57,8 @@
       }
     }
   },
-
-
+  
+  
   "type": "object",
   "required": [
     "cpu", "groups"
@@ -92,7 +92,7 @@
         "properties": {
           "group": {
             "$ref": "localschema:processors_registers_schema_def_group_info.json"
-          },
+          },    
           "registers": {
             "$id": "#/properties/registers",
             "type": "array",
@@ -100,19 +100,7 @@
             "minItems": 1,
             "additionalItems": false,
             "items": {
-              "type": "object",
-              "allOf": [
-                {
-                  "$ref": "localschema:processors_registers_schema_def_abstractregister.json"
-                },
-                {
-                  "properties": {
-                  "name": {
-                    "maxLength": 40
-                    }
-                  }
-                }
-              ]
+              "$ref": "#/definitions/fuse_register"
             }
           }
         }

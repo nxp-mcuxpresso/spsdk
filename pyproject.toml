@@ -46,10 +46,9 @@ can = ["python-can<4.6,>=4.5"]
 jlink = ["spsdk-jlink<1,>=0.3.1"]
 lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
 pemicro = ["spsdk-pemicro<1,>=0.3.1"]
-# disabled until the support of Python 3.12 is fixed (https://github.com/pyauth/python-pkcs11/issues/165)
-# pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
+pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
 pqc = ["spsdk-pqc<1.0,>=0.6.1"]
-rblhost = ["pymboot-rs<0.2.0"]
+rblhost = ["pymboot-rs<0.3.0"]
 all = [
     "spsdk[examples]",
     "spsdk[dk6]",
@@ -58,6 +57,7 @@ all = [
     "spsdk[jlink]",
     "spsdk[lauterbach]",
     "spsdk[pemicro]",
+    "spsdk[pkcs11]",
     "spsdk[pqc]",
     "spsdk[rblhost]",
 ]

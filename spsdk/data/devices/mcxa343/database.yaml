@@ -60,7 +60,7 @@ features:
     sub_features: [cmpa]
     cmpa: # CMPA description
       erase_method: flash_erase
-      address: 0x0003_E000
+      address: 0x0001_F000
       size: 512
       reg_spec: pfr_cmpa.json
 

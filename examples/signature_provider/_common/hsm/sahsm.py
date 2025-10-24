@@ -76,7 +76,9 @@ def verifier(key_type: str, num: int) -> Response:
             response=f"Key {key_type} with index {num} not found", status=HTTPStatus.BAD_REQUEST
         )
 
-    public_key_bytes = bytes.fromhex(json_data.pop("public_key", request.args.get("public_key", "")))
+    public_key_bytes = bytes.fromhex(
+        json_data.pop("public_key", request.args.get("public_key", ""))
+    )
     try:
         request_public_key: PublicKey = PublicKeyEcc.parse(public_key_bytes)
     except SPSDKInvalidKeyType:

@@ -208,7 +208,7 @@ class SHEUpdate(ConfigBaseClass):
     def _get_ids_data(self) -> bytes:
         ids_bits = (
             Bits(uint=self.uid, length=120)
-            + Bits(uint=self.new_key_id, length=4)
+            + Bits(uint=self.new_key_id_x, length=4)
             + Bits(uint=self.auth_key_id, length=4)
         )
         return ids_bits.tobytes()
@@ -293,6 +293,14 @@ class SHEUpdate(ConfigBaseClass):
     def get_config(self, data_path: str = "./") -> Config:
         """Re-create configuration object."""
         raise NotImplementedError()
+
+    @property
+    def new_key_id_x(self) -> int:
+        """Convert new_key_id to key_id_x by extracting only the four lower bits.
+
+        :return: The corresponding key_id_x value with only the 4 lower bits
+        """
+        return self.new_key_id & 0x0F
 
 
 class SHEBootMac:

@@ -34,7 +34,6 @@ from spsdk.el2go.api_utils import EL2GOTPClient
 from spsdk.el2go.bulk import ServiceDB
 from spsdk.el2go.database import SecureObjectsDB
 from spsdk.el2go.interface import EL2GOInterfaceHandler
-from spsdk.el2go.secure_objects import SecureObjects
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
@@ -79,9 +78,7 @@ def run_provisioning_command(
     client = EL2GOTPClient.load_from_config(config)
 
     interface.run_provisioning(
-        tp_data_address=client.tp_data_address,
-        use_dispatch_fw=client.use_dispatch_fw,
-        prov_fw=client.prov_fw,
+        client=client,
         dry_run=dry_run,
     )
 
@@ -331,7 +328,7 @@ def prepare_device(
         secure_objects_file=secure_objects_file,
     )
 
-    _upload_data(client=client, interface=interface, secure_objects=prov_data, clean=clean)
+    interface.write_secure_objects(client=client, secure_objects=prov_data, clean=clean)
 
 
 @dev_group.command(name="provision-objects", no_args_is_help=True)
@@ -409,9 +406,7 @@ def provision_objects(
         clean=clean,
     )
 
-    interface.run_provisioning(
-        client.tp_data_address, client.use_dispatch_fw, client.prov_fw, dry_run
-    )
+    interface.run_provisioning(client=client, dry_run=dry_run)
 
 
 @dev_group.command(name="provision-device", no_args_is_help=True)
@@ -481,6 +476,7 @@ def provision_device(
         os.makedirs(workspace, exist_ok=True)
 
     client = EL2GOTPClient.load_from_config(config_data=config)
+    interface.prepare(client.loader)
     uuid = interface.get_uuid()
     if workspace:
         write_file(uuid, os.path.join(workspace, "uuid.txt"), mode="w")
@@ -493,18 +489,16 @@ def provision_device(
             mode="w",
         )
     secure_objects = client.serialize_provisionings(provisionings=provisionings)
-    _upload_data(
+
+    interface.write_secure_objects(
         client=client,
-        interface=interface,
         secure_objects=secure_objects,
         workspace=workspace,
         clean=clean,
     )
 
     interface.run_provisioning(
-        tp_data_address=client.tp_data_address,
-        use_dispatch_fw=client.use_dispatch_fw,
-        prov_fw=client.prov_fw,
+        client=client,
         dry_run=dry_run,
     )
 
@@ -828,89 +822,3 @@ def _retrieve_secure_objects(
         except (UnicodeDecodeError, json.JSONDecodeError):
             pass
     return prov_data
-
-
-def _upload_data(
-    client: EL2GOTPClient,
-    interface: EL2GOInterfaceHandler,
-    secure_objects: bytes,
-    workspace: Optional[str] = None,
-    clean: bool = False,
-) -> None:
-    if workspace:
-        write_file(secure_objects, os.path.join(workspace, "secure_objects.bin"), mode="wb")
-
-    user_config, fw_read_address, user_data_address = client.create_user_config()
-    if workspace and user_config:
-        write_file(user_config, os.path.join(workspace, "user_config.bin"), mode="wb")
-
-    so_list = SecureObjects.parse(secure_objects)
-    so_list.validate(family=client.family)
-
-    if clean:
-        click.echo("Performing cleanup method")
-        client.run_cleanup_method(interface=interface)
-    if client.use_dispatch_fw:
-        click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
-        interface.write_memory(address=user_data_address, data=secure_objects)
-        if client.prov_fw:
-            click.echo("Uploading ProvFW")
-            interface.write_memory(address=client.fw_load_address, data=client.prov_fw)
-            click.echo("Resetting the device (Starting Provisioning FW)")
-            interface.reset()
-    elif client.use_oem_app:
-        click.echo(f"Writing Secure Objects to MMC/SD FAT: {hex(user_data_address)}")
-        interface.write_memory(address=user_data_address, data=secure_objects)
-        output = interface.send_command(
-            f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
-            + f" {user_data_address:x} {client.fatwrite_filename} {len(secure_objects):x}"
-        )
-        click.echo(f"Data written {output}")
-        if client.oem_provisioning_config_filename:
-            interface.write_memory(
-                address=user_data_address, data=client.oem_provisioning_config_bin
-            )
-            # Write also OEM APP config if provided
-            click.echo(
-                f"Writing OEM Provisioning Config to MMC/SD FAT: {client.oem_provisioning_config_filename}"
-            )
-
-            output = interface.send_command(
-                f"fatwrite {client.fatwrite_interface} {client.fatwrite_device_partition}"
-                + f" {user_data_address:x} {client.oem_provisioning_config_filename} "
-                + f"{len(client.oem_provisioning_config_bin):x}"
-            )
-
-        click.echo(f"Data written {output}")
-
-        if client.boot_linux:
-            click.echo("Booting Linux")
-
-            for command in client.linux_boot_sequence:
-                # in case of last command set no_exit to true
-                if command == client.linux_boot_sequence[-1]:
-                    output = interface.send_command(command, no_exit=True)
-                else:
-                    output = interface.send_command(command)
-                click.echo(f"  Command: {command} -> {output}")
-
-    elif client.use_user_config:
-        click.echo(f"Writing User config data to: {hex(fw_read_address)}")
-        interface.write_memory(address=fw_read_address, data=user_config)
-        click.echo(f"Writing Secure Objects to: {hex(user_data_address)}")
-        interface.write_memory(address=user_data_address, data=secure_objects)
-    elif client.use_data_split:
-        internal, external = so_list.split_int_ext()
-        if internal:
-            if workspace:
-                write_file(internal, os.path.join(workspace, "internal_so.bin"), mode="wb")
-            click.echo(f"Writing Internal Secure Objects to: {hex(fw_read_address)}")
-            interface.write_memory(address=fw_read_address, data=internal)
-        if external:
-            if workspace:
-                write_file(external, os.path.join(workspace, "external_so.bin"), mode="wb")
-            click.echo(f"Writing External Secure Objects to: {hex(user_data_address)}")
-            interface.write_memory(address=user_data_address, data=external)
-    else:
-        raise SPSDKAppError("Unsupported provisioning method")
-    click.echo("Secure Objects uploaded successfully")

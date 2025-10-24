@@ -51,13 +51,21 @@
                             "width": 8,
                             "id": "field000-bits8-15",
                             "name": "INV_CFPA_LC_STATE",
-                            "description": "Inverted value of CFPA_LC_STATE. This INV_CPFA_LC_STATE ^ CFPA_LC_STATE[7:0] should be 0xFF, otherwise the CPFA_LC_STATE will not be valid"
+                            "description": "Inverted value of CFPA_LC_STATE. This INV_CPFA_LC_STATE ^ CFPA_LC_STATE[7:0] should be 0xFF, otherwise the CPFA_LC_STATE will not be valid",
+                            "calculated": "INVERSE"
                         },
                         {
                             "width": 16,
                             "id": "field000-bits16-31",
                             "name": "HEADER",
-                            "description": "CFPA header marker should be set to 0x9635. after this header is set, all non-zero values will take effect; leaving all values set to 0xff will cause undefined behavior. it is recommended to set all values to 0x00 before setting the cfpa header"
+                            "description": "",
+                            "values": [
+                                {
+                                    "name": "DEFAULT",
+                                    "value": 38453,
+                                    "description": "CFPA Header marker should be set to 0x9635"
+                                }
+                            ]
                         }
                     ]
                 },
@@ -291,119 +299,64 @@
                             ]
                         },
                         {
-                            "width": 2,
-                            "id": "field014-bits8-9",
-                            "name": "PQC_ROTK0_EN",
-                            "description": "RoT Key 0 enable. Determines if ROTK0 can be used during secure boot",
-                            "values": [
-                                {
-                                    "name": "ENABLED_0",
-                                    "value": 0,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "ENABLED_1",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_2",
-                                    "value": 2,
-                                    "description": "Key revoked"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_3",
-                                    "value": 3,
-                                    "description": "Key revoked"
-                                }
-                            ]
+                            "width": 1
                         },
                         {
-                            "width": 2,
-                            "id": "field014-bits10-11",
-                            "name": "PQC_ROTK1_EN",
-                            "description": "RoT Key 1 enable. Determines if ROTK1 can be used during secure boot",
-                            "values": [
-                                {
-                                    "name": "ENABLED_0",
-                                    "value": 0,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "ENABLED_1",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_2",
-                                    "value": 2,
-                                    "description": "Key revoked"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_3",
-                                    "value": 3,
-                                    "description": "Key revoked"
-                                }
-                            ]
+                            "width": 1
                         },
                         {
-                            "width": 2,
-                            "id": "field014-bits12-13",
-                            "name": "PQC_ROTK2_EN",
-                            "description": "RoT Key 2 enable. Determines if ROTK2 can be used during secure boot",
-                            "values": [
-                                {
-                                    "name": "ENABLED_0",
-                                    "value": 0,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "ENABLED_1",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_2",
-                                    "value": 2,
-                                    "description": "Key revoked"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_3",
-                                    "value": 3,
-                                    "description": "Key revoked"
-                                }
-                            ]
+                            "width": 1
                         },
                         {
-                            "width": 2,
-                            "id": "field014-bits14-15",
-                            "name": "PQC_ROTK3_EN",
-                            "description": "RoT Key 3 enable. Determines if ROTK3 can be used during secure boot",
-                            "values": [
-                                {
-                                    "name": "ENABLED_0",
-                                    "value": 0,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "ENABLED_1",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_2",
-                                    "value": 2,
-                                    "description": "Key revoked"
-                                },
-                                {
-                                    "name": "KEY_REVOKED_3",
-                                    "value": 3,
-                                    "description": "Key revoked"
-                                }
-                            ]
+                            "width": 1
                         },
                         {
-                            "width": 12
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
                         },
                         {
                             "width": 4,
@@ -540,7 +493,25 @@
                             ]
                         },
                         {
-                            "width": 2
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "field024-bit5",
+                            "name": "DSP_DBGEN",
+                            "description": "DSP debug enable CoolFlex debug",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
@@ -633,7 +604,16 @@
                             ]
                         },
                         {
-                            "width": 4
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
                         },
                         {
                             "width": 1,
@@ -742,7 +722,25 @@
                             ]
                         },
                         {
-                            "width": 2
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "field028-bit5",
+                            "name": "DSP_DBGEN",
+                            "description": "DSP debug. Enable CoolFlux debug Fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
@@ -835,7 +833,19 @@
                             ]
                         },
                         {
-                            "width": 5
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
                         },
                         {
                             "width": 16,
@@ -883,67 +893,59 @@
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00040",
-                    "name": "Reserved 0x00040",
-                    "description": "This field is reserved for internal use",
+                    "id": "field040",
+                    "name": "MCTR_IPED_CTX0",
+                    "description": "ROM code will not manage these fields, but SDK driver can manage these.",
                     "offset_int": "0x0040",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00044",
-                    "name": "Reserved 0x00044",
-                    "description": "This field is reserved for internal use",
+                    "id": "field044",
+                    "name": "MCTR_IPED_CTX1",
+                    "description": "MCTR IPED CTX1",
                     "offset_int": "0x0044",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00048",
-                    "name": "Reserved 0x00048",
-                    "description": "This field is reserved for internal use",
+                    "id": "field048",
+                    "name": "MCTR_IPED_CTX2",
+                    "description": "mctr iped ctx2",
                     "offset_int": "0x0048",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved0004C",
-                    "name": "Reserved 0x0004C",
-                    "description": "This field is reserved for internal use",
+                    "id": "field04C",
+                    "name": "MCTR_IPED_CTX3",
+                    "description": "mctr iped ctx3",
                     "offset_int": "0x004C",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00050",
-                    "name": "Reserved 0x00050",
-                    "description": "This field is reserved for internal use",
+                    "id": "field050",
+                    "name": "MCTR_IPED_CTX4",
+                    "description": "mctr iped ctx4",
                     "offset_int": "0x0050",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00054",
-                    "name": "Reserved 0x00054",
-                    "description": "This field is reserved for internal use",
+                    "id": "field054",
+                    "name": "MCTR_IPED_CTX5",
+                    "description": "mctr iped ctx5",
                     "offset_int": "0x0054",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00058",
-                    "name": "Reserved 0x00058",
-                    "description": "This field is reserved for internal use",
+                    "id": "field058",
+                    "name": "MCTR_IPED_CTX6",
+                    "description": "mctr iped ctx6",
                     "offset_int": "0x0058",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved0005C",
-                    "name": "Reserved 0x0005C",
-                    "description": "This field is reserved for internal use",
+                    "id": "field05C",
+                    "name": "MCTR_IPED_CTX7",
+                    "description": "mctr iped ctx7",
                     "offset_int": "0x005C",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
@@ -4801,67 +4803,59 @@
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00190",
-                    "name": "Reserved 0x00190",
-                    "description": "This field is reserved for internal use",
+                    "id": "field190",
+                    "name": "IPED_GCM_AAD_CTX0",
+                    "description": "ROM code will not manage these fields, but SDK driver can manage these.",
                     "offset_int": "0x0190",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00194",
-                    "name": "Reserved 0x00194",
-                    "description": "This field is reserved for internal use",
+                    "id": "field194",
+                    "name": "IPED_GCM_AAD_CTX1",
+                    "description": "IPED GCM AAD CTX1",
                     "offset_int": "0x0194",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved00198",
-                    "name": "Reserved 0x00198",
-                    "description": "This field is reserved for internal use",
+                    "id": "field198",
+                    "name": "IPED_GCM_AAD_CTX2",
+                    "description": "iped gcm aad ctx2",
                     "offset_int": "0x0198",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved0019C",
-                    "name": "Reserved 0x0019C",
-                    "description": "This field is reserved for internal use",
+                    "id": "field19C",
+                    "name": "IPED_GCM_AAD_CTX3",
+                    "description": "iped gcm aad ctx3",
                     "offset_int": "0x019C",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved001A0",
-                    "name": "Reserved 0x001A0",
-                    "description": "This field is reserved for internal use",
+                    "id": "field1A0",
+                    "name": "IPED_GCM_AAD_CTX4",
+                    "description": "iped gcm aad ctx4",
                     "offset_int": "0x01A0",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved001A4",
-                    "name": "Reserved 0x001A4",
-                    "description": "This field is reserved for internal use",
+                    "id": "field1A4",
+                    "name": "IPED_GCM_AAD_CTX5",
+                    "description": "iped gcm aad ctx5",
                     "offset_int": "0x01A4",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved001A8",
-                    "name": "Reserved 0x001A8",
-                    "description": "This field is reserved for internal use",
+                    "id": "field1A8",
+                    "name": "IPED_GCM_AAD_CTX6",
+                    "description": "iped gcm aad ctx6",
                     "offset_int": "0x01A8",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved001AC",
-                    "name": "Reserved 0x001AC",
-                    "description": "This field is reserved for internal use",
+                    "id": "field1AC",
+                    "name": "IPED_GCM_AAD_CTX7",
+                    "description": "iped gcm aad ctx7",
                     "offset_int": "0x01AC",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {

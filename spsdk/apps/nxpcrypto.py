@@ -330,7 +330,7 @@ def get_template(output: str) -> None:
     type=click.Path(exists=True, dir_okay=False),
     help="Path to key to verify certificate signature",
 )
-@optgroup.option(
+@optgroup.option(  # type: ignore[arg-type]
     "-p",
     "--puk",
     type=click.Path(exists=True, dir_okay=False),

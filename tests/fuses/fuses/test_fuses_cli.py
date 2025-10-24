@@ -17,7 +17,7 @@ from tests.fuses.fuses.fuses_test_operator import TestBlhostFuseOperator
 
 
 def mock_fuses_operator(*args, **kwargs):
-    return TestBlhostFuseOperator(kwargs.get('family'))
+    return TestBlhostFuseOperator(kwargs.get("family"))
 
 
 @pytest.mark.parametrize(

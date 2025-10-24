@@ -86,11 +86,6 @@
                                     "name": "CAN_ISP",
                                     "value": 6,
                                     "description": "CAN ISP"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -117,11 +112,6 @@
                                     "name": "SB3_IMAGE",
                                     "value": 2,
                                     "description": "SB3 image in 1-bit SPI flash connected to FlexComm overlapped with FlexSPI A"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -148,11 +138,6 @@
                                     "name": "MHZ144_FRO",
                                     "value": 2,
                                     "description": "144MHz FRO @1v0"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 3,
-                                    "description": "Reserved. Future PLL 150MHz @1v2"
                                 }
                             ]
                         },
@@ -431,26 +416,6 @@
                                     "name": "ADESTO_OCTAL_FLASH",
                                     "value": 3,
                                     "description": "Adesto Octal FLASH"
-                                },
-                                {
-                                    "name": "Reserved_0b100",
-                                    "value": 4,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b101",
-                                    "value": 5,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b110",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b111",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -464,11 +429,6 @@
                                     "name": "QSPI_ADDR_3B",
                                     "value": 0,
                                     "description": "QSPI_ADDR_3B"
-                                },
-                                {
-                                    "name": "Reserved_0b001",
-                                    "value": 1,
-                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "HYPER_1V8",
@@ -489,16 +449,6 @@
                                     "name": "DDR_MICRON",
                                     "value": 5,
                                     "description": "FlexSPI_DDR_MICRON"
-                                },
-                                {
-                                    "name": "Reserved_0b110",
-                                    "value": 6,
-                                    "description": "Reserved"
-                                },
-                                {
-                                    "name": "Reserved_0b111",
-                                    "value": 7,
-                                    "description": "Reserved"
                                 }
                             ]
                         },
@@ -1265,11 +1215,6 @@
                                     "name": "XTAL_30MHZ",
                                     "value": 1,
                                     "description": "30MHz input clock (Divide by 16)"
-                                },
-                                {
-                                    "name": "Reserved",
-                                    "value": 2,
-                                    "description": "Reserved"
                                 },
                                 {
                                     "name": "XTAL_20MHZ",

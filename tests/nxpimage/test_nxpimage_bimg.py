@@ -22,6 +22,7 @@ from spsdk.image.mem_type import MemoryType
 from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.verifier import Verifier, VerifierResult
 from tests.cli_runner import CliRunner
 
 FULL_LIST_TO_TEST = [
@@ -561,9 +562,8 @@ def test_nxpimage_bimg_merge_post_export(
         assert os.path.exists(os.path.join(tmpdir, "output"))
         assert len(os.listdir(os.path.join(tmpdir, "output"))) == 4
 
-def test_nxpimage_bimg_merge_custom_offset(
-    cli_runner: CliRunner, tmpdir, data_dir
-):
+
+def test_nxpimage_bimg_merge_custom_offset(cli_runner: CliRunner, tmpdir, data_dir):
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", "mimx9352", "serial_downloader")
         config_file_path = os.path.join(config_dir, "config_custom_offset.yaml")
@@ -581,14 +581,21 @@ def test_nxpimage_bimg_merge_custom_offset(
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file)
         bimg_bin = load_binary(out_file)
-        ahab_1 = AHABImage.parse(bimg_bin, family=FamilyRevision("mimx9352"), target_memory=AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER.label)
+        ahab_1 = AHABImage.parse(
+            bimg_bin,
+            family=FamilyRevision("mimx9352"),
+            target_memory=AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER.label,
+        )
         assert ahab_1
-        ahab_2 = AHABImage.parse(bimg_bin[0xA000:], family=FamilyRevision("mimx9352"), target_memory=AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER.label)
+        ahab_2 = AHABImage.parse(
+            bimg_bin[0xA000:],
+            family=FamilyRevision("mimx9352"),
+            target_memory=AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER.label,
+        )
         assert ahab_2
 
-def test_nxpimage_bimg_parse_custom_offset(
-    cli_runner: CliRunner, tmpdir, data_dir
-):
+
+def test_nxpimage_bimg_parse_custom_offset(cli_runner: CliRunner, tmpdir, data_dir):
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", "mimx9352", "serial_downloader")
         input_binary = os.path.join(config_dir, "merged_image_custom_offset.bin")
@@ -609,5 +616,181 @@ def test_nxpimage_bimg_parse_custom_offset(
         assert os.path.isfile(bimg_config)
         config = load_configuration(bimg_config)
         assert config.get("secondary_image_container_set")
-        os.path.isfile(os.path.join(config_dir, config["secondary_image_container_set"]['path']))
-        assert config["secondary_image_container_set"]['offset'] == 40960
+        os.path.isfile(os.path.join(config_dir, config["secondary_image_container_set"]["path"]))
+        assert config["secondary_image_container_set"]["offset"] == 40960
+
+
+def test_verifier_add_record_range_hex_string():
+    """Test add_record_range with hex string values."""
+    verifier = Verifier("Test Verifier")
+
+    # Test valid hex string
+    verifier.add_record_range("Valid hex", "0x1000")
+    assert len(verifier.records) == 1
+    assert verifier.records[0].result == VerifierResult.SUCCEEDED
+    assert verifier.records[0].value == "0x1000"
+
+    # Test valid hex string uppercase
+    verifier.add_record_range("Valid hex uppercase", "0X2000")
+    assert len(verifier.records) == 2
+    assert verifier.records[1].result == VerifierResult.SUCCEEDED
+    assert verifier.records[1].value == "0X2000"
+
+    # Test hex string out of range (too high)
+    verifier.add_record_range("Hex too high", "0xFFFFFFFF", max_val=1000)
+    assert len(verifier.records) == 3
+    assert verifier.records[2].result == VerifierResult.ERROR
+    assert "Higher than allowed" in str(verifier.records[2].value)
+
+    # Test hex string out of range (too low)
+    verifier.add_record_range("Hex too low", "0x10", min_val=100)
+    assert len(verifier.records) == 4
+    assert verifier.records[3].result == VerifierResult.ERROR
+    assert "Lower than allowed" in str(verifier.records[3].value)
+
+    # Test invalid hex string - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Invalid hex", "0xGGGG")
+
+    # Test non-hex string - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Non-hex string", "not_hex")
+
+
+def test_verifier_add_record_range_hex_integration():
+    """Test add_record_range hex functionality in context similar to bootable image."""
+    verifier = Verifier("Bootable Image Test")
+
+    # Simulate segment offset verification with hex
+    segment_offset = 0x1000
+    hex_offset = f"0x{segment_offset:08X}"
+
+    verifier.add_record_range("Offset in image", hex_offset)
+
+    assert len(verifier.records) == 1
+    assert verifier.records[0].result == VerifierResult.SUCCEEDED
+    assert verifier.records[0].value == hex_offset
+    assert verifier.records[0].name == "Offset in image"
+
+
+def test_verifier_add_record_range_hex_negative_scenarios():
+    """Test add_record_range with various negative hex string scenarios."""
+    verifier = Verifier("Negative Test Verifier")
+
+    # Test empty hex string - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Empty hex", "0x")
+
+    # Test hex string with only prefix - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Only prefix", "0X")
+
+    # Test hex string with spaces - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Hex with spaces", "0x 1000")
+
+    # Test hex string with invalid characters mixed in - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Mixed invalid chars", "0x12G34")
+
+    # Test hex string with special characters - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Special chars", "0x12@34")
+
+    # Test very long hex string (exceeds 32-bit range, should be ERROR)
+    verifier.add_record_range("Very long hex", "0x" + "F" * 20)
+    assert len(verifier.records) == 1
+    assert verifier.records[0].result == VerifierResult.ERROR
+    assert "Higher than allowed" in str(verifier.records[0].value)
+
+    # Test negative hex - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Negative hex", "-0x1000")
+
+    # Test hex with decimal point - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Hex with decimal", "0x10.5")
+
+
+def test_verifier_add_record_range_edge_cases():
+    """Test edge cases for hex string handling."""
+    verifier = Verifier("Edge Case Verifier")
+
+    # Test None value (should work as before)
+    verifier.add_record_range("None value", None)
+    assert len(verifier.records) == 1
+    assert verifier.records[0].result == VerifierResult.ERROR
+    assert verifier.records[0].value == "Doesn't exists"
+
+    # Test empty string - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Empty string", "")
+
+    # Test string with only whitespace - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Whitespace only", "   ")
+
+    # Test case sensitivity issues (should work)
+    verifier.add_record_range("Mixed case prefix", "0X1a2B")
+    assert len(verifier.records) == 2
+    assert verifier.records[1].result == VerifierResult.SUCCEEDED
+
+    # Test hex string that converts to zero
+    verifier.add_record_range("Zero hex", "0x0", min_val=1)
+    assert len(verifier.records) == 3
+    assert verifier.records[2].result == VerifierResult.ERROR
+    assert "Lower than allowed" in str(verifier.records[2].value)
+
+
+def test_verifier_add_record_range_boundary_conditions():
+    """Test boundary conditions with hex strings."""
+    verifier = Verifier("Boundary Test Verifier")
+
+    # Test maximum 32-bit value as hex
+    max_32bit = "0xFFFFFFFF"
+    verifier.add_record_range("Max 32-bit", max_32bit)
+    assert len(verifier.records) == 1
+    assert verifier.records[0].result == VerifierResult.SUCCEEDED
+
+    # Test value just over 32-bit limit
+    over_32bit = "0x100000000"  # 2^32
+    verifier.add_record_range("Over 32-bit", over_32bit)
+    assert len(verifier.records) == 2
+    assert verifier.records[1].result == VerifierResult.ERROR
+    assert "Higher than allowed" in str(verifier.records[1].value)
+
+    # Test minimum boundary
+    verifier.add_record_range("At min boundary", "0x0", min_val=0)
+    assert len(verifier.records) == 3
+    assert verifier.records[2].result == VerifierResult.SUCCEEDED
+
+    # Test just below minimum
+    verifier.add_record_range("Below min", "0x9", min_val=10)
+    assert len(verifier.records) == 4
+    assert verifier.records[3].result == VerifierResult.ERROR
+    assert "Lower than allowed" in str(verifier.records[3].value)
+
+
+def test_verifier_add_record_range_malformed_input():
+    """Test various malformed input scenarios."""
+    verifier = Verifier("Malformed Input Verifier")
+
+    # Test multiple 0x prefixes - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Double prefix", "0x0x1000")
+
+    # Test hex with trailing characters - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Trailing chars", "0x1000xyz")
+
+    # Test hex with leading characters - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Leading chars", "abc0x1000")
+
+    # Test unicode characters - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Unicode chars", "0x10🔥00")
+
+    # Test newline in hex string - should raise SPSDKError
+    with pytest.raises(SPSDKError):
+        verifier.add_record_range("Newline in hex", "0x10\n00")

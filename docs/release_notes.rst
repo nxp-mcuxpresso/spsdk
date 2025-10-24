@@ -17,6 +17,31 @@ Release Notes
 =============
 
 -------------------------
+3.4.0 (24-October-2025)
+-------------------------
+
+**New features**
+
+* `blhost`_:
+    - add property warnings system for device-specific safety alerts
+
+* `nxpimage`_:
+    - add HSE lifecycle configuration support to MBI for mcx-e31b device family
+
+**Bugfixes**
+
+* :ref:`el2go-host`:
+    - fix u-boot support for product flow
+
+* `blhost`_:
+    - add fuse-program-voltage property to blhost overrides
+* `nxpimage`_:
+    - add selecting AHAB images to be updated in multiple ahab image binaries
+* `pfr`_:
+    - fix data for mcxn556s
+    - fix revisions for kw47xx and kw32w1
+
+-------------------------
 3.3.0 (26-September-2025)
 -------------------------
 

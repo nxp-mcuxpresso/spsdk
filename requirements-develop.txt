@@ -1,7 +1,7 @@
 # tox has to be installed first
 tox<5
 tox-uv<2
-uv<0.9,>=0.8.6
+uv<1,>=0.8.6
 -r requirements.txt
 # testing
 pytest<9
@@ -12,7 +12,7 @@ types-setuptools<81
 types-pyyaml<7
 # codestyle
 black<26,>=24.3.0
-nxp_codecheck<1,>=0.3.1
+nxp_codecheck<1,>=0.3.13
 spsdk-pylint-plugins<1,>=0.2.0
 # pip dependency should be moved to codecheck
 pip<26

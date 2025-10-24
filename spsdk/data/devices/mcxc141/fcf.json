@@ -299,11 +299,6 @@
                                     "description": "Boot from Flash"
                                 },
                                 {
-                                    "name": "Reserved",
-                                    "value": 1,
-                                    "description": "Reserved"
-                                },
-                                {
                                     "name": "ROM_2",
                                     "value": 2,
                                     "description": "Boot from ROM"

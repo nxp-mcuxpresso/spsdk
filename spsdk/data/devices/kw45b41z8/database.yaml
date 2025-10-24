@@ -3,15 +3,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 revisions:
-  a0:
+  a0: {}    
+  a1: 
     features:
       pfr:
         romcfg:
-          reg_spec: ifr_romcfg_a0.json
-        cmactable:
-          reg_spec: ifr_cmactable_a0.json
-  a1: {}
-  a2: {}
+          reg_spec: ifr_romcfg_a1.json        
+  a2:
+    features:
+      pfr:
+        romcfg:
+          reg_spec: ifr_romcfg_a2.json
+  
 latest: a2
 
 # General MCU information
@@ -170,7 +173,7 @@ features:
     sub_features: [romcfg, cmactable]
     romcfg:
       address: 0x200_0000
-      reg_spec: ifr_romcfg_a1.json
+      reg_spec: ifr_romcfg_a0.json
     cmactable:
       address: 0x0200_4000
       reg_spec: ifr_cmactable_a0.json

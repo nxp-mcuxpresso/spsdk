@@ -48,7 +48,7 @@ from spsdk.image.ahab.ahab_srk import SRKTableArray
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import align, get_abs_path, write_file
+from spsdk.utils.misc import align, extend_block, get_abs_path, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -673,7 +673,11 @@ class AHABContainer(AHABContainerBase):
                 and self.signature_block.blob
             ):
                 image_entry.encrypted_image = self.signature_block.blob.encrypt_data(
-                    image_entry.image_iv[16:], image_entry.plain_image
+                    image_entry.image_iv[16:],
+                    extend_block(
+                        image_entry.plain_image,
+                        image_entry._get_valid_size(image_entry.plain_image),
+                    ),
                 )
                 image_entry.already_encrypted_image = True
 

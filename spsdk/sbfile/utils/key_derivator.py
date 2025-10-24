@@ -15,7 +15,7 @@ from typing import Any, Optional, Union
 from spsdk.crypto.cmac import cmac
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.http_client import HTTPClientBase
-from spsdk.utils.misc import Endianness, find_file, load_text
+from spsdk.utils.misc import Endianness, find_file, load_hex_string
 from spsdk.utils.service_provider import ServiceProvider
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -162,23 +162,48 @@ class LocalKeyDerivator(SB31KeyDerivator):
     def __init__(
         self,
         file_path: Optional[str] = None,
-        key_data: Optional[bytes] = None,
         search_paths: Optional[list[str]] = None,
+        data: Optional[str] = None,
+        **kwargs: str,
     ) -> None:
-        """Initialize local key derivator.
+        """Initialize the Local Key Derivator.
 
-        :param file_path: Path to the file containing the key
-        :param search_paths: Additional paths to search for the key file
+        :param file_path: Path to PCK file (text with hex string or binary file)
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :param data: Direct hex string data (alternative to file_path)
+        :param kwargs: Additional keyword arguments
         """
-        super().__init__()
-        if key_data is None and file_path is None:
-            raise SPSDKError("Either file_path or key_data must be provided")
-        if file_path:
-            file_path = find_file(file_path=file_path, search_paths=search_paths)
-            self.pck = bytes.fromhex(load_text(file_path).strip())
-        if key_data:
-            self.pck = key_data
-        assert self.pck is not None, "Key data must be provided"
+        super().__init__(**kwargs)
+
+        if data:
+            # Handle direct hex string data
+            try:
+                self.pck = bytes.fromhex(data)
+            except ValueError as exc:
+                raise SPSDKError(f"Cannot parse hex data: {str(exc)}") from exc
+        elif file_path:
+            try:
+                # Try to load key with different expected sizes (256-bit first, then 128-bit)
+                for expected_size in [32, 16]:  # 256-bit (32 bytes) and 128-bit (16 bytes)
+                    try:
+                        self.pck = load_hex_string(
+                            source=file_path,
+                            expected_size=expected_size,
+                            search_paths=search_paths,
+                            name="PCK",
+                        )
+                        break
+                    except SPSDKError:
+                        continue
+                else:
+                    raise SPSDKError(
+                        "PCK key must be either 128-bit (16 bytes) or 256-bit (32 bytes)"
+                    )
+            except SPSDKError as exc:
+                raise SPSDKError(f"Cannot load PCK from {file_path}: {str(exc)}") from exc
+        else:
+            raise SPSDKError("Either file_path or data must be provided")
+
         logger.info(f"SB3PCK: {self.pck.hex()}")
 
     def remote_cmac(self, data: bytes) -> bytes:
@@ -260,8 +285,10 @@ def get_sb31_key_derivator(
 
         # config string might still be a plain key as hexstring
         try:
-            key_data = bytes.fromhex(kd_cfg)
-            return LocalKeyDerivator(key_data=key_data)
+            # Validate it's a hex string by trying to convert it
+            bytes.fromhex(kd_cfg)
+            # If successful, create LocalKeyDerivator with data parameter
+            return LocalKeyDerivator(data=kd_cfg, search_paths=search_paths)
         except ValueError:
             # If it's not a hex string, try other options
             pass

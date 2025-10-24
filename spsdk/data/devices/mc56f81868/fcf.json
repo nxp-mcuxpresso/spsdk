@@ -102,7 +102,7 @@
                     "bitfields": [
                         {
                             "width": 1,
-                            "id": "PowerMode",
+                            "id": "field00D-bit-0",
                             "name": "POWER_MODE",
                             "description": "Controls which power mode register takes effect",
                             "values": [

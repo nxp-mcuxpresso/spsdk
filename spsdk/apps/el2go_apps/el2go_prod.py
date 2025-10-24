@@ -113,7 +113,7 @@ def prod_get_next_so_command(database: str, remote_database: str, output: str) -
     type=click.Path(exists=True),
     help="Path to existing database with secure objects",
 )
-@optgroup.option(
+@optgroup.option(  # type: ignore[arg-type]
     "-rdb",
     "--remote-database",
     help="URL to remote database with secure objects",
@@ -189,14 +189,9 @@ def prod_provision_device(
     """Execute EdgeLock 2GO product-based provisioning process."""
     client = EL2GOTPClient.load_from_config(config)
     secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
-    interface.write_memory(address=client.tp_data_address, data=secure_object)
-    if client.prov_fw:
-        interface.write_memory(address=client.fw_load_address, data=client.prov_fw)
-    interface.reset(reopen=True)
+    interface.write_secure_objects_prod(client=client, secure_objects=secure_object)
     report = interface.run_batch_provisioning(
-        tp_data_address=client.tp_data_address,
-        prov_report_address=client.prov_report_address,
-        use_dispatch_fw=client.use_dispatch_fw,
+        client=client,
         dry_run=dry_run,
     )
     if not report:
@@ -277,12 +272,7 @@ def prod_prepare_device(
     if not client.use_dispatch_fw:
         raise SPSDKAppError("This command is viable only for devices with dispatch firmware")
     secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
-    interface.prepare_dispatch(
-        secure_objects=secure_object,
-        secure_objects_address=client.tp_data_address,
-        prov_fw=client.prov_fw,
-        prov_fw_address=client.fw_load_address,
-    )
+    interface.prepare_dispatch(secure_objects=secure_object, client=client)
     if check_fw:
         time.sleep(0.5)  # Allow a short delay for firmware initialization
         version = interface.get_version()
@@ -314,9 +304,7 @@ def prod_run_provisioning(
     """Execute provisioning process only."""
     client = EL2GOTPClient.load_from_config(config)
     report = interface.run_batch_provisioning(
-        tp_data_address=client.tp_data_address,
-        prov_report_address=client.prov_report_address,
-        use_dispatch_fw=client.use_dispatch_fw,
+        client=client,
         dry_run=dry_run,
     )
     if not report:
@@ -336,7 +324,7 @@ def prod_run_provisioning(
     type=click.Path(exists=True),
     help="Path to database file with reports",
 )
-@optgroup.option(
+@optgroup.option(  # type: ignore[arg-type]
     "-rdb",
     "--remote-database",
     help="URL to remote database with reports",
@@ -354,7 +342,7 @@ def prod_validate_reports_command(database: str, remote_database: str) -> None:
     type=click.Path(exists=True),
     help="Path to database file with reports",
 )
-@optgroup.option(
+@optgroup.option(  # type: ignore[arg-type]
     "-rdb",
     "--remote-database",
     help="URL to remote database with reports",

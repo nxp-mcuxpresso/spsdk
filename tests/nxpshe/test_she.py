@@ -49,11 +49,13 @@ def test_she_key_update():
 
     updater.verify_messages(m4=exp_m4, m5=exp_m5)
 
+
 def test_calc_boot_mac():
     key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     data = bytes.fromhex("deadbeef")
     mac = SHEBootMac.calculate(key, data)
     assert mac.hex() == "48233ed841e8a70c41e972941f8f9644"
+
 
 @pytest.mark.parametrize(
     "key_id, auth_key_id, passed",
@@ -66,8 +68,16 @@ def test_calc_boot_mac():
         ("BOOT_MAC", "USER_KEY_1", False),
     ],
 )
-def test_auth_key_id(key_id: int, auth_key_id:int, passed: bool):
-    cfg = Config({'family':'mcxe247', 'key': '2a71b6517a932c0dfd52f64652ddaea4','key_id':key_id, 'auth_key': 'c311102df1237ce85658bb41818b3f12', 'auth_key_id':auth_key_id})
+def test_auth_key_id(key_id: int, auth_key_id: int, passed: bool):
+    cfg = Config(
+        {
+            "family": "mcxe247",
+            "key": "2a71b6517a932c0dfd52f64652ddaea4",
+            "key_id": key_id,
+            "auth_key": "c311102df1237ce85658bb41818b3f12",
+            "auth_key_id": auth_key_id,
+        }
+    )
     schemas = SHEUpdate.get_validation_schemas_from_cfg(cfg)
     if passed:
         cfg.check(schemas, check_unknown_props=True)
